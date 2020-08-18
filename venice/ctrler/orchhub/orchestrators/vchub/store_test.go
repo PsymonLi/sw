@@ -1,6 +1,7 @@
 package vchub
 
 import (
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -11,15 +12,14 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/pensando/sw/api"
-	"github.com/pensando/sw/api/generated/cluster"
-	"github.com/pensando/sw/api/generated/workload"
+	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/cache"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/useg"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock"
 	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
-	"github.com/pensando/sw/venice/ctrler/orchhub/utils/pcache"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils/timerqueue"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	mockevtsrecorder "github.com/pensando/sw/venice/utils/events/recorder/mock"
@@ -77,30 +77,28 @@ func runStoreTC(t *testing.T, testCases []storeTC) {
 
 		err = sm.Controller().Orchestrator().Create(orchConfig)
 
-		pCache := pcache.NewPCache(sm, logger)
-		AssertOk(t, err, "failed to create useg mgr")
+		AssertOk(t, err, "failed to create orch config")
 		state := &defs.State{
-			VcID:         "test-orchestrator",
-			Ctx:          ctx,
-			Log:          logger,
-			StateMgr:     sm,
-			OrchConfig:   orchConfig,
-			Wg:           &sync.WaitGroup{},
-			ForceDCNames: map[string]bool{utils.ManageAllDcs: true},
-			DcIDMap:      map[string]types.ManagedObjectReference{},
-			DvsIDMap:     map[string]types.ManagedObjectReference{},
-			TimerQ:       timerqueue.NewQueue(),
+			VcID:       "test-orchestrator",
+			Ctx:        ctx,
+			Log:        logger,
+			StateMgr:   sm,
+			OrchConfig: orchConfig,
+			Wg:         &sync.WaitGroup{},
+			ManagedDCs: map[string]orchestration.ManagedNamespaceSpec{
+				utils.ManageAllDcs: defs.DefaultDCManagedConfig(),
+			},
+			DcIDMap:  map[string]types.ManagedObjectReference{},
+			DvsIDMap: map[string]types.ManagedObjectReference{},
+			TimerQ:   timerqueue.NewQueue(),
 		}
 
 		vchub := &VCHub{
 			State:        state,
-			pCache:       pCache,
+			cache:        cache.NewCache(sm, logger),
 			DcMap:        map[string]*PenDC{},
 			DcID2NameMap: map[string]string{},
 		}
-		pCache.SetValidator(string(workload.KindWorkload), vchub.validateWorkload)
-		pCache.SetValidator(string(cluster.KindHost), vchub.validateHost)
-		pCache.SetValidator(workloadVnicKind, validateWorkloadVnics)
 
 		vchub.StateMgr.SetAPIClient(nil)
 		inbox := make(chan defs.Probe2StoreMsg)
@@ -188,14 +186,193 @@ func generateVNIC(macAddress, portKey, portgroupKey, vnicType string) types.Base
 	}
 }
 
-func addDCState(t *testing.T, vchub *VCHub, dcName string) {
+func generateHostAddEvent(dcName, dvsName, hostKey string, pnicMac []string) defs.Probe2StoreMsg {
+	return defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.HostSystem,
+			DcID:       dcName,
+			Key:        hostKey,
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.HostConfigInfo{
+						Network: &types.HostNetworkInfo{
+							Pnic: []types.PhysicalNic{
+								{
+									Mac: pnicMac[0],
+									Key: "pnic-1", Device: "vmnic1",
+								},
+								{
+									Mac: pnicMac[1],
+									Key: "pnic-2", Device: "vmnic2",
+								},
+							},
+							ProxySwitch: []types.HostProxySwitch{
+								{
+									DvsName: dvsName,
+									Pnic:    []string{"pnic-1", "pnic-2"},
+									Spec: types.HostProxySwitchSpec{
+										Backing: &types.DistributedVirtualSwitchHostMemberPnicBacking{
+											PnicSpec: []types.DistributedVirtualSwitchHostMemberPnicSpec{
+												{PnicDevice: "vmnic1", UplinkPortKey: "1"},
+												{PnicDevice: "vmnic2", UplinkPortKey: "2"},
+											},
+										},
+									},
+									UplinkPort: []types.KeyValue{
+										{Key: "1", Value: "uplink1"},
+										{Key: "2", Value: "uplink2"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateHostUpdateUplinksEvent(dcName, dvsName, hostKey string, pnicMac, uplinks []string) defs.Probe2StoreMsg {
+	uplinkPorts := []types.KeyValue{}
+	for i, uplink := range uplinks {
+		keyStr := strconv.FormatInt(int64(i), 10)
+		uplinkPorts = append(uplinkPorts, types.KeyValue{Key: keyStr, Value: uplink + keyStr})
+	}
+	return defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.HostSystem,
+			DcID:       dcName,
+			Key:        hostKey,
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.HostConfigInfo{
+						Network: &types.HostNetworkInfo{
+							Pnic: []types.PhysicalNic{
+								{
+									Mac: pnicMac[0],
+									Key: "pnic-1", Device: "vmnic1",
+								},
+								{
+									Mac: pnicMac[1],
+									Key: "pnic-2", Device: "vmnic2",
+								},
+							},
+							ProxySwitch: []types.HostProxySwitch{
+								{
+									DvsName: dvsName,
+									Pnic:    []string{"pnic-1", "pnic-2"},
+									Spec: types.HostProxySwitchSpec{
+										Backing: &types.DistributedVirtualSwitchHostMemberPnicBacking{
+											PnicSpec: []types.DistributedVirtualSwitchHostMemberPnicSpec{
+												{PnicDevice: "vmnic1", UplinkPortKey: "1"},
+												{PnicDevice: "vmnic2", UplinkPortKey: "2"},
+											},
+										},
+									},
+									UplinkPort: uplinkPorts,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateUserPGUpdateEvent(dcName, pgName, pgKey string, vlanID int32, activeUplinks, standbyUplinks []string) defs.Probe2StoreMsg {
+	return defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.DistributedVirtualPortgroup,
+			DcID:       dcName,
+			Key:        pgKey,
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				types.PropertyChange{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.DVPortgroupConfigInfo{
+						Name: pgName,
+						DefaultPortConfig: &types.VMwareDVSPortSetting{
+							Vlan: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+								VlanId: vlanID,
+							},
+							UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+								UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+									ActiveUplinkPort:  activeUplinks,
+									StandbyUplinkPort: standbyUplinks,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateVMAddEvent(dcName, vmKey, hostKey string, vnics []types.BaseVirtualDevice) defs.Probe2StoreMsg {
+	return defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.VirtualMachine,
+			DcID:       dcName,
+			Key:        vmKey,
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.VirtualMachineConfigInfo{
+						Hardware: types.VirtualHardware{
+							Device: vnics,
+						},
+					},
+				},
+				{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "runtime",
+					Val: types.VirtualMachineRuntimeInfo{
+						Host: &types.ManagedObjectReference{
+							Type:  "HostSystem",
+							Value: hostKey,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func addDCState(t *testing.T, vchub *VCHub, dcName string, mode defs.Mode) {
 	dvsName := CreateDVSName(dcName)
 	useg, err := useg.NewUsegAllocator()
 	AssertOk(t, err, "Failed to create useg")
+	dvsMode := orchestration.NamespaceSpec_Monitored.String()
+	if mode == defs.ManagedMode {
+		dvsMode = orchestration.NamespaceSpec_Managed.String()
+	}
+	dcShared := &DCShared{
+		DcName: dcName,
+		DcRef: types.ManagedObjectReference{
+			Type:  string(defs.Datacenter),
+			Value: "DC1",
+		},
+		Probe: vchub.probe,
+	}
 	penDVS := &PenDVS{
-		State:   vchub.State,
-		DcName:  dcName,
-		DvsName: dvsName,
+		State:    vchub.State,
+		DCShared: dcShared,
+		DvsName:  dvsName,
 		DvsRef: types.ManagedObjectReference{
 			Type:  string(defs.VmwareDistributedVirtualSwitch),
 			Value: "dvs-1",
@@ -203,33 +380,48 @@ func addDCState(t *testing.T, vchub *VCHub, dcName string) {
 		UsegMgr:          useg,
 		Pgs:              map[string]*PenPG{},
 		pgIDMap:          map[string]*PenPG{},
-		probe:            vchub.probe,
 		ports:            map[string]portEntry{},
 		workloadsToWrite: map[string][]overrideReq{},
+		dvsMode:          dvsMode,
 	}
 	vchub.DcMap[dcName] = &PenDC{
-		State: vchub.State,
-		Name:  dcName,
-		dcRef: types.ManagedObjectReference{
-			Type:  string(defs.Datacenter),
-			Value: "DC1",
-		},
-		DvsMap: map[string]*PenDVS{
+		State:    vchub.State,
+		DCShared: dcShared,
+		PenDvsMap: map[string]*PenDVS{
 			dvsName: penDVS,
 		},
+		UserDvsIDMap: map[string]*PenDVS{},
 		HostName2Key: map[string]string{},
-		probe:        vchub.probe,
+		mode:         mode,
 	}
 	vchub.DcID2NameMap["DC1"] = dcName
+}
+
+func addUserDVSState(t *testing.T, vchub *VCHub, dcName string, dvsName, dvsKey string) {
+	penDC := vchub.GetDC(dcName)
+	penDVS := &PenDVS{
+		State:   vchub.State,
+		DvsName: dvsName,
+		DvsRef: types.ManagedObjectReference{
+			Type:  string(defs.VmwareDistributedVirtualSwitch),
+			Value: dvsKey,
+		},
+		Pgs:              map[string]*PenPG{},
+		pgIDMap:          map[string]*PenPG{},
+		ports:            map[string]portEntry{},
+		workloadsToWrite: map[string][]overrideReq{},
+		dvsMode:          orchestration.NamespaceSpec_Monitored.String(),
+	}
+	penDC.UserDvsIDMap[dvsName] = penDVS
 }
 
 func addPGState(t *testing.T, vchub *VCHub, dcName, pgName, pgID, networkName string) {
 	penDC := vchub.GetDC(dcName)
 	penDVS := penDC.GetPenDVS(CreateDVSName(dcName))
 	penPG := &PenPG{
-		State:  vchub.State,
-		probe:  vchub.probe,
-		PgName: pgName,
+		State:    vchub.State,
+		DCShared: penDC.DCShared,
+		PgName:   pgName,
 		PgRef: types.ManagedObjectReference{
 			Type:  string(defs.DistributedVirtualPortgroup),
 			Value: pgID,
@@ -239,10 +431,43 @@ func addPGState(t *testing.T, vchub *VCHub, dcName, pgName, pgID, networkName st
 			Tenant:    "default",
 			Namespace: "default",
 		},
+		penDVS: penDVS,
+		PgTeaming: PGTeamingInfo{
+			uplinks: []string{"uplink1", "uplink2", "uplink3", "uplink4"},
+		},
 	}
 	penDVS.UsegMgr.AssignVlansForPG(pgName)
 	penDVS.Pgs[pgName] = penPG
 	penDVS.pgIDMap[pgID] = penPG
+}
+
+func addUserPGStateWithDVS(t *testing.T, vchub *VCHub, dcName, dvsName, pgName, pgID string, vlan int32, uplinks []string) {
+	penDC := vchub.GetDC(dcName)
+	penDVS := penDC.GetDVS(dvsName)
+	Assert(t, penDVS != nil, "Cannot find DVS for PG")
+	penPG := &PenPG{
+		State:    vchub.State,
+		DCShared: penDC.DCShared,
+		PgName:   pgName,
+		PgRef: types.ManagedObjectReference{
+			Type:  string(defs.DistributedVirtualPortgroup),
+			Value: pgID,
+		},
+		penDVS: penDVS,
+		VlanID: vlan,
+		PgTeaming: PGTeamingInfo{
+			uplinks: uplinks,
+		},
+	}
+	penDVS.Pgs[pgName] = penPG
+	penDVS.pgIDMap[pgID] = penPG
+}
+
+func addUserPGState(t *testing.T, vchub *VCHub, dcName, pgName, pgID string, vlan int32) {
+	penDC := vchub.GetDC(dcName)
+	penDVS := penDC.GetPenDVS(CreateDVSName(dcName))
+	uplinks := []string{"uplink1", "uplink2", "uplink3", "uplink4"}
+	addUserPGStateWithDVS(t, vchub, dcName, penDVS.DvsName, pgName, pgID, vlan, uplinks)
 }
 
 func TestDCs(t *testing.T) {
@@ -278,7 +503,7 @@ func TestDCs(t *testing.T) {
 				mockProbe.EXPECT().RenameDC("RandomName", dcName, gomock.Any()).Return(nil).Times(1)
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				eventRecorder.ClearEvents()
 
@@ -317,8 +542,8 @@ func TestDCs(t *testing.T) {
 				},
 			},
 			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
-				vchub.State.ForceDCNames = map[string]bool{
-					dcName: true,
+				vchub.State.ManagedDCs = map[string]orchestration.ManagedNamespaceSpec{
+					dcName: defs.DefaultDCManagedConfig(),
 				}
 				mockProbe := mock.NewMockProbeInf(mockCtrl)
 				vchub.probe = mockProbe
@@ -327,7 +552,7 @@ func TestDCs(t *testing.T) {
 				mockProbe.EXPECT().RenameDC("RandomName", dcName, gomock.Any()).Return(nil).Times(1)
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				eventRecorder.ClearEvents()
 

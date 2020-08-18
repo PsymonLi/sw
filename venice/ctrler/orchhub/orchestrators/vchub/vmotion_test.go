@@ -15,8 +15,10 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/api/hooks/apiserver/utils"
+	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/sim"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/testutils"
@@ -94,12 +96,12 @@ func TestVmotion(t *testing.T) {
 	// Add it using vcHub so mockProbe gets the needed info ???
 	// This will also create PenDVS
 	logger.Infof("Creating PenDC for %s\n", dc.Obj.Reference().Value)
-	_, err = vchub.NewPenDC(defaultTestParams.TestDCName, dc.Obj.Self.Value)
+	_, err = vchub.NewPenDC(defaultTestParams.TestDCName, dc.Obj.Self.Value, defs.ManagedMode)
 	// Add DVS
 	dvsName := CreateDVSName(defaultTestParams.TestDCName)
 	dvs, ok := dc.GetDVS(dvsName)
 	if !ok {
-		logger.Info("GetDVS Failed")
+		logger.Info("GetPenDVS Failed")
 		os.Exit(1)
 	}
 	Assert(t, ok, "failed dvs create")
@@ -118,6 +120,12 @@ func TestVmotion(t *testing.T) {
 			DefaultPortConfig: &types.VMwareDVSPortSetting{
 				Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 					PvlanId: int32(100),
+				},
+				UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+					UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+						ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+						StandbyUplinkPort: []string{"uplink3", "uplink4"},
+					},
 				},
 			},
 		},
@@ -148,13 +156,19 @@ func TestVmotion(t *testing.T) {
 	// Make it Pensando host
 	penHost1.ClearNics()
 	err = penHost1.AddNic("vmnic0", conv.MacString(pNicMac))
+	penHost1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
 	AssertOk(t, err, "failed to add pNic")
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	pNicMac2 := append(createPenPnicBase(), 0xcc, 0x00, 0x00)
 	// Make it Pensando host
 	penHost2.ClearNics()
 	err = penHost2.AddNic("vmnic0", conv.MacString(pNicMac2))
+	penHost2.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
 	AssertOk(t, err, "failed to add pNic")
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac2), "", "", map[string]string{})
 
 	penHost1.ClearVmkNics()
 	penHost2.ClearVmkNics()
@@ -355,6 +369,7 @@ func TestVmotion(t *testing.T) {
 
 	host3.ClearNics()
 	err = host3.AddNic("vmnic0", conv.MacString(pNicMac3))
+	host3.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
 	AssertOk(t, err, "failed to add pNic")
 
 	// move VM to host3, non-pensando host
@@ -488,16 +503,18 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 	orchID := fmt.Sprintf("orch%d", orchConfig.Status.OrchID)
 	state := defs.State{
-		VcURL:        u,
-		OrchID:       orchID,
-		VcID:         "VCProbe",
-		Ctx:          testCtx,
-		Log:          logger.WithContext("submodule", "vcprobe"),
-		Wg:           &sync.WaitGroup{},
-		ForceDCNames: map[string]bool{orchutils.ManageAllDcs: true},
-		DcIDMap:      map[string]types.ManagedObjectReference{},
-		DvsIDMap:     map[string]types.ManagedObjectReference{},
-		OrchConfig:   orchConfig,
+		VcURL:  u,
+		OrchID: orchID,
+		VcID:   "VCProbe",
+		Ctx:    testCtx,
+		Log:    logger.WithContext("submodule", "vcprobe"),
+		Wg:     &sync.WaitGroup{},
+		ManagedDCs: map[string]orchestration.ManagedNamespaceSpec{
+			orchutils.ManageAllDcs: defs.DefaultDCManagedConfig(),
+		},
+		DcIDMap:    map[string]types.ManagedObjectReference{},
+		DvsIDMap:   map[string]types.ManagedObjectReference{},
+		OrchConfig: orchConfig,
 	}
 
 	vcp := vcprobe.NewVCProbe(nil, nil, &state)
@@ -525,6 +542,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	// Create Host1 (pensando)
 	penHost1Name := "host1"
 	penHost1, err := dc1.AddHost(penHost1Name)
+	//logger.Infof("=============== PENHOST1 NAME : %v", penHost1.Obj.Summary.Host.Value)
 	AssertOk(t, err, "failed to add Host to DC")
 	penHost1.Obj.Name = penHost1Name
 	err = dvs1.AddHost(penHost1)
@@ -535,12 +553,10 @@ func TestVmotionWithWatchers(t *testing.T) {
 	// Make it Pensando host
 	err = penHost1.AddNic("vmnic0", dscMac)
 	AssertOk(t, err, "failed to add pNic")
+	penHost1.AddUplinksToDVS(dvs1.Obj.Name, map[string]string{"uplink1": "vmnic0"})
 
 	err = createDSCProfile(sm)
 	AssertOk(t, err, "Failed to create DSC profile")
-
-	err = createDistributedServiceCard(sm, "", dscMac, dscMac, map[string]string{})
-	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create Host2 (pensando)
 	penHost2, err := dc1.AddHost("host2")
@@ -554,9 +570,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	// Make it Pensando host
 	err = penHost2.AddNic("vmnic0", dscMac2)
 	AssertOk(t, err, "failed to add pNic")
-
-	err = createDistributedServiceCard(sm, "", dscMac2, dscMac2, map[string]string{})
-	AssertOk(t, err, "DistributedServiceCard could not be created")
+	penHost2.AddUplinksToDVS(dvs1.Obj.Name, map[string]string{"uplink1": "vmnic0"})
 
 	// Create Host3 (pensando) on DC2
 	penHost3, err := dc2.AddHost("host3")
@@ -570,13 +584,20 @@ func TestVmotionWithWatchers(t *testing.T) {
 	// Make it Pensando host
 	err = penHost3.AddNic("vmnic0", dscMac3)
 	AssertOk(t, err, "failed to add pNic")
-
-	err = createDistributedServiceCard(sm, "", dscMac3, dscMac3, map[string]string{})
-	AssertOk(t, err, "DistributedServiceCard could not be created")
+	penHost3.AddUplinksToDVS(dvs2.Obj.Name, map[string]string{"uplink1": "vmnic0"})
 
 	penHost1.ClearVmkNics()
 	penHost2.ClearVmkNics()
 	penHost3.ClearVmkNics()
+
+	name2Mac := map[string]string{
+		penHost1.Obj.Self.Value: dscMac,
+		penHost2.Obj.Self.Value: dscMac2,
+		penHost3.Obj.Self.Value: dscMac3,
+	}
+
+	logger.Infof("===== DSC INFO: %+v", name2Mac)
+	// host-33:00ae.cdbb.0000 host-42:00ae.cdcc.0000 host-51:00ae.cddd.0000]"
 
 	// Create a VM on host1
 	vm1, err := dc1.AddVM("vm1", penHost1Name, []sim.VNIC{
@@ -592,6 +613,16 @@ func TestVmotionWithWatchers(t *testing.T) {
 	vchub = LaunchVCHub(sm, orchConfig, logger)
 	// Dummy vchub
 	vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
+
+	err = createDistributedServiceCard(sm, "", dscMac, dscMac, vchub.createHostName(defaultTestParams.TestDCName, penHost1.Obj.Summary.Host.Value), map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
+
+	err = createDistributedServiceCard(sm, "", dscMac2, dscMac2, vchub.createHostName(defaultTestParams.TestDCName, penHost2.Obj.Summary.Host.Value), map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
+
+	err = createDistributedServiceCard(sm, "", dscMac3, dscMac3, vchub.createHostName(defaultTestParams.TestDCName, penHost3.Obj.Summary.Host.Value), map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
+
 	wlName := vchub.createVMWorkloadName("", vm1.Self.Value)
 	deleteVM := func(sendEvent bool) {
 		// VM must be back on host in DC1 for deletions to work
@@ -607,7 +638,6 @@ func TestVmotionWithWatchers(t *testing.T) {
 					VcObject:   defs.VirtualMachine,
 					Key:        vm1.Self.Value,
 					DcID:       dc1.Obj.Self.Value,
-					DcName:     dc1.Obj.Name,
 					Originator: vchub.VcID,
 					Changes:    []types.PropertyChange{},
 					UpdateType: types.ObjectUpdateKindLeave,
@@ -815,8 +845,31 @@ func TestVmotionWithWatchers(t *testing.T) {
 			if wl.Spec.HostName != specHostName {
 				return false, fmt.Errorf("wl spec not on correct host, expected %s but found %s", specHostName, wl.Spec.HostName)
 			}
+			if specHost != nil {
+				specMac := name2Mac[specHost.Obj.Self.Value]
+				for _, inf := range wl.Spec.Interfaces {
+					if len(inf.DSCInterfaces) != 1 {
+						return false, fmt.Errorf("spec DSCInterfaces had %d entries", len(inf.DSCInterfaces))
+					}
+					if inf.DSCInterfaces[0] != specMac {
+						return false, fmt.Errorf("spec DSCInterface mac was %s, expected %s", inf.DSCInterfaces[0], specMac)
+					}
+				}
+			}
+
 			if wl.Status.HostName != statusHostName {
 				return false, fmt.Errorf("wl status not on correct host, expected %s but found %s", statusHostName, wl.Status.HostName)
+			}
+			if statusHost != nil {
+				statusMac := name2Mac[statusHost.Obj.Self.Value]
+				for _, inf := range wl.Status.Interfaces {
+					if len(inf.DSCInterfaces) != 1 {
+						return false, fmt.Errorf("status DSCInterfaces had %d entries", len(inf.DSCInterfaces))
+					}
+					if inf.DSCInterfaces[0] != statusMac {
+						return false, fmt.Errorf("status %s DSCInterface mac was %s, expected %s", statusHostName, inf.DSCInterfaces[0], statusMac)
+					}
+				}
 			}
 			return true, nil
 		}, "workload verify failed")
@@ -850,7 +903,13 @@ func TestVmotionWithWatchers(t *testing.T) {
 	}
 
 	verifyNoEvents := func() {
-		AssertEquals(t, 0, len(eventRecorder.GetEvents()), "Expected no events, got events %v", eventRecorder.GetEvents())
+		evts := []mockevtsrecorder.Event{}
+		for _, evt := range eventRecorder.GetEvents() {
+			if evt.EventType != eventtypes.ORCH_INVALID_ACTION.String() {
+				evts = append(evts, evt)
+			}
+		}
+		AssertEquals(t, 0, len(evts), "Expected no events, got events %v", evts)
 	}
 
 	waitVMReady()
@@ -1385,7 +1444,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 			// Check Migration stage of pcache copy
 			AssertEventually(t, func() (bool, interface{}) {
-				wl := vchub.pCache.GetWorkloadByName(wlName)
+				wl := vchub.cache.GetWorkloadByName(wlName)
 				if wl == nil {
 					return false, fmt.Errorf("Couldn't find workload in pcache")
 				}
@@ -1510,7 +1569,6 @@ func createVMHostUpdateEvent(vcID, dcName, dcID, vmID, hostID string) defs.Probe
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        vmID,
 			Originator: vcID,
 			Changes: []types.PropertyChange{
@@ -1539,7 +1597,6 @@ func createVnicUpdateEvent(vcID, dcName, dcID, vmID string, nicInfo []types.Gues
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        vmID,
 			Originator: vcID,
 			Changes: []types.PropertyChange{

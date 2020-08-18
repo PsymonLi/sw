@@ -3,6 +3,7 @@
 package statemgr
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -65,10 +66,23 @@ func (sm *Statemgr) OnDSCProfileCreate(dscProfile *ctkit.DSCProfile) error {
 	sm.logger.Infof("Creating dscProfile: %+v", dscProfile)
 
 	// create new dscProfile object
-	_, err := NewDSCProfileState(dscProfile, sm)
+	dps, err := NewDSCProfileState(dscProfile, sm)
 	if err != nil {
 		sm.logger.Errorf("Error creating dscProfile %+v. Err: %v", dscProfile, err)
 		return err
+	}
+
+	// List DSCs and see if any are on this profile
+	dps.Lock()
+	defer dps.Unlock()
+	objs, err := sm.Controller().DistributedServiceCard().List(context.Background(), &api.ListWatchOptions{})
+	if err != nil {
+		return nil
+	}
+	for _, dsc := range objs {
+		if dsc.DistributedServiceCard.Spec.DSCProfile == dscProfile.Name {
+			dps.dscs[dsc.DistributedServiceCard.Name] = true
+		}
 	}
 
 	return nil

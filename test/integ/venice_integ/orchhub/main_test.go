@@ -224,6 +224,40 @@ func (tInfo *tInfo) updateResolver(serviceName, url string) {
 	})
 }
 
+func createDSC(mac, id string) (*cluster.DistributedServiceCard, error) {
+	config := &cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name: mac,
+		},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC:     mac,
+			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
+		},
+	}
+	config.Spec.Defaults("all")
+	config.Spec.DSCProfile = "default"
+	config.Spec.ID = id
+
+	obj, err := tinfo.apicl.ClusterV1().DistributedServiceCard().Create(context.Background(), config)
+	return obj, err
+}
+
+func deleteAllDSCs() error {
+	cards, err := tinfo.apicl.ClusterV1().DistributedServiceCard().List(context.Background(), &api.ListWatchOptions{})
+	if err != nil {
+		tinfo.l.Errorf("Failed to list cards, %s", err)
+		return err
+	}
+	for _, n := range cards {
+		_, err = tinfo.apicl.ClusterV1().DistributedServiceCard().Delete(context.Background(), n.GetObjectMeta())
+		if err != nil {
+			tinfo.l.Errorf("Failed to delete %s, err %s", n.Name, err)
+		}
+	}
+	return nil
+}
+
 func createOrchConfig(name, uri, user, pass, forceDCs string) (*orchestration.Orchestrator, error) {
 	config := &orchestration.Orchestrator{
 		ObjectMeta: api.ObjectMeta{
@@ -331,7 +365,9 @@ func deleteAllNetworks() error {
 	}
 	for _, n := range networks {
 		_, err = tinfo.apicl.NetworkV1().Network().Delete(context.Background(), n.GetObjectMeta())
-		tinfo.l.Errorf("Failed to delete %s, err %s", n.Name, err)
+		if err != nil {
+			tinfo.l.Errorf("Failed to delete %s, err %s", n.Name, err)
+		}
 	}
 	return nil
 }
@@ -355,6 +391,7 @@ func cleanup() error {
 	// Delete all networks, orch config, teardown sim
 	deleteAllNetworks()
 	deleteAllOrchestrators()
+	deleteAllDSCs()
 
 	// Give time for orchhub to process
 	time.Sleep(5 * time.Second)

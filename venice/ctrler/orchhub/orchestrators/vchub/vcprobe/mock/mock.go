@@ -23,6 +23,7 @@ type ProbeMock struct {
 
 // NewProbeMock creates a mock wrapper around the given probe
 func NewProbeMock(probe *vcprobe.VCProbe) *ProbeMock {
+	probe.IsSim = true
 	return &ProbeMock{
 		VCProbe:     probe,
 		PgStateMap:  map[string](map[string]*types.DVPortgroupConfigSpec){},
@@ -98,9 +99,8 @@ func (v *ProbeMock) ListPG(dcRef *types.ManagedObjectReference) ([]mo.Distribute
 		}
 		vlanConfig, err := extractVlanSpec(config)
 		if err == nil {
-			pg.Config.DefaultPortConfig = &types.VMwareDVSPortSetting{
-				Vlan: vlanConfig,
-			}
+			portSetting := pg.Config.DefaultPortConfig.(*types.VMwareDVSPortSetting)
+			portSetting.Vlan = vlanConfig
 		}
 	}
 	return pgs, nil
@@ -119,9 +119,8 @@ func (v *ProbeMock) GetPGConfig(dcName string, pgName string, ps []string, retry
 	}
 	vlanConfig, err := extractVlanSpec(config)
 	if err == nil {
-		pgObj.Config.DefaultPortConfig = &types.VMwareDVSPortSetting{
-			Vlan: vlanConfig,
-		}
+		portSetting := pgObj.Config.DefaultPortConfig.(*types.VMwareDVSPortSetting)
+		portSetting.Vlan = vlanConfig
 	}
 	return pgObj, nil
 }

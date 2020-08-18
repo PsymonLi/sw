@@ -135,7 +135,7 @@ func TestTagSync(t *testing.T) {
 					return false, err
 				}
 
-				attachedTags, err := tagClient.GetAttachedTags(context.Background(), dc.dcRef)
+				attachedTags, err := tagClient.GetAttachedTags(context.Background(), dc.DcRef)
 				AssertOk(t, err, "failed to get tags")
 				if len(attachedTags) != 1 {
 					return false, fmt.Errorf("DC didn't have expected tags, had %v", attachedTags)
@@ -158,7 +158,7 @@ func TestTagSync(t *testing.T) {
 				AssertEquals(t, defs.CreateVCTagManagedTag(clusterID), attachedTags[0].Name, "DVS didn't have managed tag")
 
 				for _, pgName := range pgNames {
-					pgObj := dvs.GetPenPG(pgName)
+					pgObj := dvs.GetPG(pgName)
 					if pgObj == nil {
 						err := fmt.Errorf("Failed to find %s in DC %s", pgName, name)
 						logger.Errorf("%s", err)
@@ -306,7 +306,7 @@ func TestTagSync(t *testing.T) {
 
 	evts := tagSyncEventRecorder.GetEvents()
 	for _, evt := range evts {
-		Assert(t, evt.EventType == eventtypes.ORCH_ALREADY_MANAGED.String(), "should not have raised event")
+		Assert(t, evt.EventType != eventtypes.ORCH_ALREADY_MANAGED.String(), "should not have raised event")
 	}
 
 }

@@ -126,6 +126,7 @@ var typesMapSmartnic = map[string]*api.Struct{
 			"name":                  api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
 			"namespace":             api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
 			"network-mode":          api.CLIInfo{Path: "Spec.NetworkMode", Skip: false, Insert: "", Help: ""},
+			"num-mac-address":       api.CLIInfo{Path: "Status.NumMacAddress", Skip: false, Insert: "", Help: ""},
 			"peer-address":          api.CLIInfo{Path: "Status.ControlPlaneStatus.BGPStatus[].PeerAddress", Skip: false, Insert: "", Help: ""},
 			"policer-attach-tenant": api.CLIInfo{Path: "Spec.PolicerAttachTenant", Skip: false, Insert: "", Help: ""},
 			"primary-mac":           api.CLIInfo{Path: "Status.PrimaryMAC", Skip: false, Insert: "", Help: ""},
@@ -205,6 +206,8 @@ var typesMapSmartnic = map[string]*api.Struct{
 			"IsConnectedToPSM": api.Field{Name: "IsConnectedToPSM", CLITag: api.CLIInfo{ID: "is-connected-to-psm", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "is-connected-to-psm", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
 
 			"UnhealthyServices": api.Field{Name: "UnhealthyServices", CLITag: api.CLIInfo{ID: "unhealthy-services", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "unhealthy-services", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"NumMacAddress": api.Field{Name: "NumMacAddress", CLITag: api.CLIInfo{ID: "num-mac-address", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "num-mac-address", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 		},
 	},
 	"cluster.IPConfig": &api.Struct{

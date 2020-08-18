@@ -75,6 +75,7 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"namespace":           api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
 			"network":             api.CLIInfo{Path: "Status.Network", Skip: false, Insert: "", Help: ""},
 			"node-uuid":           api.CLIInfo{Path: "Spec.NodeUUID", Skip: false, Insert: "", Help: ""},
+			"node-uuid-list":      api.CLIInfo{Path: "Spec.NodeUUIDList", Skip: false, Insert: "", Help: ""},
 			"resource-version":    api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
 			"self-link":           api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
 			"status":              api.CLIInfo{Path: "Status.Migration.Status", Skip: false, Insert: "", Help: ""},
@@ -98,6 +99,8 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"HomingHostAddr": api.Field{Name: "HomingHostAddr", CLITag: api.CLIInfo{ID: "homing-host-addr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "homing-host-addr", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"MicroSegmentVlan": api.Field{Name: "MicroSegmentVlan", CLITag: api.CLIInfo{ID: "micro-segment-vlan", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "micro-segment-vlan", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"NodeUUIDList": api.Field{Name: "NodeUUIDList", CLITag: api.CLIInfo{ID: "node-uuid-list", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "node-uuid-list", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"workload.EndpointStatus": &api.Struct{
@@ -142,6 +145,8 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"IPv6Gateways": api.Field{Name: "IPv6Gateways", CLITag: api.CLIInfo{ID: "ipv6-gateways", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipv6-gateways", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"MirrorSessions": api.Field{Name: "MirrorSessions", CLITag: api.CLIInfo{ID: "mirror-sessions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mirror-sessions", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"NodeUUIDList": api.Field{Name: "NodeUUIDList", CLITag: api.CLIInfo{ID: "node-uuid-list", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "node-uuid-list", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"workload.EndpointStatus.WorkloadAttributesEntry": &api.Struct{

@@ -8,6 +8,7 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 
+	"github.com/pensando/sw/api/generated/orchestration"
 	apiserverutils "github.com/pensando/sw/api/hooks/apiserver/utils"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
@@ -15,6 +16,11 @@ import (
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/utils/events/recorder"
+)
+
+const (
+	// DefaultMTU is the default MTU to be set in DVS
+	DefaultMTU = 1500
 )
 
 type portEntry struct {
@@ -26,8 +32,7 @@ type portEntry struct {
 type PenDVS struct {
 	sync.Mutex
 	*defs.State
-	DcName  string
-	DcID    string
+	*DCShared
 	DvsName string
 	DvsRef  types.ManagedObjectReference
 	// Map from PG display name to PenPG
@@ -35,10 +40,11 @@ type PenDVS struct {
 	// Map from PG ID to PenPG
 	pgIDMap            map[string]*PenPG
 	UsegMgr            useg.Inf
-	probe              vcprobe.ProbeInf
 	writeTaskScheduled bool
 	workloadsToWrite   map[string][]overrideReq
 	ports              map[string]portEntry
+	uplinkPortNames    []string // user given names to uplink ports - may not be needed
+	dvsMode            string
 }
 
 // PenDVSPortSettings represents a group of DVS port settings
@@ -102,9 +108,13 @@ func (d *PenDC) dvsConfigDiff(spec *types.DVSCreateSpec, dvs *mo.DistributedVirt
 		d.Log.Infof("existing DVS matches config")
 		return nil
 	}
+
 	newSpec := &types.DVSCreateSpec{
 		ConfigSpec: &types.VMwareDVSConfigSpec{
-			PvlanConfigSpec: pvlanConfigSpecArray,
+			PvlanConfigSpec:             pvlanConfigSpecArray,
+			MaxMtu:                      configSpec.MaxMtu,
+			MulticastFilteringMode:      configSpec.MulticastFilteringMode,
+			LinkDiscoveryProtocolConfig: configSpec.LinkDiscoveryProtocolConfig,
 		},
 	}
 	return newSpec
@@ -112,7 +122,7 @@ func (d *PenDC) dvsConfigDiff(spec *types.DVSCreateSpec, dvs *mo.DistributedVirt
 
 // CreateDefaultDVSSpec returns the default create spec for a Pen DVS
 func (d *PenDC) CreateDefaultDVSSpec() *types.DVSCreateSpec {
-	dvsName := CreateDVSName(d.Name)
+	dvsName := CreateDVSName(d.DcName)
 	// Create a pen dvs
 	// Pvlan allocations on the dvs
 	pvlanConfigSpecArray := []types.VMwareDVSPvlanConfigSpec{}
@@ -153,20 +163,118 @@ func (d *PenDC) CreateDefaultDVSSpec() *types.DVSCreateSpec {
 	return &spec
 }
 
+// AddUserDVS adds state for a user created dvs
+func (d *PenDC) AddUserDVS(ref types.ManagedObjectReference, name string) {
+	d.Lock()
+	defer d.Unlock()
+
+	dvs := d.getUserDVSByID(ref.Value)
+	if dvs == nil {
+		dvs = &PenDVS{
+			State:    d.State,
+			DCShared: d.DCShared,
+			Pgs:      map[string]*PenPG{},
+			pgIDMap:  map[string]*PenPG{},
+			dvsMode:  orchestration.NamespaceSpec_Monitored.String(),
+		}
+		d.UserDvsIDMap[ref.Value] = dvs
+	}
+	dvs.Lock()
+	dvs.DvsName = name
+	dvs.DvsRef = ref
+	dvs.Unlock()
+}
+
+// RemoveUserDVS removes state for a user created DVS
+func (d *PenDC) RemoveUserDVS(id string) {
+	d.Lock()
+	defer d.Unlock()
+
+	dvs := d.getUserDVSByID(id)
+	if dvs == nil {
+		return
+	}
+	delete(d.UserDvsIDMap, id)
+}
+
+// GetDVSConfig creates the DVS spec using the parameters passed in the orchestration config
+func (d *PenDC) GetDVSConfig(nsSpec *orchestration.ManagedNamespaceSpec) *types.DVSCreateSpec {
+	dcName := d.DcName
+	dvsSpec := d.CreateDefaultDVSSpec()
+	var spec orchestration.ManagedNamespaceSpec
+
+	d.DcSpecLock.Lock()
+	defer d.DcSpecLock.Unlock()
+
+	if nsSpec == nil {
+		ok := false
+		spec, ok = d.ManagedDCs[dcName]
+		if !ok {
+			return dvsSpec
+		}
+	} else {
+		spec = *nsSpec
+	}
+
+	dvsConfig := dvsSpec.ConfigSpec.(*types.VMwareDVSConfigSpec)
+	switch spec.MulticastFilter {
+	case orchestration.ManagedNamespaceSpec_Snooping.String():
+		dvsConfig.MulticastFilteringMode = string(types.VMwareDvsMulticastFilteringModeSnooping)
+	case orchestration.ManagedNamespaceSpec_Basic.String():
+		dvsConfig.MulticastFilteringMode = string(types.VMwareDvsMulticastFilteringModeLegacyFiltering)
+	}
+
+	dvsConfig.LinkDiscoveryProtocolConfig = &types.LinkDiscoveryProtocolConfig{}
+	switch spec.DiscoveryProtocol {
+	// Select default Discovery operation as "Listen"
+	case orchestration.ManagedNamespaceSpec_Disabled.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Protocol = string(types.LinkDiscoveryProtocolConfigProtocolTypeLldp)
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeNone)
+	case orchestration.ManagedNamespaceSpec_LLDP.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Protocol = string(types.LinkDiscoveryProtocolConfigProtocolTypeLldp)
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeListen)
+	case orchestration.ManagedNamespaceSpec_CDP.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Protocol = string(types.LinkDiscoveryProtocolConfigProtocolTypeCdp)
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeListen)
+	}
+
+	switch spec.DiscoveryOperation {
+	case orchestration.ManagedNamespaceSpec_None.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeNone)
+	case orchestration.ManagedNamespaceSpec_Advertise.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeAdvertise)
+	case orchestration.ManagedNamespaceSpec_Both.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeBoth)
+	case orchestration.ManagedNamespaceSpec_Listen.String():
+		dvsConfig.LinkDiscoveryProtocolConfig.Operation = string(types.LinkDiscoveryProtocolConfigOperationTypeListen)
+	}
+
+	if spec.MTU != 0 {
+		dvsConfig.MaxMtu = int32(spec.MTU)
+	} else {
+		dvsConfig.MaxMtu = DefaultMTU
+	}
+
+	// Todo : Add Number of uplinks
+	return dvsSpec
+}
+
 // AddPenDVS adds a new PenDVS to the given vcprobe instance
 func (d *PenDC) AddPenDVS() error {
 	d.Lock()
 	defer d.Unlock()
 
-	dvsName := CreateDVSName(d.Name)
-	dcName := d.Name
-	err := d.probe.AddPenDVS(dcName, d.CreateDefaultDVSSpec(), d.dvsConfigDiff, defaultRetryCount)
+	dvsName := CreateDVSName(d.DcName)
+	dcName := d.DcName
+	dvsConfig := d.GetDVSConfig(nil)
+
+	err := d.Probe.AddPenDVS(dcName, dvsConfig, d.dvsConfigDiff, defaultRetryCount)
 	if err != nil {
 		d.Log.Errorf("Failed to create %s in DC %s: %s", dvsName, dcName, err)
 		return err
 	}
 
-	dvs, err := d.probe.GetPenDVS(dcName, dvsName, defaultRetryCount)
+	dvs, err := d.Probe.GetPenDVS(dcName, dvsName, defaultRetryCount)
 	if err != nil {
 		return err
 	}
@@ -180,18 +288,17 @@ func (d *PenDC) AddPenDVS() error {
 		}
 		penDVS = &PenDVS{
 			State:            d.State,
-			probe:            d.probe,
-			DcName:           dcName,
-			DcID:             d.dcRef.Value,
+			DCShared:         d.DCShared,
 			DvsName:          dvsName,
 			UsegMgr:          useg,
 			Pgs:              map[string]*PenPG{},
 			pgIDMap:          map[string]*PenPG{},
 			ports:            map[string]portEntry{},
 			workloadsToWrite: map[string][]overrideReq{},
+			dvsMode:          orchestration.NamespaceSpec_Managed.String(),
 		}
 
-		d.DvsMap[dvsName] = penDVS
+		d.PenDvsMap[dvsName] = penDVS
 	}
 	d.Log.Infof("adding dvs %s ( %s )", dvsName, dvs.Reference().Value)
 
@@ -201,7 +308,7 @@ func (d *PenDC) AddPenDVS() error {
 	d.State.DvsIDMap[dvsName] = dvs.Reference()
 	d.State.DvsIDMapLock.Unlock()
 
-	err = d.probe.TagObjAsManaged(dvs.Reference())
+	err = d.Probe.TagObjAsManaged(dvs.Reference())
 	if err != nil {
 		d.Log.Errorf("Failed to tag DVS as managed, %s", err)
 		// Error isn't worth failing the operation for
@@ -217,17 +324,88 @@ func (d *PenDC) GetPenDVS(dvsName string) *PenDVS {
 	return d.getPenDVS(dvsName)
 }
 
+// GetPenDVSForDC returns the PenDVS for a given DC
+func (d *PenDC) GetPenDVSForDC() *PenDVS {
+	dvsName := CreateDVSName(d.DcName)
+	return d.GetPenDVS(dvsName)
+}
+
 func (d *PenDC) getPenDVS(dvsName string) *PenDVS {
-	dvs, ok := d.DvsMap[dvsName]
+	dvs, ok := d.PenDvsMap[dvsName]
 	if !ok {
 		return nil
 	}
 	return dvs
 }
 
+// GetDVS searches both penDVS map and userDVS map
+func (d *PenDC) GetDVS(dvsName string) *PenDVS {
+	// Check managed DVS first
+	if dvs := d.getPenDVS(dvsName); dvs != nil {
+		return dvs
+	}
+	return d.GetUserDVS(dvsName)
+}
+
+// GetUserDVS returns the userDVS with the given name
+func (d *PenDC) GetUserDVS(dvsName string) *PenDVS {
+	d.Lock()
+	defer d.Unlock()
+	for _, dvs := range d.UserDvsIDMap {
+		dvs.Lock()
+		if dvsName == dvs.DvsName {
+			dvs.Unlock()
+			return dvs
+		}
+		dvs.Unlock()
+	}
+	return nil
+}
+
+// GetDVSByID returns DVS object for a given ID
+func (d *PenDC) GetDVSByID(dvsID string) *PenDVS {
+	penDVS := d.GetPenDVSForDC()
+	if penDVS != nil && penDVS.DvsRef.Value == dvsID {
+		return penDVS
+	}
+	return d.GetUserDVSByID(dvsID)
+}
+
+// GetUserDVSByID returns the user dvs object with the given name
+func (d *PenDC) GetUserDVSByID(dvsID string) *PenDVS {
+	d.Lock()
+	defer d.Unlock()
+	return d.getUserDVSByID(dvsID)
+}
+
+func (d *PenDC) getUserDVSByID(dvsID string) *PenDVS {
+	dvs, ok := d.UserDvsIDMap[dvsID]
+	if !ok {
+		return nil
+	}
+	return dvs
+}
+
+// GetDVSForPGID returns dvs object associated with a PG
+func (d *PenDC) GetDVSForPGID(pgID string) *PenDVS {
+	d.Lock()
+	defer d.Unlock()
+	for _, penDVS := range d.PenDvsMap {
+		if penDVS.GetPGByID(pgID) != nil {
+			return penDVS
+		}
+	}
+	for _, penDVS := range d.UserDvsIDMap {
+		if penDVS.GetPGByID(pgID) != nil {
+			return penDVS
+		}
+	}
+	return nil
+}
+
 // GetPortSettings returns the port settings of the dvs
 func (d *PenDVS) GetPortSettings() ([]types.DistributedVirtualPort, error) {
-	return d.probe.GetPenDVSPorts(d.DcName, d.DvsName, &types.DistributedVirtualSwitchPortCriteria{}, 1)
+	return d.Probe.GetPenDVSPorts(d.DcName, d.DvsName, &types.DistributedVirtualSwitchPortCriteria{}, 1)
 }
 
 type overrideReq struct {
@@ -318,7 +496,7 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 		d.Log.Infof("No port overrides to apply")
 		return nil
 	}
-	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, force, defaultRetryCount)
+	err := d.Probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, force, defaultRetryCount)
 	if err != nil {
 		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
 
@@ -326,7 +504,7 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 
 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, err)
 
-		if workloadName != "" && d.Ctx.Err() == nil && d.probe.IsSessionReady() {
+		if workloadName != "" && d.Ctx.Err() == nil && d.Probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
 		}
 		return err
@@ -382,7 +560,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		currOverrides[portKey] = int(vlanSpec.VlanId)
 	}
 
-	workloads := v.pCache.ListWorkloads(v.Ctx, false)
+	workloads := v.cache.ListWorkloads(v.Ctx, false)
 
 	workloadOverride := map[string]struct {
 		vlan int
@@ -398,20 +576,20 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		host := workload.Spec.HostName
 
 		// if workload is migrating, skip processing
-		if apiserverutils.IsWorkloadMigrating(workload) {
+		if apiserverutils.IsWorkloadMigrating(workload.Workload) {
 			v.Log.Debugf("Skipping migrating workload %s", workload.Name)
 			continue
 		}
 
-		vnics := v.getWorkloadVnics(workload.Name)
-		if vnics == nil {
+		vnics := workload.Vnics
+		if len(vnics) == 0 {
 			v.Log.Debugf("No VNIC info for workload %s", workload.Name)
 			continue
 		}
 
 		var connectedHosts map[string]bool
-		for _, entry := range vnics.Interfaces {
-			if entry.portOverrideSet {
+		for _, entry := range vnics {
+			if entry.PortOverrideSet {
 				vlan, err := dvs.UsegMgr.GetVlanForVnic(entry.MacAddress, host)
 				if err != nil {
 					v.Log.Errorf("Failed to get vlan for vnic workload %s mac %s", workload.Name, entry.MacAddress)
@@ -485,7 +663,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 
 func (d *PenDVS) buildConnectedHostMap() (map[string]bool, error) {
 	connectedHosts := map[string]bool{}
-	dvsObj, err := d.probe.GetDVSConfig(d.DcName, d.DvsName, defaultRetryCount)
+	dvsObj, err := d.Probe.GetDVSConfig(d.DcName, d.DvsName, defaultRetryCount)
 	if err != nil {
 		d.Log.Errorf("Failed to get penDVS: %s", err)
 		return nil, err
@@ -526,7 +704,7 @@ func (v *VCHub) verifyOverrides(forceWrite bool) {
 
 		dvsWg := sync.WaitGroup{}
 		dc.Lock()
-		for _, dvs := range dc.DvsMap {
+		for _, dvs := range dc.PenDvsMap {
 			dvsWg.Add(1)
 			go func(dvsObj *PenDVS) {
 				defer dvsWg.Done()
@@ -579,20 +757,101 @@ func (v *VCHub) verifyOverrides(forceWrite bool) {
 // }
 
 func (v *VCHub) handleDVS(m defs.VCEventMsg) {
-	v.Log.Infof("Got handle DVS event for DVS %s in DC %s", m.Key, m.DcName)
-	// If non-pensando DVS, do nothing
+	// Determine type of DVS
+	dcName := v.DcID2Name(m.DcID)
+	v.Log.Infof("Got handle DVS event for DVS %s in DC %s %s", m.Key, dcName, m.DcID)
+
+	penDC := v.GetDCFromID(m.DcID)
+	if penDC == nil {
+		v.Log.Errorf("DC not found for %s", dcName)
+		return
+	}
+
+	processed := false
+	if penDC.isManagedMode() {
+		dvsName := CreateDVSName(dcName)
+		dvs := penDC.GetPenDVS(dvsName)
+		if dvs != nil && m.Key == dvs.DvsRef.Value {
+			processed = true
+			v.handlePenDVS(m)
+		}
+	}
+	if !processed && penDC.isMonitoringMode() {
+		v.handleUserDVS(m)
+	}
+}
+
+func (v *VCHub) handleUserDVS(m defs.VCEventMsg) {
+	dcName := v.DcID2Name(m.DcID)
+	v.Log.Infof("Got handle User DVS event for DVS %s in DC %s %s", m.Key, dcName, m.DcID)
+	penDC := v.GetDCFromID(m.DcID)
+	if penDC == nil {
+		v.Log.Errorf("DC not found for %s", m.DcID)
+		return
+	}
+	dvs := penDC.GetUserDVSByID(m.Key)
+	// Create DVS object if needed.
+	// Rename if needed.
+	if m.UpdateType == types.ObjectUpdateKindLeave {
+		if dvs == nil {
+			// nothing to do
+			return
+		}
+		// Object was deleted
+		v.Log.Infof("User DVS %s was removed", dvs.DvsName)
+		penDC.RemoveUserDVS(m.Key)
+		return
+	}
+
+	// extract config
+	if len(m.Changes) == 0 {
+		v.Log.Errorf("Received dvs event with no changes")
+		return
+	}
+
+	var name string
+
+	for _, prop := range m.Changes {
+		switch val := prop.Val.(type) {
+		case types.VMwareDVSConfigInfo:
+		case string:
+			name = val
+		default:
+			v.Log.Errorf("Got unexpected type in dvs changes, got %T", val)
+		}
+	}
+	if dvs == nil {
+		ref := types.ManagedObjectReference{
+			Type:  string(defs.VmwareDistributedVirtualSwitch),
+			Value: m.Key,
+		}
+		penDC.AddUserDVS(ref, name)
+		return
+	}
+	if len(name) != 0 && dvs.DvsName != name {
+		v.Log.Infof("User DVS renamed from %s to %s", dvs.DvsName, name)
+		dvs.Lock()
+		dvs.DvsName = name
+		dvs.Unlock()
+	}
+}
+
+func (v *VCHub) handlePenDVS(m defs.VCEventMsg) {
+	dcName := v.DcID2Name(m.DcID)
+	v.Log.Infof("Got handle DVS event for DVS %s in DC %s", m.Key, dcName)
 	// If it is pensando PG, pvlan config and dvs name are untouched
 	// check name change in same loop
 
-	penDC := v.GetDC(m.DcName)
+	penDC := v.GetDC(dcName)
 	if penDC == nil {
-		v.Log.Errorf("DC not found for %s", m.DcName)
+		v.Log.Errorf("DC not found for %s", dcName)
 		return
 	}
-	dvsName := CreateDVSName(m.DcName)
+	dvsName := CreateDVSName(dcName)
 	dvs := penDC.GetPenDVS(dvsName)
 	if dvs == nil {
-		v.Log.Errorf("DVS state for DC %s was nil", m.DcName)
+		v.Log.Errorf("DVS state for DC %s was nil", dcName)
+		return
 	}
 
 	if m.Key != dvs.DvsRef.Value {
@@ -612,15 +871,15 @@ func (v *VCHub) handleDVS(m defs.VCEventMsg) {
 
 		err := penDC.AddPenDVS()
 		if err != nil {
-			v.Log.Errorf("Failed to recreate DVS for DC %s, %s", m.DcName, err)
+			v.Log.Errorf("Failed to recreate DVS for DC %s, %s", dcName, err)
 			// Generate event
 			if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
-				evtMsg := fmt.Sprintf("%v : Failed to recreate DVS in Datacenter %s. %v", v.State.OrchConfig.Name, m.DcName, err)
+				evtMsg := fmt.Sprintf("%v : Failed to recreate DVS in Datacenter %s. %v", v.State.OrchConfig.Name, dcName, err)
 				recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 			}
 		} else {
 			// Recreate PGs
-			v.checkNetworks(m.DcName)
+			v.checkNetworks(dcName)
 		}
 		return
 	}
@@ -648,11 +907,11 @@ func (v *VCHub) handleDVS(m defs.VCEventMsg) {
 	// Check if we need to rename
 	if len(name) != 0 && dvs.DvsName != name {
 		// DVS renamed
-		evtMsg := fmt.Sprintf("%v : User renamed a Pensando created DVS in Datacenter %v from %v to %v. Name has been changed back.", v.State.OrchConfig.Name, m.DcName, dvs.DvsName, name)
+		evtMsg := fmt.Sprintf("%v : User renamed a Pensando created DVS in Datacenter %v from %v to %v. Name has been changed back.", v.State.OrchConfig.Name, dcName, dvs.DvsName, name)
 		recorder.Event(eventtypes.ORCH_INVALID_ACTION, evtMsg, v.State.OrchConfig)
 
 		// Put object name back
-		err := v.probe.RenameDVS(m.DcName, name, dvs.DvsName, defaultRetryCount)
+		err := v.probe.RenameDVS(dcName, name, dvs.DvsName, defaultRetryCount)
 		if err != nil {
 			v.Log.Errorf("Failed to rename DVS, %s", err)
 		}
@@ -682,12 +941,24 @@ func (v *VCHub) handleDVS(m defs.VCEventMsg) {
 
 		// Generate event
 		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
-			evtMsg := fmt.Sprintf("%v : Failed to write DVS %s config back to Datacenter %v. %v", v.State.OrchConfig.Name, dvs.DvsName, m.DcName, err)
+			evtMsg := fmt.Sprintf("%v : Failed to write DVS %s config back to Datacenter %v. %v", v.State.OrchConfig.Name, dvs.DvsName, dcName, err)
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 		}
 		return
 	}
 
-	evtMsg := fmt.Sprintf("%v : User modified vlan settings for Pensando created DVS %v in Datacenter %v. DVS settings have been changed back.", v.State.OrchConfig.Name, dvs.DvsName, m.DcName)
+	evtMsg := fmt.Sprintf("%v : User modified vlan settings for Pensando created DVS %v in Datacenter %v. DVS settings have been changed back.", v.State.OrchConfig.Name, dvs.DvsName, dcName)
 	recorder.Event(eventtypes.ORCH_INVALID_ACTION, evtMsg, v.State.OrchConfig)
+}
+
+func (d *PenDVS) isMonitoringMode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.dvsMode == orchestration.NamespaceSpec_Monitored.String()
+}
+
+func (d *PenDVS) isManagedMode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.dvsMode == orchestration.NamespaceSpec_Managed.String()
 }

@@ -12,6 +12,7 @@ export interface IWorkloadEndpointSpec {
     'node-uuid'?: string;
     'homing-host-addr'?: string;
     'micro-segment-vlan'?: number;
+    'node-uuid-list'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -25,6 +26,8 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
     'homing-host-addr': string = null;
     /** MicroSegmentVlan to be assigned to the endpoint. */
     'micro-segment-vlan': number = null;
+    /** NodeUUIDList has the list of DSCs where a EP is supposed to go to. */
+    'node-uuid-list': Array<string> = null;
     public static propInfo: { [prop in keyof IWorkloadEndpointSpec]: PropInfoItem } = {
         'node-uuid': {
             description:  `The DSC Name or MAC where the endpoint should reside.`,
@@ -40,6 +43,11 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
             description:  `MicroSegmentVlan to be assigned to the endpoint.`,
             required: false,
             type: 'number'
+        },
+        'node-uuid-list': {
+            description:  `NodeUUIDList has the list of DSCs where a EP is supposed to go to.`,
+            required: false,
+            type: 'Array<string>'
         },
     }
 
@@ -65,6 +73,7 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
+        this['node-uuid-list'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -98,6 +107,13 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
         } else {
             this['micro-segment-vlan'] = null
         }
+        if (values && values['node-uuid-list'] != null) {
+            this['node-uuid-list'] = values['node-uuid-list'];
+        } else if (fillDefaults && WorkloadEndpointSpec.hasDefaultValue('node-uuid-list')) {
+            this['node-uuid-list'] = [ WorkloadEndpointSpec.propInfo['node-uuid-list'].default];
+        } else {
+            this['node-uuid-list'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -108,6 +124,7 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
                 'node-uuid': CustomFormControl(new FormControl(this['node-uuid']), WorkloadEndpointSpec.propInfo['node-uuid']),
                 'homing-host-addr': CustomFormControl(new FormControl(this['homing-host-addr']), WorkloadEndpointSpec.propInfo['homing-host-addr']),
                 'micro-segment-vlan': CustomFormControl(new FormControl(this['micro-segment-vlan']), WorkloadEndpointSpec.propInfo['micro-segment-vlan']),
+                'node-uuid-list': CustomFormControl(new FormControl(this['node-uuid-list']), WorkloadEndpointSpec.propInfo['node-uuid-list']),
             });
         }
         return this._formGroup;
@@ -122,6 +139,7 @@ export class WorkloadEndpointSpec extends BaseModel implements IWorkloadEndpoint
             this._formGroup.controls['node-uuid'].setValue(this['node-uuid']);
             this._formGroup.controls['homing-host-addr'].setValue(this['homing-host-addr']);
             this._formGroup.controls['micro-segment-vlan'].setValue(this['micro-segment-vlan']);
+            this._formGroup.controls['node-uuid-list'].setValue(this['node-uuid-list']);
         }
     }
 }

@@ -30,6 +30,7 @@ export interface IWorkloadEndpointStatus {
     'ipv6-addresses'?: Array<string>;
     'ipv6-gateways'?: Array<string>;
     'mirror-sessions'?: Array<string>;
+    'node-uuid-list'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -77,6 +78,8 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
     'ipv6-gateways': Array<string> = null;
     /** MirrorSessions list of mirror sessions enabled on this endpoint. */
     'mirror-sessions': Array<string> = null;
+    /** NodeUUIDList has the list of DSCs where a EP is supposed to go to. */
+    'node-uuid-list': Array<string> = null;
     public static propInfo: { [prop in keyof IWorkloadEndpointStatus]: PropInfoItem } = {
         'workload-name': {
             description:  `VM or container name.`,
@@ -179,6 +182,11 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
             required: false,
             type: 'Array<string>'
         },
+        'node-uuid-list': {
+            description:  `NodeUUIDList has the list of DSCs where a EP is supposed to go to.`,
+            required: false,
+            type: 'Array<string>'
+        },
     }
 
     public getPropInfo(propName: string): PropInfoItem {
@@ -210,6 +218,7 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
         this['ipv6-addresses'] = new Array<string>();
         this['ipv6-gateways'] = new Array<string>();
         this['mirror-sessions'] = new Array<string>();
+        this['node-uuid-list'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -360,6 +369,13 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
         } else {
             this['mirror-sessions'] = [];
         }
+        if (values && values['node-uuid-list'] != null) {
+            this['node-uuid-list'] = values['node-uuid-list'];
+        } else if (fillDefaults && WorkloadEndpointStatus.hasDefaultValue('node-uuid-list')) {
+            this['node-uuid-list'] = [ WorkloadEndpointStatus.propInfo['node-uuid-list'].default];
+        } else {
+            this['node-uuid-list'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -387,6 +403,7 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
                 'ipv6-addresses': CustomFormControl(new FormControl(this['ipv6-addresses']), WorkloadEndpointStatus.propInfo['ipv6-addresses']),
                 'ipv6-gateways': CustomFormControl(new FormControl(this['ipv6-gateways']), WorkloadEndpointStatus.propInfo['ipv6-gateways']),
                 'mirror-sessions': CustomFormControl(new FormControl(this['mirror-sessions']), WorkloadEndpointStatus.propInfo['mirror-sessions']),
+                'node-uuid-list': CustomFormControl(new FormControl(this['node-uuid-list']), WorkloadEndpointStatus.propInfo['node-uuid-list']),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('migration') as FormGroup).controls).forEach(field => {
@@ -423,6 +440,7 @@ export class WorkloadEndpointStatus extends BaseModel implements IWorkloadEndpoi
             this._formGroup.controls['ipv6-addresses'].setValue(this['ipv6-addresses']);
             this._formGroup.controls['ipv6-gateways'].setValue(this['ipv6-gateways']);
             this._formGroup.controls['mirror-sessions'].setValue(this['mirror-sessions']);
+            this._formGroup.controls['node-uuid-list'].setValue(this['node-uuid-list']);
         }
     }
 }

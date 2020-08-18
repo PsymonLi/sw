@@ -45,7 +45,7 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nwMeta *api.O
 			if orch.Namespace == utils.ManageAllDcs {
 				// Add all known DCs to the map
 				for _, dc := range v.DcMap {
-					dcs[dc.Name] = true
+					dcs[dc.DcName] = true
 				}
 			} else {
 				dcs[orch.Namespace] = true
@@ -74,14 +74,14 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nwMeta *api.O
 		apiServerChQ.Send(evt)
 	}
 	for _, penDC := range v.DcMap {
-		if _, ok := dcs[penDC.Name]; ok {
+		if _, ok := dcs[penDC.DcName]; ok {
 			if evtType == kvstore.Created || evtType == kvstore.Updated {
-				v.Log.Infof("Adding PG %s in DC %s", pgName, penDC.Name)
+				v.Log.Infof("Adding PG %s in DC %s", pgName, penDC.DcName)
 				// IF PG NOT in our local state, but does already exist in vCenter,
 				// then we need to resync workloads after creating internal state
 				resync := false
 				if penDC.GetPG(pgName, "") == nil {
-					_, err := v.probe.GetPenPG(penDC.Name, pgName, defaultRetryCount)
+					_, err := v.probe.GetPenPG(penDC.DcName, pgName, defaultRetryCount)
 					if err == nil {
 						resync = true
 					}
@@ -96,13 +96,13 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nwMeta *api.O
 						goto checkErrors
 					}
 
-					dcRef := penDC.dcRef
-					vcHosts, err := v.ListPensandoHosts(&dcRef)
+					dcRef := penDC.DcRef
+					vcHosts, err := v.probe.ListHosts(&dcRef)
 					if errs != nil {
 						errs = append(errs, err)
 					}
 					for _, host := range vcHosts {
-						evt := v.convertHostToEvent(host, dcRef.Value, penDC.Name)
+						evt := v.convertHostToEvent(host, dcRef.Value, penDC.DcName)
 						v.handleHost(evt)
 					}
 				}
@@ -114,19 +114,19 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nwMeta *api.O
 				}
 			} else {
 				// err is already logged inside function
-				remainingAllocs, _ := penDC.RemovePG(pgName, "")
+				remainingAllocs, _ := penDC.RemovePenPG(pgName, "")
 				// if we just deleted a workload check if we just went below capacity
 				for _, count := range remainingAllocs {
 					if count == useg.MaxPGCount-1 {
 						// Need to recheck networks now that we have space for new networks
-						v.checkNetworks(penDC.Name)
+						v.checkNetworks(penDC.DcName)
 					}
 				}
 			}
 		} else if evtType == kvstore.Updated || evtType == kvstore.Deleted {
 			// Check if we need to delete
 			if penDC.GetPG(pgName, "") != nil {
-				_, errs := penDC.RemovePG(pgName, "")
+				_, errs := penDC.RemovePenPG(pgName, "")
 				if len(errs) != 0 {
 					// Retry delete
 					v.Log.Infof("Failed to remove PG, adding to retry queue")

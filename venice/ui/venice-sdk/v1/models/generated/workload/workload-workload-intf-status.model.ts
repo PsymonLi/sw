@@ -15,6 +15,7 @@ export interface IWorkloadWorkloadIntfStatus {
     'mac-address'?: string;
     'external-vlan'?: number;
     'network'?: string;
+    'dsc-interfaces'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -34,6 +35,8 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
     'external-vlan': number = null;
     /** Network this interface belongs to. */
     'network': string = null;
+    /** List of all DSC interfaces that can be used. The DSC interface is identified using the MAC address assigned to the DSC port. */
+    'dsc-interfaces': Array<string> = null;
     public static propInfo: { [prop in keyof IWorkloadWorkloadIntfStatus]: PropInfoItem } = {
         'ip-addresses': {
             description:  `List of all IP addresses configured and discovered on a Workload Interface.`,
@@ -65,6 +68,11 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
             required: false,
             type: 'string'
         },
+        'dsc-interfaces': {
+            description:  `List of all DSC interfaces that can be used. The DSC interface is identified using the MAC address assigned to the DSC port.`,
+            required: false,
+            type: 'Array<string>'
+        },
     }
 
     public getPropInfo(propName: string): PropInfoItem {
@@ -90,6 +98,7 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
     constructor(values?: any, setDefaults:boolean = true) {
         super();
         this['ip-addresses'] = new Array<string>();
+        this['dsc-interfaces'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -144,6 +153,13 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
         } else {
             this['network'] = null
         }
+        if (values && values['dsc-interfaces'] != null) {
+            this['dsc-interfaces'] = values['dsc-interfaces'];
+        } else if (fillDefaults && WorkloadWorkloadIntfStatus.hasDefaultValue('dsc-interfaces')) {
+            this['dsc-interfaces'] = [ WorkloadWorkloadIntfStatus.propInfo['dsc-interfaces'].default];
+        } else {
+            this['dsc-interfaces'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -157,6 +173,7 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
                 'mac-address': CustomFormControl(new FormControl(this['mac-address']), WorkloadWorkloadIntfStatus.propInfo['mac-address']),
                 'external-vlan': CustomFormControl(new FormControl(this['external-vlan']), WorkloadWorkloadIntfStatus.propInfo['external-vlan']),
                 'network': CustomFormControl(new FormControl(this['network']), WorkloadWorkloadIntfStatus.propInfo['network']),
+                'dsc-interfaces': CustomFormControl(new FormControl(this['dsc-interfaces']), WorkloadWorkloadIntfStatus.propInfo['dsc-interfaces']),
             });
         }
         return this._formGroup;
@@ -174,6 +191,7 @@ export class WorkloadWorkloadIntfStatus extends BaseModel implements IWorkloadWo
             this._formGroup.controls['mac-address'].setValue(this['mac-address']);
             this._formGroup.controls['external-vlan'].setValue(this['external-vlan']);
             this._formGroup.controls['network'].setValue(this['network']);
+            this._formGroup.controls['dsc-interfaces'].setValue(this['dsc-interfaces']);
         }
     }
 }

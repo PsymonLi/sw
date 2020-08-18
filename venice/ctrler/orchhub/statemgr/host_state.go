@@ -78,6 +78,8 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 			sm.AddIncompatibleDSCToOrch(snic.DistributedServiceCard.Name, orchNameValue)
 			recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
 				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature, %v", snic.DistributedServiceCard.Spec.ID, err), &snic.DistributedServiceCard.DistributedServiceCard)
+		} else {
+			sm.RemoveIncompatibleDSCFromOrch(snic.DistributedServiceCard.Name, orchNameValue)
 		}
 	}
 

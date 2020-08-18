@@ -421,15 +421,16 @@ func Test_vcenter_hosts(t *testing.T) {
 	TestUtils.Assert(t, err == nil, "Connected to venter")
 	TestUtils.Assert(t, vc != nil, "Vencter context set")
 
-	dcName := "HPE-ESX1"
+	dcName := "HPE-DevSetup-1"
 	dc, err := vc.SetupDataCenter(dcName)
 	TestUtils.Assert(t, err == nil, "successfuly setup dc")
 	dc, ok := vc.datacenters[dcName]
 	TestUtils.Assert(t, ok, dcName)
 
-	dvsName := "#Pen-DVS-" + dcName
+	// dvsName := "#Pen-DVS-" + dcName
+	dvsName := "DualDSC-DVS-139"
 	dvs, err := dc.findDvs(dvsName)
-	TestUtils.Assert(t, err == nil, "successfuly found dvs")
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("%s", err))
 	TestUtils.Assert(t, dvs != nil, "dvs nil")
 
 	var dvsInfo mo.DistributedVirtualSwitch
@@ -454,6 +455,15 @@ func Test_vcenter_hosts(t *testing.T) {
 	pnicsUsed := map[string](map[string]bool){}
 	for _, mHost := range moHosts {
 		for _, ps := range mHost.Config.Network.ProxySwitch {
+			if ps.Spec.Backing == nil {
+				fmt.Errorf("Pnic Backing Spec is missing")
+				continue	
+			}
+			pnicBacking, ok := ps.Spec.Backing.(*types.DistributedVirtualSwitchHostMemberPnicBacking)
+			if !ok {
+				continue
+			}
+			fmt.Printf("DVS Proxy %s Backing PnicSpec %v\n", ps.DvsName, pnicBacking)
 			for _, pnic := range ps.Pnic {
 				fmt.Printf("Host %s, Pnic - %s\n", mHost.Name, pnic)
 				if _, ok := pnicsUsed[mHost.Name]; ok {
@@ -525,6 +535,51 @@ func Test_vcenter_hosts(t *testing.T) {
 
 		// time.Sleep(10*time.Second)
 	}
+}
+
+func Test_PGs(t *testing.T) {
+
+	// Parag:
+	//    TestUtils.Assert(t, false, "Ds not created")
+
+	ctx, _ := context.WithCancel(context.Background())
+	vc, err := NewVcenter(ctx, "barun-vc-7.pensando.io", "administrator@pensando.io", "N0isystem$",
+		"YN69K-6YK5J-78X8T-0M3RH-0T12H")
+
+	TestUtils.Assert(t, err == nil, "Connected to venter")
+	TestUtils.Assert(t, vc != nil, "Vencter context set")
+
+	dcName := "HPE-DevSetup-1"
+	dc, err := vc.SetupDataCenter(dcName)
+	TestUtils.Assert(t, err == nil, "successfuly setup dc")
+	dc, ok := vc.datacenters[dcName]
+	TestUtils.Assert(t, ok, dcName)
+
+	// dvsName := "#Pen-DVS-" + dcName
+	dvsName := "DualDSC-DVS-139"
+	dvs, err := dc.findDvs(dvsName)
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("%s", err))
+	TestUtils.Assert(t, dvs != nil, "dvs nil")
+	pgName := "HostPG-201"
+	netRef, err := dc.Finder().Network(dc.vc.Ctx(), pgName)
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("PG not found - %s", err))
+	objPg, ok := netRef.(*object.DistributedVirtualPortgroup)
+	var dvsPg mo.DistributedVirtualPortgroup
+	err = objPg.Properties(dc.vc.Ctx(), objPg.Reference(), []string{"name", "config"}, &dvsPg)
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("PG config not found - %s", err))
+	portSetting := dvsPg.Config.DefaultPortConfig.(*types.VMwareDVSPortSetting)
+	fmt.Printf("Net Teaming config = %v\n", portSetting.UplinkTeamingPolicy.UplinkPortOrder)
+	err = dc.AddPortGroupToDvs(dvsName,
+		[]DvsPortGroup{DvsPortGroup{Name: "pg2", Ports: 10, Type: "earlyBinding"}})
+	TestUtils.Assert(t, err == nil, "pvlan added")
+
+	netRef, err = dc.Finder().Network(dc.vc.Ctx(), "pg2")
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("PG not found - %s", err))
+	objPg, ok = netRef.(*object.DistributedVirtualPortgroup)
+	err = objPg.Properties(dc.vc.Ctx(), objPg.Reference(), []string{"name", "config"}, &dvsPg)
+	TestUtils.Assert(t, err == nil, fmt.Sprintf("PG config not found - %s", err))
+	portSetting = dvsPg.Config.DefaultPortConfig.(*types.VMwareDVSPortSetting)
+	fmt.Printf("Net Teaming config = %v\n", portSetting.UplinkTeamingPolicy.UplinkPortOrder)
 }
 
 type vmRelocationSpec struct {

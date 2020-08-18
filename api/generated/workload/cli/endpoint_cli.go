@@ -35,6 +35,13 @@ var CreateEndpointFlags = []gen.CliFlag{
 		Skip:   false,
 		Insert: "",
 	},
+	{
+		ID:     "node-uuid-list",
+		Type:   "StringSlice",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
 }
 
 func removeEndpointOper(obj interface{}) error {

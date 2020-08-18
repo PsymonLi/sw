@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vmware/govmomi/vim25/types"
-
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/globals"
-	"github.com/pensando/sw/venice/utils/netutils"
-	conv "github.com/pensando/sw/venice/utils/strconv"
 )
 
 var (
@@ -89,22 +85,6 @@ func isPensandoDVS(name, dcName string) bool {
 // CreateDVSName creates the DVS name
 func CreateDVSName(dcName string) string {
 	return fmt.Sprintf("%s%s", defs.DefaultDVSPrefix, dcName)
-}
-
-func isPensandoHost(hConfig *types.HostConfigInfo) bool {
-	if hConfig == nil || hConfig.Network == nil {
-		return false
-	}
-	for _, pnic := range hConfig.Network.Pnic {
-		macStr, err := conv.ParseMacAddr(pnic.Mac)
-		if err != nil {
-			continue
-		}
-		if netutils.IsPensandoMACAddress(macStr) {
-			return true
-		}
-	}
-	return false
 }
 
 func createVmkWorkloadNameFromHostName(hostName string) string {

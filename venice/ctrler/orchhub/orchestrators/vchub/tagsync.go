@@ -45,6 +45,14 @@ func (v *VCHub) tagSync() {
 		v.Log.Errorf("Sync has not completed")
 		return
 	}
+	// Check if we have any DCs in managed mode
+	v.DcSpecLock.RLock()
+	numDCs := len(v.ManagedDCs)
+	v.DcSpecLock.RUnlock()
+	if numDCs == 0 {
+		return
+	}
+
 	// Verify base tags are written
 	done := v.probe.SetupBaseTags() // Should this function be here?
 	v.Log.Debugf("VCHub setup base tags returned %v", done)
@@ -62,10 +70,13 @@ func (v *VCHub) tagSync() {
 	vlanTagMap := map[string]int{}
 	v.DcMapLock.Lock()
 	for _, dc := range v.DcMap {
-		managedObj = append(managedObj, dc.dcRef)
-		idToName[dc.dcRef.Value] = dc.Name
+		if !dc.isManagedMode() {
+			continue
+		}
+		managedObj = append(managedObj, dc.DcRef)
+		idToName[dc.DcRef.Value] = dc.DcName
 		dc.Lock()
-		for _, dvs := range dc.DvsMap {
+		for _, dvs := range dc.PenDvsMap {
 			managedObj = append(managedObj, dvs.DvsRef)
 			idToName[dvs.DvsRef.Value] = dvs.DvsName
 			dvs.Lock()

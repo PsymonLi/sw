@@ -152,52 +152,54 @@ message DistributedServiceCardStatus {
     // To admit the NIC as a part of manual admission, user is expected to
     // set Spec.Admit to true for the NICs that are in NIC_PENDING
     // state. Note : Whitelist mode is not supported yet.
-    string AdmissionPhase                   = 1 [(venice.check) = "StrEnum(DistributedServiceCardStatus.Phase)",
-                                                (gogoproto.jsontag) = "admission-phase,omitempty"];
+    string AdmissionPhase                        = 1 [(venice.check) = "StrEnum(DistributedServiceCardStatus.Phase)",
+                                                      (gogoproto.jsontag) = "admission-phase,omitempty"];
     
     // List of current NIC conditions
-    repeated DSCCondition Conditions   = 2 [(gogoproto.nullable) = false,
-                                                (gogoproto.jsontag) = "conditions,omitempty"];
+    repeated DSCCondition Conditions             = 2 [(gogoproto.nullable) = false,
+                                                      (gogoproto.jsontag) = "conditions,omitempty"];
 
     // Serial number
-    string SerialNum                        = 3 [(gogoproto.jsontag) = "serial-num,omitempty"];
+    string SerialNum                             = 3 [(gogoproto.jsontag) = "serial-num,omitempty"];
 
     // PrimaryMAC is the MAC address of the primary PF exposed by DistributedServiceCard
-    string PrimaryMAC                       = 4 [(gogoproto.jsontag) = "primary-mac,omitempty", (venice.check) = "EmptyOr(MacAddr())"];
+    string PrimaryMAC                            = 4 [(gogoproto.jsontag) = "primary-mac,omitempty", (venice.check) = "EmptyOr(MacAddr())"];
 
     // IPConfig is the ip address related configuration obtained from DHCP
-    IPConfig IPConfig                       = 5 [(gogoproto.jsontag) = "ip-config,omitempty"];
+    IPConfig IPConfig                            = 5 [(gogoproto.jsontag) = "ip-config,omitempty"];
 
     // Distributed service card system info
-    DSCInfo SystemInfo                 = 6 [(gogoproto.jsontag) = "system-info,omitempty"];
+    DSCInfo SystemInfo                           = 6 [(gogoproto.jsontag) = "system-info,omitempty"];
 
     // Network Interfaces
-    repeated string Interfaces              = 7 [(gogoproto.jsontag) = "interfaces,omitempty"];
+    repeated string Interfaces                   = 7 [(gogoproto.jsontag) = "interfaces,omitempty"];
 
     // DSC Version 
-    string DSCVersion                  = 8 [(gogoproto.jsontag) = "DSCVersion,omitempty"];
+    string DSCVersion                            = 8 [(gogoproto.jsontag) = "DSCVersion,omitempty"];
 
     // DSC SKU
-    string DSCSku                      = 9 [(gogoproto.jsontag) = "DSCSku,omitempty"];
+    string DSCSku                                = 9 [(gogoproto.jsontag) = "DSCSku,omitempty"];
 
     // The name of the host this DistributedServiceCard is plugged into
-    string Host                             = 10 [(gogoproto.jsontag) = "host,omitempty"];
+    string Host                                  = 10 [(gogoproto.jsontag) = "host,omitempty"];
 
     // The reason why the DistributedServiceCard is not in ADMITTED state
-    string AdmissionPhaseReason             = 11 [(gogoproto.jsontag) = "adm-phase-reason,omitempty"];
+    string AdmissionPhaseReason                  = 11 [(gogoproto.jsontag) = "adm-phase-reason,omitempty"];
 
     // Set to true if venice and dsc versions are incompatible
-    bool VersionMismatch             = 12 [(gogoproto.jsontag) = "version-mismatch,omitempty"];
+    bool VersionMismatch                         = 12 [(gogoproto.jsontag) = "version-mismatch,omitempty"];
 
     // DSC Control Plane Status
-    DSCControlPlaneStatus ControlPlaneStatus    = 13 [(gogoproto.nullable) = false,
-							(gogoproto.jsontag) = "control-plane-status,omitempty"];
+    DSCControlPlaneStatus ControlPlaneStatus     = 13 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "control-plane-status,omitempty"];
 
     // IsConnectedToPSM is set to true if connected to PSM
-    bool IsConnectedToPSM		= 14 [(gogoproto.jsontag) = "is-connected-to-psm,omitempty"];
+    bool IsConnectedToPSM		         		 = 14 [(gogoproto.jsontag) = "is-connected-to-psm,omitempty"];
 
     // Lists the unhealthy services of a distributed service card
-    repeated string UnhealthyServices = 15 [(gogoproto.jsontag) = "unhealthy-services,omitempty"];
+    repeated string UnhealthyServices            = 15 [(gogoproto.jsontag) = "unhealthy-services,omitempty"];
+
+    // NumMacAddress has the number of mac addresses that is available on this DSC
+    uint32 NumMacAddress                         = 16 [(gogoproto.jsontag) = "num-mac-address,omitempty", (venice.check) = "IntRange(0,256)", (venice.default) = "24"];
 }
 
 // DSCCondition describes the state of a DistributedServiceCard at a certain point.

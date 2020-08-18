@@ -50,8 +50,12 @@ message OrchestratorSpec {
     // Credentials for the orchestrator
     monitoring.ExternalCred Credentials = 3 [(gogoproto.jsontag) = "credentials,omitempty"];
 
-    // Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces.
+    // Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces. - deprecated from Rel-C
     repeated string ManageNamespaces    = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "manage-namespaces,omitempty"];
+
+    // Namespaces are used to provide namespace specific information. From Rel-C this will be the only means to pass namespace information
+    // "all_namespaces" will be treated as a special namespace, which will apply the same configuration for all the namespaces discovered by the orchestrator
+    repeated NamespaceSpec Namespaces   = 5 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "namespaces,omitempty"];
 }
 
 // OrchestratorStatus contains the current state of connection with the orchestrator.
@@ -76,4 +80,59 @@ message OrchestratorStatus {
     int32 OrchID                         = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "orch-id,omitempty"];
     repeated string DiscoveredNamespaces = 5 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "discovered-namespaces,omitempty"];
     repeated string IncompatibleDSCs     = 6 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "incompatible-dscs,omitempty"];
+}
+
+// NamespaceSpec contains the namespace specification
+message NamespaceSpec {
+    enum ModeType {
+       // ui-hint: Managed
+       Managed = 0 [(venice.enumValueStr) = "managed"];
+       // ui-hint: Monitored
+       Monitored = 1 [(venice.enumValueStr) = "monitored"];
+    }
+    string Name                          = 1 [(gogoproto.jsontag) = "name", (venice.check) = "StrLen(1,-1)"];
+    string Mode                          = 2 [(gogoproto.jsontag) = "mode", (venice.default) = "managed", (venice.check) = "StrEnum(NamespaceSpec.ModeType)"];
+    ManagedNamespaceSpec ManagedSpec     = 3 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "managed-spec,omitempty"];
+    MonitoredNamespaceSpec MonitoredSpec = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "monitored-spec,omitempty"];
+}
+
+// ManagedNamespaceSpec contains namespace specific configuration
+message ManagedNamespaceSpec {
+    enum DiscoveryType {
+        // ui-hint: Disabled
+        Disabled = 0 [(venice.enumValueStr) = "disabled"];
+        // ui-hint: CDP
+        CDP = 1 [(venice.enumValueStr) = "cdp"];
+        // ui-hint: LLDP
+        LLDP = 2 [(venice.enumValueStr) = "lldp"];
+    } 
+
+    enum DiscoveryOp {
+        // ui-hint: None 
+        None = 0 [(venice.enumValueStr) = "none"];
+        // ui-hint: Listen
+        Listen = 1 [(venice.enumValueStr) = "listen"];
+        // ui-hint: Advertise
+        Advertise = 2 [(venice.enumValueStr) = "advertise"];
+        // ui-hint: Both
+        Both = 3 [(venice.enumValueStr) = "both"];
+    }
+
+    enum MulticastFilteringMode {
+        // ui-hint: Basic
+        Basic = 0 [(venice.enumValueStr) = "basic"];
+        // ui-hint: Snooping
+        Snooping = 1 [(venice.enumValueStr) = "snooping"];
+    }
+
+    uint32 MTU                 = 1 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "mtu,omitempty", (venice.default) = "1500"];
+    string MulticastFilter     = 2 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "multicast-filter,omitempty", (venice.check) = "StrEnum(ManagedNamespaceSpec.MulticastFilteringMode)"];
+    string DiscoveryProtocol    = 3 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "discovery-protocol,omitempty", (venice.check) = "StrEnum(ManagedNamespaceSpec.DiscoveryType)"];
+    string DiscoveryOperation  = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "discovery-operation,omitempty", (venice.check) = "StrEnum(ManagedNamespaceSpec.DiscoveryOp)"];
+    uint32 NumUplinks          = 5 [(gogoproto.jsontag) = "num-uplinks", (venice.default) = "2"];
+}
+
+// MonitoredNamespaceSpec contains namespace specific configuration
+message MonitoredNamespaceSpec {
+// Empty
 }

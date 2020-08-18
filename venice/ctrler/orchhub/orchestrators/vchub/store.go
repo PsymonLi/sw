@@ -11,6 +11,7 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/api/generated/workload"
@@ -204,6 +205,11 @@ func (v *VCHub) startEventsListener() {
 				case string(workload.KindWorkload):
 					v.Log.Infof("Processing workload event %s", evt.ObjMeta.Name)
 					v.handleWorkloadEvent(evt.EvtType, evt.ObjMeta)
+				case string(cluster.KindDistributedServiceCard):
+					v.Log.Infof("Processing DSC event %s", evt.ObjMeta.Name)
+					v.handleDSCEvent(evt.EvtType, evt.ObjMeta)
+				default:
+					v.Log.Infof("Unknown kind %s", evt.Kind)
 				}
 			} else {
 				v.Log.Infof("Skipped API Event %v", ok && processEvent)
@@ -216,6 +222,18 @@ func (v *VCHub) handleVCEvent(m defs.VCEventMsg) {
 	v.Log.Infof("Msg from %v, key: %s prop: %s", m.Originator, m.Key, m.VcObject)
 	v.syncLock.RLock()
 	defer v.syncLock.RUnlock()
+	if m.VcObject == defs.Datacenter {
+		v.handleDC(m)
+		return
+	}
+
+	// If no DC object exists, the event is likely stale.
+	penDC := v.GetDCFromID(m.DcID)
+	if penDC == nil {
+		v.Log.Errorf("DC not found for %s. Skipping event for %s %s", m.DcID, m.VcObject, m.Key)
+		return
+	}
+
 	switch m.VcObject {
 	case defs.VirtualMachine:
 		v.handleVM(m)
@@ -225,8 +243,6 @@ func (v *VCHub) handleVCEvent(m defs.VCEventMsg) {
 		v.handlePG(m)
 	case defs.VmwareDistributedVirtualSwitch:
 		v.handleDVS(m)
-	case defs.Datacenter:
-		v.handleDC(m)
 	default:
 		v.Log.Errorf("Unknown object %s", m.VcObject)
 	}
@@ -246,7 +262,7 @@ func (v *VCHub) handleRetryEvent(m defs.RetryMsg) {
 			Tenant:    globals.DefaultTenant,
 			Namespace: globals.DefaultNamespace,
 		}
-		wlObj := v.pCache.GetWorkload(meta)
+		wlObj := v.cache.GetWorkload(meta)
 		if wlObj == nil {
 			v.Log.Infof("retry request for %s skipped since workload no longer exists", m.ObjectKey)
 			return
@@ -286,8 +302,8 @@ func (v *VCHub) handleDC(m defs.VCEventMsg) {
 			return
 		}
 		// Cleanup internal state
-		v.RemovePenDC(existingDC.Name)
-		v.removeDiscoveredDC(existingDC.Name)
+		v.RemovePenDC(existingDC.DcName)
+		v.removeDiscoveredDC(existingDC.DcName)
 		return
 	}
 
@@ -300,14 +316,59 @@ func (v *VCHub) handleDC(m defs.VCEventMsg) {
 		oldName, ok := v.DcID2NameMap[m.Key]
 		if ok && oldName != name {
 			// Check if we are managing it
-			if !v.isManagedNamespace(oldName) {
+			if !v.isManagedNamespace(oldName) && !v.isMonitoredNamespace(oldName) {
+				v.Log.Infof("Unwatched DC %s was renamed to %s", oldName, name)
 				// DC we aren't managing is renamed, update map entry
 				v.DcID2NameMap[m.Key] = name
 				v.DcMapLock.Unlock()
 				v.renameDiscoveredDC(oldName, name)
+				// Check if the new name should be managed
+				if v.isManagedNamespace(name) || v.isMonitoredNamespace(name) {
+					v.Log.Infof("New name %s is in either monitoring or manage spec, watching...", name)
+					// New name is in the managed list.
+					v.addDC(name, m.Key)
+				}
 				return
 			}
 
+			if !v.isManagedNamespace(oldName) && v.isMonitoredNamespace(oldName) {
+				// If DC is only monitoring mode, renaming is allowed
+				v.Log.Infof("Monitoring DC %s renamed to %s", oldName, name)
+				v.DcID2NameMap[m.Key] = name
+				v.DcMapLock.Unlock()
+				v.renameDiscoveredDC(oldName, name)
+
+				if !v.isMonitoredNamespace(name) {
+					// New name for the DC isn't in the monitoring spec
+					// Remove all state for it
+					v.Log.Infof("New name %s is not in monitoring spec, deleting...", name)
+					v.RemovePenDC(oldName)
+					if v.isManagedNamespace(name) {
+						v.Log.Infof("New name %s is in managed spec, managing...", name)
+						// New name is in the managed list.
+						v.addDC(name, m.Key)
+					}
+					return
+				}
+				// Rename internal state
+				v.RenameDC(oldName, name)
+
+				// Update labels of all objects
+				v.Log.Infof("Updating namespace object labels")
+				hosts := v.cache.ListHosts(v.Ctx, true)
+				for _, host := range hosts {
+					utils.AddOrchNamespaceLabel(host.Labels, name)
+					v.cache.SetHost(host, true)
+				}
+				workloads := v.cache.ListWorkloads(v.Ctx, true)
+				for _, wl := range workloads {
+					utils.AddOrchNamespaceLabel(wl.Labels, name)
+					v.cache.SetWorkload(wl, true)
+				}
+				return
+			}
+
+			// TODO: Should DC renaming be allowed in monitoring mode?
 			v.Log.Infof("DC %s renamed to %s, changing back...", name, oldName)
 
 			evtMsg := fmt.Sprintf("%v : User renamed a Pensando managed Datacenter from %v to %v. Datacenter name has been changed back to %v.", v.State.OrchConfig.Name, name, oldName, name)
@@ -322,37 +383,34 @@ func (v *VCHub) handleDC(m defs.VCEventMsg) {
 		}
 
 		if penDc, ok := v.DcMap[name]; ok {
-			penDc.Lock()
-			if _, ok := penDc.DvsMap[CreateDVSName(name)]; ok {
+			if penDc.isManagedMode() {
+				penDc.Lock()
+				if _, ok := penDc.PenDvsMap[CreateDVSName(name)]; ok {
+					penDc.Unlock()
+					v.DcMapLock.Unlock()
+					v.probe.StartWatchForDC(name, m.Key)
+					v.addDiscoveredDC(name)
+					return
+				}
 				penDc.Unlock()
-				v.DcMapLock.Unlock()
-				v.probe.StartWatchForDC(name, m.Key)
-				v.addDiscoveredDC(name)
-				return
 			}
-			penDc.Unlock()
 		}
 		v.DcMapLock.Unlock()
 
-		// We create DVS and check networks
-		if !v.isManagedNamespace(name) {
+		if !v.isManagedNamespace(name) && !v.isMonitoredNamespace(name) {
 			v.Log.Infof("Skipping DC event for DC %s", name)
 			v.DcMapLock.Lock()
 			v.DcID2NameMap[m.Key] = name
 			v.DcMapLock.Unlock()
 		} else {
-			v.Log.Infof("new DC %s", name)
-			_, err := v.NewPenDC(name, m.Key)
-			if err == nil {
-				v.probe.StartWatchForDC(name, m.Key)
-				v.checkNetworks(name)
-			} else {
-				// Verify DC still exists
-				retryFn := func() {
-					v.retryDCEvent(name, m)
-				}
-				v.TimerQ.Add(retryFn, retryDelay)
+			mode := v.GetMode(name)
+			if len(mode) == 0 {
+				// This should never happen
+				v.Log.Errorf("Failed to compute mode for DC %s", name)
+				return
 			}
+			v.Log.Infof("new DC %s: mode %s", name, mode)
+			v.addDC(name, m.Key)
 		}
 
 		// update discovered list

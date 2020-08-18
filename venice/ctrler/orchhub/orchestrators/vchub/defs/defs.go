@@ -9,8 +9,10 @@ import (
 
 	"github.com/vmware/govmomi/vim25/types"
 
+	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/orchestration"
+	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils/timerqueue"
 	"github.com/pensando/sw/venice/utils/log"
@@ -65,6 +67,18 @@ const (
 	VCNotification = Probe2StoreMsgType("VCNotification")
 	// VCConnectionStatus indicates probe has re-established connection
 	VCConnectionStatus = Probe2StoreMsgType("VCConnectionStatus")
+)
+
+// Mode defines the vchub mode types
+type Mode string
+
+var (
+	// MonitoringMode is monitoring mode
+	MonitoringMode = Mode(orchestration.NamespaceSpec_Monitored.String())
+	// ManagedMode is managed mode
+	ManagedMode = Mode(orchestration.NamespaceSpec_Managed.String())
+	// MonitoringManagedMode is monitoring and managed mode
+	MonitoringManagedMode = Mode(orchestration.NamespaceSpec_Monitored.String() + orchestration.NamespaceSpec_Managed.String())
 )
 
 // VmkWorkloadPrefix - used when creating name for dummy workload for vmkernel networking
@@ -142,7 +156,6 @@ type VCEventMsg struct {
 	Changes    []types.PropertyChange
 	UpdateType types.ObjectUpdateKind
 	DcID       string
-	DcName     string
 	Originator string // Identifier for the VC that originated the update
 }
 
@@ -238,11 +251,65 @@ type State struct {
 	DvsIDMap     map[string]types.ManagedObjectReference
 
 	// If supplied, we only process events if the DC name matches any of this
-	ForceDCNames     map[string]bool
-	ForceDCNamesLock sync.RWMutex
+	ManagedDCs   map[string]orchestration.ManagedNamespaceSpec
+	MonitoredDCs map[string]orchestration.MonitoredNamespaceSpec
+	DcSpecLock   sync.RWMutex
 }
 
 // IsVCSim returns whether the AboutInfo belongs to a VC simulator
 func IsVCSim(aboutInfo *types.AboutInfo) bool {
 	return aboutInfo != nil && aboutInfo.FullName == "VCSIM - vCenter Server 6.5.0 build-5973321"
+}
+
+// VnicEntry holds vnic info
+type VnicEntry struct {
+	PG              string
+	Port            string
+	IP              []string
+	MacAddress      string
+	NetworkMeta     *api.ObjectMeta
+	PortOverrideSet bool
+	InfReady        bool // Whether this entry should be added as an interface
+}
+
+func (v *VnicEntry) String() string {
+	return fmt.Sprintf("[ PG: %s, Port: %s, IP: %v, Mac: %s, overrideSet: %v ]", v.PG, v.Port, v.IP, v.MacAddress, v.PortOverrideSet)
+}
+
+// VMInfo contains vCenter vm info
+type VMInfo struct {
+	Vnics map[string]*VnicEntry
+	VMKey string
+}
+
+// VCHubWorkload is a wrapper for the workload object
+type VCHubWorkload struct {
+	*workload.Workload
+	VMInfo
+}
+
+// HostInfo contains vCenter host information
+type HostInfo struct {
+	DisplayName  string
+	DvsProxyInfo map[string]*DVSProxyInfo // [dvsID] = ProxyInfo
+	Pnics        map[string]string        // ["vmnic6"] = pnic MAC addr
+}
+
+// DVSProxyInfo is used to store uplink to pnic mapping
+type DVSProxyInfo struct {
+	UplinkPnics    map[string]string // ["uplink1"] = "vmnic6"
+	ConnectedPnics []string          // list of pnic MACs connected to uplinks
+}
+
+// VCHubHost is a wrapper for the host object
+type VCHubHost struct {
+	*cluster.Host
+	HostInfo
+}
+
+// DefaultDCManagedConfig returns the default configuration options for a managed DC
+func DefaultDCManagedConfig() orchestration.ManagedNamespaceSpec {
+	ret := orchestration.ManagedNamespaceSpec{}
+	ret.Defaults("v1")
+	return ret
 }

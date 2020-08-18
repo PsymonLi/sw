@@ -48,6 +48,9 @@ func (s *sorchestrationOrchestrationBackend) regMsgsFunc(l log.Logger, scheme *r
 	l.Infof("registering message for sorchestrationOrchestrationBackend")
 	s.Messages = map[string]apiserver.Message{
 
+		"orchestration.ManagedNamespaceSpec":   apisrvpkg.NewMessage("orchestration.ManagedNamespaceSpec"),
+		"orchestration.MonitoredNamespaceSpec": apisrvpkg.NewMessage("orchestration.MonitoredNamespaceSpec"),
+		"orchestration.NamespaceSpec":          apisrvpkg.NewMessage("orchestration.NamespaceSpec"),
 		"orchestration.Orchestrator": apisrvpkg.NewMessage("orchestration.Orchestrator").WithKeyGenerator(func(i interface{}, prefix string) string {
 			if i == nil {
 				r := orchestration.Orchestrator{}

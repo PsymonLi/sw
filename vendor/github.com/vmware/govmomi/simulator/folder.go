@@ -505,6 +505,12 @@ func (f *Folder) CreateDVSTask(req *types.CreateDVS_Task) soap.HasFault {
 			Description: spec.Description,
 		}
 
+		if spec.UplinkPortPolicy == nil {
+			spec.UplinkPortPolicy = &types.DVSNameArrayUplinkPortPolicy{
+				UplinkPortName: []string{"uplink1", "uplink2", "uplink3", "uplink4"},
+			}
+		}
+
 		configInfo := &types.VMwareDVSConfigInfo{
 			DVSConfigInfo: types.DVSConfigInfo{
 				Uuid:                                dvs.Uuid,

@@ -88,12 +88,12 @@ func (v *VCHub) debugUseg(params map[string]string) (interface{}, error) {
 		return nil, fmt.Errorf("dc is a required param")
 	}
 	penDC := v.GetDC(dcName)
-	penDVS := penDC.GetDVS(CreateDVSName(dcName))
+	penDVS := penDC.GetPenDVS(CreateDVSName(dcName))
 	return penDVS.UsegMgr.Debug(params)
 }
 
 func (v *VCHub) debugCache(params map[string]string) (interface{}, error) {
-	return v.pCache.Debug(params)
+	return v.cache.Debug(params)
 }
 
 type debugDC struct {
@@ -119,11 +119,11 @@ func (v *VCHub) debugState(params map[string]string) (interface{}, error) {
 	defer v.DcMapLock.Unlock()
 	for dcName, dc := range v.DcMap {
 		dcObj := debugDC{
-			ID:  dc.dcRef.Value,
+			ID:  dc.DcRef.Value,
 			DVS: map[string]debugDVS{},
 		}
 		dc.Lock()
-		for dvsName, dvs := range dc.DvsMap {
+		for dvsName, dvs := range dc.PenDvsMap {
 			dvs.Lock()
 			dvsObj := debugDVS{
 				ID:  dvs.DvsRef.Value,

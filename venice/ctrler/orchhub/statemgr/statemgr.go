@@ -32,6 +32,9 @@ type Statemgr struct {
 	probeQMutex       sync.RWMutex
 	probeQs           map[string]*channelqueue.ChQueue
 	RestoreActive     bool
+	// Map from a possible DSC Mac to the DSC object's name
+	DscMap     map[string]string
+	DscMapLock sync.RWMutex
 }
 
 // NewStatemgr creates a new state mgr
@@ -68,6 +71,7 @@ func NewStatemgr(apiSrvURL string, resolver resolver.Interface, logger log.Logge
 		instanceManagerCh: instanceManagerCh,
 		ctkitReconnectCh:  ctkitReconnectCh,
 		probeQs:           make(map[string]*channelqueue.ChQueue),
+		DscMap:            make(map[string]string),
 	}
 
 	err = stateMgr.startWatchers()

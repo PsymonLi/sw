@@ -66,10 +66,22 @@ func (s *DistributedVirtualSwitch) AddDVPortgroupTask(c *types.AddDVPortgroup_Ta
 				VmVnicNetworkResourcePoolKey: spec.VmVnicNetworkResourcePoolKey,
 			}
 
+			activeUplinks := []string{}
+			if dvsConfig, ok := s.Config.(*types.VMwareDVSConfigInfo); ok {
+				if uplinkConfig, ok := dvsConfig.UplinkPortPolicy.(*types.DVSNameArrayUplinkPortPolicy); ok {
+					activeUplinks = uplinkConfig.UplinkPortName
+				}
+			}
+
 			if pg.Config.DefaultPortConfig == nil {
 				pg.Config.DefaultPortConfig = &types.VMwareDVSPortSetting{
 					Vlan: new(types.VmwareDistributedVirtualSwitchVlanIdSpec),
-					UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+				}
+			}
+
+			if config, ok := pg.Config.DefaultPortConfig.(*types.VMwareDVSPortSetting); ok {
+				if config.UplinkTeamingPolicy == nil {
+					config.UplinkTeamingPolicy = &types.VmwareUplinkPortTeamingPolicy{
 						Policy: &types.StringPolicy{
 							Value: "loadbalance_srcid",
 						},
@@ -82,7 +94,10 @@ func (s *DistributedVirtualSwitch) AddDVPortgroupTask(c *types.AddDVPortgroup_Ta
 						RollingOrder: &types.BoolPolicy{
 							Value: types.NewBool(true),
 						},
-					},
+						UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+							ActiveUplinkPort: activeUplinks,
+						},
+					}
 				}
 			}
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/sim"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/testutils"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe"
@@ -87,7 +88,7 @@ func TestVCScaleHost(t *testing.T) {
 	dc1, err := s.AddDC(defaultTestParams.TestDCName)
 	AssertOk(t, err, "failed dc create")
 	logger.Infof("Creating PenDC for %s\n", dc1.Obj.Reference().Value)
-	_, err = vchub.NewPenDC(defaultTestParams.TestDCName, dc1.Obj.Self.Value)
+	_, err = vchub.NewPenDC(defaultTestParams.TestDCName, dc1.Obj.Self.Value, defs.ManagedMode)
 	// Add DVS
 	dvsName := CreateDVSName(defaultTestParams.TestDCName)
 	dvs, ok := dc1.GetDVS(dvsName)
@@ -100,39 +101,32 @@ func TestVCScaleHost(t *testing.T) {
 		},
 	}
 	// Create one PG for vmkNic
-	pgConfigSpec := []types.DVPortgroupConfigSpec{
-		types.DVPortgroupConfigSpec{
-			Name:     CreatePGName("vMotion_PG"),
-			NumPorts: 8,
-			DefaultPortConfig: &types.VMwareDVSPortSetting{
-				Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
-					PvlanId: int32(100),
-				},
-			},
-		},
-	}
+	pgConfigSpec0 := testutils.GenPGConfigSpec(CreatePGName("vMotion_PG"), 100, 101)
+	pgConfigSpec := []types.DVPortgroupConfigSpec{pgConfigSpec0}
 
 	smmock.CreateNetwork(sm, "default", "vMotion_PG", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
 	// Add PG to mockProbe (this is weird, this should be part of sim)
 	// vcHub should provide this function ??
-	mockProbe.AddPenPG(defaultTestParams.TestDCName, dvsName, &pgConfigSpec[0], nil, retryCount)
+	dcName := defaultTestParams.TestDCName
+	mockProbe.AddPenPG(dcName, dvsName, &pgConfigSpec[0], nil, retryCount)
 	pg, err := mockProbe.GetPenPG(defaultTestParams.TestDCName, CreatePGName("vMotion_PG"), retryCount)
 	AssertOk(t, err, "failed to add portgroup")
-
 	hosts := []string{}
 
 	// Create hosts and one vmknic on each host
 	for i := 0; i < maxHosts; i++ {
 		hName := fmt.Sprintf("Host-%d", i)
+		// Make it Pensando host
+		// hostSystem.ClearNics()
 		hostSystem, err := dc1.AddHost(hName)
 		AssertOk(t, err, "failed host1 create")
+
 		err = dvs.AddHost(hostSystem)
 		AssertOk(t, err, "failed to add Host to DVS")
 
 		pNicMac := append(createPenPnicBase(), 0xaa, byte(i/256), byte(i%256))
-		// Make it Pensando host
-		hostSystem.ClearNics()
 		err = hostSystem.AddNic("vmnic0", conv.MacString(pNicMac))
+		hostSystem.AddUplinksToDVS(dvs.Obj.Name, map[string]string{"uplink1": "vmnic0"})
 
 		// Create vmkNIC
 		var spec types.HostVirtualNicSpec
@@ -145,6 +139,7 @@ func TestVCScaleHost(t *testing.T) {
 		err = hostSystem.AddVmkNic(&spec, "vmk1")
 
 		hosts = append(hosts, vchub.createHostName(dc1.Obj.Self.Value, hostSystem.Obj.Self.Value))
+		createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", vchub.createHostName(dc1.Obj.Self.Value, hostSystem.Obj.Self.Value), map[string]string{})
 	}
 
 	vchub.Sync()

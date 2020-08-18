@@ -116,3 +116,21 @@ func DiffNamespace(oldList []string, newList []string) (added []string, deleted 
 
 	return addedNamespaces, deletedNamespaces, nochangeNamespaces
 }
+
+// MergeLabels merges system labels from cacheLabels with the user labels from apiserverLabels
+func MergeLabels(cacheLabels, apiserverLabels map[string]string) map[string]string {
+	labels := map[string]string{}
+	for k, v := range cacheLabels {
+		if !strings.HasPrefix(k, globals.SystemLabelPrefix) {
+			// Only take user labels from existing object
+			labels[k] = v
+		}
+	}
+	for k, v := range apiserverLabels {
+		if strings.HasPrefix(k, globals.SystemLabelPrefix) {
+			// Only take system labels from new object
+			labels[k] = v
+		}
+	}
+	return labels
+}

@@ -82,6 +82,7 @@ func (it *migrationTestSuite) createHost(name, dscMac, ipAddress string) (*clust
 			IPConfig: &cluster.IPConfig{
 				IPAddress: ipAddress,
 			},
+			NumMacAddress: 24,
 		},
 	}
 
@@ -152,6 +153,7 @@ func (it *migrationTestSuite) deleteHost(name string) error {
 		},
 		Status: cluster.DistributedServiceCardStatus{
 			AdmissionPhase: cluster.DistributedServiceCardStatus_PENDING.String(),
+			NumMacAddress:  24,
 		},
 	}
 

@@ -15,6 +15,36 @@ import (
 
 var typesMapOrchestration = map[string]*api.Struct{
 
+	"orchestration.ManagedNamespaceSpec": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(ManagedNamespaceSpec{}) },
+		Fields: map[string]api.Field{
+			"MTU": api.Field{Name: "MTU", CLITag: api.CLIInfo{ID: "mtu", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mtu", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"MulticastFilter": api.Field{Name: "MulticastFilter", CLITag: api.CLIInfo{ID: "multicast-filter", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "multicast-filter", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"DiscoveryProtocol": api.Field{Name: "DiscoveryProtocol", CLITag: api.CLIInfo{ID: "discovery-protocol", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "discovery-protocol", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"DiscoveryOperation": api.Field{Name: "DiscoveryOperation", CLITag: api.CLIInfo{ID: "discovery-operation", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "discovery-operation", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"NumUplinks": api.Field{Name: "NumUplinks", CLITag: api.CLIInfo{ID: "num-uplinks", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "num-uplinks", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+		},
+	},
+	"orchestration.MonitoredNamespaceSpec": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(MonitoredNamespaceSpec{}) },
+		Fields: map[string]api.Field{},
+	},
+	"orchestration.NamespaceSpec": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(NamespaceSpec{}) },
+		Fields: map[string]api.Field{
+			"Name": api.Field{Name: "Name", CLITag: api.CLIInfo{ID: "name", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "name", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"Mode": api.Field{Name: "Mode", CLITag: api.CLIInfo{ID: "mode", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mode", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"ManagedSpec": api.Field{Name: "ManagedSpec", CLITag: api.CLIInfo{ID: "managed-spec", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "managed-spec", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "orchestration.ManagedNamespaceSpec"},
+
+			"MonitoredSpec": api.Field{Name: "MonitoredSpec", CLITag: api.CLIInfo{ID: "monitored-spec", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "monitored-spec", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "orchestration.MonitoredNamespaceSpec"},
+		},
+	},
 	"orchestration.Orchestrator": &api.Struct{
 		Kind: "Orchestrator", APIGroup: "orchestration", Scopes: []string{"Cluster"}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(Orchestrator{}) },
 		Fields: map[string]api.Field{
@@ -55,14 +85,20 @@ var typesMapOrchestration = map[string]*api.Struct{
 			"api-version":           api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
 			"connection-status":     api.CLIInfo{Path: "Status.Status", Skip: false, Insert: "", Help: ""},
 			"discovered-namespaces": api.CLIInfo{Path: "Status.DiscoveredNamespaces", Skip: false, Insert: "", Help: ""},
+			"discovery-operation":   api.CLIInfo{Path: "Spec.Namespaces[].ManagedSpec.DiscoveryOperation", Skip: false, Insert: "", Help: ""},
+			"discovery-protocol":    api.CLIInfo{Path: "Spec.Namespaces[].ManagedSpec.DiscoveryProtocol", Skip: false, Insert: "", Help: ""},
 			"generation-id":         api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
 			"incompatible-dscs":     api.CLIInfo{Path: "Status.IncompatibleDSCs", Skip: false, Insert: "", Help: ""},
 			"kind":                  api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
 			"labels":                api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"manage-namespaces":     api.CLIInfo{Path: "Spec.ManageNamespaces", Skip: false, Insert: "", Help: ""},
 			"message":               api.CLIInfo{Path: "Status.Message", Skip: false, Insert: "", Help: ""},
-			"name":                  api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
+			"mode":                  api.CLIInfo{Path: "Spec.Namespaces[].Mode", Skip: false, Insert: "", Help: ""},
+			"mtu":                   api.CLIInfo{Path: "Spec.Namespaces[].ManagedSpec.MTU", Skip: false, Insert: "", Help: ""},
+			"multicast-filter":      api.CLIInfo{Path: "Spec.Namespaces[].ManagedSpec.MulticastFilter", Skip: false, Insert: "", Help: ""},
+			"name":                  api.CLIInfo{Path: "Spec.Namespaces[].Name", Skip: false, Insert: "", Help: ""},
 			"namespace":             api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
+			"num-uplinks":           api.CLIInfo{Path: "Spec.Namespaces[].ManagedSpec.NumUplinks", Skip: false, Insert: "", Help: ""},
 			"orch-id":               api.CLIInfo{Path: "Status.OrchID", Skip: false, Insert: "", Help: ""},
 			"resource-version":      api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
 			"self-link":             api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
@@ -82,6 +118,8 @@ var typesMapOrchestration = map[string]*api.Struct{
 			"Credentials": api.Field{Name: "Credentials", CLITag: api.CLIInfo{ID: "credentials", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "credentials", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "monitoring.ExternalCred"},
 
 			"ManageNamespaces": api.Field{Name: "ManageNamespaces", CLITag: api.CLIInfo{ID: "manage-namespaces", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "manage-namespaces", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"Namespaces": api.Field{Name: "Namespaces", CLITag: api.CLIInfo{ID: "namespaces", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "namespaces", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "orchestration.NamespaceSpec"},
 		},
 	},
 	"orchestration.OrchestratorStatus": &api.Struct{

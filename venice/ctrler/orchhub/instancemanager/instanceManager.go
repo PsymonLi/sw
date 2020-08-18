@@ -149,7 +149,7 @@ func NewInstanceManager(stateMgr *statemgr.Statemgr, logger log.Logger, instance
 		stopFlag: syncFlag{
 			flag: false,
 		},
-		logger:            logger.WithContext("submodule", "Inst Mgr"),
+		logger:            logger,
 		orchestratorMap:   make(map[string]*orchestratorMapEntry),
 		stateMgr:          stateMgr,
 		instanceManagerCh: instanceManagerCh,
@@ -474,9 +474,14 @@ func (w *InstanceManager) createOrch(config *orchestration.Orchestrator) {
 	switch config.Spec.Type {
 	case orchestration.OrchestratorSpec_VCenter.String():
 		// If vCenter, call launch VCHub
-		vchubInst := vchub.LaunchVCHub(w.stateMgr, config, w.logger, w.vcHubOpts...)
 		w.orchMapLock.Lock()
 		defer w.orchMapLock.Unlock()
+		if _, ok := w.orchestratorMap[config.GetKey()]; ok {
+			// instance already running
+			w.logger.Infof("Instance already running for %s", config.GetKey())
+			return
+		}
+		vchubInst := vchub.LaunchVCHub(w.stateMgr, config, w.logger, w.vcHubOpts...)
 		w.orchestratorMap[config.GetKey()] = &orchestratorMapEntry{
 			orch:   vchubInst,
 			config: ref.DeepCopy(config).(*orchestration.Orchestrator),

@@ -73,7 +73,7 @@ func createProfilesOrch(stateMgr *Statemgr, t *testing.T) {
 		return false, nil
 	}, "Did not find DSCProfile", "1ms", "2s")
 
-	createOrchestrator(stateMgr, "default", OrchName, nil)
+	createOrchestrator(stateMgr, "default", OrchName, "", nil)
 
 }
 

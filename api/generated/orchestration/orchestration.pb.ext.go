@@ -29,6 +29,95 @@ var _ kvstore.Interface
 var _ log.Logger
 var _ listerwatcher.WatcherClient
 
+// ManagedNamespaceSpec_DiscoveryType_normal is a map of normalized values for the enum
+var ManagedNamespaceSpec_DiscoveryType_normal = map[string]string{
+	"cdp":      "cdp",
+	"disabled": "disabled",
+	"lldp":     "lldp",
+}
+
+var ManagedNamespaceSpec_DiscoveryType_vname = map[int32]string{
+	0: "disabled",
+	1: "cdp",
+	2: "lldp",
+}
+
+var ManagedNamespaceSpec_DiscoveryType_vvalue = map[string]int32{
+	"disabled": 0,
+	"cdp":      1,
+	"lldp":     2,
+}
+
+func (x ManagedNamespaceSpec_DiscoveryType) String() string {
+	return ManagedNamespaceSpec_DiscoveryType_vname[int32(x)]
+}
+
+// ManagedNamespaceSpec_DiscoveryOp_normal is a map of normalized values for the enum
+var ManagedNamespaceSpec_DiscoveryOp_normal = map[string]string{
+	"advertise": "advertise",
+	"both":      "both",
+	"listen":    "listen",
+	"none":      "none",
+}
+
+var ManagedNamespaceSpec_DiscoveryOp_vname = map[int32]string{
+	0: "none",
+	1: "listen",
+	2: "advertise",
+	3: "both",
+}
+
+var ManagedNamespaceSpec_DiscoveryOp_vvalue = map[string]int32{
+	"none":      0,
+	"listen":    1,
+	"advertise": 2,
+	"both":      3,
+}
+
+func (x ManagedNamespaceSpec_DiscoveryOp) String() string {
+	return ManagedNamespaceSpec_DiscoveryOp_vname[int32(x)]
+}
+
+// ManagedNamespaceSpec_MulticastFilteringMode_normal is a map of normalized values for the enum
+var ManagedNamespaceSpec_MulticastFilteringMode_normal = map[string]string{
+	"basic":    "basic",
+	"snooping": "snooping",
+}
+
+var ManagedNamespaceSpec_MulticastFilteringMode_vname = map[int32]string{
+	0: "basic",
+	1: "snooping",
+}
+
+var ManagedNamespaceSpec_MulticastFilteringMode_vvalue = map[string]int32{
+	"basic":    0,
+	"snooping": 1,
+}
+
+func (x ManagedNamespaceSpec_MulticastFilteringMode) String() string {
+	return ManagedNamespaceSpec_MulticastFilteringMode_vname[int32(x)]
+}
+
+// NamespaceSpec_ModeType_normal is a map of normalized values for the enum
+var NamespaceSpec_ModeType_normal = map[string]string{
+	"managed":   "managed",
+	"monitored": "monitored",
+}
+
+var NamespaceSpec_ModeType_vname = map[int32]string{
+	0: "managed",
+	1: "monitored",
+}
+
+var NamespaceSpec_ModeType_vvalue = map[string]int32{
+	"managed":   0,
+	"monitored": 1,
+}
+
+func (x NamespaceSpec_ModeType) String() string {
+	return NamespaceSpec_ModeType_vname[int32(x)]
+}
+
 // OrchestratorSpec_OrchestratorType_normal is a map of normalized values for the enum
 var OrchestratorSpec_OrchestratorType_normal = map[string]string{
 	"vcenter": "vcenter",
@@ -86,6 +175,88 @@ func (m *Orchestrator) MakeURI(cat, ver, prefix string) string {
 }
 
 // Clone clones the object into into or creates one of into is nil
+func (m *ManagedNamespaceSpec) Clone(into interface{}) (interface{}, error) {
+	var out *ManagedNamespaceSpec
+	var ok bool
+	if into == nil {
+		out = &ManagedNamespaceSpec{}
+	} else {
+		out, ok = into.(*ManagedNamespaceSpec)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*ManagedNamespaceSpec))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *ManagedNamespaceSpec) Defaults(ver string) bool {
+	var ret bool
+	ret = true
+	switch ver {
+	default:
+		m.DiscoveryOperation = "none"
+		m.DiscoveryProtocol = "disabled"
+		m.MTU = 1500
+		m.MulticastFilter = "basic"
+		m.NumUplinks = 2
+	}
+	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *MonitoredNamespaceSpec) Clone(into interface{}) (interface{}, error) {
+	var out *MonitoredNamespaceSpec
+	var ok bool
+	if into == nil {
+		out = &MonitoredNamespaceSpec{}
+	} else {
+		out, ok = into.(*MonitoredNamespaceSpec)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*MonitoredNamespaceSpec))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *MonitoredNamespaceSpec) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *NamespaceSpec) Clone(into interface{}) (interface{}, error) {
+	var out *NamespaceSpec
+	var ok bool
+	if into == nil {
+		out = &NamespaceSpec{}
+	} else {
+		out, ok = into.(*NamespaceSpec)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*NamespaceSpec))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *NamespaceSpec) Defaults(ver string) bool {
+	var ret bool
+	if m.ManagedSpec != nil {
+		ret = m.ManagedSpec.Defaults(ver) || ret
+	}
+	ret = true
+	switch ver {
+	default:
+		m.Mode = "managed"
+	}
+	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
 func (m *Orchestrator) Clone(into interface{}) (interface{}, error) {
 	var out *Orchestrator
 	var ok bool
@@ -133,6 +304,12 @@ func (m *OrchestratorSpec) Clone(into interface{}) (interface{}, error) {
 // Default sets up the defaults for the object
 func (m *OrchestratorSpec) Defaults(ver string) bool {
 	var ret bool
+	for k := range m.Namespaces {
+		if m.Namespaces[k] != nil {
+			i := m.Namespaces[k]
+			ret = i.Defaults(ver) || ret
+		}
+	}
 	ret = true
 	switch ver {
 	default:
@@ -169,6 +346,96 @@ func (m *OrchestratorStatus) Defaults(ver string) bool {
 }
 
 // Validators and Requirements
+
+func (m *ManagedNamespaceSpec) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *ManagedNamespaceSpec) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	if vs, ok := validatorMapOrchestration["ManagedNamespaceSpec"][ver]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	} else if vs, ok := validatorMapOrchestration["ManagedNamespaceSpec"]["all"]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *ManagedNamespaceSpec) Normalize() {
+
+	m.DiscoveryOperation = ManagedNamespaceSpec_DiscoveryOp_normal[strings.ToLower(m.DiscoveryOperation)]
+
+	m.DiscoveryProtocol = ManagedNamespaceSpec_DiscoveryType_normal[strings.ToLower(m.DiscoveryProtocol)]
+
+	m.MulticastFilter = ManagedNamespaceSpec_MulticastFilteringMode_normal[strings.ToLower(m.MulticastFilter)]
+
+}
+
+func (m *MonitoredNamespaceSpec) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *MonitoredNamespaceSpec) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *MonitoredNamespaceSpec) Normalize() {
+
+}
+
+func (m *NamespaceSpec) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *NamespaceSpec) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	if m.ManagedSpec != nil {
+		{
+			dlmtr := "."
+			if path == "" {
+				dlmtr = ""
+			}
+			npath := path + dlmtr + "ManagedSpec"
+			if errs := m.ManagedSpec.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+				ret = append(ret, errs...)
+			}
+		}
+	}
+	if vs, ok := validatorMapOrchestration["NamespaceSpec"][ver]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	} else if vs, ok := validatorMapOrchestration["NamespaceSpec"]["all"]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *NamespaceSpec) Normalize() {
+
+	if m.ManagedSpec != nil {
+		m.ManagedSpec.Normalize()
+	}
+
+	m.Mode = NamespaceSpec_ModeType_normal[strings.ToLower(m.Mode)]
+
+}
 
 func (m *Orchestrator) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 
@@ -261,6 +528,16 @@ func (m *OrchestratorSpec) Validate(ver, path string, ignoreStatus bool, ignoreS
 			}
 		}
 	}
+	for k, v := range m.Namespaces {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sNamespaces[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
 	if vs, ok := validatorMapOrchestration["OrchestratorSpec"][ver]; ok {
 		for _, v := range vs {
 			if err := v(path, m); err != nil {
@@ -281,6 +558,13 @@ func (m *OrchestratorSpec) Normalize() {
 
 	if m.Credentials != nil {
 		m.Credentials.Normalize()
+	}
+
+	for k, v := range m.Namespaces {
+		if v != nil {
+			v.Normalize()
+			m.Namespaces[k] = v
+		}
 	}
 
 	m.Type = OrchestratorSpec_OrchestratorType_normal[strings.ToLower(m.Type)]
@@ -379,6 +663,72 @@ func init() {
 	)
 
 	validatorMapOrchestration = make(map[string]map[string][]func(string, interface{}) error)
+
+	validatorMapOrchestration["ManagedNamespaceSpec"] = make(map[string][]func(string, interface{}) error)
+	validatorMapOrchestration["ManagedNamespaceSpec"]["all"] = append(validatorMapOrchestration["ManagedNamespaceSpec"]["all"], func(path string, i interface{}) error {
+		m := i.(*ManagedNamespaceSpec)
+
+		if _, ok := ManagedNamespaceSpec_DiscoveryOp_vvalue[m.DiscoveryOperation]; !ok {
+			vals := []string{}
+			for k1, _ := range ManagedNamespaceSpec_DiscoveryOp_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"DiscoveryOperation", vals)
+		}
+		return nil
+	})
+
+	validatorMapOrchestration["ManagedNamespaceSpec"]["all"] = append(validatorMapOrchestration["ManagedNamespaceSpec"]["all"], func(path string, i interface{}) error {
+		m := i.(*ManagedNamespaceSpec)
+
+		if _, ok := ManagedNamespaceSpec_DiscoveryType_vvalue[m.DiscoveryProtocol]; !ok {
+			vals := []string{}
+			for k1, _ := range ManagedNamespaceSpec_DiscoveryType_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"DiscoveryProtocol", vals)
+		}
+		return nil
+	})
+
+	validatorMapOrchestration["ManagedNamespaceSpec"]["all"] = append(validatorMapOrchestration["ManagedNamespaceSpec"]["all"], func(path string, i interface{}) error {
+		m := i.(*ManagedNamespaceSpec)
+
+		if _, ok := ManagedNamespaceSpec_MulticastFilteringMode_vvalue[m.MulticastFilter]; !ok {
+			vals := []string{}
+			for k1, _ := range ManagedNamespaceSpec_MulticastFilteringMode_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"MulticastFilter", vals)
+		}
+		return nil
+	})
+
+	validatorMapOrchestration["NamespaceSpec"] = make(map[string][]func(string, interface{}) error)
+	validatorMapOrchestration["NamespaceSpec"]["all"] = append(validatorMapOrchestration["NamespaceSpec"]["all"], func(path string, i interface{}) error {
+		m := i.(*NamespaceSpec)
+
+		if _, ok := NamespaceSpec_ModeType_vvalue[m.Mode]; !ok {
+			vals := []string{}
+			for k1, _ := range NamespaceSpec_ModeType_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"Mode", vals)
+		}
+		return nil
+	})
+
+	validatorMapOrchestration["NamespaceSpec"]["all"] = append(validatorMapOrchestration["NamespaceSpec"]["all"], func(path string, i interface{}) error {
+		m := i.(*NamespaceSpec)
+		args := make([]string, 0)
+		args = append(args, "1")
+		args = append(args, "-1")
+
+		if err := validators.StrLen(m.Name, args); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"Name", err.Error())
+		}
+		return nil
+	})
 
 	validatorMapOrchestration["OrchestratorSpec"] = make(map[string][]func(string, interface{}) error)
 	validatorMapOrchestration["OrchestratorSpec"]["all"] = append(validatorMapOrchestration["OrchestratorSpec"]["all"], func(path string, i interface{}) error {

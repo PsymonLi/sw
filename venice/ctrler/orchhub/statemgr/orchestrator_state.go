@@ -58,9 +58,12 @@ func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
 func (sm *Statemgr) OnOrchestratorUpdate(w *ctkit.Orchestrator, nw *orchestration.Orchestrator) error {
 	obj := ref.DeepCopy(*nw).(orchestration.Orchestrator)
 	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj, Type: kvstore.Updated}
-	_, err := OrchestratorStateFromObj(w)
-
-	return err
+	o, err := OrchestratorStateFromObj(w)
+	if err != nil {
+		return err
+	}
+	o.Orchestrator.Spec = nw.Spec
+	return o.checkAndUpdateDSCList()
 }
 
 // OnOrchestratorDelete deletes a orchestrator
@@ -112,8 +115,10 @@ func NewOrchestratorState(wrk *ctkit.Orchestrator, stateMgr *Statemgr) (*Orchest
 
 func (o *OrchestratorState) updateIncompatibleList() error {
 	newList := []string{}
-	for d := range o.incompatibleDscs {
-		newList = append(newList, d)
+	for d, ok := range o.incompatibleDscs {
+		if ok {
+			newList = append(newList, d)
+		}
 	}
 
 	o.Orchestrator.Status.IncompatibleDSCs = newList
@@ -138,7 +143,7 @@ func (o *OrchestratorState) RemoveIncompatibleDSC(dsc string) error {
 	o.Lock()
 	defer o.Unlock()
 
-	delete(o.incompatibleDscs, dsc)
+	o.incompatibleDscs[dsc] = false
 	return o.updateIncompatibleList()
 }
 
@@ -146,14 +151,23 @@ func (o *OrchestratorState) checkAndUpdateDSCList() error {
 	// called from onOrchestratorCreate, do NOT take ctkit object lock
 	o.Lock()
 	defer o.Unlock()
+	o.stateMgr.logger.Infof("Check and update DSC list %v", o.incompatibleDscs)
 
 	for dsc := range o.incompatibleDscs {
 		dscState := o.stateMgr.FindDSC(dsc, "")
-		// If DSC is now compatible, remove from the Incompatible list
-		if err := dscState.isOrchestratorCompatible(); err == nil {
-			delete(o.incompatibleDscs, dsc)
+		if dscState == nil {
+			o.stateMgr.logger.Errorf("Failed to find DSC %v in statemgr.", dsc)
+			o.incompatibleDscs[dsc] = true
+			continue
 		}
 
+		// If DSC is now compatible, remove from the Incompatible list
+		if err := dscState.isOrchestratorCompatible(); err == nil {
+			o.incompatibleDscs[dsc] = false
+		} else {
+			o.stateMgr.logger.Infof("DSC %v is incompatible. Err : %v", dsc, err)
+			o.incompatibleDscs[dsc] = true
+		}
 	}
 
 	return o.updateIncompatibleList()
@@ -191,4 +205,20 @@ func (sm *Statemgr) RemoveIncompatibleDSCFromOrch(dsc, orch string) error {
 
 	oState.RemoveIncompatibleDSC(dsc)
 	return nil
+}
+
+// FindOrchestrator gets the orchestrator object from statemanager
+func (sm *Statemgr) FindOrchestrator(orchName string) (*OrchestratorState, error) {
+	// TODO : Make this function tenanted
+	orch, err := sm.FindObject("Orchestrator", "", "", orchName)
+	if err != nil {
+		return nil, err
+	}
+
+	oState, err := OrchestratorStateFromObj(orch)
+	if err != nil {
+		return nil, err
+	}
+
+	return oState, nil
 }

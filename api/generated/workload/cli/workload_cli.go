@@ -15,6 +15,13 @@ import (
 // CreateWorkloadFlags specifies flags for Workload create operation
 var CreateWorkloadFlags = []gen.CliFlag{
 	{
+		ID:     "dsc-interfaces",
+		Type:   "StringSlice",
+		Help:   "List of MAC addresses of the DSC ports associated with this workload interface",
+		Skip:   false,
+		Insert: "",
+	},
+	{
 		ID:     "external-vlan",
 		Type:   "StringSlice",
 		Help:   "External vlan associated with the workload",

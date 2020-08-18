@@ -344,6 +344,9 @@ func TestWorkloadRegistration(t *testing.T) {
 
 func TestMigration(t *testing.T) {
 	s, kvs := initWorkLoadHooksAndKVStore(t)
+	dsc := "00aa.bbcc.ddee"
+	dsc2 := "00aa.bbcc.ddff"
+	dsc3 := "00aa.ccdd.eeff"
 	work := workload.Workload{
 		TypeMeta: api.TypeMeta{Kind: "Workload"},
 		ObjectMeta: api.ObjectMeta{
@@ -355,16 +358,18 @@ func TestMigration(t *testing.T) {
 			HostName: "host-1",
 			Interfaces: []workload.WorkloadIntfSpec{
 				workload.WorkloadIntfSpec{
-					MACAddress:   "00aa.bbcc.0000",
-					IpAddresses:  []string{},
-					ExternalVlan: 100,
-					MicroSegVlan: 1000,
+					MACAddress:    "00aa.bbcc.0000",
+					IpAddresses:   []string{},
+					ExternalVlan:  100,
+					MicroSegVlan:  1000,
+					DSCInterfaces: []string{dsc},
 				},
 				workload.WorkloadIntfSpec{
-					MACAddress:   "00aa.bbcc.0001",
-					IpAddresses:  []string{"1.2.3.2"},
-					ExternalVlan: 100,
-					MicroSegVlan: 1001,
+					MACAddress:    "00aa.bbcc.0001",
+					IpAddresses:   []string{"1.2.3.2"},
+					ExternalVlan:  100,
+					MicroSegVlan:  1001,
+					DSCInterfaces: []string{dsc},
 				},
 			},
 		},
@@ -385,7 +390,9 @@ func TestMigration(t *testing.T) {
 	work2 = work
 	work2.Spec.HostName = "host-2"
 	work2.Spec.Interfaces[0].MicroSegVlan = 2000
+	work2.Spec.Interfaces[0].DSCInterfaces = []string{dsc2}
 	work2.Spec.Interfaces[1].MicroSegVlan = 2001
+	work2.Spec.Interfaces[1].DSCInterfaces = []string{dsc2}
 	_, _, err = s.processStartMigration(context.Background(), kvs, kvs.NewTxn(), work.MakeKey("Workload"), apiintf.UpdateOper, false, work2)
 	AssertOk(t, err, "Failed to Start Migration")
 	newWl := &workload.Workload{}
@@ -394,11 +401,15 @@ func TestMigration(t *testing.T) {
 	AssertEquals(t, newWl.Status.HostName, "host-1", "Status HostName is not updated")
 	AssertEquals(t, newWl.Status.MigrationStatus.Stage, stageMigrationStart, "Migration stage is not START")
 	AssertEquals(t, newWl.Status.Interfaces[0].MicroSegVlan, uint32(1000), "Incorrect old useg vlan on interface 0")
+	AssertEquals(t, newWl.Status.Interfaces[0].DSCInterfaces, []string{dsc}, "Incorrect DSC interface")
 	AssertEquals(t, newWl.Status.Interfaces[1].MicroSegVlan, uint32(1001), "Incorrect old useg vlan on interface 1")
+	AssertEquals(t, newWl.Status.Interfaces[1].DSCInterfaces, []string{dsc}, "Incorrect DSC interface")
 
 	AssertEquals(t, newWl.Spec.HostName, "host-2", "Spec HostName is not updated")
 	AssertEquals(t, newWl.Spec.Interfaces[0].MicroSegVlan, uint32(2000), "Incorrect new useg vlan on interface 0")
+	AssertEquals(t, newWl.Spec.Interfaces[0].DSCInterfaces, []string{dsc2}, "Incorrect DSC interface")
 	AssertEquals(t, newWl.Spec.Interfaces[1].MicroSegVlan, uint32(2001), "Incorrect new useg vlan on interface 1")
+	AssertEquals(t, newWl.Spec.Interfaces[1].DSCInterfaces, []string{dsc2}, "Incorrect DSC interface")
 
 	// Final sync
 	s.logger.Infof("==== Final sync Migration1\n")
@@ -423,7 +434,9 @@ func TestMigration(t *testing.T) {
 	s.logger.Infof("==== Start Migration2\n")
 	work2.Spec.HostName = "host-3"
 	work2.Spec.Interfaces[0].MicroSegVlan = 3000
+	work2.Spec.Interfaces[0].DSCInterfaces = []string{dsc3}
 	work2.Spec.Interfaces[1].MicroSegVlan = 3001
+	work2.Spec.Interfaces[1].DSCInterfaces = []string{dsc3}
 	_, _, err = s.processStartMigration(context.Background(), kvs, kvs.NewTxn(), work.MakeKey("Workload"), apiintf.UpdateOper, false, work2)
 	AssertOk(t, err, "Failed to Start Migration2")
 	// newWl = obj.(workload.Workload)
@@ -440,10 +453,14 @@ func TestMigration(t *testing.T) {
 	kvs.Get(context.Background(), work.MakeKey("Workload"), newWl)
 	AssertEquals(t, newWl.Spec.HostName, "host-2", "Spec HostName is not updated")
 	AssertEquals(t, newWl.Spec.Interfaces[0].MicroSegVlan, uint32(2000), "Incorrect old useg vlan on interface 0")
+	AssertEquals(t, newWl.Spec.Interfaces[0].DSCInterfaces, []string{dsc2}, "Incorrect old useg vlan on interface 0")
 	AssertEquals(t, newWl.Spec.Interfaces[1].MicroSegVlan, uint32(2001), "Incorrect old useg vlan on interface 1")
+	AssertEquals(t, newWl.Spec.Interfaces[1].DSCInterfaces, []string{dsc2}, "Incorrect old useg vlan on interface 0")
 
 	AssertEquals(t, newWl.Status.Interfaces[0].MicroSegVlan, uint32(2000), "Incorrect new useg vlan on interface 0")
+	AssertEquals(t, newWl.Spec.Interfaces[0].DSCInterfaces, []string{dsc2}, "Incorrect old useg vlan on interface 0")
 	AssertEquals(t, newWl.Status.Interfaces[1].MicroSegVlan, uint32(2001), "Incorrect new useg vlan on interface 1")
+	AssertEquals(t, newWl.Spec.Interfaces[1].DSCInterfaces, []string{dsc2}, "Incorrect old useg vlan on interface 0")
 
 	// Abort migration - should fail
 	s.logger.Infof("==== Abort (Again) Migration2 should fail\n")

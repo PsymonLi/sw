@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"sync"
 	"time"
 
-	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/pensando/sw/api"
@@ -15,11 +15,11 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/api/generated/workload"
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/cache"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe"
 	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
-	"github.com/pensando/sw/venice/ctrler/orchhub/utils/pcache"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils/timerqueue"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
@@ -33,6 +33,11 @@ const (
 	retryDelay          = 30 * time.Second
 )
 
+var (
+	managedMode   = orchestration.NamespaceSpec_Managed.String()
+	monitoredMode = orchestration.NamespaceSpec_Monitored.String()
+)
+
 // VCHub instance
 type VCHub struct {
 	*defs.State
@@ -40,7 +45,7 @@ type VCHub struct {
 	vcOpsChannel chan *kvstore.WatchEvent
 	vcReadCh     chan defs.Probe2StoreMsg
 	vcEventCh    chan defs.Probe2StoreMsg
-	pCache       *pcache.PCache
+	cache        *cache.Cache
 	probe        vcprobe.ProbeInf
 	DcMapLock    sync.Mutex
 	// TODO: don't use DC display name as key, use ID instead
@@ -118,32 +123,20 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 	}
 	vcURL.User = url.UserPassword(config.Spec.Credentials.UserName, config.Spec.Credentials.Password)
 
-	if config.Spec.ManageNamespaces == nil ||
-		len(config.Spec.ManageNamespaces) == 0 {
-		logger.Infof("No DCs specified, no DCs will be managed")
-	}
-
-	forceDCMap := map[string]bool{}
-	logger.Infof("Forced DC %s: Only events for this(these) DC(s) will be processed", config.Spec.ManageNamespaces)
-	for _, dc := range config.Spec.ManageNamespaces {
-		forceDCMap[dc] = true
-	}
-
 	orchID := fmt.Sprintf("orch%d", config.Status.OrchID)
 
 	state := defs.State{
-		VcURL:        vcURL,
-		VcID:         config.GetName(),
-		OrchID:       orchID,
-		Ctx:          ctx,
-		Log:          logger.WithContext("submodule", fmt.Sprintf("VCHub-%s(%s)", config.GetName(), orchID)),
-		StateMgr:     stateMgr,
-		Wg:           &sync.WaitGroup{},
-		DcIDMap:      map[string]types.ManagedObjectReference{}, // Obj name to ID
-		DvsIDMap:     map[string]types.ManagedObjectReference{}, // Obj name to ID
-		ForceDCNames: forceDCMap,
-		TimerQ:       timerqueue.NewQueue(),
-		OrchConfig:   ref.DeepCopy(config).(*orchestration.Orchestrator),
+		VcURL:      vcURL,
+		VcID:       config.GetName(),
+		OrchID:     orchID,
+		Ctx:        ctx,
+		Log:        logger.WithContext("oName", fmt.Sprintf("%s", config.GetName()), "oID", fmt.Sprintf("%s", orchID)),
+		StateMgr:   stateMgr,
+		Wg:         &sync.WaitGroup{},
+		DcIDMap:    map[string]types.ManagedObjectReference{}, // Obj name to ID
+		DvsIDMap:   map[string]types.ManagedObjectReference{}, // Obj name to ID
+		TimerQ:     timerqueue.NewQueue(),
+		OrchConfig: ref.DeepCopy(config).(*orchestration.Orchestrator),
 	}
 
 	v.State = &state
@@ -158,6 +151,8 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 	v.tagSyncInitializedMap = map[string]bool{}
 	v.launchTime = time.Now().String()
 
+	v.buildDCSpec(config)
+
 	v.orchUpdateLock.Lock()
 	v.OrchConfig.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
 	v.OrchConfig.Status.LastTransitionTime = &api.Timestamp{}
@@ -171,7 +166,7 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 
 	v.orchUpdateLock.Unlock()
 
-	v.setupPCache()
+	v.cache = cache.NewCache(v.StateMgr, v.Log)
 
 	clusterItems, err := v.StateMgr.Controller().Cluster().List(context.Background(), &api.ListWatchOptions{})
 	if err != nil {
@@ -294,28 +289,59 @@ func (v *VCHub) isCredentialChanged(config *orchestration.Orchestrator) bool {
 
 // UpdateConfig handles if the Orchestrator config has changed
 func (v *VCHub) UpdateConfig(config *orchestration.Orchestrator) {
-	v.Log.Infof("VCHub config updated. : Orch : %v", config.ObjectMeta)
-	err := v.reconcileNamespaces(config)
-	// If we are unable to reconcile namespaces, we should restart vchub
-	// to make sure we are managing the correct DCs
-
-	if v.isCredentialChanged(config) || err != nil {
+	v.Log.Infof("VCHub config updated. : Orch : %v", config.GetKey())
+	if v.isCredentialChanged(config) {
+		v.Log.Infof("Credentials were updated. Restarting VCHub")
+		if v.OrchConfig.Spec.URI != config.Spec.URI {
+			// Delete DCs
+			wg := sync.WaitGroup{}
+			v.DcMapLock.Lock()
+			for name := range v.DcMap {
+				v.Log.Infof("Cleaning up DC : %v", name)
+				wg.Add(1)
+				go func(name string) {
+					defer wg.Done()
+					v.RemovePenDC(name)
+				}(name)
+			}
+			v.DcMapLock.Unlock()
+			wg.Wait()
+		}
 		v.Log.Infof("Credentials were updated. Restarting VCHub")
 		v.Destroy(false)
 		v.setupVCHub(v.StateMgr, config, v.Log, v.opts...)
-	} else {
-		// If setupVCHub is not called, we have to update the forceDCMaps and config
-		forceDCMap := map[string]bool{}
-		for _, dc := range config.Spec.ManageNamespaces {
-			forceDCMap[dc] = true
-		}
-
-		v.ForceDCNamesLock.Lock()
-		v.ForceDCNames = forceDCMap
-		v.ForceDCNamesLock.Unlock()
-		// Don't copy over status
-		v.OrchConfig.Spec = ref.DeepCopy(config.Spec).(orchestration.OrchestratorSpec)
 	}
+	v.reconcileOrchNamespaces(config)
+}
+
+func (v *VCHub) buildDCSpec(config *orchestration.Orchestrator) {
+	v.DcSpecLock.Lock()
+	v.ManagedDCs = map[string]orchestration.ManagedNamespaceSpec{}
+	v.MonitoredDCs = map[string]orchestration.MonitoredNamespaceSpec{}
+	// Supporting old method of managing namespaces
+	for _, dc := range config.Spec.ManageNamespaces {
+		v.ManagedDCs[dc] = defs.DefaultDCManagedConfig()
+	}
+
+	for _, nsSpec := range config.Spec.Namespaces {
+		switch nsSpec.Mode {
+		case managedMode:
+			spec := defs.DefaultDCManagedConfig()
+			if nsSpec.ManagedSpec != nil {
+				spec = *nsSpec.ManagedSpec
+			}
+			v.ManagedDCs[nsSpec.Name] = spec
+		case monitoredMode:
+			spec := orchestration.MonitoredNamespaceSpec{}
+			if nsSpec.MonitoredSpec != nil {
+				spec = *nsSpec.MonitoredSpec
+			}
+			v.MonitoredDCs[nsSpec.Name] = spec
+		}
+	}
+	v.Log.Infof("Managed DCs: %v", v.ManagedDCs)
+	v.Log.Infof("Monitored DCs: %v", v.MonitoredDCs)
+	v.DcSpecLock.Unlock()
 }
 
 // deleteAllDVS cleans up all the PensandoDVS present in the DCs within the VC deployment
@@ -324,16 +350,16 @@ func (v *VCHub) deleteAllDVS() {
 	defer v.DcMapLock.Unlock()
 
 	for _, dc := range v.DcMap {
-		if !v.isManagedNamespace(dc.Name) {
-			v.Log.Infof("Skipping deletion of DVS from %v.", dc.Name)
+		if !v.isManagedNamespace(dc.DcName) {
+			v.Log.Infof("Skipping deletion of DVS from %v.", dc.DcName)
 			continue
 		}
 
 		dc.Lock()
-		for _, penDVS := range dc.DvsMap {
-			err := v.probe.RemovePenDVS(dc.Name, penDVS.DvsName, defaultRetryCount)
+		for _, penDVS := range dc.PenDvsMap {
+			err := v.probe.RemovePenDVS(dc.DcName, penDVS.DvsName, defaultRetryCount)
 			if err != nil {
-				v.Log.Errorf("Failed deleting DVS %v in DC %v. Err : %v", penDVS.DvsName, dc.Name, err)
+				v.Log.Errorf("Failed deleting DVS %v in DC %v. Err : %v", penDVS.DvsName, dc.DcName, err)
 			}
 		}
 		dc.Unlock()
@@ -362,153 +388,221 @@ func (v *VCHub) Reconnect(kind string) {
 	v.Log.Infof("Reconnect called for %s", kind)
 	switch kind {
 	case string(workload.KindWorkload):
-		v.pCache.RevalidateKind(string(workload.KindWorkload))
+		v.cache.RevalidateWorkloads()
 	case string(cluster.KindHost):
-		v.pCache.RevalidateKind(string(cluster.KindHost))
+		v.cache.RevalidateHosts()
 		// Also trigger workloads in case they were relying on a host that just got written
-		v.pCache.RevalidateKind(string(workload.KindWorkload))
+		v.cache.RevalidateWorkloads()
 	}
 }
 
-// ListPensandoHosts List only Pensando Hosts from vCenter
-func (v *VCHub) ListPensandoHosts(dcRef *types.ManagedObjectReference) ([]mo.HostSystem, error) {
-	var penHosts []mo.HostSystem
-	hosts, err := v.probe.ListHosts(dcRef)
-	if err != nil {
-		return penHosts, err
-	}
-	for _, host := range hosts {
-		if !isPensandoHost(host.Config) {
-			v.Log.Debugf("Skipping non-Pensando Host %s", host.Name)
-			continue
-		}
-		penHosts = append(penHosts, host)
-	}
-	return penHosts, nil
-}
-
-func (v *VCHub) reconcileNamespaces(config *orchestration.Orchestrator) error {
+func (v *VCHub) reconcileOrchNamespaces(config *orchestration.Orchestrator) {
 	v.Log.Infof("Reconciling namespaces for orchestrator [%v]", config.Name)
+	updateVCHub := func() {
+		v.buildDCSpec(config)
+		// Don't copy over status
+		v.OrchConfig.Spec = ref.DeepCopy(config.Spec).(orchestration.OrchestratorSpec)
+	}
 	// Cleanup and additions are only needed if we are connected to vCenter
 	if !v.probe.IsSessionReady() {
 		v.Log.Infof("Reconciling namespaces skipped because probe isn't ready")
-		return nil
+		updateVCHub()
+		return
 	}
 
 	// If sync is running, we don't want to modify state until it is done.
-	v.syncLock.RLock()
-	defer v.syncLock.RUnlock()
+	// We also want to make sure that any vcenter events that are in the middle of processing are finished.
+	v.syncLock.Lock()
+	defer v.syncLock.Unlock()
 
 	dcMap, err := v.probe.GetDCMap()
 	if err != nil {
-		v.Log.Errorf("Failed to get dc mapping during reconcileNamepsace, %s", err)
-		return err
+		v.Log.Errorf("Failed to get dc mapping during reconcileManagedNamepsace, %s", err)
+		v.Destroy(false)
+		v.setupVCHub(v.StateMgr, config, v.Log, v.opts...)
+		return
 	}
 
-	newManagedNamespaces := []string{}
 	// Get currently managed namespaces
-	managedNamespaces := []string{}
-	v.ForceDCNamesLock.RLock()
-	defer v.ForceDCNamesLock.RUnlock()
+	currDCList := map[string]*orchestration.NamespaceSpec{}
 
-	if ok := v.ForceDCNames[utils.ManageAllDcs]; ok {
-		for k := range dcMap {
-			managedNamespaces = append(managedNamespaces, k)
+	v.DcMapLock.Lock()
+	for _, dc := range v.DcMap {
+		mode := string(dc.mode)
+		currDCList[dc.DcName] = &orchestration.NamespaceSpec{
+			Mode: mode,
+			Name: dc.DcName,
 		}
-	} else {
-		for k := range v.ForceDCNames {
-			managedNamespaces = append(managedNamespaces, k)
+		if mode == managedMode {
+			v.DcSpecLock.Lock()
+			spec := v.ManagedDCs[dc.DcName]
+			currDCList[dc.DcName].ManagedSpec = &spec
+			v.DcSpecLock.Unlock()
 		}
 	}
+	v.DcMapLock.Unlock()
 
 	// If url is different, then we have all deletes.
+	newNamespaces := map[string]*orchestration.NamespaceSpec{}
 	if config.Spec.URI == v.OrchConfig.Spec.URI {
-		if len(config.Spec.ManageNamespaces) == 1 && config.Spec.ManageNamespaces[0] == utils.ManageAllDcs {
-			for k := range dcMap {
-				newManagedNamespaces = append(newManagedNamespaces, k)
-			}
-		} else {
-			newManagedNamespaces = config.Spec.ManageNamespaces
-		}
-	}
-
-	addedNs, deletedNs, nochangeNs := utils.DiffNamespace(managedNamespaces, newManagedNamespaces)
-	if len(addedNs) == 0 && len(deletedNs) == 0 {
-		v.Log.Info("No namespaces to reconcile")
-		return nil
-	}
-
-	if len(nochangeNs) == 0 && len(addedNs) == 0 {
-		v.Log.Infof("All namespaces associated with the orchestrator object have been deleted")
-	}
-
-	// Cleanup DCs no longer managed by OrchHub
-	for _, ns := range deletedNs {
-		v.Log.Infof("Cleaning up DC : %v", ns)
-		v.RemovePenDC(ns)
-	}
-
-	if len(addedNs) > 0 {
-		for _, ns := range addedNs {
-			dc, ok := dcMap[ns]
-			if !ok {
-				v.Log.Errorf("DC %v not found in VCenter DC List.", ns)
-				continue
-			}
-
-			v.Log.Infof("Initializing DC : %v", dc.Name)
-			_, err := v.NewPenDC(dc.Name, dc.Self.Value)
-			if err == nil {
-				v.probe.StartWatchForDC(dc.Name, dc.Self.Value)
-				v.checkNetworks(dc.Name)
-			} else {
-				retryFn := func() {
-					v.Log.Infof("Retry Event: Create DC running")
-					name := dc.Name
-					dcObj, ok := dcMap[name]
-					if !ok {
-						v.Log.Infof("Retry event: DC %s no longer exists, nothing to do", name)
-						return
-					}
-
-					msg := defs.Probe2StoreMsg{
-						MsgType: defs.VCEvent,
-						Val: defs.VCEventMsg{
-							VcObject:   defs.Datacenter,
-							Key:        dcObj.Self.Value,
-							Originator: v.VcID,
-							Changes: []types.PropertyChange{
-								types.PropertyChange{
-									Name: "name",
-									Op:   "add",
-									Val:  name,
-								},
-							},
-						},
-					}
-					select {
-					case <-v.Ctx.Done():
-						return
-					case v.vcReadCh <- msg:
+		for _, dc := range config.Spec.ManageNamespaces {
+			if dc == utils.ManageAllDcs {
+				for k := range dcMap {
+					managedSpec := defs.DefaultDCManagedConfig()
+					newNamespaces[k] = &orchestration.NamespaceSpec{
+						Mode:        orchestration.NamespaceSpec_Managed.String(),
+						Name:        k,
+						ManagedSpec: &managedSpec,
 					}
 				}
-				v.Log.Info("Creating state for DC %s failed, pushing to retry queue", dc.Name)
-				v.TimerQ.Add(retryFn, retryDelay)
+			} else {
+				managedSpec := defs.DefaultDCManagedConfig()
+				newNamespaces[dc] = &orchestration.NamespaceSpec{
+					Mode:        orchestration.NamespaceSpec_Managed.String(),
+					Name:        dc,
+					ManagedSpec: &managedSpec,
+				}
+			}
+		}
+
+		for _, nsSpec := range config.Spec.Namespaces {
+			if nsSpec.Name == utils.ManageAllDcs {
+				for k := range dcMap {
+					spec := ref.DeepCopy(*nsSpec).(orchestration.NamespaceSpec)
+					spec.Name = k
+					newNamespaces[k] = &spec
+				}
+			} else {
+				newNamespaces[nsSpec.Name] = nsSpec
 			}
 		}
 	}
+	v.Log.Infof("Old datacenter list %+v", currDCList)
+	v.Log.Infof("New datacenter list %+v", newNamespaces)
 
-	return nil
+	updateVCHub()
+	for name, spec := range currDCList {
+		if nSpec, ok := newNamespaces[name]; ok {
+			if nSpec.Mode != spec.Mode {
+				// Mode changed. Tear down and create
+				v.RemovePenDC(name)
+				// Add DC back
+				dc, ok := dcMap[name]
+				if !ok {
+					// This should never happen since currDCList is built from dcMap
+					v.Log.Errorf("DC %v not found in VCenter DC List.", name)
+					continue
+				}
+				v.addDC(dc.Name, dc.Self.Value)
+			} else {
+				switch nSpec.Mode {
+				case managedMode:
+					if reflect.DeepEqual(nSpec.ManagedSpec, spec.ManagedSpec) {
+						v.Log.Infof("Managed namespace spec changed for DC %v", name)
+						v.DcMapLock.Lock()
+						d, ok := v.DcMap[name]
+						v.DcMapLock.Unlock()
+						if ok {
+							err := d.AddPenDVS()
+							if err != nil {
+								v.Log.Errorf("Failed to add DVS to DC %v. %v", name, err)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			// No longer interested
+			v.RemovePenDC(name)
+		}
+	}
+
+	for name := range newNamespaces {
+		if _, ok := currDCList[name]; !ok {
+			// Addition
+			dc, ok := dcMap[name]
+			if !ok {
+				v.Log.Errorf("DC %v not found in VCenter DC List.", name)
+				continue
+			}
+			v.addDC(dc.Name, dc.Self.Value)
+		}
+	}
+
+	return
+}
+
+func (v *VCHub) addDC(dcName, dcID string) {
+	v.Log.Infof("Initializing DC : %v", dcName)
+
+	synced := v.syncDC(dcName, dcID)
+	if synced {
+		v.probe.StartWatchForDC(dcName, dcID)
+		if v.isManagedNamespace(dcName) {
+			v.checkNetworks(dcName)
+		}
+	} else {
+		// Enqueue a dummy create event for this DC so that we will retry to sync and start watchers
+		retryFn := func() {
+			v.Log.Infof("Retry Event: Create DC running")
+			dcMap, err := v.probe.GetDCMap()
+			if err != nil {
+				v.Log.Errorf("Failed to get dc mapping during retry, %s", err)
+				return
+			}
+			name := dcName
+			dcObj, ok := dcMap[name]
+			if !ok {
+				v.Log.Infof("Retry event: DC %s no longer exists, nothing to do", name)
+				return
+			}
+
+			msg := defs.Probe2StoreMsg{
+				MsgType: defs.VCEvent,
+				Val: defs.VCEventMsg{
+					VcObject:   defs.Datacenter,
+					Key:        dcObj.Self.Value,
+					Originator: v.VcID,
+					Changes: []types.PropertyChange{
+						{
+							Name: "name",
+							Op:   "add",
+							Val:  name,
+						},
+					},
+				},
+			}
+			select {
+			case <-v.Ctx.Done():
+				return
+			case v.vcReadCh <- msg:
+			}
+		}
+		v.Log.Info("Creating state for DC %s failed, pushing to retry queue", dcName)
+		v.TimerQ.Add(retryFn, retryDelay)
+	}
 }
 
 // Check if the given DC(namespace) is managed by this vchub
 func (v *VCHub) isManagedNamespace(name string) bool {
-	v.ForceDCNamesLock.RLock()
-	defer v.ForceDCNamesLock.RUnlock()
-	if _, ok := v.ForceDCNames[name]; ok {
+	v.DcSpecLock.RLock()
+	defer v.DcSpecLock.RUnlock()
+	if _, ok := v.ManagedDCs[name]; ok {
 		return true
 	}
-	if _, ok := v.ForceDCNames[utils.ManageAllDcs]; ok {
+	if _, ok := v.ManagedDCs[utils.ManageAllDcs]; ok {
+		return true
+	}
+	return false
+}
+
+func (v *VCHub) isMonitoredNamespace(name string) bool {
+	v.DcSpecLock.RLock()
+	defer v.DcSpecLock.RUnlock()
+	if _, ok := v.MonitoredDCs[name]; ok {
+		return true
+	}
+	if _, ok := v.MonitoredDCs[utils.ManageAllDcs]; ok {
 		return true
 	}
 	return false
@@ -553,4 +647,19 @@ func (v *VCHub) IsSyncDone() bool {
 // Should only be used by test programs
 func (v *VCHub) AreWatchersStarted() bool {
 	return v.watchStarted
+}
+
+// GetMode returns the mode for a given DC
+func (v *VCHub) GetMode(dc string) defs.Mode {
+	managed := v.isManagedNamespace(dc)
+	monitored := v.isMonitoredNamespace(dc)
+	var mode defs.Mode
+	if managed && monitored {
+		mode = defs.MonitoringManagedMode
+	} else if managed {
+		mode = defs.ManagedMode
+	} else if monitored {
+		mode = defs.MonitoringMode
+	}
+	return mode
 }

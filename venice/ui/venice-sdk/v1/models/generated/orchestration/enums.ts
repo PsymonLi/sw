@@ -25,6 +25,29 @@ export enum MonitoringExternalCred_auth_type {
     'certs' = "certs",
 }
 
+export enum OrchestrationManagedNamespaceSpec_multicast_filter {
+    'basic' = "basic",
+    'snooping' = "snooping",
+}
+
+export enum OrchestrationManagedNamespaceSpec_discovery_protocol {
+    'disabled' = "disabled",
+    'cdp' = "cdp",
+    'lldp' = "lldp",
+}
+
+export enum OrchestrationManagedNamespaceSpec_discovery_operation {
+    'none' = "none",
+    'listen' = "listen",
+    'advertise' = "advertise",
+    'both' = "both",
+}
+
+export enum OrchestrationNamespaceSpec_mode {
+    'managed' = "managed",
+    'monitored' = "monitored",
+}
+
 export enum OrchestrationOrchestratorSpec_type {
     'vcenter' = "vcenter",
 }
@@ -54,6 +77,29 @@ export enum MonitoringExternalCred_auth_type_uihint {
     'none' = "None",
     'token' = "Token",
     'username-password' = "Username/Password",
+}
+
+export enum OrchestrationManagedNamespaceSpec_multicast_filter_uihint {
+    'basic' = "Basic",
+    'snooping' = "Snooping",
+}
+
+export enum OrchestrationManagedNamespaceSpec_discovery_protocol_uihint {
+    'cdp' = "CDP",
+    'disabled' = "Disabled",
+    'lldp' = "LLDP",
+}
+
+export enum OrchestrationManagedNamespaceSpec_discovery_operation_uihint {
+    'advertise' = "Advertise",
+    'both' = "Both",
+    'listen' = "Listen",
+    'none' = "None",
+}
+
+export enum OrchestrationNamespaceSpec_mode_uihint {
+    'managed' = "Managed",
+    'monitored' = "Monitored",
 }
 
 export enum OrchestrationOrchestratorSpec_type_uihint {
@@ -100,11 +146,19 @@ export class AllEnums {
 
     ApiListWatchOptions_sort_order = ApiListWatchOptions_sort_order;
     MonitoringExternalCred_auth_type = MonitoringExternalCred_auth_type;
+    OrchestrationManagedNamespaceSpec_multicast_filter = OrchestrationManagedNamespaceSpec_multicast_filter;
+    OrchestrationManagedNamespaceSpec_discovery_protocol = OrchestrationManagedNamespaceSpec_discovery_protocol;
+    OrchestrationManagedNamespaceSpec_discovery_operation = OrchestrationManagedNamespaceSpec_discovery_operation;
+    OrchestrationNamespaceSpec_mode = OrchestrationNamespaceSpec_mode;
     OrchestrationOrchestratorSpec_type = OrchestrationOrchestratorSpec_type;
     OrchestrationOrchestratorStatus_connection_status = OrchestrationOrchestratorStatus_connection_status;
 
     ApiListWatchOptions_sort_order_uihint = ApiListWatchOptions_sort_order_uihint;
     MonitoringExternalCred_auth_type_uihint = MonitoringExternalCred_auth_type_uihint;
+    OrchestrationManagedNamespaceSpec_multicast_filter_uihint = OrchestrationManagedNamespaceSpec_multicast_filter_uihint;
+    OrchestrationManagedNamespaceSpec_discovery_protocol_uihint = OrchestrationManagedNamespaceSpec_discovery_protocol_uihint;
+    OrchestrationManagedNamespaceSpec_discovery_operation_uihint = OrchestrationManagedNamespaceSpec_discovery_operation_uihint;
+    OrchestrationNamespaceSpec_mode_uihint = OrchestrationNamespaceSpec_mode_uihint;
     OrchestrationOrchestratorSpec_type_uihint = OrchestrationOrchestratorSpec_type_uihint;
     OrchestrationOrchestratorStatus_connection_status_uihint = OrchestrationOrchestratorStatus_connection_status_uihint;
 }

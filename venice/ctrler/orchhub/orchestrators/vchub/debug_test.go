@@ -36,7 +36,8 @@ func TestDebug(t *testing.T) {
 
 	s, err := sim.NewVcSim(sim.Config{Addr: u.String()})
 	AssertOk(t, err, "Failed to create vcsim")
-	dc1, err := s.AddDC(defaultTestParams.TestDCName)
+	dcName := defaultTestParams.TestDCName
+	dc1, err := s.AddDC(dcName)
 	AssertOk(t, err, "failed dc create")
 	host, err := dc1.AddHost("host1")
 	AssertOk(t, err, "Failed to create host")
@@ -46,6 +47,7 @@ func TestDebug(t *testing.T) {
 	// Make it Pensando host
 	err = host.AddNic("vmnic0", conv.MacString(pNicMac))
 	AssertOk(t, err, "failed to add nic")
+
 	host2, err := dc1.AddHost("host2")
 	AssertOk(t, err, "Failed to create host")
 	vm, err := dc1.AddVM("vm1", "host1", nil)
@@ -60,6 +62,7 @@ func TestDebug(t *testing.T) {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "host2", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Status.OrchID = 1
@@ -73,10 +76,11 @@ func TestDebug(t *testing.T) {
 		return vchub.watchStarted, nil
 	}, "VCHub sync never finished")
 
-	dvsName := CreateDVSName(defaultTestParams.TestDCName)
+	dvsName := CreateDVSName(dcName)
 	dvs, ok := dc1.GetDVS(dvsName)
 	Assert(t, ok, "failed dvs create")
 	err = dvs.AddHost(host)
+	host.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
 	AssertOk(t, err, "failed to add Host to DVS")
 	time.Sleep(500 * time.Millisecond)
 
@@ -122,9 +126,11 @@ func TestDebug(t *testing.T) {
 	testDebug(DebugUseg, params, `{"PG":{"#Pen-PG-n1-primary":2,"#Pen-PG-n1-secondary":3},"Hosts":{}}`)
 
 	params = map[string]string{}
-	debugStringHost2 := `"//` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `":{"kind":"Host","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `","generation-id":"","labels":{"io.pensando.namespace":"PenTestDC","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"host2"},"creation-time":"","mod-time":""},"spec":{},"status":{}}`
+	debugStringHost := vchub.createHostName(defaultTestParams.TestDCName, host.Obj.Self.Value) + `":{"kind":"Host","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, host.Obj.Self.Value) + `","generation-id":"","labels":{"io.pensando.namespace":"PenTestDC","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"host1"},"creation-time":"","mod-time":""},"spec":{"dscs":[{"mac-address":"00ae.cdaa.0000"}]},"status":{}`
+	debugStringHost2 := vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `":{"kind":"Host","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `","generation-id":"","labels":{"io.pensando.namespace":"PenTestDC","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"host2"},"creation-time":"","mod-time":""},"spec":{},"status":{}`
 	debugStringWorkload := `"default/default/` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `":{"kind":"Workload","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `","tenant":"default","namespace":"default","generation-id":"","labels":{"io.pensando.namespace":"` + defaultTestParams.TestDCName + `","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"vm1"},"creation-time":"","mod-time":""},"spec":{"host-name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Runtime.Host.Value) + `"},"status":{"propagation-status":{"generation-id":"","updated":0,"pending":0,"min-version":"","status":"","pending-dscs":null}`
 
+	testDebug(DebugCache, params, debugStringHost)
 	testDebug(DebugCache, params, debugStringHost2)
 	testDebug(DebugCache, params, debugStringWorkload)
 	params = map[string]string{}

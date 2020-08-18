@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/pensando/sw/venice/utils/ref"
@@ -174,13 +175,13 @@ func (v *Datacenter) Destroy() error {
 
 // GetDVS returns the distributed virtual switch by name
 func (v *Datacenter) GetDVS(name string) (*DVS, bool) {
-	entry, ok := v.dvsMap[name]
-	if ok {
-		return entry, ok
-	}
 	dvss := simulator.Map.All("DistributedVirtualSwitch")
 	for _, dvs := range dvss {
 		if dvs.Entity().Name == name {
+			entry, ok := v.dvsMap[name]
+			if ok {
+				return entry, ok
+			}
 			ret := &DVS{
 				client:       v.client,
 				Obj:          dvs.(*simulator.DistributedVirtualSwitch),
@@ -190,7 +191,7 @@ func (v *Datacenter) GetDVS(name string) (*DVS, bool) {
 			return ret, true
 		}
 	}
-	return entry, ok
+	return nil, false
 }
 
 // AddDVS adds a distributed virtual switch to the DC
@@ -324,6 +325,50 @@ func (v *Host) AddNic(name string, mac string) error {
 	pnic := types.PhysicalNic{Key: key, Device: name, Mac: mac}
 	v.Obj.Config.Network.Pnic = append(v.Obj.Config.Network.Pnic, pnic)
 
+	h := simulator.Map.Get(v.Obj.Reference())
+	simulator.Map.Update(h, []types.PropertyChange{
+		{Name: "config", Val: v.Obj.Config},
+	})
+
+	return nil
+}
+
+// AddUplinksToDVS adds host pnics to dvs
+func (v *Host) AddUplinksToDVS(dvsName string, uplinkPnics map[string]string) error {
+	var dvsProxy *types.HostProxySwitch
+
+	for i, dp := range v.Obj.Config.Network.ProxySwitch {
+		if dp.DvsName == dvsName {
+			dvsProxy = &v.Obj.Config.Network.ProxySwitch[i]
+			break
+		}
+	}
+	if dvsProxy == nil {
+		dvsProxy = &types.HostProxySwitch{
+			DvsName: dvsName,
+			Spec: types.HostProxySwitchSpec{
+				Backing: &types.DistributedVirtualSwitchHostMemberPnicBacking{
+					PnicSpec: []types.DistributedVirtualSwitchHostMemberPnicSpec{},
+				},
+			},
+			UplinkPort: []types.KeyValue{},
+		}
+		v.Obj.Config.Network.ProxySwitch = append(v.Obj.Config.Network.ProxySwitch, *dvsProxy)
+		dvsProxy = &v.Obj.Config.Network.ProxySwitch[len(v.Obj.Config.Network.ProxySwitch)-1]
+	}
+
+	backing, ok := dvsProxy.Spec.Backing.(*types.DistributedVirtualSwitchHostMemberPnicBacking)
+	if !ok {
+		return nil
+	}
+	i := 0
+	for uplink, pnic := range uplinkPnics {
+		portKey := strconv.Itoa(i)
+		backing.PnicSpec = append(backing.PnicSpec, types.DistributedVirtualSwitchHostMemberPnicSpec{
+			PnicDevice: pnic, UplinkPortKey: portKey})
+		dvsProxy.UplinkPort = append(dvsProxy.UplinkPort, types.KeyValue{Key: portKey, Value: uplink})
+		i++
+	}
 	h := simulator.Map.Get(v.Obj.Reference())
 	simulator.Map.Update(h, []types.PropertyChange{
 		{Name: "config", Val: v.Obj.Config},
@@ -719,8 +764,14 @@ func (v *DVS) addHost(host *Host, withRuntime bool) error {
 	dvsProxy := types.HostProxySwitch{
 		ConfigNumPorts: 512,
 		DvsName:        v.Obj.Name,
+		Spec: types.HostProxySwitchSpec{
+			Backing: &types.DistributedVirtualSwitchHostMemberPnicBacking{
+				PnicSpec: []types.DistributedVirtualSwitchHostMemberPnicSpec{},
+			},
+		},
+		UplinkPort: []types.KeyValue{},
 	}
-	// add all pnics as connected to dvs uplinks
+	// No pnics are connected. These must be added specifically using another API, after pnics are added
 	for _, pnic := range host.Obj.Config.Network.Pnic {
 		dvsProxy.Pnic = append(dvsProxy.Pnic, pnic.Key)
 	}

@@ -1752,6 +1752,14 @@
             "items": {
               "type": "string"
             }
+          },
+          {
+            "name": "status.num-mac-address",
+            "description": "NumMacAddress has the number of mac addresses that is available on this DSC. Value should be between 0 and 256.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -7463,7 +7471,8 @@
     "clusterDistributedServiceCardStatus": {
       "type": "object",
       "required": [
-        "admission-phase"
+        "admission-phase",
+        "num-mac-address"
       ],
       "properties": {
         "admission-phase": {
@@ -7554,6 +7563,14 @@
             "type": "string"
           },
           "description": "Lists the unhealthy services of a distributed service card."
+        },
+        "num-mac-address": {
+          "type": "integer",
+          "format": "int64",
+          "default": "24",
+          "minimum": 0,
+          "maximum": 256,
+          "description": "NumMacAddress has the number of mac addresses that is available on this DSC. Value should be between 0 and 256."
         }
       },
       "description": "DistributedServiceCardStatus contains current status of a DistributedServiceCard."

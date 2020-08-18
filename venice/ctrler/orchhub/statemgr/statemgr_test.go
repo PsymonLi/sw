@@ -64,13 +64,13 @@ func TestNetworkWatcher(t *testing.T) {
 	}
 
 	expNets := map[string]bool{}
-	_, err = CreateNetwork(sm, "default", "prod-beef-vlan100", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo)
+	_, err = CreateNetwork(sm, "default", "aaaa.aaaa.aaaa-vlan100", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo)
 	Assert(t, (err == nil), "network could not be created")
-	expNets["prod-beef-vlan100"] = true
+	expNets["aaaa.aaaa.aaaa-vlan100"] = true
 
-	_, err = CreateNetwork(sm, "default", "prod-bebe-vlan200", "10.2.1.0/24", "10.2.1.1", 200, nil, orchInfo)
+	_, err = CreateNetwork(sm, "default", "aaaa.aaaa.bbbb-vlan200", "10.2.1.0/24", "10.2.1.1", 200, nil, orchInfo)
 	Assert(t, (err == nil), "network could not be created")
-	expNets["prod-bebe-vlan200"] = true
+	expNets["aaaa.aaaa.bbbb-vlan200"] = true
 
 	np := network.Network{
 		TypeMeta: api.TypeMeta{Kind: "Network"},
@@ -211,10 +211,10 @@ func TestNetworkCreateList(t *testing.T) {
 	err = sm.Controller().Cluster().Create(clusterConfig)
 	AssertOk(t, err, "failed to create cluster config")
 
-	_, err = CreateNetwork(sm, "default", "prod-beef-vlan100", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo)
+	_, err = CreateNetwork(sm, "default", "aaaa.aaaa.aaaa-vlan100", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo)
 	Assert(t, (err == nil), "network could not be created")
 
-	_, err = CreateNetwork(sm, "default", "prod-bebe-vlan200", "10.2.1.0/24", "10.2.1.1", 200, nil, orchInfo)
+	_, err = CreateNetwork(sm, "default", "aaaa.aaaa.bbbb-vlan200", "10.2.1.0/24", "10.2.1.1", 200, nil, orchInfo)
 	Assert(t, (err == nil), "network could not be created")
 
 	labels := map[string]string{"color": "green"}
@@ -230,7 +230,7 @@ func TestNetworkCreateList(t *testing.T) {
 	Assert(t, len(nw) == 1, "found more networks than expected. [%v]", len(nw))
 
 	meta := api.ObjectMeta{
-		Name:      "prod-bebe-vlan200",
+		Name:      "aaaa.aaaa.bbbb-vlan200",
 		Namespace: "default",
 		Tenant:    "default",
 	}
@@ -294,10 +294,10 @@ func TestWorkloadCreateList(t *testing.T) {
 	go im.watchOrchestratorConfig()
 	defer im.WatchCancel()
 
-	err = createWorkload(sm, "default", "prod-beef", nil)
+	err = createWorkload(sm, "default", "aaaa.aaaa.aaaa", nil)
 	Assert(t, (err == nil), "Workload could not be created")
 
-	err = createWorkload(sm, "default", "prod-bebe", nil)
+	err = createWorkload(sm, "default", "aaaa.aaaa.bbbb", nil)
 	Assert(t, (err == nil), "Workload could not be created")
 
 	labels := map[string]string{"color": "green"}
@@ -313,7 +313,7 @@ func TestWorkloadCreateList(t *testing.T) {
 	Assert(t, len(nw) == 1, "found more Workloads than expected. [%v]", len(nw))
 
 	meta := api.ObjectMeta{
-		Name:      "prod-bebe",
+		Name:      "aaaa.aaaa.bbbb",
 		Namespace: "default",
 		Tenant:    "default",
 	}
@@ -388,10 +388,10 @@ func TestHostCreateList(t *testing.T) {
 	prodMap[utils.OrchNameKey] = "prod"
 	prodMap[utils.NamespaceKey] = "dev"
 
-	err = createHost(sm, "default", "prod-beef", "", prodMap)
+	err = createHost(sm, "default", "aaaa.aaaa.aaaa", "", prodMap)
 	Assert(t, (err == nil), "Host could not be created")
 
-	err = createHost(sm, "default", "prod-bebe", "", prodMap)
+	err = createHost(sm, "default", "aaaa.aaaa.bbbb", "", prodMap)
 	Assert(t, (err == nil), "Host could not be created")
 
 	labels := map[string]string{"color": "green"}
@@ -407,7 +407,7 @@ func TestHostCreateList(t *testing.T) {
 	Assert(t, len(nw) == 1, "found more Hosts than expected. [%v]", len(nw))
 
 	meta := api.ObjectMeta{
-		Name:      "prod-bebe",
+		Name:      "aaaa.aaaa.bbbb",
 		Namespace: "default",
 	}
 
@@ -448,7 +448,7 @@ func TestHostCreateList(t *testing.T) {
 }
 
 // createDistributedServiceCard utility function to create a DistributedServiceCard
-func createDistributedServiceCard(stateMgr *Statemgr, name, id string, labels map[string]string) error {
+func createDistributedServiceCard(stateMgr *Statemgr, name, id, host string, labels map[string]string) error {
 	// DistributedServiceCard params
 	np := cluster.DistributedServiceCard{
 		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
@@ -456,8 +456,14 @@ func createDistributedServiceCard(stateMgr *Statemgr, name, id string, labels ma
 			Name:   name,
 			Labels: labels,
 		},
-		Spec:   cluster.DistributedServiceCardSpec{DSCProfile: "default", ID: id},
-		Status: cluster.DistributedServiceCardStatus{PrimaryMAC: name},
+		Spec: cluster.DistributedServiceCardSpec{
+			DSCProfile: "default",
+			ID:         id,
+		},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC: name,
+			Host:       host,
+		},
 	}
 
 	// create a DistributedServiceCard
@@ -504,26 +510,51 @@ func TestDistributedServiceCardCreateList(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "prod-beef", "", nil)
+	err = createDistributedServiceCard(sm, "aaaa.aa00.0000", "", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
-	err = createDistributedServiceCard(sm, "prod-bebe", "", nil)
+	err = createDistributedServiceCard(sm, "aaaa.aa0f.ffff", "", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	labels := map[string]string{"color": "green"}
-	err = createDistributedServiceCard(sm, "dev-caca", "", labels)
+	err = createDistributedServiceCard(sm, "aaaa.aa01.12ff", "", "", labels)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
+	// Create card with numMacs of 32
+	np := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name:   "bbbb.0000.0000",
+			Labels: map[string]string{},
+		},
+		Spec:   cluster.DistributedServiceCardSpec{DSCProfile: "default", ID: "id"},
+		Status: cluster.DistributedServiceCardStatus{PrimaryMAC: "bbbb.0000.0000", NumMacAddress: 32},
+	}
+
+	// create a DistributedServiceCard
+	sm.ctrler.DistributedServiceCard().Create(&np)
+
 	nw, err := sm.ctrler.DistributedServiceCard().List(context.Background(), &api.ListWatchOptions{})
-	AssertEquals(t, 3, len(nw), "did not find all DistributedServiceCards")
+	AssertEquals(t, 4, len(nw), "did not find all DistributedServiceCards")
 
 	opts := api.ListWatchOptions{}
 	opts.LabelSelector = "color=green"
 	nw, err = sm.ctrler.DistributedServiceCard().List(context.Background(), &opts)
 	Assert(t, len(nw) == 1, "found more DistributedServiceCards than expected. [%v]", len(nw))
 
+	// Verify DscMap
+	AssertEquals(t, (24*3)+32, len(sm.DscMap), "dsc map had incorrect amount of entries")
+	entry := sm.DscMap["aaaa.aa00.0017"]
+	AssertEquals(t, "aaaa.aa00.0000", entry, "mac entry did not match")
+
+	entry = sm.DscMap["aaaa.aa10.0016"]
+	AssertEquals(t, "aaaa.aa0f.ffff", entry, "mac entry did not match")
+
+	entry = sm.DscMap["bbbb.0000.001f"]
+	AssertEquals(t, "bbbb.0000.0000", entry, "mac entry did not match")
+
 	meta := api.ObjectMeta{
-		Name: "prod-bebe",
+		Name: "aaaa.aa0f.ffff",
 		//DSC is cluster object, tenant not required
 		//Tenant:    "default",
 	}
@@ -540,6 +571,10 @@ func TestDistributedServiceCardCreateList(t *testing.T) {
 
 	err = sm.Controller().DistributedServiceCard().Delete(&nobj.DistributedServiceCard)
 	Assert(t, err == nil, "deletion was not successful")
+
+	AssertEquals(t, (24*2)+32, len(sm.DscMap), "dsc map had incorrect amount of entries")
+	_, ok := sm.DscMap["aaaa.aa10.0016"]
+	Assert(t, !ok, "mac entry should have been removed")
 
 	nw, err = sm.ctrler.DistributedServiceCard().List(context.Background(), &opts)
 	Assert(t, len(nw) == 1, "expected 1, got %v DistributedServiceCards", len(nw))
@@ -601,7 +636,11 @@ func TestSnapshotCreateList(t *testing.T) {
 }
 
 // createOrchestrator utility function to create a Orchestrator
-func createOrchestrator(stateMgr *Statemgr, tenant, name string, labels map[string]string) error {
+func createOrchestrator(stateMgr *Statemgr, tenant, name, namespaceVal string, labels map[string]string) error {
+	ns := "testNamespace"
+	if len(namespaceVal) > 0 {
+		ns = namespaceVal
+	}
 	// Orchestrator params
 	np := orchestration.Orchestrator{
 		TypeMeta: api.TypeMeta{Kind: "Orchestrator"},
@@ -611,7 +650,14 @@ func createOrchestrator(stateMgr *Statemgr, tenant, name string, labels map[stri
 			Tenant:    "default",
 			Labels:    labels,
 		},
-		Spec:   orchestration.OrchestratorSpec{},
+		Spec: orchestration.OrchestratorSpec{
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: ns,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+				},
+			},
+		},
 		Status: orchestration.OrchestratorStatus{},
 	}
 
@@ -634,14 +680,14 @@ func TestOrchestratorCreateList(t *testing.T) {
 	go im.watchOrchestratorConfig()
 	defer im.WatchCancel()
 
-	err = createOrchestrator(sm, "default", "prod-beef", nil)
+	err = createOrchestrator(sm, "default", "aaaa.aaaa.aaaa", "", nil)
 	AssertOk(t, err, "Orchestrator could not be created")
 
-	err = createOrchestrator(sm, "default", "prod-bebe", nil)
+	err = createOrchestrator(sm, "default", "aaaa.aaaa.bbbb", "", nil)
 	AssertOk(t, err, "Orchestrator could not be created")
 
 	labels := map[string]string{"color": "green"}
-	err = createOrchestrator(sm, "default", "dev-caca", labels)
+	err = createOrchestrator(sm, "default", "dev-caca", "", labels)
 	AssertOk(t, err, "Orchestrator could not be created")
 
 	nw, err := sm.ctrler.Orchestrator().List(context.Background(), &api.ListWatchOptions{})
@@ -653,7 +699,7 @@ func TestOrchestratorCreateList(t *testing.T) {
 	Assert(t, len(nw) == 1, "found more Orchestrators than expected. [%v]", len(nw))
 
 	meta := api.ObjectMeta{
-		Name:      "prod-bebe",
+		Name:      "aaaa.aaaa.bbbb",
 		Namespace: "default",
 		//Orch is cluster object, tenant not required
 		//Tenant: "default",
@@ -704,6 +750,10 @@ func TestUpdateDSCProfile(t *testing.T) {
 		},
 	}
 
+	// Create DSC before profile
+	err = createDistributedServiceCard(sm, "aaaa.aaaa.aaaa", "", "", nil)
+	Assert(t, (err == nil), "DistributedServiceCard could not be created")
+
 	// create DSC Profile
 	sm.ctrler.DSCProfile().Create(&dscProfile)
 	AssertEventually(t, func() (bool, interface{}) {
@@ -716,8 +766,9 @@ func TestUpdateDSCProfile(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "prod-beef", "", nil)
-	Assert(t, (err == nil), "DistributedServiceCard could not be created")
+	dsp, err := sm.FindDSCProfile("", "default")
+	AssertOk(t, err, "Failed to get profile")
+	AssertEquals(t, 1, len(dsp.dscs), "profile did not have dsc state populated")
 
 	dscProfile.Spec.DeploymentTarget = cluster.DSCProfileSpec_HOST.String()
 	dscProfile.Spec.FeatureSet = cluster.DSCProfileSpec_SMARTNIC.String()
@@ -761,7 +812,7 @@ func TestFindDSC(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "prod-beef", "beef-id", nil)
+	err = createDistributedServiceCard(sm, "aaaa.aaaa.aaaa", "beef-id", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	d := sm.FindDSC("", "prod-tee")
@@ -771,13 +822,13 @@ func TestFindDSC(t *testing.T) {
 	fmt.Printf("D : %v", d)
 	Assert(t, d != nil, "DSC not found")
 
-	d = sm.FindDSC("prod-beef", "")
+	d = sm.FindDSC("aaaa.aaaa.aaaa", "")
 	Assert(t, d != nil, "DSC not found")
 
 	err = sm.RemoveIncompatibleDSCFromOrch("no-dsc", "no-orch")
 	Assert(t, err != nil, "Removing Incompatible DSC orch")
 
-	err = sm.RemoveIncompatibleDSCFromOrch("prod-beef", "default")
+	err = sm.RemoveIncompatibleDSCFromOrch("aaaa.aaaa.aaaa", "default")
 	Assert(t, err != nil, "Removing Incompatible DSC orch")
 }
 
@@ -810,16 +861,16 @@ func TestWorkload(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "prod-beef", "beef-id", nil)
+	err = createDistributedServiceCard(sm, "aaaa.aaaa.aaaa", "beef-id", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
-	err = createWorkload(sm, "default", "prod-bebe", nil)
+	err = createWorkload(sm, "default", "aaaa.aaaa.bbbb", nil)
 	Assert(t, err == nil, fmt.Sprintf("failed to create workload. Err : %v", err))
 
 	np := workload.Workload{
 		TypeMeta: api.TypeMeta{Kind: "Workload"},
 		ObjectMeta: api.ObjectMeta{
-			Name:      "prod-bebe",
+			Name:      "aaaa.aaaa.bbbb",
 			Namespace: "default",
 			Tenant:    "default",
 		},
@@ -845,10 +896,12 @@ func TestHostMigrationCompat(t *testing.T) {
 
 	dscMac := "00ae.cd00.1234"
 	hostName := "test-host"
+	namespaceVal := "dev"
+	orchNameVal := "prod"
 
 	prodMap := make(map[string]string)
-	prodMap[utils.OrchNameKey] = "prod"
-	prodMap[utils.NamespaceKey] = "dev"
+	prodMap[utils.OrchNameKey] = orchNameVal
+	prodMap[utils.NamespaceKey] = namespaceVal
 
 	err = createHost(sm, "default", hostName, dscMac, prodMap)
 	Assert(t, (err == nil), "Host could not be created")
@@ -881,7 +934,7 @@ func TestHostMigrationCompat(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
+	err = createDistributedServiceCard(sm, dscMac, dscMac, hostName, prodMap)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	meta := api.ObjectMeta{
@@ -896,6 +949,9 @@ func TestHostMigrationCompat(t *testing.T) {
 	nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
 	err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
 	Assert(t, err == nil, "unable to update the DistributedServiceCard object")
+
+	err = createOrchestrator(sm, "default", orchNameVal, namespaceVal, nil)
+	AssertOk(t, err, "Orchestrator could not be created")
 
 	err = sm.CheckHostMigrationCompliance(hostName)
 	Assert(t, err == nil, fmt.Sprintf("host %v was expected to be compliant", hostName))
@@ -935,6 +991,7 @@ func TestIncompatList(t *testing.T) {
 	}
 
 	orchName := "prod"
+	namespaceVal := "dev"
 
 	dscProfile := cluster.DSCProfile{
 		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
@@ -961,7 +1018,7 @@ func TestIncompatList(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createOrchestrator(sm, "default", orchName, nil)
+	err = createOrchestrator(sm, "default", orchName, namespaceVal, nil)
 	AssertOk(t, err, "Orchestrator could not be created")
 
 	dscList := []string{"00ae.cd00.1234", "00ae.cd00.5678", "00ae.cd00.abcd"}
@@ -969,15 +1026,15 @@ func TestIncompatList(t *testing.T) {
 
 	prodMap := make(map[string]string)
 	prodMap[utils.OrchNameKey] = orchName
-	prodMap[utils.NamespaceKey] = "dev"
+	prodMap[utils.NamespaceKey] = namespaceVal
 
 	for i, hostName := range hostList {
 		err := createHost(sm, "default", hostName, dscList[i], prodMap)
 		Assert(t, (err == nil), "Host could not be created")
 	}
 
-	for _, dscMac := range dscList {
-		err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
+	for i, dscMac := range dscList {
+		err = createDistributedServiceCard(sm, dscMac, dscMac, hostList[i], prodMap)
 		Assert(t, (err == nil), "DistributedServiceCard could not be created")
 	}
 
@@ -1119,6 +1176,7 @@ func TestIncompat2(t *testing.T) {
 	}
 
 	orchName := "prod"
+	namespaceVal := "dev"
 
 	dscProfile := cluster.DSCProfile{
 		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
@@ -1150,15 +1208,15 @@ func TestIncompat2(t *testing.T) {
 
 	prodMap := make(map[string]string)
 	prodMap[utils.OrchNameKey] = orchName
-	prodMap[utils.NamespaceKey] = "dev"
+	prodMap[utils.NamespaceKey] = namespaceVal
 
 	for i, hostName := range hostList {
 		err := createHost(sm, "default", hostName, dscList[i], prodMap)
 		Assert(t, (err == nil), "Host could not be created")
 	}
 
-	for _, dscMac := range dscList {
-		err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
+	for i, dscMac := range dscList {
+		err = createDistributedServiceCard(sm, dscMac, dscMac, hostList[i], prodMap)
 		Assert(t, (err == nil), "DistributedServiceCard could not be created")
 	}
 
@@ -1173,6 +1231,19 @@ func TestIncompat2(t *testing.T) {
 		nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
 		err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
 		Assert(t, err == nil, "Failed to admit DistributedServiceCard")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			nobj, err := sm.Controller().DistributedServiceCard().Find(&orchMeta)
+			if err != nil || nobj == nil {
+				return false, fmt.Errorf("Failed to find DSC")
+			}
+
+			if nobj.DistributedServiceCard.Status.AdmissionPhase != cluster.DistributedServiceCardStatus_ADMITTED.String() {
+				return false, fmt.Errorf("Failed to admit DSC %v", orchMeta)
+			}
+
+			return true, nil
+		}, "DSC not admitted")
 	}
 
 	np := orchestration.Orchestrator{
@@ -1182,7 +1253,14 @@ func TestIncompat2(t *testing.T) {
 			Namespace: "default",
 			Tenant:    "default",
 		},
-		Spec: orchestration.OrchestratorSpec{},
+		Spec: orchestration.OrchestratorSpec{
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: namespaceVal,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+				},
+			},
+		},
 		Status: orchestration.OrchestratorStatus{
 			IncompatibleDSCs: dscList,
 		},
@@ -1202,12 +1280,221 @@ func TestIncompat2(t *testing.T) {
 			return false, err
 		}
 
-		if len(nobj.incompatibleDscs) != 0 {
-			return false, fmt.Errorf("Expected 0 in incompatible list, found %d", len(nobj.incompatibleDscs))
+		incompatCount := 0
+		for _, v := range nobj.incompatibleDscs {
+			if v {
+				incompatCount = incompatCount + 1
+			}
+		}
+
+		if incompatCount != 0 {
+			return false, fmt.Errorf("Expected 0 in incompatible list, found %d", incompatCount)
 		}
 
 		return true, nil
 	}, "1s", "10s")
+}
+
+func TestIncompatHostProfileChecks(t *testing.T) {
+	type runSetup struct {
+		DeployentTarget      string
+		FeatureSet           string
+		ManagementMode       string
+		ExpectedIncompatible int
+	}
+
+	testCases := []runSetup{
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Managed.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Monitored.String(),
+			ExpectedIncompatible: 0,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Managed.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Monitored.String(),
+			ExpectedIncompatible: 0,
+		},
+		{
+			DeployentTarget:      cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:           cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Managed.String(),
+			ExpectedIncompatible: 0,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Monitored.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			DeployentTarget:      cluster.DSCProfileSpec_HOST.String(),
+			FeatureSet:           cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+			ExpectedIncompatible: 0,
+		},
+		{
+			DeployentTarget:      cluster.DSCProfileSpec_HOST.String(),
+			FeatureSet:           cluster.DSCProfileSpec_FLOWAWARE.String(),
+			ExpectedIncompatible: 0,
+		},
+		{
+			DeployentTarget:      cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:           cluster.DSCProfileSpec_FLOWAWARE.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			ManagementMode:       orchestration.NamespaceSpec_Managed.String(),
+			ExpectedIncompatible: 1,
+		},
+		{
+			DeployentTarget:      cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:           cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+			ExpectedIncompatible: 0,
+		},
+	}
+
+	profileName := "test-profile"
+	hostName := "testHost"
+	dscMac := "00ae.cd00.0101"
+	orchName := "prod"
+	namespaceVal := "dev"
+
+	sm, _, err := NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed creating state manager. Err : %v", err)
+		return
+	}
+
+	dscProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      profileName,
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_HOST.String(),
+			FeatureSet:       cluster.DSCProfileSpec_SMARTNIC.String(),
+		},
+	}
+
+	// create DSC Profile
+	sm.ctrler.DSCProfile().Create(&dscProfile)
+	AssertEventually(t, func() (bool, interface{}) {
+
+		_, err := sm.FindDSCProfile("", profileName)
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Profile not found", "1ms", "1s")
+
+	prodMap := make(map[string]string)
+	prodMap[utils.OrchNameKey] = orchName
+	prodMap[utils.NamespaceKey] = namespaceVal
+
+	dsc := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name:   dscMac,
+			Labels: map[string]string{},
+		},
+		Spec: cluster.DistributedServiceCardSpec{DSCProfile: profileName, ID: dscMac},
+		Status: cluster.DistributedServiceCardStatus{PrimaryMAC: dscMac,
+			NumMacAddress:  24,
+			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
+			Host:           hostName,
+		},
+	}
+
+	// create a DistributedServiceCard
+	sm.ctrler.DistributedServiceCard().Create(&dsc)
+
+	np := orchestration.Orchestrator{
+		TypeMeta: api.TypeMeta{Kind: "Orchestrator"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      orchName,
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: orchestration.OrchestratorSpec{
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: namespaceVal,
+					Mode: orchestration.NamespaceSpec_Monitored.String(),
+				},
+			},
+		},
+		Status: orchestration.OrchestratorStatus{
+			IncompatibleDSCs: []string{},
+		},
+	}
+
+	err = sm.ctrler.Orchestrator().Create(&np)
+	AssertOk(t, err, "failed to create orchestrator")
+
+	err = createHost(sm, "default", hostName, dscMac, prodMap)
+	Assert(t, (err == nil), "Host could not be created")
+
+	for _, tc := range testCases {
+		log.Infof("Running testcase : %v", tc)
+		if len(tc.ManagementMode) > 0 {
+
+			np.Spec.Namespaces = []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: namespaceVal,
+					Mode: tc.ManagementMode,
+				},
+			}
+
+			err = sm.ctrler.Orchestrator().Update(&np)
+			AssertOk(t, err, "failed to update orchestrator")
+		}
+
+		if len(tc.DeployentTarget) > 0 {
+			dscProfile.Spec.DeploymentTarget = tc.DeployentTarget
+			dscProfile.Spec.FeatureSet = tc.FeatureSet
+
+			err = sm.ctrler.DSCProfile().Update(&dscProfile)
+			AssertOk(t, err, "failed to update dscprofile")
+		}
+
+		AssertEventually(t, func() (bool, interface{}) {
+			obj, err := sm.FindObject("Orchestrator", "", "", orchName)
+			if err != nil {
+				log.Infof("Returning - Err : %v", err)
+				return false, err
+			}
+
+			nobj, err := OrchestratorStateFromObj(obj)
+			if err != nil {
+				log.Infof("Returning - Err : %v", err)
+				return false, err
+			}
+
+			log.Infof("Got orchestrator object %v", nobj)
+			isIncompatible, ok := nobj.incompatibleDscs[dscMac]
+			if !ok {
+				return false, fmt.Errorf("did not find the DSC %v", dscMac)
+			}
+
+			if tc.ExpectedIncompatible > 0 && !isIncompatible {
+				return false, fmt.Errorf("expected DSC %v to be incompatible", dscMac)
+			}
+
+			if tc.ExpectedIncompatible == 0 && isIncompatible {
+				return false, fmt.Errorf("expected DSC %v to be compatible", dscMac)
+			}
+
+			return true, nil
+		}, "1s", "10s")
+	}
 }
 
 func TestStateMgr(t *testing.T) {

@@ -74,7 +74,8 @@ func TestNetworks(t *testing.T) {
 	defer func() {
 		logger.Infof("----- Teardown ----")
 		cancel()
-		probe.Wg.Wait()
+		probe.Stop()
+		logger.Infof("----- Teardown venice config ----")
 		cleanup()
 		if vcSim != nil {
 			logger.Infof("Destroying vcsim")
@@ -247,7 +248,8 @@ func TestSnapshotRestore(t *testing.T) {
 	defer func() {
 		logger.Infof("----- Teardown ----")
 		cancel()
-		probe.Wg.Wait()
+		probe.Stop()
+		logger.Infof("----- Teardown venice config ----")
 		cleanup()
 		if vcSim != nil {
 			logger.Infof("Destroying vcsim")
@@ -279,6 +281,9 @@ func TestSnapshotRestore(t *testing.T) {
 	// Make it Pensando host
 	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
 	AssertOk(t, err, "failed to add nic")
+	hostSystem1.AddUplinksToDVS(dvsName1, map[string]string{"uplink1": "vmnic0"})
+	_, err = createDSC(conv.MacString(pNicMac), "dsc1")
+	AssertOk(t, err, "failed to create dsc")
 
 	// DC2 with similar setup
 	dc2, err := vcSim.AddDC("dc2")
@@ -290,6 +295,12 @@ func TestSnapshotRestore(t *testing.T) {
 
 	// Wait for host to show up in venice
 	verifyHostCount(t, 1)
+
+	// Create second DSC before snapshot
+	pNicMac2 := net.HardwareAddr{}
+	pNicMac2 = append(pNicMac2, globals.PensandoOUI[0], globals.PensandoOUI[1], globals.PensandoOUI[2])
+	pNicMac2 = append(pNicMac2, 0xaa, 0x11, 0x11)
+	_, err = createDSC(conv.MacString(pNicMac2), "dsc2")
 
 	// Take snapshot
 	tinfo.l.Infof("Taking snapshot")
@@ -331,12 +342,11 @@ func TestSnapshotRestore(t *testing.T) {
 	err = dvs2.AddHost(hostSystem2)
 	AssertOk(t, err, "failed to add Host to DVS")
 
-	pNicMac2 := net.HardwareAddr{}
-	pNicMac2 = append(pNicMac2, globals.PensandoOUI[0], globals.PensandoOUI[1], globals.PensandoOUI[2])
-	pNicMac2 = append(pNicMac2, 0xaa, 0x00, 0x11)
 	// Make it Pensando host
 	err = hostSystem2.AddNic("vmnic0", conv.MacString(pNicMac2))
 	AssertOk(t, err, "failed to add nic")
+	hostSystem2.AddUplinksToDVS(dvsName2, map[string]string{"uplink1": "vmnic0"})
+	AssertOk(t, err, "failed to create dsc")
 
 	// Get snapshot path
 	paths, err := tinfo.objClient.ListObjects("")
@@ -549,7 +559,8 @@ func TestAPIServerRestart(t *testing.T) {
 	defer func() {
 		logger.Infof("----- Teardown ----")
 		cancel()
-		probe.Wg.Wait()
+		probe.Stop()
+		logger.Infof("----- Teardown venice config ----")
 		cleanup()
 		if vcSim != nil {
 			logger.Infof("Destroying vcsim")
@@ -580,6 +591,17 @@ func TestAPIServerRestart(t *testing.T) {
 	pNicMac = append(pNicMac, 0xaa, 0x00, 0x00)
 	// Make it Pensando host
 	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	AssertOk(t, err, "failed to add nic to host")
+	err = hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
+	AssertOk(t, err, "failed to add uplink to dvs")
+	_, err = createDSC(conv.MacString(pNicMac), "dsc1")
+	AssertOk(t, err, "failed to create dsc")
+
+	// Create DSC2 before stopping apiserver
+	pNicMac2 := net.HardwareAddr{}
+	pNicMac2 = append(pNicMac2, globals.PensandoOUI[0], globals.PensandoOUI[1], globals.PensandoOUI[2])
+	pNicMac2 = append(pNicMac2, 0xaa, 0x11, 0x11)
+	_, err = createDSC(conv.MacString(pNicMac2), "dsc2")
 
 	// Create non pensando host 2
 	hostSystem2, err := dc1.AddHost("host2")
@@ -599,12 +621,10 @@ func TestAPIServerRestart(t *testing.T) {
 
 	tinfo.l.Infof("API Server shutdown")
 
-	// Make it pensando host
-	pNicMac2 := net.HardwareAddr{}
-	pNicMac2 = append(pNicMac2, globals.PensandoOUI[0], globals.PensandoOUI[1], globals.PensandoOUI[2])
-	pNicMac2 = append(pNicMac2, 0xaa, 0x00, 0x11)
 	// Make it Pensando host
 	err = hostSystem2.AddNic("vmnic0", conv.MacString(pNicMac2))
+	hostSystem2.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
+	AssertOk(t, err, "failed to create dsc")
 
 	// Trigger sync to make sure host is in pcache
 	err = debugSyncOrch("vc1")

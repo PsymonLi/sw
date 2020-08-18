@@ -444,7 +444,7 @@
           },
           {
             "name": "spec.manage-namespaces",
-            "description": "Namespaces that will be managed by this orchestrator. \"all_namespaces\" will manage all namespaces.",
+            "description": "Namespaces that will be managed by this orchestrator. \"all_namespaces\" will manage all namespaces. - deprecated from Rel-C.",
             "in": "query",
             "required": false,
             "type": "array",
@@ -1370,6 +1370,106 @@
         }
       }
     },
+    "orchestrationManagedNamespaceSpec": {
+      "type": "object",
+      "required": [
+        "multicast-filter",
+        "discovery-protocol",
+        "discovery-operation"
+      ],
+      "properties": {
+        "mtu": {
+          "type": "integer",
+          "format": "int64",
+          "default": "1500"
+        },
+        "multicast-filter": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "snooping"
+          ],
+          "default": "basic",
+          "x-ui-hints": {
+            "basic": "Basic",
+            "snooping": "Snooping"
+          }
+        },
+        "discovery-protocol": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "cdp",
+            "lldp"
+          ],
+          "default": "disabled",
+          "x-ui-hints": {
+            "cdp": "CDP",
+            "disabled": "Disabled",
+            "lldp": "LLDP"
+          }
+        },
+        "discovery-operation": {
+          "type": "string",
+          "enum": [
+            "none",
+            "listen",
+            "advertise",
+            "both"
+          ],
+          "default": "none",
+          "x-ui-hints": {
+            "advertise": "Advertise",
+            "both": "Both",
+            "listen": "Listen",
+            "none": "None"
+          }
+        },
+        "num-uplinks": {
+          "type": "integer",
+          "format": "int64",
+          "default": "2"
+        }
+      },
+      "description": "ManagedNamespaceSpec contains namespace specific configuration."
+    },
+    "orchestrationMonitoredNamespaceSpec": {
+      "type": "object",
+      "description": "MonitoredNamespaceSpec contains namespace specific configuration."
+    },
+    "orchestrationNamespaceSpec": {
+      "type": "object",
+      "required": [
+        "name",
+        "mode"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Length of string should be at least 1."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "managed",
+            "monitored"
+          ],
+          "default": "managed",
+          "x-ui-hints": {
+            "managed": "Managed",
+            "monitored": "Monitored"
+          }
+        },
+        "managed-spec": {
+          "$ref": "#/definitions/orchestrationManagedNamespaceSpec"
+        },
+        "monitored-spec": {
+          "$ref": "#/definitions/orchestrationMonitoredNamespaceSpec"
+        }
+      },
+      "description": "NamespaceSpec contains the namespace specification."
+    },
     "orchestrationOrchestrator": {
       "type": "object",
       "properties": {
@@ -1447,7 +1547,14 @@
           "items": {
             "type": "string"
           },
-          "description": "Namespaces that will be managed by this orchestrator. \"all_namespaces\" will manage all namespaces."
+          "description": "Namespaces that will be managed by this orchestrator. \"all_namespaces\" will manage all namespaces. - deprecated from Rel-C."
+        },
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/orchestrationNamespaceSpec"
+          },
+          "description": "Namespaces are used to provide namespace specific information. From Rel-C this will be the only means to pass namespace information \"all_namespaces\" will be treated as a special namespace, which will apply the same configuration for all the namespaces discovered by the orchestrator."
         }
       },
       "description": "OrchestratorSpec contains the configuration of the cluster."

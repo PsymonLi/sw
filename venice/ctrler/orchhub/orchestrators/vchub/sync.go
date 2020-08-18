@@ -8,7 +8,6 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/pensando/sw/api"
-	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
@@ -56,7 +55,7 @@ func (v *VCHub) sync() bool {
 		v.Log.Errorf("Failed to get network list. Err : %v", err)
 	}
 
-	hosts := v.pCache.ListHosts(v.Ctx, false)
+	hosts := v.cache.ListHosts(v.Ctx, false)
 
 	workloads, err := v.StateMgr.Controller().Workload().List(v.Ctx, &opts)
 	if err != nil {
@@ -87,46 +86,11 @@ func (v *VCHub) sync() bool {
 	}
 	processedDCs := map[string]bool{}
 	for _, dc := range dcs {
-		// TODO: Remove
-		if !v.isManagedNamespace(dc.Name) {
-			v.Log.Infof("Skipping DC %s", dc.Name)
-			continue
+		if !v.syncDCHelper(dc, nw, workloads, hosts, vmkMap) {
+			v.Log.Errorf("sync failed for dc %s", dc.Name)
+			return false
 		}
 		processedDCs[dc.Name] = true
-
-		_, err := v.NewPenDC(dc.Name, dc.Self.Value)
-		if err != nil {
-			v.Log.Errorf("Creating DC %s failed: %s", dc.Name, err)
-			continue
-		}
-		v.Log.Debugf("Created DC %s", dc.Name)
-		dcRef := dc.Reference()
-		dvsObjs, err := v.probe.ListDVS(&dcRef)
-		if err != nil {
-			v.Log.Errorf("Failed to list dvs, %s", err)
-			return false
-		}
-		pgs, err := v.probe.ListPG(&dcRef)
-		if err != nil {
-			v.Log.Errorf("Failed to list PGs, %s", err)
-			return false
-		}
-		vms, err := v.probe.ListVM(&dcRef)
-		if err != nil {
-			v.Log.Errorf("Failed to list vms, %s", err)
-			return false
-		}
-		vcHosts, err := v.ListPensandoHosts(&dcRef)
-		if err != nil {
-			v.Log.Errorf("Failed to list hosts, %s", err)
-			return false
-		}
-
-		v.syncNetwork(nw, dc, dvsObjs, pgs)
-		v.syncNewHosts(dc, vcHosts, vmkMap)
-		v.syncVMs(workloads, dc, vms, pgs, vmkMap)
-		// Removing hosts after removing workloads to fix WL -> Host dependency
-		v.syncStaleHosts(dc, vcHosts, hosts)
 	}
 
 	// Remove any hosts or workloads that are in a DC that isn't managed anymore
@@ -136,8 +100,10 @@ func (v *VCHub) sync() bool {
 			dc, ok := utils.GetOrchNamespaceFromObj(workload.Labels)
 			if ok {
 				if _, ok := processedDCs[dc]; !ok {
+					key := utils.ParseGlobalKey(v.VcID, "", workload.Name)
+					wlObj := convertWorkloadToVCHubWorkload(&workload.Workload, key)
 					v.Log.Infof("Deleting stale workload %s", workload.Name)
-					v.deleteWorkload(&workload.Workload)
+					v.deleteWorkload(wlObj)
 				}
 			}
 		}
@@ -166,12 +132,101 @@ func (v *VCHub) sync() bool {
 	return true
 }
 
+func (v *VCHub) syncDC(dcName, dcID string) bool {
+	v.Log.Infof("Syncing DC %s", dcName)
+	opts := api.ListWatchOptions{}
+	nw, err := v.StateMgr.Controller().Network().List(v.Ctx, &opts)
+	if err != nil {
+		v.Log.Errorf("Failed to get network list. Err : %v", err)
+	}
+
+	hosts := v.cache.ListHosts(v.Ctx, false)
+
+	workloads, err := v.StateMgr.Controller().Workload().List(v.Ctx, &opts)
+	if err != nil {
+		v.Log.Errorf("Failed to get workload list. Err : %v", err)
+	}
+
+	dc := mo.Datacenter{
+		ManagedEntity: mo.ManagedEntity{
+			ExtensibleManagedObject: mo.ExtensibleManagedObject{
+				Self: types.ManagedObjectReference{
+					Type:  string(defs.Datacenter),
+					Value: dcID},
+			},
+			Name: dcName,
+		},
+	}
+
+	return v.syncDCHelper(dc, nw, workloads, hosts, map[string]bool{})
+}
+
+func (v *VCHub) syncDCHelper(dc mo.Datacenter, nw []*ctkit.Network, workloads []*ctkit.Workload, hosts map[string]*defs.VCHubHost, vmkMap map[string]bool) bool {
+	mode := v.GetMode(dc.Name)
+	if len(mode) == 0 {
+		v.Log.Infof("Skipping DC %s", dc.Name)
+		return true
+	}
+
+	_, err := v.NewPenDC(dc.Name, dc.Self.Value, mode)
+	if err != nil {
+		v.Log.Errorf("Creating DC %s failed: %s", dc.Name, err)
+		return true
+	}
+	v.Log.Debugf("Created DC %s with mode %s", dc.Name, mode)
+	dcRef := dc.Reference()
+	dvsObjs, err := v.probe.ListDVS(&dcRef)
+	if err != nil {
+		v.Log.Errorf("Failed to list dvs, %s", err)
+		return false
+	}
+	pgs, err := v.probe.ListPG(&dcRef)
+	if err != nil {
+		v.Log.Errorf("Failed to list PGs, %s", err)
+		return false
+	}
+	vms, err := v.probe.ListVM(&dcRef)
+	if err != nil {
+		v.Log.Errorf("Failed to list vms, %s", err)
+		return false
+	}
+	vcHosts, err := v.probe.ListHosts(&dcRef)
+	if err != nil {
+		v.Log.Errorf("Failed to list hosts, %s", err)
+		return false
+	}
+
+	v.syncNetwork(nw, dc, dvsObjs, pgs)
+	v.syncNewHosts(dc, vcHosts, vmkMap)
+	v.syncVMs(workloads, dc, vms, pgs, vmkMap)
+	// Removing hosts after removing workloads to fix WL -> Host dependency
+	v.syncStaleHosts(dc, vcHosts, hosts)
+	return true
+}
+
+func (v *VCHub) convertPGToEvent(pg mo.DistributedVirtualPortgroup, dcID, dcName string) defs.VCEventMsg {
+	m := defs.VCEventMsg{
+		VcObject:   defs.DistributedVirtualPortgroup,
+		Key:        pg.Self.Value,
+		DcID:       dcID,
+		Originator: v.VcID,
+		Changes: []types.PropertyChange{
+			types.PropertyChange{
+				Name: "config",
+				Op:   "add",
+				Val:  pg.Config,
+			},
+		},
+	}
+
+	return m
+}
+
 func (v *VCHub) convertHostToEvent(host mo.HostSystem, dcID, dcName string) defs.VCEventMsg {
 	m := defs.VCEventMsg{
 		VcObject:   defs.VirtualMachine,
 		Key:        host.Self.Value,
 		DcID:       dcID,
-		DcName:     dcName,
 		Originator: v.VcID,
 		Changes: []types.PropertyChange{
 			types.PropertyChange{
@@ -204,7 +259,7 @@ func (v *VCHub) syncNewHosts(dc mo.Datacenter, vcHosts []mo.HostSystem, vmkMap m
 	}
 }
 
-func (v *VCHub) syncStaleHosts(dc mo.Datacenter, vcHosts []mo.HostSystem, hosts map[string]*cluster.Host) {
+func (v *VCHub) syncStaleHosts(dc mo.Datacenter, vcHosts []mo.HostSystem, hosts map[string]*defs.VCHubHost) {
 	v.Log.Infof("Syncing stale hosts on DC %s============", dc.Name)
 	vcHostMap := map[string]bool{}
 	for _, vcHost := range vcHosts {
@@ -232,7 +287,49 @@ func (v *VCHub) syncStaleHosts(dc mo.Datacenter, vcHosts []mo.HostSystem, hosts 
 }
 
 func (v *VCHub) syncNetwork(networks []*ctkit.Network, dc mo.Datacenter, dvsObjs []mo.VmwareDistributedVirtualSwitch, pgs []mo.DistributedVirtualPortgroup) {
-	v.Log.Infof("Syncing networks on DC %s============", dc.Name)
+	penDC := v.GetDC(dc.Name)
+	if penDC.isManagedMode() {
+		v.syncNetworkManaged(networks, dc, dvsObjs, pgs)
+	}
+	if penDC.isMonitoringMode() {
+		v.syncNetworkMonitoring(networks, dc, dvsObjs, pgs)
+	}
+}
+
+func (v *VCHub) syncNetworkMonitoring(networks []*ctkit.Network, dc mo.Datacenter, dvsObjs []mo.VmwareDistributedVirtualSwitch, pgs []mo.DistributedVirtualPortgroup) {
+	dcName := dc.Name
+	penDC := v.GetDC(dcName)
+	v.Log.Infof("Syncing networks on monitoring DC %s============", dc.Name)
+
+	dvsPgMap := map[string][]mo.DistributedVirtualPortgroup{}
+	for _, pg := range pgs {
+		dvsID := pg.Config.DistributedVirtualSwitch.Value
+		dvsPgMap[dvsID] = append(dvsPgMap[dvsID], pg)
+	}
+
+	for _, dvs := range dvsObjs {
+		if penDC.isManagedMode() && isPensandoDVS(dvs.Name, dcName) {
+			// DC is in managed and monitoring mode, ignore PenDVS
+			v.Log.Debugf("Skipping dvs %s", dvs.Name)
+			continue
+		}
+		v.Log.Infof("Processing dvs %s", dvs.Name)
+		penDC.AddUserDVS(dvs.Reference(), dvs.Name)
+		dvsID := dvs.Self.Value
+		pgEntries, ok := dvsPgMap[dvsID]
+		if !ok {
+			continue
+		}
+		for _, pg := range pgEntries {
+			evt := v.convertPGToEvent(pg, penDC.DcRef.Value, penDC.DcName)
+			v.handleUserPG(evt, penDC.GetDVSByID(dvsID), &pg.Config)
+		}
+		// TODO: Do we need to handle cleaning up stale internal state (sync from debug api)?
+	}
+}
+
+func (v *VCHub) syncNetworkManaged(networks []*ctkit.Network, dc mo.Datacenter, dvsObjs []mo.VmwareDistributedVirtualSwitch, pgs []mo.DistributedVirtualPortgroup) {
+	v.Log.Infof("Syncing networks on managed DC %s============", dc.Name)
 	// SYNCING DVS AND PG
 	dcName := dc.Name
 	penDC := v.GetDC(dcName)
@@ -394,13 +491,13 @@ func (v *VCHub) fetchVMs(penDC *PenDC) error {
 		return fmt.Errorf(errMsg)
 	}
 
-	vms, err := v.probe.ListVM(&penDC.dcRef)
+	vms, err := v.probe.ListVM(&penDC.DcRef)
 	if err != nil {
 		return err
 	}
 
 	for _, vm := range vms {
-		m := v.convertWorkloadToEvent(penDC.dcRef.Value, penDC.Name, vm)
+		m := v.convertWorkloadToEvent(penDC.DcRef.Value, penDC.DcName, vm)
 		v.handleVM(m)
 	}
 	return nil
@@ -423,7 +520,7 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 		vmMap[vmName] = vm
 	}
 
-	// Deleting stale workloads and build useg state
+	// Deleting stale workloads and build useg state if in managed mode
 	for _, workload := range workloads {
 		if !utils.IsObjForOrch(workload.Labels, v.VcID, dcName) {
 			// Filter out workloads not for this Orch/DC
@@ -436,7 +533,10 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 			isVmkWorkload = true
 		}
 
-		isMigrating := v.isWorkloadMigrating(&workload.Workload)
+		key := utils.ParseGlobalKey(v.VcID, "", workload.Name)
+		wlObj := convertWorkloadToVCHubWorkload(&workload.Workload, key)
+
+		isMigrating := v.isWorkloadMigrating(wlObj)
 
 		if _, ok := vmMap[workload.Name]; !ok && !isVmkWorkload {
 			// workload no longer exists
@@ -448,155 +548,159 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 				_, err := v.probe.GetVM(vmKey, defaultRetryCount)
 				if err != nil {
 					v.Log.Infof("Failed to find VM %s, deleting %s", vmKey, err)
-					v.deleteWorkload(&workload.Workload)
+					v.deleteWorkload(wlObj)
 					continue
 				}
 				// Check if across DC vmotion is in final sync. If so, datapath may have already written state
-				if v.isWorkloadMigrating(&workload.Workload) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
+				if v.isWorkloadMigrating(wlObj) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
 					v.Log.Infof("Across DC vmotion is in final sync, check datapath value...")
 					v.handleWorkloadEvent(kvstore.Updated, workload.Workload.GetObjectMeta())
 				}
 				continue
 			}
 			v.Log.Infof("Deleting stale workload %s", workload.Name)
-			v.deleteWorkload(&workload.Workload)
+			v.deleteWorkload(wlObj)
 			continue
 		}
 
 		// build useg state
-		if isMigrating {
-			hostName := workload.Status.HostName
-			// Need to allocate status as well in case vmotion is aborted
-			for _, inf := range workload.Status.Interfaces {
+		if penDC.isManagedMode() && penDvs != nil {
+			if isMigrating {
+				hostName := workload.Status.HostName
+				// Need to allocate status as well in case vmotion is aborted
+				for _, inf := range workload.Status.Interfaces {
+					if inf.MicroSegVlan != 0 {
+						err := penDvs.UsegMgr.SetVlanForVnic(inf.MACAddress, hostName, int(inf.MicroSegVlan))
+						if err != nil {
+							v.Log.Errorf("Setting vlan %d for status vnic %s returned %s", inf.MicroSegVlan, inf.MACAddress, err)
+						}
+					}
+				}
+			}
+			hostName := workload.Spec.HostName
+			for _, inf := range workload.Spec.Interfaces {
 				if inf.MicroSegVlan != 0 {
 					err := penDvs.UsegMgr.SetVlanForVnic(inf.MACAddress, hostName, int(inf.MicroSegVlan))
 					if err != nil {
-						v.Log.Errorf("Setting vlan %d for status vnic %s returned %s", inf.MicroSegVlan, inf.MACAddress, err)
+						v.Log.Errorf("Setting vlan %d for vnic %s returned %s", inf.MicroSegVlan, inf.MACAddress, err)
 					}
 				}
 			}
 		}
-		hostName := workload.Spec.HostName
-		for _, inf := range workload.Spec.Interfaces {
-			if inf.MicroSegVlan != 0 {
-				err := penDvs.UsegMgr.SetVlanForVnic(inf.MACAddress, hostName, int(inf.MicroSegVlan))
-				if err != nil {
-					v.Log.Errorf("Setting vlan %d for vnic %s returned %s", inf.MicroSegVlan, inf.MACAddress, err)
-				}
-			}
-		}
 
-		if v.isWorkloadMigrating(&workload.Workload) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
+		if v.isWorkloadMigrating(wlObj) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
 			v.handleWorkloadEvent(kvstore.Updated, workload.Workload.GetObjectMeta())
 		}
 	}
 
-	// For each VM, we get its vlan overrides and reset any of them if needed
-	ports, err := penDvs.GetPortSettings()
-	if err != nil {
-		v.Log.Errorf("Sync failed to get ports for dc %s dvs %s, %s", penDvs.DcName, penDvs.DvsName, err)
-	}
-	// Extract vnic overrides
-	overrides := map[string]struct {
-		vlan int
-		pg   string
-	}{}
-	for _, port := range ports {
-		portKey := port.Key
-		portSetting, ok := port.Config.Setting.(*types.VMwareDVSPortSetting)
-		if !ok {
-			// skipping
-			// v.Log.Infof("Skipping port %s - port setting %v", portKey, port.Config.Setting)
-			continue
+	if penDC.isManagedMode() {
+		// For each VM, we get its vlan overrides and reset any of them if needed
+		ports, err := penDvs.GetPortSettings()
+		if err != nil {
+			v.Log.Errorf("Sync failed to get ports for dc %s dvs %s, %s", penDvs.DcName, penDvs.DvsName, err)
 		}
-		vlanSpec, ok := portSetting.Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec)
-		if !ok {
-			// Skipping
-			// v.Log.Infof("Skipping port %s - port setting vlan type %v", portKey, portSetting.Vlan)
-			continue
-		}
-		if vlanSpec.VlanId == 0 {
-			v.Log.Infof("Vlan override for port %s is 0", portKey)
-			continue
-		}
-		entry := struct {
+		// Extract vnic overrides
+		overrides := map[string]struct {
 			vlan int
 			pg   string
-		}{
-			vlan: int(vlanSpec.VlanId),
-			pg:   port.PortgroupKey,
-		}
-		overrides[portKey] = entry
-	}
-	v.Log.Debugf("Overrides currently set %+v", overrides)
-
-	connectedHosts, err := penDvs.buildConnectedHostMap()
-	if err != nil {
-		v.Log.Errorf("Failed to get connected hosts")
-	}
-
-	// Set assignments.
-	overridesList := []overrideReq{}
-	for _, vm := range vms {
-		for _, d := range vm.Config.Hardware.Device {
-			macStr, port, _, ok := v.parseVnic(d)
+		}{}
+		for _, port := range ports {
+			portKey := port.Key
+			portSetting, ok := port.Config.Setting.(*types.VMwareDVSPortSetting)
 			if !ok {
+				// skipping
+				// v.Log.Infof("Skipping port %s - port setting %v", portKey, port.Config.Setting)
 				continue
 			}
-			host := v.createHostName(dc.Self.Value, vm.Runtime.Host.Value)
-			vlan, err := penDvs.UsegMgr.GetVlanForVnic(macStr, host)
-			if err != nil {
-				continue // Skipping delete from overrides map
-				// We didn't assign this vm a useg yet.
+			vlanSpec, ok := portSetting.Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec)
+			if !ok {
+				// Skipping
+				// v.Log.Infof("Skipping port %s - port setting vlan type %v", portKey, portSetting.Vlan)
+				continue
 			}
-			if vlan != overrides[port].vlan {
-				if connectedHosts != nil {
-					// Verify that this host is connected.
-					if _, ok := connectedHosts[vm.Runtime.Host.Value]; !ok {
-						v.Log.Errorf("Skipping vlan override for port %v, mac %v, vlan %v since the host %s is not connected to dvs", port, macStr, vlan, vm.Runtime.Host.Value)
-						continue
-					}
-				}
-				// We have an assignment for this vnic that is different, change the override to the right value
-				overridesList = append(overridesList, overrideReq{
-					port:       port,
-					vlan:       vlan,
-					mac:        macStr,
-					hostSystem: vm.Runtime.Host.Value,
-				})
-				// assign the right override value
-				v.Log.Errorf("Reassigning port % to have override of %v instead of %s", port, vlan, overrides[port].vlan)
+			if vlanSpec.VlanId == 0 {
+				v.Log.Infof("Vlan override for port %s is 0", portKey)
+				continue
 			}
-			delete(overrides, port)
+			entry := struct {
+				vlan int
+				pg   string
+			}{
+				vlan: int(vlanSpec.VlanId),
+				pg:   port.PortgroupKey,
+			}
+			overrides[portKey] = entry
 		}
-	}
-	err = penDvs.SetVMVlanOverrides(overridesList, "", true)
-	if err != nil {
-		v.Log.Errorf("Failed to set vlan override. DC %s DVS %s. Err %s", penDvs.DcName, penDvs.DvsName, err)
-	}
+		v.Log.Debugf("Overrides currently set %+v", overrides)
 
-	// Resetting vlan overrides is not needed. As soon as port is disconnected,
-	// the pvlan settings are restored.
-	// resetMap := map[string][]string{}
-	// for port, entry := range overrides {
-	// 	if entry.pg == "" {
-	// 		// Don't know what to set this PG back to, so we reset to 0
-	// 		// This should never happen
-	// 		continue
-	// 	}
-	// 	pgName := pgKeyToName[entry.pg]
-	// 	ports, ok := resetMap[pgName]
-	// 	if !ok {
-	// 		ports = []string{}
-	// 	}
-	// 	resetMap[pgName] = append(ports, port)
-	// }
-	// v.Log.Debugf("Resetting vlan overrides for unused ports %v", resetMap)
-	// err = penDvs.SetPvlanForPorts(resetMap)
-	// if err != nil {
-	// v.Log.Errorf("Resetting vlan overrides for unused ports failed, %s", err)
-	// This error isn't worth failing the sync operation for
-	// }
+		connectedHosts, err := penDvs.buildConnectedHostMap()
+		if err != nil {
+			v.Log.Errorf("Failed to get connected hosts")
+		}
+
+		// Set assignments.
+		overridesList := []overrideReq{}
+		for _, vm := range vms {
+			for _, d := range vm.Config.Hardware.Device {
+				macStr, port, _, ok := v.parseVnic(d)
+				if !ok {
+					continue
+				}
+				host := v.createHostName(dc.Self.Value, vm.Runtime.Host.Value)
+				vlan, err := penDvs.UsegMgr.GetVlanForVnic(macStr, host)
+				if err != nil {
+					continue // Skipping delete from overrides map
+					// We didn't assign this vm a useg yet.
+				}
+				if vlan != overrides[port].vlan {
+					if connectedHosts != nil {
+						// Verify that this host is connected.
+						if _, ok := connectedHosts[vm.Runtime.Host.Value]; !ok {
+							v.Log.Errorf("Skipping vlan override for port %v, mac %v, vlan %v since the host %s is not connected to dvs", port, macStr, vlan, vm.Runtime.Host.Value)
+							continue
+						}
+					}
+					// We have an assignment for this vnic that is different, change the override to the right value
+					overridesList = append(overridesList, overrideReq{
+						port:       port,
+						vlan:       vlan,
+						mac:        macStr,
+						hostSystem: vm.Runtime.Host.Value,
+					})
+					// assign the right override value
+					v.Log.Errorf("Reassigning port % to have override of %v instead of %s", port, vlan, overrides[port].vlan)
+				}
+				delete(overrides, port)
+			}
+		}
+		err = penDvs.SetVMVlanOverrides(overridesList, "", true)
+		if err != nil {
+			v.Log.Errorf("Failed to set vlan override. DC %s DVS %s. Err %s", penDvs.DcName, penDvs.DvsName, err)
+		}
+
+		// Resetting vlan overrides is not needed. As soon as port is disconnected,
+		// the pvlan settings are restored.
+		// resetMap := map[string][]string{}
+		// for port, entry := range overrides {
+		// 	if entry.pg == "" {
+		// 		// Don't know what to set this PG back to, so we reset to 0
+		// 		// This should never happen
+		// 		continue
+		// 	}
+		// 	pgName := pgKeyToName[entry.pg]
+		// 	ports, ok := resetMap[pgName]
+		// 	if !ok {
+		// 		ports = []string{}
+		// 	}
+		// 	resetMap[pgName] = append(ports, port)
+		// }
+		// v.Log.Debugf("Resetting vlan overrides for unused ports %v", resetMap)
+		// err = penDvs.SetPvlanForPorts(resetMap)
+		// if err != nil {
+		// v.Log.Errorf("Resetting vlan overrides for unused ports failed, %s", err)
+		// This error isn't worth failing the sync operation for
+		// }
+	}
 
 	// Handle new VMs
 	// We make create calls for all of the VMs

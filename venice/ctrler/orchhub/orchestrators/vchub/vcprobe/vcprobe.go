@@ -54,6 +54,7 @@ type VCProbe struct {
 	dcCtxMap         map[string]dcCtxEntry
 	eventInitialized map[string]bool // whether event processing is initialized for a given vc object (datacenter)
 	eventTrackerLock sync.Mutex
+	IsSim            bool
 }
 
 // KindTagMapEntry needed as explicit type for gomock to compile successfully
@@ -318,7 +319,7 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 
 	v.tryForever(func() bool {
 		v.Log.Infof("Host watch Started on DC %s", dcName)
-		v.startWatch(ctx, defs.HostSystem, []string{"config", "name"}, v.vcEventHandlerForDC(dcID, dcName), &ref)
+		v.startWatch(ctx, defs.HostSystem, []string{"config", "name"}, v.vcEventHandlerForDC(dcID), &ref)
 		if ctx.Err() != nil {
 			v.Log.Infof("Host watch exiting on DC %s", dcName)
 			return false
@@ -328,7 +329,7 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 
 	v.tryForever(func() bool {
 		v.Log.Infof("VM watch Started on DC %s", dcName)
-		v.startWatch(ctx, defs.VirtualMachine, vmProps, v.vcEventHandlerForDC(dcID, dcName), &ref)
+		v.startWatch(ctx, defs.VirtualMachine, vmProps, v.vcEventHandlerForDC(dcID), &ref)
 		if ctx.Err() != nil {
 			v.Log.Infof("VM watch exiting on DC %s", dcName)
 			return false
@@ -338,7 +339,7 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 
 	v.tryForever(func() bool {
 		v.Log.Infof("PG watch Started")
-		v.startWatch(ctx, defs.DistributedVirtualPortgroup, []string{"config"}, v.vcEventHandlerForDC(dcID, dcName), &ref)
+		v.startWatch(ctx, defs.DistributedVirtualPortgroup, []string{"config"}, v.vcEventHandlerForDC(dcID), &ref)
 		if ctx.Err() != nil {
 			v.Log.Infof("PG watch exiting on DC %s", dcName)
 			return false
@@ -348,7 +349,11 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 
 	v.tryForever(func() bool {
 		v.Log.Debugf("DVS watch started")
-		v.startWatch(ctx, defs.VmwareDistributedVirtualSwitch, []string{"name", "config"}, v.vcEventHandlerForDC(dcID, dcName), &ref)
+		kind := defs.VmwareDistributedVirtualSwitch
+		if v.IsSim {
+			kind = "DistributedVirtualSwitch"
+		}
+		v.startWatch(ctx, kind, []string{"name", "config"}, v.vcEventHandlerForDC(dcID), &ref)
 		if ctx.Err() != nil {
 			v.Log.Infof("DVS watch exiting on DC %s", dcName)
 			return false
@@ -441,15 +446,17 @@ func (v *VCProbe) sendVCEvent(update types.ObjectUpdate, kind defs.VCObject) {
 	}
 }
 
-func (v *VCProbe) vcEventHandlerForDC(dcID string, dcName string) func(update types.ObjectUpdate, kind defs.VCObject) {
+func (v *VCProbe) vcEventHandlerForDC(dcID string) func(update types.ObjectUpdate, kind defs.VCObject) {
 	return func(update types.ObjectUpdate, kind defs.VCObject) {
+		if v.IsSim && kind == "DistributedVirtualSwitch" {
+			kind = defs.VmwareDistributedVirtualSwitch
+		}
 		key := update.Obj.Value
 		m := defs.Probe2StoreMsg{
 			MsgType: defs.VCEvent,
 			Val: defs.VCEventMsg{
 				VcObject:   kind,
 				DcID:       dcID,
-				DcName:     dcName,
 				Key:        key,
 				Changes:    update.ChangeSet,
 				UpdateType: update.Kind,

@@ -456,6 +456,11 @@ func updateBiosInfo(naplesVersion *nmd.DSCRunningSoftware) *cmd.BiosInfo {
 func (n *NMD) UpdateNaplesInfoFromConfig() error {
 	log.Info("Updating Smart NIC information.")
 	nic, _ := n.GetSmartNIC()
+	numMac, err := strconv.Atoi(n.config.Status.Fru.NumMacAddr)
+	if err != nil {
+		log.Errorf("Failed to read number of mac addresses. Setting number of MACs to default of 24. Err : %v", err)
+		numMac = 24
+	}
 
 	// TODO : Improve the code below. Too clunky
 	if nic != nil {
@@ -478,8 +483,8 @@ func (n *NMD) UpdateNaplesInfoFromConfig() error {
 		nic.Status.Interfaces = listInterfaces()
 		nic.Status.DSCVersion = n.RunningFirmwareVersion
 		nic.Status.DSCSku = n.config.Status.Fru.PartNum
+		nic.Status.NumMacAddress = uint32(numMac)
 	} else {
-
 		// Construct new smartNIC object
 		nic = &cmd.DistributedServiceCard{
 			TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
@@ -505,6 +510,7 @@ func (n *NMD) UpdateNaplesInfoFromConfig() error {
 				Interfaces:     listInterfaces(),
 				DSCVersion:     n.RunningFirmwareVersion,
 				DSCSku:         n.config.Status.Fru.PartNum,
+				NumMacAddress:  uint32(numMac),
 			},
 		}
 	}

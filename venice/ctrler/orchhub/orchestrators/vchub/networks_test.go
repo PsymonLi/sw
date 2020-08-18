@@ -22,7 +22,7 @@ import (
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
 
-func TestNetworks(t *testing.T) {
+func TestNetworksManaged(t *testing.T) {
 
 	dcName := "DC1"
 	dvsName := CreateDVSName(dcName)
@@ -36,7 +36,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.DistributedVirtualPortgroup,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "pg-1",
 						Originator: "127.0.0.1:8990",
 						Changes:    []types.PropertyChange{},
@@ -48,7 +47,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe := mock.NewMockProbeInf(mockCtrl)
 				vchub.probe = mockProbe
 				mockProbe.EXPECT().AddPenPG(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-				mockProbe.EXPECT().GetPGConfig(dcName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("doesn't exist")).Times(1)
+				mockProbe.EXPECT().GetPGConfig(dcName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("doesn't exist")).Times(2)
 				mockProbe.EXPECT().GetPenPG(dcName, gomock.Any(), gomock.Any()).Return(&object.DistributedVirtualPortgroup{
 					Common: object.NewCommon(nil,
 						types.ManagedObjectReference{
@@ -61,7 +60,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe.EXPECT().UpdateDVSPortsVlan(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				orchInfo := []*network.OrchestratorInfo{
 					{
@@ -84,7 +83,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.DistributedVirtualPortgroup,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "pg-1",
 						Originator: "127.0.0.1:8990",
 						Changes: []types.PropertyChange{
@@ -120,7 +118,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe.EXPECT().RenamePG(dcName, "RandomName", CreatePGName("PG1"), gomock.Any()).Return(nil).Times(1)
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				orchInfo := []*network.OrchestratorInfo{
 					{
@@ -153,7 +151,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.VmwareDistributedVirtualSwitch,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "dvs-1",
 						Originator: "127.0.0.1:8990",
 						Changes: []types.PropertyChange{
@@ -174,7 +171,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe.EXPECT().RenameDVS(dcName, "RandomName", CreateDVSName(dcName), gomock.Any()).Return(nil).Times(1)
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 			},
 			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
@@ -200,7 +197,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.DistributedVirtualPortgroup,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "pg-1",
 						Originator: "127.0.0.1:8990",
 						Changes: []types.PropertyChange{
@@ -231,6 +227,12 @@ func TestNetworks(t *testing.T) {
 									DefaultPortConfig: &types.VMwareDVSPortSetting{
 										Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 											PvlanId: 100,
+										},
+										UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+											UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+												ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+												StandbyUplinkPort: []string{"uplink3", "uplink4"},
+											},
 										},
 									},
 								},
@@ -264,6 +266,12 @@ func TestNetworks(t *testing.T) {
 						DefaultPortConfig: &types.VMwareDVSPortSetting{
 							Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 								PvlanId: 3,
+							},
+							UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+								UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+									ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+									StandbyUplinkPort: []string{"uplink3", "uplink4"},
+								},
 							},
 						},
 					}, gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -300,6 +308,12 @@ func TestNetworks(t *testing.T) {
 							Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 								PvlanId: 100,
 							},
+							UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+								UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+									ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+									StandbyUplinkPort: []string{"uplink3", "uplink4"},
+								},
+							},
 						},
 					},
 				}, nil).AnyTimes()
@@ -308,7 +322,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe.EXPECT().UpdateDVSPortsVlan(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				orchInfo := []*network.OrchestratorInfo{
 					{
@@ -321,6 +335,23 @@ func TestNetworks(t *testing.T) {
 			},
 			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
 				// Verification is mockprobe AddPenPG getting called 2 times
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					pg := dc.GetPGByID("pg-1")
+					if pg == nil {
+						return false, fmt.Errorf("PG was nil")
+					}
+					if len(pg.PgTeaming.uplinks) == 0 {
+						return false, fmt.Errorf("teaming info wasn't populated")
+					}
+					return true, nil
+				}, "PG state was not correct")
+				dc := v.GetDC(dcName)
+				pg := dc.GetPGByID("pg-1")
+				AssertEquals(t, []string{"uplink1", "uplink2", "uplink3", "uplink4"}, pg.PgTeaming.uplinks, "pg teaming info did not match")
 			},
 		},
 		{
@@ -331,7 +362,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.DistributedVirtualPortgroup,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "pg-1",
 						Originator: "127.0.0.1:8990",
 						Changes: []types.PropertyChange{
@@ -347,6 +377,12 @@ func TestNetworks(t *testing.T) {
 									DefaultPortConfig: &types.VMwareDVSPortSetting{
 										Vlan: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
 											VlanId: 4,
+										},
+										UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+											UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+												ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+												StandbyUplinkPort: []string{"uplink3", "uplink4"},
+											},
 										},
 									},
 								},
@@ -366,13 +402,48 @@ func TestNetworks(t *testing.T) {
 							Value: "PG-10",
 						}),
 				}, nil).AnyTimes()
-				mockProbe.EXPECT().GetPGConfig(dcName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("doesn't exist")).AnyTimes()
+				mockProbe.EXPECT().GetPGConfig(dcName, gomock.Any(), gomock.Any(), gomock.Any()).Return(&mo.DistributedVirtualPortgroup{
+					Config: types.DVPortgroupConfigInfo{
+						DistributedVirtualSwitch: &types.ManagedObjectReference{
+							Type:  string(defs.VmwareDistributedVirtualSwitch),
+							Value: "dvs-1",
+						},
+						Name: CreatePGName("PG1"),
+						Policy: &types.VMwareDVSPortgroupPolicy{
+							DVPortgroupPolicy: types.DVPortgroupPolicy{
+								BlockOverrideAllowed:               true,
+								ShapingOverrideAllowed:             false,
+								VendorConfigOverrideAllowed:        false,
+								LivePortMovingAllowed:              false,
+								PortConfigResetAtDisconnect:        true,
+								NetworkResourcePoolOverrideAllowed: types.NewBool(false),
+								TrafficFilterOverrideAllowed:       types.NewBool(false),
+							},
+							VlanOverrideAllowed:           true,
+							UplinkTeamingOverrideAllowed:  false,
+							SecurityPolicyOverrideAllowed: true, // This field should be preserved
+							IpfixOverrideAllowed:          types.NewBool(false),
+						},
+						DefaultPortConfig: &types.VMwareDVSPortSetting{
+							Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
+								PvlanId: 4,
+							},
+							UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+								UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+									ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+									StandbyUplinkPort: []string{"uplink3", "uplink4"},
+								},
+							},
+						},
+					},
+				}, nil).AnyTimes()
 				mockProbe.EXPECT().TagObjAsManaged(gomock.Any()).Return(nil).AnyTimes()
 				mockProbe.EXPECT().TagObjWithVlan(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 				mockProbe.EXPECT().UpdateDVSPortsVlan(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+				mockProbe.EXPECT().IsSessionReady().Return(true).AnyTimes()
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				orchInfo := []*network.OrchestratorInfo{
 					{
@@ -404,7 +475,6 @@ func TestNetworks(t *testing.T) {
 					Val: defs.VCEventMsg{
 						VcObject:   defs.VmwareDistributedVirtualSwitch,
 						DcID:       dcName,
-						DcName:     dcName,
 						Key:        "dvs-1",
 						Originator: "127.0.0.1:8990",
 						Changes: []types.PropertyChange{
@@ -428,13 +498,12 @@ func TestNetworks(t *testing.T) {
 								Type:  string(defs.VmwareDistributedVirtualSwitch),
 								Value: "PG-10",
 							}),
-						// },
 					}, nil).AnyTimes()
 
 				mockProbe.EXPECT().TagObjAsManaged(gomock.Any()).Return(nil).AnyTimes()
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 			},
 			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
 				AssertEventually(t, func() (bool, interface{}) {
@@ -470,6 +539,14 @@ func TestNetworks(t *testing.T) {
 			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
 				mockProbe := mock.NewMockProbeInf(mockCtrl)
 				vchub.probe = mockProbe
+				// Sync calls
+				mockProbe.EXPECT().ListDVS(gomock.Any()).Return([]mo.VmwareDistributedVirtualSwitch{}, nil)
+				mockProbe.EXPECT().ListPG(gomock.Any()).Return([]mo.DistributedVirtualPortgroup{}, nil)
+				mockProbe.EXPECT().ListHosts(gomock.Any()).Return([]mo.HostSystem{}, nil)
+				mockProbe.EXPECT().ListVM(gomock.Any()).Return([]mo.VirtualMachine{}, nil)
+				mockProbe.EXPECT().GetPenDVSPorts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]types.DistributedVirtualPort{}, nil)
+				mockProbe.EXPECT().GetDVSConfig(gomock.Any(), gomock.Any(), gomock.Any()).Return(&mo.DistributedVirtualSwitch{}, nil)
+
 				mockProbe.EXPECT().AddPenPG("dispName", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockProbe.EXPECT().GetPenPG("dispName", gomock.Any(), gomock.Any()).Return(&object.DistributedVirtualPortgroup{
 					Common: object.NewCommon(nil,
@@ -526,7 +603,7 @@ func TestNetworks(t *testing.T) {
 				mockProbe.EXPECT().RemovePenDVS("DC1", CreateDVSName("DC1"), 5).AnyTimes()
 
 				// Setup state for DC1
-				addDCState(t, vchub, dcName)
+				addDCState(t, vchub, dcName, defs.ManagedMode)
 
 				// Add workloads and hosts for this DC
 
@@ -563,6 +640,431 @@ func TestNetworks(t *testing.T) {
 					}
 					return true, nil
 				}, "stale hosts should have been removed")
+			},
+		},
+	}
+
+	runStoreTC(t, testCases)
+}
+
+func TestDVSMonitoring(t *testing.T) {
+
+	dcName := "DC1"
+
+	testCases := []storeTC{
+		{
+			name: "monitored dvs create",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val:  types.VMwareDVSConfigInfo{},
+							},
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "UserDVS",
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					dvs := dc.GetUserDVSByID("userDvs-1")
+					if dvs == nil {
+						return false, fmt.Errorf("DVS was nil")
+					}
+					if dvs.DvsName != "UserDVS" {
+						return false, fmt.Errorf("DVS name did not match")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+			},
+		},
+		{
+			name: "monitored dvs delete",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes:    []types.PropertyChange{},
+						UpdateType: types.ObjectUpdateKindLeave,
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+				penDC := vchub.GetDC(dcName)
+				penDC.AddUserDVS(types.ManagedObjectReference{
+					Type:  string(defs.VmwareDistributedVirtualSwitch),
+					Value: "userDvs-1",
+				}, "UserDVS")
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					dvs := dc.GetUserDVSByID("userDvs-1")
+					if dvs != nil {
+						return false, fmt.Errorf("DVS was not nil")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+			},
+		},
+		{
+			name: "monitored dvs rename",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val:  types.VMwareDVSConfigInfo{},
+							},
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "UserDVS",
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "UserDVSRename",
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					dvs := dc.GetUserDVSByID("userDvs-1")
+					if dvs == nil {
+						return false, fmt.Errorf("DVS was nil")
+					}
+					if dvs.DvsName != "UserDVSRename" {
+						return false, fmt.Errorf("DVS name did not match")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+			},
+		},
+	}
+	runStoreTC(t, testCases)
+}
+
+func TestPGMonitoring(t *testing.T) {
+
+	dcName := "DC1"
+
+	testCases := []storeTC{
+		{
+			name: "monitored pg create",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val:  types.VMwareDVSConfigInfo{},
+							},
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "UserDVS",
+							},
+						},
+					},
+				},
+				{ // vlan trunk pg should be skipped
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.DistributedVirtualPortgroup,
+						DcID:       dcName,
+						Key:        "pg-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.DVPortgroupConfigInfo{
+									DistributedVirtualSwitch: &types.ManagedObjectReference{
+										Type:  string(defs.VmwareDistributedVirtualSwitch),
+										Value: "userDvs-1",
+									},
+									Name: "User-PG1",
+									DefaultPortConfig: &types.VMwareDVSPortSetting{
+										Vlan: &types.VmwareDistributedVirtualSwitchTrunkVlanSpec{},
+									},
+								},
+							},
+						},
+					},
+				},
+				{ // Pvlan spec PG should be skipped
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.DistributedVirtualPortgroup,
+						DcID:       dcName,
+						Key:        "pg-2",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.DVPortgroupConfigInfo{
+									DistributedVirtualSwitch: &types.ManagedObjectReference{
+										Type:  string(defs.VmwareDistributedVirtualSwitch),
+										Value: "userDvs-1",
+									},
+									Name: "User-PG2",
+									DefaultPortConfig: &types.VMwareDVSPortSetting{
+										Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
+											PvlanId: 4,
+										},
+										UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+											UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.DistributedVirtualPortgroup,
+						DcID:       dcName,
+						Key:        "pg-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.DVPortgroupConfigInfo{
+									DistributedVirtualSwitch: &types.ManagedObjectReference{
+										Type:  string(defs.VmwareDistributedVirtualSwitch),
+										Value: "userDvs-1",
+									},
+									Name: "User-PG1",
+									DefaultPortConfig: &types.VMwareDVSPortSetting{
+										Vlan: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+											VlanId: 4,
+										},
+										UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+											UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+												ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+												StandbyUplinkPort: []string{"uplink3", "uplink4"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					pg := dc.GetPGByID("pg-1")
+					if pg == nil {
+						return false, fmt.Errorf("PG was nil")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+				dc := v.GetDC(dcName)
+				pg := dc.GetPGByID("pg-1")
+				AssertEquals(t, "User-PG1", pg.PgName, "pg name did not match")
+				AssertEquals(t, int32(4), pg.VlanID, "pg vlan did not match")
+				pg = dc.GetPG("User-PG1", "")
+				AssertEquals(t, []string{"uplink1", "uplink2", "uplink3", "uplink4"}, pg.PgTeaming.uplinks, "pg teaming info did not match")
+				AssertEquals(t, "pg-1", pg.PgRef.Value, "pg ID did not match")
+
+				Assert(t, dc.GetPGByID("pg-2") == nil, "pg shouldn't have been created")
+				Assert(t, dc.GetPGByID("pg-3") == nil, "pg shouldn't have been created")
+
+			},
+		},
+		{
+			name: "monitored pg delete",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.DistributedVirtualPortgroup,
+						DcID:       dcName,
+						Key:        "pg-1",
+						Originator: "127.0.0.1:8990",
+						Changes:    []types.PropertyChange{},
+						UpdateType: types.ObjectUpdateKindLeave,
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+				penDC := vchub.GetDC(dcName)
+				penDC.AddUserDVS(types.ManagedObjectReference{
+					Type:  string(defs.VmwareDistributedVirtualSwitch),
+					Value: "userDvs-1",
+				}, "UserDVS")
+				dvs := penDC.GetDVS("UserDVS")
+				dvs.AddUserPG("PG1", "pg-1", 4)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					pg := dc.GetPGByID("pg-1")
+					if pg != nil {
+						return false, fmt.Errorf("pg was not nil")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+			},
+		},
+		{
+			name: "monitored pg rename",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VmwareDistributedVirtualSwitch,
+						DcID:       dcName,
+						Key:        "userDvs-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val:  types.VMwareDVSConfigInfo{},
+							},
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "UserDVS",
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.DistributedVirtualPortgroup,
+						DcID:       dcName,
+						Key:        "pg-1",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.DVPortgroupConfigInfo{
+									DistributedVirtualSwitch: &types.ManagedObjectReference{
+										Type:  string(defs.VmwareDistributedVirtualSwitch),
+										Value: "userDvs-1",
+									},
+									Name: "User-PG1-rename",
+									DefaultPortConfig: &types.VMwareDVSPortSetting{
+										Vlan: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+											VlanId: 4,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName, defs.MonitoringMode)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					dc := v.GetDC(dcName)
+					if dc == nil {
+						return false, fmt.Errorf("DC was nil")
+					}
+					pg := dc.GetPG("User-PG1-rename", "")
+					if pg == nil {
+						return false, fmt.Errorf("PG was nil")
+					}
+					return true, nil
+				}, "User DVS state was not correct")
+				dc := v.GetDC(dcName)
+				pg := dc.GetPGByID("pg-1")
+				AssertEquals(t, "User-PG1-rename", pg.PgName, "pg name did not match")
+				AssertEquals(t, int32(4), pg.VlanID, "pg vlan did not match")
+				pg = dc.GetPG("User-PG1-rename", "")
+				AssertEquals(t, "pg-1", pg.PgRef.Value, "pg ID did not match")
+				Assert(t, dc.GetPGByID("pg-2") == nil, "pg shouldn't have been created")
+				Assert(t, dc.GetPGByID("pg-3") == nil, "pg shouldn't have been created")
 			},
 		},
 	}

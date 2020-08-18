@@ -319,7 +319,6 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 	var eps []*workload.Endpoint
 	createErr := false
 	for ii := range ws.Workload.Spec.Interfaces {
-
 		if len(indexes) != 0 {
 			found := false
 			for _, index := range indexes {
@@ -363,8 +362,8 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 		// check if we already have the endpoint for this workload
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
-		log.Infof("Adding to create endpoint : %v", epName)
-		nodeUUID := ""
+		log.Infof("Adding to create endpoint %v", epName)
+		nodeUUID := []string{}
 		dscs := host.getDSCs()
 		if len(dscs) == 0 {
 			log.Errorf("Failed to find DSC on host %v (%v)", host.Host.Name, epName)
@@ -375,7 +374,22 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 		// TODO : Here, an implicit assumption of each Host having one DSC is here
 		// This will have to be updated once we start supporting Workloads on
 		// Multi DSC per host deployment
-		nodeUUID = dscs[0].DistributedServiceCard.Name
+		if len(ws.Workload.Spec.Interfaces[ii].DSCInterfaces) > 0 {
+			for _, ifMac := range ws.Workload.Spec.Interfaces[ii].DSCInterfaces {
+				for _, dsc := range dscs {
+					_, ok := dsc.SupportedMACs[ifMac]
+					if ok {
+						nodeUUID = append(nodeUUID, dsc.DistributedServiceCard.Name)
+						break
+					}
+				}
+			}
+		}
+
+		if len(nodeUUID) == 0 {
+			log.Infof("No NodeUUID found in the Supported MACs list. Picking the first DSC in the Host List : %v", dscs[0].DistributedServiceCard.Name)
+			nodeUUID = append(nodeUUID, dscs[0].DistributedServiceCard.Name)
+		}
 
 		/* FIXME: comment out this code till CMD publishes associated NICs in host
 		// check if the host has associated smart nic
@@ -417,19 +431,21 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 				Labels:       ws.Workload.ObjectMeta.Labels,
 			},
 			Spec: workload.EndpointSpec{
-				NodeUUID:         nodeUUID,
+				NodeUUID:         nodeUUID[0], // Done for backwards compatibility
 				HomingHostAddr:   "",
 				MicroSegmentVlan: ws.Workload.Spec.Interfaces[ii].MicroSegVlan,
+				NodeUUIDList:     nodeUUID,
 			},
 			Status: workload.EndpointStatus{
 				Network:            netName,
-				NodeUUID:           nodeUUID,
+				NodeUUID:           nodeUUID[0], // Done for backwards compatibility
 				WorkloadName:       ws.Workload.Name,
 				WorkloadAttributes: ws.Workload.Labels,
 				MacAddress:         epMac,
 				HomingHostAddr:     "", // TODO: get host address
 				HomingHostName:     ws.Workload.Spec.HostName,
 				MicroSegmentVlan:   ws.Workload.Spec.Interfaces[ii].MicroSegVlan,
+				NodeUUIDList:       nodeUUID,
 			},
 		}
 		if len(ws.Workload.Spec.Interfaces[ii].IpAddresses) > 0 {
@@ -1051,7 +1067,7 @@ func (ws *WorkloadState) processUpdate(nwrk *workload.Workload) error {
 				}
 				continue
 			}
-			//not present or execess
+			//not present or excess
 			return false
 		}
 
@@ -1093,6 +1109,15 @@ func (ws *WorkloadState) processUpdate(nwrk *workload.Workload) error {
 				if !sliceEqual(curIntf.IpAddresses, newIntf.IpAddresses) {
 					break L
 				}
+
+				if len(curIntf.DSCInterfaces) != len(newIntf.DSCInterfaces) {
+					break L
+				}
+
+				if !sliceEqual(curIntf.DSCInterfaces, newIntf.DSCInterfaces) {
+					break L
+				}
+
 				changed = false
 			}
 		}

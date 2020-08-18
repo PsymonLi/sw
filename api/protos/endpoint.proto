@@ -24,6 +24,8 @@ message EndpointSpec {
     string HomingHostAddr = 2 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "homing-host-addr,omitempty"];
     // MicroSegmentVlan to be assigned to the endpoint
     uint32 MicroSegmentVlan = 3 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "micro-segment-vlan,omitempty"];
+    // NodeUUIDList has the list of DSCs where a EP is supposed to go to 
+    repeated string NodeUUIDList       = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "node-uuid-list,omitempty"];
 }
 
 // status part of Endpoint object
@@ -67,7 +69,9 @@ message EndpointStatus {
     // IPv6 gateways
     repeated string IPv6Gateways    = 19 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "ipv6-gateways,omitempty"];
     // MirrorSessions list of mirror sessions enabled on this endpoint
-    repeated string MirrorSessions   = 20 [(gogoproto.jsontag) = "mirror-sessions"];
+    repeated string MirrorSessions  = 20 [(gogoproto.jsontag) = "mirror-sessions"];
+    // NodeUUIDList has the list of DSCs where a EP is supposed to go to
+    repeated string NodeUUIDList    = 21 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "node-uuid-list,omitempty"];
 }
 
 // Endpoint represents a network endpoint

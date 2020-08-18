@@ -2,36 +2,23 @@ package pcache
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/pensando/sw/api"
-	"github.com/pensando/sw/api/generated/cluster"
-	"github.com/pensando/sw/api/generated/workload"
-	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
-	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/api/generated/bookstore"
+	smmock "github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/ref"
 	. "github.com/pensando/sw/venice/utils/testutils"
-	"github.com/pensando/sw/venice/utils/tsdb"
 )
 
 var (
 	logConfig = log.GetDefaultConfig("pcache_test")
 	logger    = log.SetConfig(logConfig)
+	orderKind = string(bookstore.KindOrder)
 )
-
-func newStateManager() (*statemgr.Statemgr, error) {
-	tsdb.Init(context.Background(), &tsdb.Opts{})
-	stateMgr, err := statemgr.NewStatemgr(globals.APIServer, nil, logger, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return stateMgr, nil
-}
 
 func TestPcache(t *testing.T) {
 	logConfig.LogToStdout = true
@@ -39,10 +26,10 @@ func TestPcache(t *testing.T) {
 	logger := log.SetConfig(logConfig)
 	// Set should check validator before writing to statemgr
 	// Call to statemgr should be update/create
-	stateMgr, err := newStateManager()
+	sm, _, err := smmock.NewMockStateManager()
 	AssertOk(t, err, "failed to create statemgr")
-	pCache := NewPCache(stateMgr, logger)
-	pCache.retryInterval = 1 * time.Second
+	pCache := NewPCache(sm, logger)
+	pCache.retryInterval = 10 * time.Second
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -53,186 +40,120 @@ func TestPcache(t *testing.T) {
 		wg.Wait()
 	}()
 
-	expMeta := &api.ObjectMeta{
-		Name:      "127.0.0.1:8990-virtualmachine-41",
-		Tenant:    globals.DefaultTenant,
-		Namespace: globals.DefaultNamespace,
-	}
-	expWorkload := &workload.Workload{
-		TypeMeta: api.TypeMeta{
-			Kind:       "Workload",
-			APIVersion: "v1",
+	// Register bookstore kind
+	writeCalled := false
+	deleteCalled := false
+	pCache.RegisterKind(orderKind, &KindOpts{
+		WriteToApiserver: true,
+		WriteObj: func(in interface{}) error {
+			writeCalled = true
+			return nil
 		},
-		ObjectMeta: *expMeta,
-		Spec: workload.WorkloadSpec{
-			Interfaces: []workload.WorkloadIntfSpec{
-				workload.WorkloadIntfSpec{
-					MACAddress: "aaaa.bbbb.cccc",
-				},
-			},
+		DeleteObj: func(in interface{}) error {
+			deleteCalled = true
+			return nil
 		},
-	}
-	err = pCache.Set("Workload", expWorkload)
-	AssertOk(t, err, "Failed to write workload")
-
-	// no validators so it should have written to statemgr
-	_, err = stateMgr.Controller().Workload().Find(expMeta)
-	AssertOk(t, err, "Failed to find workload in statemgr")
-
-	testKey := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "test")
-	validNoPushKey := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "valid_no_push")
-
-	// Set validator
-	pCache.SetValidator("Workload", func(in interface{}) (bool, bool) {
-		w := in.(*workload.Workload)
-		if w.Labels != nil && len(w.Labels[testKey]) != 0 {
-			return true, true
-		}
-		if w.Labels != nil && len(w.Labels[validNoPushKey]) != 0 {
-			return true, false
-		}
-		return false, false
+		Validator: func(in interface{}) (bool, bool) {
+			w := in.(*bookstore.Order)
+			valid := false
+			push := false
+			if w.Labels != nil {
+				logger.Infof("----------- %v", w.Labels)
+				if len(w.Labels["valid"]) != 0 {
+					valid = true
+				}
+				if len(w.Labels["push"]) != 0 {
+					push = true
+				}
+			}
+			return valid, push
+		},
 	})
 
-	// Update should sit in cache
-	key1 := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "key1")
-	key2 := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "key2")
-	expWorkload = ref.DeepCopy(expWorkload).(*workload.Workload)
-	userKey := "userKey"
-	expWorkload.Labels = map[string]string{
-		key1: "val1",
+	order := &bookstore.Order{
+		ObjectMeta: api.ObjectMeta{
+			Name: "order1",
+		},
 	}
-	err = pCache.Set("Workload", expWorkload)
+	err = pCache.Set(orderKind, order, true)
 	AssertOk(t, err, "Failed to write workload")
-	entry := pCache.kinds["Workload"].entries[expMeta.GetKey()]
-	Assert(t, entry != nil, "Workload not in pcache")
+	Assert(t, !writeCalled, "write shouldn't have been called")
+	Assert(t, !deleteCalled, "delete shouldn't have been called")
 
-	// Get should return value in cache
-	entry = pCache.Get("Workload", expMeta)
-	Assert(t, entry != nil, "Workload not in pcache")
-	entryWorkload := pCache.GetWorkload(expMeta)
-	AssertEquals(t, entryWorkload, entry, "Get from pcache returned different values")
-	AssertEquals(t, "val1", entryWorkload.Labels[key1], "Workload not in pcache")
-	entryWorkload = pCache.GetWorkloadByName(expMeta.Name)
-	AssertEquals(t, entryWorkload, entry, "Get from pcache returned different values")
-	AssertEquals(t, "val1", entryWorkload.Labels[key1], "Workload not in pcache")
+	// Get
+	temp := ref.DeepCopy(*order).(bookstore.Order)
+	order = &temp
+	ret := pCache.Get(orderKind, order.GetObjectMeta())
+	AssertEquals(t, order, ret, "pcache entry didn't match")
 
-	retWorkloads := pCache.ListWorkloads(context.Background(), false)
-	AssertEquals(t, 1, len(retWorkloads), "Number of workloads did not match")
-	AssertEquals(t, expWorkload, retWorkloads[expWorkload.GetKey()], "Get from pcache returned different values")
-
-	// Debug should return value in cache
-	debugInfoResp, err := pCache.Debug(map[string]string{"kind": "Workload"})
-	AssertOk(t, err, "Failed to get debug info")
-	debugInfoResp1, err := pCache.Debug(nil)
-	AssertOk(t, err, "Failed to get debug info")
-
-	AssertEquals(t, debugInfoResp, debugInfoResp1, "Debugs were note equal")
-
-	debugInfo := debugInfoResp.(map[string]interface{})
-	AssertEquals(t, 1, len(debugInfo), "Workload debug info had incorrect amount of entries")
-	debugInfoEntry := debugInfo["Workload"].(map[string]interface{})
-	for k, v := range debugInfoEntry {
-		AssertEquals(t, k, expMeta.GetKey(), "workload key did not match")
-		AssertEquals(t, v, entryWorkload, "workload did not match")
+	// Make item valid
+	order.Labels = map[string]string{
+		"valid": "true",
 	}
+	err = pCache.Set(orderKind, order, true)
+	Assert(t, !writeCalled, "write shouldn't have been called")
+	Assert(t, !deleteCalled, "delete shouldn't have been called")
+
+	// Set without writing to statemgr
+	order.Labels = map[string]string{
+		"valid": "true",
+		"push":  "true",
+	}
+	err = pCache.Set(orderKind, order, false)
+	Assert(t, !writeCalled, "write shouldn't have been called")
+	Assert(t, !deleteCalled, "delete shouldn't have been called")
 
 	// Test isValid
-	expWorkload = ref.DeepCopy(expWorkload).(*workload.Workload)
-	expWorkload.Labels[validNoPushKey] = "test"
-	err = pCache.Set("Workload", expWorkload)
-	AssertOk(t, err, "Failed to write workload")
-	// Should be in cache
-	entry = pCache.kinds["Workload"].entries[expMeta.GetKey()]
-	Assert(t, entry != nil, "Workload not in pcache")
-	Assert(t, pCache.IsValid("Workload", expMeta), "expected object to be valid")
+	Assert(t, pCache.IsValid(orderKind, order.GetObjectMeta()), "order should have been valid")
 
-	// Update with correct value
-	// Modifying object that lives in the cache
-	expWorkload.Labels[testKey] = "test"
-	pCache.RevalidateKind("Workload")
+	// Revalidate should push the object
+	pCache.RevalidateKind(orderKind)
+	Assert(t, writeCalled, "write should have been called")
+	Assert(t, !deleteCalled, "delete shouldn't have been called")
 
-	// Should no longer be in cache
-	entry = pCache.kinds["Workload"].entries[expMeta.GetKey()]
-	Assert(t, entry == nil, "Workload still in pcache")
+	writeCalled = false
 
-	// Should be in stateMgr
-	stateMgrEntry, err := stateMgr.Controller().Workload().Find(expMeta)
-	AssertOk(t, err, "Failed to find workload in statemgr")
-	AssertEquals(t, "val1", stateMgrEntry.Workload.Labels[key1], "stateMgr did not have correct version of workload")
-
-	// Update statemgr directly
-	expWorkload = ref.DeepCopy(expWorkload).(*workload.Workload)
-	expWorkload.Labels[key1] = "val2"
-	err = stateMgr.Controller().Workload().Update(expWorkload)
-	AssertOk(t, err, "Failed to update statemgr")
-
-	// Get should return value in stateMgr
-	expWorkload = pCache.GetWorkload(expMeta)
-	Assert(t, expWorkload != nil, "Workload not in statemgr")
-	AssertEquals(t, "val2", expWorkload.Labels[key1], "Workload not in statemgr")
-
-	// Update from statemgr should merge labels
-	expWorkload = ref.DeepCopy(expWorkload).(*workload.Workload)
-	expWorkload.Labels[userKey] = "val1"
-	err = stateMgr.Controller().Workload().Update(expWorkload)
-	AssertOk(t, err, "Failed to update statemgr")
-
-	expWorkload = pCache.GetWorkload(expMeta)
-	Assert(t, expWorkload != nil, "Workload not in statemgr")
-
-	expWorkload = ref.DeepCopy(expWorkload).(*workload.Workload)
-	expWorkload.Labels[userKey] = "oldVal"
-	expWorkload.Labels[key2] = "val1"
-	err = pCache.Set("Workload", expWorkload)
-
-	// Statemgr should have userKey: val1, and the system labels key1 and key2
-	stateMgrEntry, err = stateMgr.Controller().Workload().Find(expMeta)
-	AssertOk(t, err, "Failed to find workload in statemgr")
-	AssertEquals(t, "val2", stateMgrEntry.Workload.Labels[key1], "stateMgr did not have correct version of workload")
-	AssertEquals(t, "val1", stateMgrEntry.Workload.Labels[key2], "stateMgr did not have correct version of workload")
-	AssertEquals(t, "val1", stateMgrEntry.Workload.Labels[userKey], "stateMgr did not have correct version of workload")
-
-	// Delete
-	err = pCache.Delete("Workload", expWorkload)
-	AssertOk(t, err, "Failed to delete from statemgr")
-	_, err = stateMgr.Controller().Workload().Find(expMeta)
-	Assert(t, err != nil, "Item still in stateMgr")
-
-	// Test host functions
-
-	expMeta = &api.ObjectMeta{
-		Name: "host1",
+	// Set to trigger delete
+	order.Labels = map[string]string{
+		"push": "true",
 	}
-	expHost := &cluster.Host{
-		TypeMeta: api.TypeMeta{
-			Kind:       "Host",
-			APIVersion: "v1",
+	err = pCache.Set(orderKind, order, true)
+	AssertOk(t, err, "failed to set")
+	Assert(t, !writeCalled, "write shouldn't have been called")
+	Assert(t, deleteCalled, "delete should have been called")
+
+	deleteCalled = false
+
+	// Delete object
+	err = pCache.Delete(orderKind, order)
+	AssertOk(t, err, "failed to delete")
+	Assert(t, !writeCalled, "write shouldn't have been called")
+	Assert(t, deleteCalled, "delete should have been called")
+	ret = pCache.Get(orderKind, order.GetObjectMeta())
+	AssertEquals(t, nil, ret, "pcache entry should be gone")
+
+	// Add back and test List and Debug
+	err = pCache.Set(orderKind, order, true)
+	AssertOk(t, err, "failed to set")
+
+	order2 := &bookstore.Order{
+		ObjectMeta: api.ObjectMeta{
+			Name: "order2",
 		},
-		ObjectMeta: *expMeta,
 	}
-	err = pCache.Set("Host", expHost)
-	AssertOk(t, err, "Failed to write host")
+	err = pCache.Set(orderKind, order2, true)
+	AssertOk(t, err, "failed to set")
 
-	retHost := pCache.GetHost(expMeta)
-	AssertEquals(t, expHost, retHost, "Get from pcache returned different values")
+	// Debug should return value in cache
+	debugInfoResp, err := pCache.Debug(map[string]string{"kind": orderKind})
+	AssertOk(t, err, "Failed to get debug info")
+	debugMap := debugInfoResp.(map[string]interface{})
+	debugEntryMap := debugMap[orderKind].(map[string]interface{})
+	AssertEquals(t, 2, len(debugEntryMap), "expected 2 entries")
 
-	retHost = pCache.GetHostByName(expMeta.Name)
-	AssertEquals(t, expHost, retHost, "Get from pcache returned different values")
+	debugInfoResp1, err := pCache.Debug(nil)
+	AssertOk(t, err, "Failed to get debug info")
+	AssertEquals(t, debugInfoResp, debugInfoResp1, "Debugs were note equal")
 
-	retHosts := pCache.ListHosts(context.Background(), false)
-	AssertEquals(t, 1, len(retHosts), "Number of hosts did not match")
-	AssertEquals(t, expHost, retHosts[expHost.GetKey()], "Get from pcache returned different values")
-
-	expHost = ref.DeepCopy(expHost).(*cluster.Host)
-	expHost.Labels = map[string]string{
-		"key": "value",
-	}
-	err = pCache.Set("Host", expHost)
-	AssertOk(t, err, "Failed to write host")
-
-	err = pCache.Delete("Host", expHost)
-	AssertOk(t, err, "Failed to delete from statemgr")
-	_, err = stateMgr.Controller().Host().Find(expMeta)
-	Assert(t, err != nil, "Item still in stateMgr")
+	AssertEquals(t, 2, len(pCache.List(orderKind)), "List expected to have 2 entries")
 }

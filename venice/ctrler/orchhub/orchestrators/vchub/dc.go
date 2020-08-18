@@ -14,20 +14,35 @@ import (
 	"github.com/pensando/sw/venice/utils/events/recorder"
 )
 
+// DCShared Holds common state for a PenDC and it's children (PenDVS, PenPG)
+type DCShared struct {
+	DcName string
+	DcRef  types.ManagedObjectReference
+	Probe  vcprobe.ProbeInf
+}
+
 // PenDC represents an instance of a Datacenter
 type PenDC struct {
 	sync.Mutex
 	*defs.State
-	Name  string
-	dcRef types.ManagedObjectReference
+	*DCShared
 	// Map from dvs display name to PenDVS inside this DC
-	DvsMap       map[string]*PenDVS
-	probe        vcprobe.ProbeInf
+	PenDvsMap map[string]*PenDVS
+	// Map from user created dvsID to dvs object
+	UserDvsIDMap map[string]*PenDVS
 	HostName2Key map[string]string
+	mode         defs.Mode
+}
+
+// DcID2Name returns name given a DC ID
+func (v *VCHub) DcID2Name(id string) string {
+	v.DcMapLock.Lock()
+	defer v.DcMapLock.Unlock()
+	return v.DcID2NameMap[id]
 }
 
 // NewPenDC creates a new penDC object
-func (v *VCHub) NewPenDC(dcName, dcID string) (*PenDC, error) {
+func (v *VCHub) NewPenDC(dcName, dcID string, mode defs.Mode) (*PenDC, error) {
 	v.DcMapLock.Lock()
 	defer v.DcMapLock.Unlock()
 
@@ -41,12 +56,16 @@ func (v *VCHub) NewPenDC(dcName, dcID string) (*PenDC, error) {
 			Value: dcID,
 		}
 		dc = &PenDC{
-			State:        v.State,
-			probe:        v.probe,
-			Name:         dcName,
-			dcRef:        dcRef,
-			DvsMap:       map[string]*PenDVS{},
+			State: v.State,
+			DCShared: &DCShared{
+				DcName: dcName,
+				DcRef:  dcRef,
+				Probe:  v.probe,
+			},
+			PenDvsMap:    map[string]*PenDVS{},
+			UserDvsIDMap: map[string]*PenDVS{},
 			HostName2Key: map[string]string{},
+			mode:         mode,
 		}
 		v.DcMap[dcName] = dc
 
@@ -61,23 +80,27 @@ func (v *VCHub) NewPenDC(dcName, dcID string) (*PenDC, error) {
 
 		v.Log.Infof("adding dc %s ( %s )", dcName, dcID)
 
-		err := v.probe.TagObjAsManaged(dcRef)
-		if err != nil {
-			v.Log.Errorf("Failed to tag DC as managed, %s", err)
-			// Error isn't worth failing the operation for
+		if dc.isManagedMode() {
+			err := v.probe.TagObjAsManaged(dcRef)
+			if err != nil {
+				v.Log.Errorf("Failed to tag DC as managed, %s", err)
+				// Error isn't worth failing the operation for
+			}
 		}
 	}
 
-	err := dc.AddPenDVS()
-	if err != nil {
-		evtMsg := fmt.Sprintf("%v : Failed to create DVS in Datacenter %s. %v", v.State.OrchConfig.Name, dcName, err)
-		v.Log.Errorf(evtMsg)
+	if dc.isManagedMode() {
+		err := dc.AddPenDVS()
+		if err != nil {
+			evtMsg := fmt.Sprintf("%v : Failed to create DVS in Datacenter %s. %v", v.State.OrchConfig.Name, dcName, err)
+			v.Log.Errorf(evtMsg)
 
-		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
-			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
+			if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
+				recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
+			}
+
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	return dc, nil
@@ -96,11 +119,11 @@ func (v *VCHub) RemovePenDC(dcName string) {
 	}
 
 	// Stop watcher for this DC
-	v.probe.StopWatchForDC(dcName, existingDC.dcRef.Value)
+	v.probe.StopWatchForDC(dcName, existingDC.DcRef.Value)
 	// Remove tag on DC
 
 	existingDC.Lock()
-	for dvsName, dvs := range existingDC.DvsMap {
+	for dvsName, dvs := range existingDC.PenDvsMap {
 		err := v.probe.RemovePenDVS(dcName, dvsName, 5)
 		if err != nil {
 			v.Log.Errorf("failed to delete DVS %v from DC %v. Err : %v", dvsName, dcName, err)
@@ -108,24 +131,22 @@ func (v *VCHub) RemovePenDC(dcName string) {
 			if err != nil {
 				v.Log.Errorf("failed to remove managed tag from %v in DC %v. Err : %v", dvsName, dcName, err)
 			}
+		} else {
+			v.Log.Infof("Deleted PenDVS %v from DC %v", dvsName, dcName)
 		}
 	}
 	existingDC.Unlock()
 
 	// Delete any Workloads or hosts associated with this DC
 	// There may be stale hosts or workloads if we were disconnected
-	opts := api.ListWatchOptions{}
-	opts.LabelSelector = fmt.Sprintf("%v=%v,%v=%v", utils.OrchNameKey, v.OrchConfig.Name, utils.NamespaceKey, dcName)
-
-	workloads, err := v.StateMgr.Controller().Workload().List(v.Ctx, &opts)
-	if err != nil {
-		v.Log.Errorf("Failed to get workload list for DC %v. Err : %v", dcName, err)
-	}
+	workloads := v.cache.ListWorkloads(v.Ctx, false)
 	for _, workload := range workloads {
-		v.deleteWorkload(&workload.Workload)
+		if utils.IsObjForOrch(workload.Labels, v.OrchConfig.Name, dcName) {
+			v.deleteWorkload(workload)
+		}
 	}
 
-	hosts := v.pCache.ListHosts(v.Ctx, false)
+	hosts := v.cache.ListHosts(v.Ctx, false)
 	for _, host := range hosts {
 		if utils.IsObjForOrch(host.Labels, v.OrchConfig.Name, dcName) {
 			v.deleteHostStateFromDc(host, existingDC, true)
@@ -134,16 +155,15 @@ func (v *VCHub) RemovePenDC(dcName string) {
 
 	// Delete entries in map
 	v.DcMapLock.Lock()
-	delete(v.DcMap, existingDC.Name)
-	delete(v.DcID2NameMap, existingDC.dcRef.Value)
+	delete(v.DcMap, existingDC.DcName)
 	v.DcMapLock.Unlock()
 
 	v.State.DcMapLock.Lock()
-	delete(v.State.DcIDMap, existingDC.Name)
+	delete(v.State.DcIDMap, existingDC.DcName)
 	v.State.DcMapLock.Unlock()
 
 	existingDC.Lock()
-	for dvsName := range existingDC.DvsMap {
+	for dvsName := range existingDC.PenDvsMap {
 		v.State.DvsIDMapLock.Lock()
 		if _, ok := v.State.DvsIDMap[dvsName]; ok {
 			delete(v.State.DvsIDMap, dvsName)
@@ -164,6 +184,26 @@ func (v *VCHub) GetDC(name string) *PenDC {
 		return nil
 	}
 	return dc
+}
+
+// RenameDC renames a DC
+func (v *VCHub) RenameDC(oldName, newName string) {
+	v.DcMapLock.Lock()
+	defer v.DcMapLock.Unlock()
+	dc, ok := v.DcMap[oldName]
+	if !ok {
+		v.Log.Infof("RenameDC called on a DC that does not exist. Old name %s new name %s", oldName, newName)
+		return
+	}
+	delete(v.DcMap, oldName)
+	v.DcMap[newName] = dc
+	dc.DcName = newName
+
+	v.State.DcMapLock.Lock()
+	delete(v.State.DcIDMap, oldName)
+	v.State.DcIDMap[newName] = dc.DcRef
+	v.State.DcMapLock.Unlock()
+	return
 }
 
 // GetDCFromID returns the DC by vcenter DcID
@@ -188,21 +228,21 @@ func (d *PenDC) AddPG(pgName string, networkMeta api.ObjectMeta, dvsName string)
 	defer d.Unlock()
 	var errs []error
 
-	if len(d.DvsMap) == 0 {
-		// If the number of element in DvsMap equals to 0, then something bad happens.
+	if len(d.PenDvsMap) == 0 {
+		// If the number of element in PenDvsMap equals to 0, then something bad happens.
 		// Could be the given account doesn't have write permission to vCenter.
 		// In this case, DVS was not able to be created previously.
-		evtMsg := fmt.Sprintf("%v : Failed to add network %s in Datacenter %s due to missing DVS. Please check vCenter account permissions.", d.State.OrchConfig.Name, networkMeta.Name, d.Name)
+		evtMsg := fmt.Sprintf("%v : Failed to add network %s in Datacenter %s due to missing DVS. Please check vCenter account permissions.", d.State.OrchConfig.Name, networkMeta.Name, d.DcName)
 		err := fmt.Errorf(evtMsg)
 		errs = append(errs, err)
-		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
+		if d.Ctx.Err() == nil && d.Probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
 		}
 
 		return errs
 	}
 
-	for _, penDVS := range d.DvsMap {
+	for _, penDVS := range d.PenDvsMap {
 		if dvsName == "" || dvsName == penDVS.DvsName {
 			err := penDVS.AddPenPG(pgName, networkMeta)
 			if err != nil {
@@ -215,25 +255,22 @@ func (d *PenDC) AddPG(pgName string, networkMeta api.ObjectMeta, dvsName string)
 	return errs
 }
 
-// GetDVS returns the DVS with matching name
-func (d *PenDC) GetDVS(dvsName string) *PenDVS {
-	d.Lock()
-	defer d.Unlock()
-	dvs, ok := d.DvsMap[dvsName]
-	if !ok {
-		return nil
-	}
-	return dvs
-}
-
 // GetPG returns the pg with the matching name. Looks thorugh all
 // DVS unless dvsName is supplied
 func (d *PenDC) GetPG(pgName string, dvsName string) *PenPG {
 	d.Lock()
 	defer d.Unlock()
-	for _, penDVS := range d.DvsMap {
+	for _, penDVS := range d.PenDvsMap {
 		if dvsName == "" || dvsName == penDVS.DvsName {
-			pg := penDVS.GetPenPG(pgName)
+			pg := penDVS.GetPG(pgName)
+			if pg != nil {
+				return pg
+			}
+		}
+	}
+	for _, userDVS := range d.UserDvsIDMap {
+		if dvsName == "" || dvsName == userDVS.DvsName {
+			pg := userDVS.GetPG(pgName)
 			if pg != nil {
 				return pg
 			}
@@ -242,12 +279,18 @@ func (d *PenDC) GetPG(pgName string, dvsName string) *PenPG {
 	return nil
 }
 
-// GetPGByID returns the Pen PG object with the given vcenter ID
+// GetPGByID returns the PG object with the given vcenter ID
 func (d *PenDC) GetPGByID(pgID string) *PenPG {
 	d.Lock()
 	defer d.Unlock()
-	for _, penDVS := range d.DvsMap {
-		pg := penDVS.GetPenPGByID(pgID)
+	for _, penDVS := range d.PenDvsMap {
+		pg := penDVS.GetPGByID(pgID)
+		if pg != nil {
+			return pg
+		}
+	}
+	for _, userDVS := range d.UserDvsIDMap {
+		pg := userDVS.GetPGByID(pgID)
 		if pg != nil {
 			return pg
 		}
@@ -255,14 +298,14 @@ func (d *PenDC) GetPGByID(pgID string) *PenPG {
 	return nil
 }
 
-// RemovePG removes a PG from all DVS in this DC, unless dvsName is not blank
+// RemovePenPG removes a PG from all DVS in this DC, unless dvsName is not blank
 // Returns a map from dvs name to number of PG allocations still available
-func (d *PenDC) RemovePG(pgName string, dvsName string) (map[string]int, []error) {
+func (d *PenDC) RemovePenPG(pgName string, dvsName string) (map[string]int, []error) {
 	d.Log.Infof("Removing PG %s...", pgName)
 	d.Lock()
 	defer d.Unlock()
 	var errs []error
-	for _, penDVS := range d.DvsMap {
+	for _, penDVS := range d.PenDvsMap {
 		d.Log.Debugf("Removing PG %s in dvs %s", pgName, penDVS.DvsName)
 		if dvsName == "" || dvsName == penDVS.DvsName {
 			err := penDVS.RemovePenPG(pgName)
@@ -283,7 +326,7 @@ func (d *PenDC) RemovePG(pgName string, dvsName string) (map[string]int, []error
 
 func (d *PenDC) getRemainingPGAllocations(dvsName string) map[string]int {
 	ret := map[string]int{}
-	for _, penDVS := range d.DvsMap {
+	for _, penDVS := range d.PenDvsMap {
 		if dvsName == "" || dvsName == penDVS.DvsName {
 			ret[penDVS.DvsName] = penDVS.UsegMgr.GetRemainingPGCount()
 		}
@@ -294,7 +337,7 @@ func (d *PenDC) getRemainingPGAllocations(dvsName string) map[string]int {
 func (d *PenDC) addHostNameKey(name, key string) {
 	d.Lock()
 	defer d.Unlock()
-	d.Log.Infof("DC %v: Adding host %v:%v to DC", d.Name, name, key)
+	d.Log.Infof("DC %v: Adding host %v:%v to DC", d.DcName, name, key)
 	d.HostName2Key[name] = key
 }
 
@@ -322,4 +365,16 @@ func (d *PenDC) findHostNameByKey(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (d *PenDC) isMonitoringMode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.mode == defs.MonitoringMode || d.mode == defs.MonitoringManagedMode
+}
+
+func (d *PenDC) isManagedMode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.mode == defs.ManagedMode || d.mode == defs.MonitoringManagedMode
 }

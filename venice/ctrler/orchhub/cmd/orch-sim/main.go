@@ -173,6 +173,12 @@ func createNamespace(name string, orch *Orchestrator) (*Namespace, error) {
 				Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 					PvlanId: nw.VlanID,
 				},
+				UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+					UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+						ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+						StandbyUplinkPort: []string{"uplink3", "uplink4"},
+					},
+				},
 			},
 		})
 	}

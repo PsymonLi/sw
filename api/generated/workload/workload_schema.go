@@ -53,6 +53,7 @@ var typesMapWorkload = map[string]*api.Struct{
 
 		CLITags: map[string]api.CLIInfo{
 			"api-version":       api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
+			"dsc-interfaces":    api.CLIInfo{Path: "Spec.Interfaces[].DSCInterfaces", Skip: false, Insert: "", Help: "List of MAC addresses of the DSC ports associated with this workload interface"},
 			"endpoint":          api.CLIInfo{Path: "Status.Interfaces[].Endpoint", Skip: false, Insert: "", Help: ""},
 			"external-vlan":     api.CLIInfo{Path: "Spec.Interfaces[].ExternalVlan", Skip: false, Insert: "", Help: "External vlan associated with the workload"},
 			"generation-id":     api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
@@ -87,6 +88,8 @@ var typesMapWorkload = map[string]*api.Struct{
 			"IpAddresses": api.Field{Name: "IpAddresses", CLITag: api.CLIInfo{ID: "ip-addresses", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ip-addresses", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"Network": api.Field{Name: "Network", CLITag: api.CLIInfo{ID: "network", Path: "", Skip: false, Insert: "", Help: "Network this interface will belong to"}, JSONTag: "network", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"DSCInterfaces": api.Field{Name: "DSCInterfaces", CLITag: api.CLIInfo{ID: "dsc-interfaces", Path: "", Skip: false, Insert: "", Help: "List of MAC addresses of the DSC ports associated with this workload interface"}, JSONTag: "dsc-interfaces", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"workload.WorkloadIntfStatus": &api.Struct{
@@ -103,6 +106,8 @@ var typesMapWorkload = map[string]*api.Struct{
 			"ExternalVlan": api.Field{Name: "ExternalVlan", CLITag: api.CLIInfo{ID: "external-vlan", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "external-vlan", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 
 			"Network": api.Field{Name: "Network", CLITag: api.CLIInfo{ID: "network", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "network", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"DSCInterfaces": api.Field{Name: "DSCInterfaces", CLITag: api.CLIInfo{ID: "dsc-interfaces", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "dsc-interfaces", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"workload.WorkloadMigrationStatus": &api.Struct{

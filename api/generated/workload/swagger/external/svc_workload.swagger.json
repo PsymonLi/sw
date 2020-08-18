@@ -333,6 +333,16 @@
             "format": "int64"
           },
           {
+            "name": "spec.node-uuid-list",
+            "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status.workload-name",
             "description": "VM or container name.",
             "in": "query",
@@ -477,6 +487,16 @@
           {
             "name": "status.mirror-sessions",
             "description": "MirrorSessions list of mirror sessions enabled on this endpoint.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status.node-uuid-list",
+            "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to.",
             "in": "query",
             "required": false,
             "type": "array",
@@ -805,6 +825,16 @@
             "format": "int64"
           },
           {
+            "name": "spec.node-uuid-list",
+            "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status.workload-name",
             "description": "VM or container name.",
             "in": "query",
@@ -949,6 +979,16 @@
           {
             "name": "status.mirror-sessions",
             "description": "MirrorSessions list of mirror sessions enabled on this endpoint.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status.node-uuid-list",
+            "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to.",
             "in": "query",
             "required": false,
             "type": "array",
@@ -4226,6 +4266,13 @@
           "type": "integer",
           "format": "int64",
           "description": "MicroSegmentVlan to be assigned to the endpoint."
+        },
+        "node-uuid-list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to."
         }
       },
       "description": "spec part of Endpoint object."
@@ -4335,6 +4382,13 @@
             "type": "string"
           },
           "description": "MirrorSessions list of mirror sessions enabled on this endpoint."
+        },
+        "node-uuid-list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "NodeUUIDList has the list of DSCs where a EP is supposed to go to."
         }
       },
       "description": "status part of Endpoint object."
@@ -4417,6 +4471,13 @@
         "network": {
           "type": "string",
           "description": "Network this interface will belong to."
+        },
+        "dsc-interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of all DSC interfaces that can be used. The DSC interface is identified using the MAC address assigned to the DSC port. If not specified, DSCs from workload's host object are used."
         }
       },
       "description": "Spec of a Workload interface."
@@ -4452,6 +4513,13 @@
         "network": {
           "type": "string",
           "description": "Network this interface belongs to."
+        },
+        "dsc-interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of all DSC interfaces that can be used. The DSC interface is identified using the MAC address assigned to the DSC port."
         }
       },
       "description": "Status of a Workload interface."

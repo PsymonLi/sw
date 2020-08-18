@@ -9,12 +9,14 @@ import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 import { OrchestrationOrchestratorSpec_type,  OrchestrationOrchestratorSpec_type_uihint  } from './enums';
 import { MonitoringExternalCred, IMonitoringExternalCred } from './monitoring-external-cred.model';
+import { OrchestrationNamespaceSpec, IOrchestrationNamespaceSpec } from './orchestration-namespace-spec.model';
 
 export interface IOrchestrationOrchestratorSpec {
     'type': OrchestrationOrchestratorSpec_type;
     'uri': string;
     'credentials'?: IMonitoringExternalCred;
     'manage-namespaces'?: Array<string>;
+    'namespaces'?: Array<IOrchestrationNamespaceSpec>;
     '_ui'?: any;
 }
 
@@ -28,8 +30,10 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
     'uri': string = null;
     /** Credentials for the orchestrator. */
     'credentials': MonitoringExternalCred = null;
-    /** Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces. */
+    /** Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces. - deprecated from Rel-C. */
     'manage-namespaces': Array<string> = null;
+    /** Namespaces are used to provide namespace specific information. From Rel-C this will be the only means to pass namespace information "all_namespaces" will be treated as a special namespace, which will apply the same configuration for all the namespaces discovered by the orchestrator. */
+    'namespaces': Array<OrchestrationNamespaceSpec> = null;
     public static propInfo: { [prop in keyof IOrchestrationOrchestratorSpec]: PropInfoItem } = {
         'type': {
             enum: OrchestrationOrchestratorSpec_type_uihint,
@@ -49,9 +53,14 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
             type: 'object'
         },
         'manage-namespaces': {
-            description:  `Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces.`,
+            description:  `Namespaces that will be managed by this orchestrator. "all_namespaces" will manage all namespaces. - deprecated from Rel-C.`,
             required: false,
             type: 'Array<string>'
+        },
+        'namespaces': {
+            description:  `Namespaces are used to provide namespace specific information. From Rel-C this will be the only means to pass namespace information "all_namespaces" will be treated as a special namespace, which will apply the same configuration for all the namespaces discovered by the orchestrator.`,
+            required: false,
+            type: 'object'
         },
     }
 
@@ -79,6 +88,7 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
         super();
         this['credentials'] = new MonitoringExternalCred();
         this['manage-namespaces'] = new Array<string>();
+        this['namespaces'] = new Array<OrchestrationNamespaceSpec>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -117,6 +127,11 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
         } else {
             this['manage-namespaces'] = [];
         }
+        if (values) {
+            this.fillModelArray<OrchestrationNamespaceSpec>(this, 'namespaces', values['namespaces'], OrchestrationNamespaceSpec);
+        } else {
+            this['namespaces'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -128,10 +143,18 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
                 'uri': CustomFormControl(new FormControl(this['uri'], [required, minLengthValidator(1), ]), OrchestrationOrchestratorSpec.propInfo['uri']),
                 'credentials': CustomFormGroup(this['credentials'].$formGroup, OrchestrationOrchestratorSpec.propInfo['credentials'].required),
                 'manage-namespaces': CustomFormControl(new FormControl(this['manage-namespaces']), OrchestrationOrchestratorSpec.propInfo['manage-namespaces']),
+                'namespaces': new FormArray([]),
             });
+            // generate FormArray control elements
+            this.fillFormArray<OrchestrationNamespaceSpec>('namespaces', this['namespaces'], OrchestrationNamespaceSpec);
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('credentials') as FormGroup).controls).forEach(field => {
                 const control = this._formGroup.get('credentials').get(field);
+                control.updateValueAndValidity();
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('namespaces') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('namespaces').get(field);
                 control.updateValueAndValidity();
             });
         }
@@ -148,6 +171,7 @@ export class OrchestrationOrchestratorSpec extends BaseModel implements IOrchest
             this._formGroup.controls['uri'].setValue(this['uri']);
             this['credentials'].setFormGroupValuesToBeModelValues();
             this._formGroup.controls['manage-namespaces'].setValue(this['manage-namespaces']);
+            this.fillModelArray<OrchestrationNamespaceSpec>(this, 'namespaces', this['namespaces'], OrchestrationNamespaceSpec);
         }
     }
 }

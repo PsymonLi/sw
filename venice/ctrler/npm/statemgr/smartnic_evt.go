@@ -5,6 +5,7 @@ package statemgr
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/pensando/sw/api"
@@ -16,6 +17,10 @@ import (
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
+)
+
+const (
+	defaultMacCount = 24
 )
 
 // DistributedServiceCardState is a wrapper for smartNic object
@@ -32,6 +37,8 @@ type DistributedServiceCardState struct {
 	workloadsMigratingIn  map[string]*WorkloadState
 	workloadsMigratingOut map[string]*WorkloadState
 	smObjectTracker
+
+	SupportedMACs map[string]bool
 }
 
 // GetKey returns the key of DSCProfile
@@ -134,6 +141,7 @@ func (sm *Statemgr) OnDistributedServiceCardCreate(smartNic *ctkit.DistributedSe
 	if err != nil {
 		return err
 	}
+
 	sm.addDSCRelatedobjects(smartNic, sns, true)
 	sm.PeriodicUpdaterPush(sns)
 	return nil
@@ -176,6 +184,16 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 			return nil, fmt.Errorf("Profile %v not found", profName)
 			//return nil, kvstore.NewKeyNotFoundError(profName, 0)
 		}
+	}
+
+	sns.SupportedMACs = make(map[string]bool)
+	macList := GetMacList(smartNic.Status.PrimaryMAC, smartNic.Status.NumMacAddress)
+	for _, mac := range macList {
+		sns.SupportedMACs[mac] = true
+	}
+
+	if len(macList) == 0 {
+		log.Errorf("mac list not populated for DSC %v with %v number of macs", smartNic.Status.PrimaryMAC, smartNic.Status.NumMacAddress)
 	}
 
 	return sns, nil
@@ -586,7 +604,6 @@ func (sm *Statemgr) isDscEnforcednMode(nsnic *cluster.DistributedServiceCard) bo
 
 // isDscEnforcednMode returns true if the DSC in insertion mode cluster
 func (sm *Statemgr) isDscFlowawareMode(nsnic *cluster.DistributedServiceCard) bool {
-
 	if !sm.isDscAdmitted(nsnic) {
 		return false
 	}
@@ -598,4 +615,45 @@ func (sm *Statemgr) isDscFlowawareMode(nsnic *cluster.DistributedServiceCard) bo
 
 	return (strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.DeploymentTarget) == strings.ToLower(cluster.DSCProfileSpec_HOST.String()) && strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.FeatureSet) == strings.ToLower(cluster.DSCProfileSpec_FLOWAWARE.String()))
 
+}
+
+// GetMacList gives a list of MAC addresses available on a DSC
+func GetMacList(baseMac string, macCount uint32) []string {
+	macList := []string{}
+	macs := macCount
+	parsedBase, err := net.ParseMAC(baseMac)
+	if err != nil {
+		return nil
+	}
+
+	if macs <= 0 {
+		macs = defaultMacCount
+	}
+
+	mac64 := uint64(0)
+	for _, b := range parsedBase {
+		mac64 = mac64*0x100 + uint64(b)
+	}
+
+	for i := uint32(0); i < macs; i++ {
+		macStr, err := GetMacStrFromUint64(mac64 + uint64(i))
+		if err != nil {
+			log.Errorf("Failed to get MAC for %v", mac64+uint64(i))
+			continue
+		}
+
+		macList = append(macList, macStr)
+	}
+
+	return macList
+}
+
+// GetMacStrFromUint64 takes a 64 bit number and converts it to "." format string
+func GetMacStrFromUint64(mac64 uint64) (string, error) {
+	hexStr := fmt.Sprintf("%012x", mac64)
+	if len(hexStr) != 12 {
+		return "", fmt.Errorf("failed converting mac")
+	}
+
+	return hexStr[:4] + "." + hexStr[4:8] + "." + hexStr[8:], nil
 }

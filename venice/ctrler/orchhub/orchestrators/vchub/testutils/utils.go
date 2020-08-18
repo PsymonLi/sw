@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/vmware/govmomi/vim25/types"
+
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 )
 
 type testPVLANPair struct {
@@ -145,6 +147,11 @@ func GenPGConfigSpec(pgName string, primaryVlan, secondaryVlan int) types.DVPort
 			Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
 				PvlanId: int32(secondaryVlan),
 			},
+			UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+				UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+					ActiveUplinkPort: []string{"uplink1", "uplink2", "uplink3", "uplink4"},
+				},
+			},
 		},
 	}
 	return spec
@@ -197,4 +204,56 @@ func GenPGNamesForComp(testParams *TestParams) *map[string]int {
 	}
 
 	return &mapPGNamesWithIndex
+}
+
+// GenPGWatchEvent create a prob2store event
+func GenPGWatchEvent(dcName, pgName, pgKey, dvsKey string, vlan int32) *defs.Probe2StoreMsg {
+	return &defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.DistributedVirtualPortgroup,
+			DcID:       dcName,
+			Key:        pgKey,
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				types.PropertyChange{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.DVPortgroupConfigInfo{
+						DistributedVirtualSwitch: &types.ManagedObjectReference{
+							Type:  string(defs.VmwareDistributedVirtualSwitch),
+							Value: dvsKey,
+						},
+						Name: pgName,
+						Policy: &types.VMwareDVSPortgroupPolicy{
+							DVPortgroupPolicy: types.DVPortgroupPolicy{
+								BlockOverrideAllowed:               true,
+								ShapingOverrideAllowed:             false,
+								VendorConfigOverrideAllowed:        false,
+								LivePortMovingAllowed:              false,
+								PortConfigResetAtDisconnect:        true,
+								NetworkResourcePoolOverrideAllowed: types.NewBool(false),
+								TrafficFilterOverrideAllowed:       types.NewBool(false),
+							},
+							VlanOverrideAllowed:           true,
+							UplinkTeamingOverrideAllowed:  false,
+							SecurityPolicyOverrideAllowed: true, // This field should be preserved
+							IpfixOverrideAllowed:          types.NewBool(false),
+						},
+						DefaultPortConfig: &types.VMwareDVSPortSetting{
+							Vlan: &types.VmwareDistributedVirtualSwitchPvlanSpec{
+								PvlanId: vlan,
+							},
+							UplinkTeamingPolicy: &types.VmwareUplinkPortTeamingPolicy{
+								UplinkPortOrder: &types.VMwareUplinkPortOrderPolicy{
+									ActiveUplinkPort:  []string{"uplink1", "uplink2"},
+									StandbyUplinkPort: []string{"uplink3", "uplink4"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

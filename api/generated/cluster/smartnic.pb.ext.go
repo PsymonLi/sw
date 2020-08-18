@@ -318,6 +318,7 @@ func (m *DistributedServiceCardStatus) Defaults(ver string) bool {
 	switch ver {
 	default:
 		m.AdmissionPhase = "unknown"
+		m.NumMacAddress = 24
 	}
 	return ret
 }
@@ -903,6 +904,18 @@ func init() {
 				vals = append(vals, k1)
 			}
 			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"AdmissionPhase", vals)
+		}
+		return nil
+	})
+
+	validatorMapSmartnic["DistributedServiceCardStatus"]["all"] = append(validatorMapSmartnic["DistributedServiceCardStatus"]["all"], func(path string, i interface{}) error {
+		m := i.(*DistributedServiceCardStatus)
+		args := make([]string, 0)
+		args = append(args, "0")
+		args = append(args, "256")
+
+		if err := validators.IntRange(m.NumMacAddress, args); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"NumMacAddress", err.Error())
 		}
 		return nil
 	})

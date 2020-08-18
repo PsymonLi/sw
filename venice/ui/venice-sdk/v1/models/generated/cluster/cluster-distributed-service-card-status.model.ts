@@ -29,6 +29,7 @@ export interface IClusterDistributedServiceCardStatus {
     'control-plane-status'?: IClusterDSCControlPlaneStatus;
     'is-connected-to-psm'?: boolean;
     'unhealthy-services'?: Array<string>;
+    'num-mac-address': number;
     '_ui'?: any;
 }
 
@@ -66,6 +67,8 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
     'is-connected-to-psm': boolean = null;
     /** Lists the unhealthy services of a distributed service card. */
     'unhealthy-services': Array<string> = null;
+    /** NumMacAddress has the number of mac addresses that is available on this DSC. Value should be between 0 and 256. */
+    'num-mac-address': number = null;
     public static propInfo: { [prop in keyof IClusterDistributedServiceCardStatus]: PropInfoItem } = {
         'admission-phase': {
             enum: ClusterDistributedServiceCardStatus_admission_phase_uihint,
@@ -144,6 +147,12 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             description:  `Lists the unhealthy services of a distributed service card.`,
             required: false,
             type: 'Array<string>'
+        },
+        'num-mac-address': {
+            default: parseInt('24'),
+            description:  `NumMacAddress has the number of mac addresses that is available on this DSC. Value should be between 0 and 256.`,
+            required: true,
+            type: 'number'
         },
     }
 
@@ -284,6 +293,13 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
         } else {
             this['unhealthy-services'] = [];
         }
+        if (values && values['num-mac-address'] != null) {
+            this['num-mac-address'] = values['num-mac-address'];
+        } else if (fillDefaults && ClusterDistributedServiceCardStatus.hasDefaultValue('num-mac-address')) {
+            this['num-mac-address'] = ClusterDistributedServiceCardStatus.propInfo['num-mac-address'].default;
+        } else {
+            this['num-mac-address'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -306,6 +322,7 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
                 'control-plane-status': CustomFormGroup(this['control-plane-status'].$formGroup, ClusterDistributedServiceCardStatus.propInfo['control-plane-status'].required),
                 'is-connected-to-psm': CustomFormControl(new FormControl(this['is-connected-to-psm']), ClusterDistributedServiceCardStatus.propInfo['is-connected-to-psm']),
                 'unhealthy-services': CustomFormControl(new FormControl(this['unhealthy-services']), ClusterDistributedServiceCardStatus.propInfo['unhealthy-services']),
+                'num-mac-address': CustomFormControl(new FormControl(this['num-mac-address'], [required, minValueValidator(0), maxValueValidator(256), ]), ClusterDistributedServiceCardStatus.propInfo['num-mac-address']),
             });
             // generate FormArray control elements
             this.fillFormArray<ClusterDSCCondition>('conditions', this['conditions'], ClusterDSCCondition);
@@ -354,6 +371,7 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             this['control-plane-status'].setFormGroupValuesToBeModelValues();
             this._formGroup.controls['is-connected-to-psm'].setValue(this['is-connected-to-psm']);
             this._formGroup.controls['unhealthy-services'].setValue(this['unhealthy-services']);
+            this._formGroup.controls['num-mac-address'].setValue(this['num-mac-address']);
         }
     }
 }

@@ -44,7 +44,7 @@ func (it *migrationTestSuite) setupDefaultTopo(seed int, c *C) ([]*cluster.Host,
 		dscMac := fmt.Sprintf("00ae.cd0%d.000%x", seed, i+2)
 		dscIP := fmt.Sprintf("10.20.30.%d/16", i+2)
 		h, err := it.createHost(hostName, dscMac, dscIP)
-		AssertOk(c, err, "error creating host")
+		AssertOk(c, err, "error creating host %v", err)
 		hosts = append(hosts, h)
 
 		for j := 0; j < workloadPerHost; j++ {

@@ -7,6 +7,9 @@ Input file: orchestration.proto
 
 The following Messages are defined.
 
+  ManagedNamespaceSpec
+  MonitoredNamespaceSpec
+  NamespaceSpec
   Orchestrator
   OrchestratorSpec
   OrchestratorStatus

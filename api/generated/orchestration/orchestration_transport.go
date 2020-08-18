@@ -17,6 +17,108 @@ import (
 // Dummy definitions to suppress nonused warnings
 var _ api.ObjectMeta
 
+func encodeHTTPManagedNamespaceSpec(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPManagedNamespaceSpec(_ context.Context, r *http.Request) (interface{}, error) {
+	var req ManagedNamespaceSpec
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqManagedNamespaceSpec encodes GRPC request
+func EncodeGrpcReqManagedNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*ManagedNamespaceSpec)
+	return req, nil
+}
+
+// DecodeGrpcReqManagedNamespaceSpec decodes GRPC request
+func DecodeGrpcReqManagedNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*ManagedNamespaceSpec)
+	return req, nil
+}
+
+// EncodeGrpcRespManagedNamespaceSpec encodes GRC response
+func EncodeGrpcRespManagedNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespManagedNamespaceSpec decodes GRPC response
+func DecodeGrpcRespManagedNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPMonitoredNamespaceSpec(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPMonitoredNamespaceSpec(_ context.Context, r *http.Request) (interface{}, error) {
+	var req MonitoredNamespaceSpec
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqMonitoredNamespaceSpec encodes GRPC request
+func EncodeGrpcReqMonitoredNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*MonitoredNamespaceSpec)
+	return req, nil
+}
+
+// DecodeGrpcReqMonitoredNamespaceSpec decodes GRPC request
+func DecodeGrpcReqMonitoredNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*MonitoredNamespaceSpec)
+	return req, nil
+}
+
+// EncodeGrpcRespMonitoredNamespaceSpec encodes GRC response
+func EncodeGrpcRespMonitoredNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespMonitoredNamespaceSpec decodes GRPC response
+func DecodeGrpcRespMonitoredNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPNamespaceSpec(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPNamespaceSpec(_ context.Context, r *http.Request) (interface{}, error) {
+	var req NamespaceSpec
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqNamespaceSpec encodes GRPC request
+func EncodeGrpcReqNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*NamespaceSpec)
+	return req, nil
+}
+
+// DecodeGrpcReqNamespaceSpec decodes GRPC request
+func DecodeGrpcReqNamespaceSpec(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*NamespaceSpec)
+	return req, nil
+}
+
+// EncodeGrpcRespNamespaceSpec encodes GRC response
+func EncodeGrpcRespNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespNamespaceSpec decodes GRPC response
+func DecodeGrpcRespNamespaceSpec(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
 func encodeHTTPOrchestrator(ctx context.Context, req *http.Request, request interface{}) error {
 	return encodeHTTPRequest(ctx, req, request)
 }

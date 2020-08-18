@@ -68,7 +68,7 @@ func ProcessStartMigration(l log.Logger, oldObj, inObj *workload.Workload) (*wor
 			return oldObj, errors.New("Interface MAC addr cannot change during migration")
 		}
 	}
-	// TODO: set correct timeout.. when vcneter is loaded, it seems to take more than 8min for vmotion
+	// TODO: set correct timeout.. when vcenter is loaded, it seems to take more than 8min for vmotion
 	if _, err := time.ParseDuration(oldObj.Spec.MigrationTimeout); err != nil {
 		oldObj.Spec.MigrationTimeout = "15m"
 	}
@@ -119,6 +119,7 @@ func ProcessAbortMigration(l log.Logger, oldObj, inObj *workload.Workload) (*wor
 	for _, intf := range oldObj.Status.Interfaces {
 		if i, ok := specIfs[intf.MACAddress]; ok {
 			oldObj.Spec.Interfaces[i].MicroSegVlan = intf.MicroSegVlan
+			oldObj.Spec.Interfaces[i].DSCInterfaces = intf.DSCInterfaces
 		} else {
 			l.Errorf("Interface changes during migration are unexpected")
 			oldObj.Spec.Interfaces = append(oldObj.Spec.Interfaces, workload.WorkloadIntfSpec{
@@ -191,13 +192,15 @@ func moveSpecInterfacesToStatus(oldObj *workload.Workload) {
 		if i, ok := statusIfs[intf.MACAddress]; ok {
 			statusIntf := oldObj.Status.Interfaces[i]
 			statusIntf.MicroSegVlan = intf.MicroSegVlan
+			statusIntf.DSCInterfaces = intf.DSCInterfaces
 			newStatusIfs = append(newStatusIfs, statusIntf)
 		} else {
 			newStatusIfs = append(newStatusIfs, workload.WorkloadIntfStatus{
-				MicroSegVlan: intf.MicroSegVlan,
-				ExternalVlan: intf.ExternalVlan,
-				MACAddress:   intf.MACAddress,
-				IpAddresses:  intf.IpAddresses,
+				MicroSegVlan:  intf.MicroSegVlan,
+				ExternalVlan:  intf.ExternalVlan,
+				MACAddress:    intf.MACAddress,
+				IpAddresses:   intf.IpAddresses,
+				DSCInterfaces: intf.DSCInterfaces,
 			})
 		}
 	}

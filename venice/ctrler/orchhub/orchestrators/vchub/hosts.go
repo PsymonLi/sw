@@ -2,6 +2,7 @@ package vchub
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/vmware/govmomi/vim25/types"
@@ -12,36 +13,20 @@ import (
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/utils/events/recorder"
-	"github.com/pensando/sw/venice/utils/netutils"
 	"github.com/pensando/sw/venice/utils/ref"
 	conv "github.com/pensando/sw/venice/utils/strconv"
 )
 
-func (v *VCHub) penDVSForVcHost(dcName string, hConfig *types.HostConfigInfo) (*PenDVS, []string) {
-	var pnics []string
-	if hConfig == nil || hConfig.Network == nil {
-		return nil, pnics
-	}
+func (v *VCHub) handleHost(m defs.VCEventMsg) {
+	dcName := v.DcID2Name(m.DcID)
+	v.Log.Infof("Got handle host event for host %s in DC %s", m.Key, m.DcID)
 	penDC := v.GetDC(dcName)
 	if penDC == nil {
-		return nil, pnics
+		v.Log.Errorf("Skip host event,for host %s in DC %s. No DC object found", m.Key, m.DcID)
+		return
 	}
-	var penDVS *PenDVS
-	for _, dvsProxy := range hConfig.Network.ProxySwitch {
-		v.Log.Debugf("Proxy switch %s", dvsProxy.DvsName)
-		penDVS = penDC.GetDVS(dvsProxy.DvsName)
-		if penDVS != nil {
-			pnics = dvsProxy.Pnic
-			break
-		}
-	}
-	return penDVS, pnics
-}
-
-func (v *VCHub) handleHost(m defs.VCEventMsg) {
-	v.Log.Infof("Got handle host event for host %s in DC %s", m.Key, m.DcID)
-	penDC := v.GetDC(m.DcName)
-	if penDC == nil {
+	if !penDC.isManagedMode() && !penDC.isMonitoringMode() {
+		v.Log.Infof("Skip host event for host %s in DC %s", m.Key, m.DcID)
 		return
 	}
 
@@ -53,21 +38,24 @@ func (v *VCHub) handleHost(m defs.VCEventMsg) {
 		stateMgrHost = nil
 	}
 
-	existingHost := v.pCache.GetHost(meta)
-	var hostObj *cluster.Host
+	existingHost := v.cache.GetHost(meta)
+	var hostObj *defs.VCHubHost
 
 	if existingHost == nil {
 		v.Log.Debugf("This is a new host - %s", meta.Name)
-		hostObj = &cluster.Host{
-			TypeMeta: api.TypeMeta{
-				Kind:       "Host",
-				APIVersion: "v1",
+		hostObj = &defs.VCHubHost{
+			Host: &cluster.Host{
+				TypeMeta: api.TypeMeta{
+					Kind:       "Host",
+					APIVersion: "v1",
+				},
+				ObjectMeta: *meta,
 			},
-			ObjectMeta: *meta,
+			HostInfo: defs.HostInfo{},
 		}
 	} else {
 		// Copying to prevent modifying of ctkit state
-		temp := ref.DeepCopy(*existingHost).(cluster.Host)
+		temp := ref.DeepCopy(*existingHost).(defs.VCHubHost)
 		hostObj = &temp
 	}
 
@@ -86,139 +74,106 @@ func (v *VCHub) handleHost(m defs.VCEventMsg) {
 	}
 
 	utils.AddOrchNameLabel(hostObj.Labels, v.OrchConfig.Name)
-	utils.AddOrchNamespaceLabel(hostObj.Labels, m.DcName)
+	utils.AddOrchNamespaceLabel(hostObj.Labels, dcName)
 
 	var hConfig *types.HostConfigInfo
 	var dispName string
+	configChanged := false
 	for _, prop := range m.Changes {
 		switch defs.VCProp(prop.Name) {
 		case defs.HostPropConfig:
 			propConfig, _ := prop.Val.(types.HostConfigInfo)
 			hConfig = &propConfig
-			v.processHostConfig(prop, m.DcID, m.DcName, hostObj)
+			configChanged = v.processHostConfig(prop, m.DcID, dcName, hostObj)
 		case defs.HostPropName:
 			dispName = prop.Val.(string)
+			// store display name in the wrapper rather than labels
+			hostObj.DisplayName = dispName
+			v.cache.SetHostInfo(hostObj)
 			addNameLabel(hostObj.Labels, dispName)
 		default:
 			v.Log.Errorf("host prop change %s - not handled", prop.Name)
 		}
 	}
 
+	// Construct DSC info
+	v.populateDSCs(hostObj, penDC)
+
 	if existingHost != nil && len(hostObj.Spec.DSCs) == 0 {
-		// host was removed from Pen-DVS, cleanup any workloads on it and
+		// host does not use pensando DSC uplinks anymore, cleanup any workloads on it and
 		// delete the host
+		// TODO: skip this step if monitoring on non-pen host is allowed
 		v.Log.Errorf("Removing host %s and all workloads on it", hostObj.Name)
 		v.hostRemovedFromDVS(existingHost)
 	}
 
-	if dispName == "" && existingHost != nil {
-		// see if received it before config property
-		dispName, _ = getNameLabel(hostObj.Labels)
-	}
+	dispName = hostObj.DisplayName
 	if dispName != "" {
 		penDC.addHostNameKey(dispName, m.Key)
-		v.updateVmkWorkloadLabels(hostObj.Name, m.DcName, dispName)
+		v.updateVmkWorkloadLabels(hostObj.Name, dcName, dispName)
 	}
 
 	if stateMgrHost == nil {
 		v.Log.Infof("Creating host %s", hostObj.Name)
 		// Check if there are any stale hosts with the same DSC
 		v.fixStaleHost(m.Key, hostObj)
-		v.pCache.Set(string(cluster.KindHost), hostObj)
-		pcacheWorkloads := v.pCache.ListWorkloads(v.Ctx, true)
-		// TODO: Keep a host -> workload mapping for better performance.
-		// This should be done when host -> MAC mapping is added for non-pensando oui
-		for _, wl := range pcacheWorkloads {
-			if wl.Spec.HostName == hostObj.Name {
-				v.rebuildWorkload(wl.Name)
+		// commit the object to cache - this is needed to rebuild the workloads
+	}
+	v.cache.SetHost(hostObj, true)
+	if configChanged || stateMgrHost == nil {
+		if ok, _ := v.cache.ValidateHost(hostObj); ok {
+			pcacheWorkloads := v.cache.ListWorkloads(v.Ctx, true)
+			// TODO: Keep a host -> workload mapping for better performance.
+			// This should be done when host -> MAC mapping is added for non-pensando oui
+			for _, wl := range pcacheWorkloads {
+				if wl.Spec.HostName == hostObj.Name {
+					v.Log.Infof("Rebuilding workload %s", wl.Name)
+					v.rebuildWorkload(wl.Name)
+				}
 			}
 		}
 	}
-
-	penDVS, _ := v.penDVSForVcHost(m.DcName, hConfig)
-
-	v.syncHostVmkNics(penDC, penDVS, dispName, m.Key, hConfig)
-
-	if stateMgrHost != nil {
-		v.Log.Infof("Updating host %s", hostObj.Name)
-		v.pCache.Set(string(cluster.KindHost), hostObj)
-		// Revalidate kind call is not needed here.
-		// Only thing that can be updated in a host is the labels
-		// once it is written
-	}
+	// create/update workloads for vmkNics
+	v.syncHostVmkNics(penDC, dispName, m.Key, hConfig)
 }
 
-func (v *VCHub) validateHost(in interface{}) (bool, bool) {
-	obj, ok := in.(*cluster.Host)
-	if !ok {
-		return false, false
-	}
-	if len(obj.Spec.DSCs) == 0 {
-		v.Log.Errorf("host %s has no DSC", obj.GetObjectMeta().Name)
-		return false, true
-	}
-	return true, true
-}
-
-func (v *VCHub) processHostConfig(prop types.PropertyChange, dcID string, dcName string, hostObj *cluster.Host) {
-	propConfig, _ := prop.Val.(types.HostConfigInfo)
-	hConfig := &propConfig
-
+func (v *VCHub) populateDSCs(hostObj *defs.VCHubHost, dc *PenDC) {
+	v.StateMgr.DscMapLock.RLock()
+	validDSCs := map[string]bool{}
 	hostObj.Spec.DSCs = []cluster.DistributedServiceCardID{}
-
-	penDVS, pNicsUsed := v.penDVSForVcHost(dcName, hConfig)
-	if penDVS == nil {
-		// This host in not on pen-dvs, ignore it
-		v.Log.Infof("Host %s is not added to pensando DVS", hostObj.Name)
+	penDVS := dc.GetPenDVSForDC()
+	if dc.isManagedMode() && penDVS == nil {
+		// In managed mode process only PenDVS
+		v.Log.Errorf("DVS for managed DC %s is not found", dc.DcName)
+		v.StateMgr.DscMapLock.RUnlock()
 		return
 	}
-
-	nwInfo := hConfig.Network
-	if nwInfo == nil {
-		v.Log.Errorf("Missing hConfig.Network")
-		return
-	}
-	var DSCs []cluster.DistributedServiceCardID
-	// sort pnics based on MAC address to find/use correct
-	// MAC for DSC idenitification. the management MAC is numerically highest MAC addr
-	// DSC objects use the base (lowest) mac address
-	sort.Slice(nwInfo.Pnic, func(i, j int) bool {
-		return nwInfo.Pnic[i].Mac < nwInfo.Pnic[j].Mac
-	})
-
-	naplesPnicUsed := false
-	for _, pnic := range nwInfo.Pnic {
-		macStr, err := conv.ParseMacAddr(pnic.Mac)
-		if err != nil {
-			v.Log.Errorf("Failed to parse Mac, %s", err)
+	for dvsID, dvsProxy := range hostObj.DvsProxyInfo {
+		// TODO: Check if a DC is in both managed and monitoring mode
+		if dc.isManagedMode() && penDVS.DvsRef.Value != dvsID {
+			// process only PenDVS in managed mode
 			continue
 		}
-		if !netutils.IsPensandoMACAddress(macStr) {
+		if dc.isMonitoringMode() && penDVS != nil && penDVS.DvsRef.Value == dvsID {
+			// skip PenDVS in monitoring mode
 			continue
 		}
-		if len(DSCs) == 0 {
-			// Only one DSC is supported per host.. for now it must be the first DSC
-			// TODO: support for multiple DSCs per host
-			DSCs = append(DSCs, cluster.DistributedServiceCardID{
-				MACAddress: macStr,
-			})
-		}
-		for _, pn := range pNicsUsed {
-			if pn == pnic.Key {
-				naplesPnicUsed = true
-				break
+		v.Log.Infof("host %s has %d connected pnics", hostObj.Name, len(dvsProxy.ConnectedPnics))
+		for _, pnic := range dvsProxy.ConnectedPnics {
+			// Finding DSC in the DSCMap indirectly confirms that this is Pensando Host
+			if dscMac, ok := v.StateMgr.DscMap[pnic]; ok {
+				v.Log.Infof("host %s has connected pnics from DSC", hostObj.Name)
+				validDSCs[dscMac] = true
 			}
 		}
 	}
+	v.StateMgr.DscMapLock.RUnlock()
 
-	if len(DSCs) == 0 {
-		v.Log.Infof("Host %s is ignored - not a Pensando host", hostObj.Name)
-		return
-	}
-
-	if !naplesPnicUsed {
-		v.Log.Infof("Host %s is ignored - Naples Pnic is not connected to Pensando DVS", hostObj.Name)
-		return
+	DSCs := []cluster.DistributedServiceCardID{}
+	for dsc := range validDSCs {
+		DSCs = append(DSCs, cluster.DistributedServiceCardID{
+			MACAddress: dsc,
+		})
 	}
 
 	// Sort before storing, so that if we receive the Pnics
@@ -228,17 +183,30 @@ func (v *VCHub) processHostConfig(prop types.PropertyChange, dcID string, dcName
 		return DSCs[i].MACAddress < DSCs[j].MACAddress
 	})
 	hostObj.Spec.DSCs = DSCs
+	v.Log.Infof("host %s has DSCs %v", hostObj.Name, hostObj.Spec.DSCs)
 }
 
-func (v *VCHub) fixStaleHost(hostID string, host *cluster.Host) error {
+func (v *VCHub) processHostConfig(prop types.PropertyChange, dcID string, dcName string, hostObj *defs.VCHubHost) bool {
+	propConfig, _ := prop.Val.(types.HostConfigInfo)
+	hConfig := &propConfig
+
+	nwInfo := hConfig.Network
+	if nwInfo == nil {
+		v.Log.Errorf("Missing hConfig.Network")
+		return false
+	}
+	return v.populateHostInfo(dcName, hostObj, hConfig)
+}
+
+func (v *VCHub) fixStaleHost(hostID string, host *defs.VCHubHost) error {
 	// check if there is another host with the same MACAddr (DSC)
 	// If that host belongs to this VC it is likely that vcenter host-id changed for some
 	// reason, delete that host and create new one.
 	// TODO: If host was moved from one VCenter to another, we can just check if it has
 	// some VC association and do the same?? (linked VC case)
 	// List hosts
-	hosts := v.pCache.ListHosts(v.Ctx, false)
-	var hostFound *cluster.Host
+	hosts := v.cache.ListHosts(v.Ctx, false)
+	var hostFound *defs.VCHubHost
 	var matchingDSC string
 searchHosts:
 	for _, hostNIC := range host.Spec.DSCs {
@@ -313,15 +281,15 @@ searchHosts:
 	return nil
 }
 
-func (v *VCHub) hostRemovedFromDVS(host *cluster.Host) {
-	v.Log.Infof("Host %s Removed from Pen-DVS", host.Name)
+func (v *VCHub) hostRemovedFromDVS(host *defs.VCHubHost) {
+	v.Log.Infof("Host %s Removed from DVS", host.Name)
 	v.deleteHostState(host, false)
 }
 
-func (v *VCHub) deleteHostState(obj *cluster.Host, deleteObj bool) {
+func (v *VCHub) deleteHostState(obj *defs.VCHubHost, deleteObj bool) {
 	if obj.Labels == nil {
 		// all hosts created from orchhub will have labels
-		v.Log.Debugf("deleteHost - no lables")
+		v.Log.Debugf("deleteHost - no labels")
 		return
 	}
 	dcName, ok := obj.Labels[utils.NamespaceKey]
@@ -335,7 +303,7 @@ func (v *VCHub) deleteHostState(obj *cluster.Host, deleteObj bool) {
 	return
 }
 
-func (v *VCHub) deleteHostStateFromDc(obj *cluster.Host, penDC *PenDC, deleteObj bool) {
+func (v *VCHub) deleteHostStateFromDc(obj *defs.VCHubHost, penDC *PenDC, deleteObj bool) {
 	if obj.Labels == nil {
 		// all hosts created from orchhub will have labels
 		v.Log.Debugf("deleteHostFromDc - no lables")
@@ -345,7 +313,7 @@ func (v *VCHub) deleteHostStateFromDc(obj *cluster.Host, penDC *PenDC, deleteObj
 	if penDC != nil && ok {
 		if hKey, ok := penDC.findHostKeyByName(hostName); ok {
 			// Delete vmkworkload
-			vmkWlName := v.createVmkWorkloadName(penDC.dcRef.Value, hKey)
+			vmkWlName := v.createVmkWorkloadName(penDC.DcRef.Value, hKey)
 			v.deleteWorkloadByName(vmkWlName)
 			penDC.delHostNameKey(hostName)
 		}
@@ -353,7 +321,7 @@ func (v *VCHub) deleteHostStateFromDc(obj *cluster.Host, penDC *PenDC, deleteObj
 	if deleteObj {
 		v.Log.Infof("Deleting host %s", obj.Name)
 		// Delete from apiserver, but not from pcache so that we still have
-		if err := v.pCache.Delete(string(cluster.KindHost), obj); err != nil {
+		if err := v.cache.DeleteHost(obj); err != nil {
 			v.Log.Errorf("Could not delete host from Venice %s", obj.Name)
 		}
 	}
@@ -362,7 +330,7 @@ func (v *VCHub) deleteHostStateFromDc(obj *cluster.Host, penDC *PenDC, deleteObj
 // DeleteHosts deletes all host objects from API server for this VCHub instance
 func (v *VCHub) DeleteHosts() {
 	// List hosts
-	hosts := v.pCache.ListHosts(v.Ctx, false)
+	hosts := v.cache.ListHosts(v.Ctx, false)
 	for _, host := range hosts {
 		if !utils.IsObjForOrch(host.Labels, v.VcID, "") {
 			// Filter out hosts not for this Orch
@@ -375,7 +343,7 @@ func (v *VCHub) DeleteHosts() {
 }
 
 func (v *VCHub) getDCNameForHost(hostName string) string {
-	hostObj := v.pCache.GetHostByName(hostName)
+	hostObj := v.cache.GetHostByName(hostName)
 	if hostObj == nil {
 		v.Log.Errorf("Host %s not found", hostName)
 		return ""
@@ -393,9 +361,141 @@ func (v *VCHub) getDCNameForHost(hostName string) string {
 
 func (v *VCHub) updateVmkWorkloadLabels(hostName, dcName, dispName string) {
 	wlName := createVmkWorkloadNameFromHostName(hostName)
-	workloadObj := v.getWorkload(wlName)
+	workloadObj := v.getWorkloadCopy(wlName)
 	if workloadObj == nil {
 		return
 	}
-	v.addWorkloadLabels(workloadObj, dispName, dcName)
+	v.addWorkloadLabels(workloadObj.Workload, dispName, dcName)
+}
+
+func (v *VCHub) getHostDscInterface(hostName string, dvsID string, uplink string) (string, error) {
+	var dscInterface string
+	// Map uplink name to DSC Interface MAC
+	// TODO: Test with LACP uplinks
+	hostObj := v.cache.GetHostByName(hostName)
+	if hostObj == nil {
+		errMsg := fmt.Errorf("Host %s not found", hostName)
+		v.Log.Errorf("%s", errMsg)
+		return dscInterface, errMsg
+	}
+	dvsProxy, ok := hostObj.HostInfo.DvsProxyInfo[dvsID]
+	if !ok {
+		errMsg := fmt.Errorf("DVSproxy %s not found on host %s", dvsID, hostName)
+		v.Log.Errorf("%s", errMsg)
+		return dscInterface, errMsg
+	}
+
+	pnicName, ok := dvsProxy.UplinkPnics[uplink]
+	if !ok {
+		errMsg := fmt.Errorf("PG uplink %s is not connected", uplink)
+		v.Log.Errorf("%s", errMsg)
+		return dscInterface, errMsg
+	}
+	// TODO: Add a check for pensando DSC pnic if needed
+	dscInterface, ok = hostObj.HostInfo.Pnics[pnicName]
+	if !ok {
+		errMsg := fmt.Errorf("pnic %s not found", pnicName)
+		v.Log.Errorf("%s", errMsg)
+		return "", errMsg
+	}
+	return dscInterface, nil
+}
+
+func (v *VCHub) populateHostInfo(dcName string, hostObj *defs.VCHubHost, hConfig *types.HostConfigInfo) bool {
+	// populate addtional VC info for the host
+	penDC := v.GetDC(dcName)
+	if penDC == nil {
+		return false
+	}
+	// Populate pnic name -> mac information, it can only change when host is created and/or host
+	// was rebooted (with changes to nics)
+	pnicsChanged := false
+	hostPnics := map[string]string{}
+	for _, pnic := range hConfig.Network.Pnic {
+		macStr, err := conv.ParseMacAddr(pnic.Mac)
+		if err != nil {
+			v.Log.Errorf("Failed to parse Mac, %s", err)
+			continue
+		}
+		oldMac, ok := hostObj.Pnics[pnic.Device]
+		if !ok || oldMac != macStr {
+			pnicsChanged = true
+		}
+		hostPnics[pnic.Device] = macStr
+	}
+	// check if any pnics got removed (new pnics and changes to mac are already detected)
+	if len(hostObj.Pnics) != len(hostPnics) {
+		pnicsChanged = true
+	}
+	if pnicsChanged {
+		hostObj.Pnics = hostPnics
+	}
+	v.Log.Debugf("Host pnics for host %s: %v", hostObj.Name, hostObj.Pnics)
+	// clear DVSproxyInfo map and re-populate it
+	dvsProxyInfo := map[string]*defs.DVSProxyInfo{}
+	for _, proxyInfo := range hConfig.Network.ProxySwitch {
+		v.Log.Infof("Populate Proxy switch Info on %s for %s", hostObj.Name, proxyInfo.DvsName)
+		// Get DVS key
+		dvs := penDC.GetDVS(proxyInfo.DvsName)
+		if dvs == nil {
+			// DVS is not discovered yet - should not happen
+			v.Log.Errorf("DVS %s is not discovered yet", proxyInfo.DvsName)
+			continue
+		}
+		if _, ok := dvsProxyInfo[dvs.DvsRef.Value]; !ok {
+			dvsProxyInfo[dvs.DvsRef.Value] = &defs.DVSProxyInfo{}
+		}
+		dvsProxy := dvsProxyInfo[dvs.DvsRef.Value]
+		dvsProxy.ConnectedPnics = []string{}
+		dvsProxy.UplinkPnics = map[string]string{}
+		pnicBacking, ok := proxyInfo.Spec.Backing.(*types.DistributedVirtualSwitchHostMemberPnicBacking)
+		if !ok {
+			v.Log.Errorf("Pnic Backing Spec is missing")
+			continue
+		}
+		uplinkKv := map[string]string{}
+		for _, uplinkPort := range proxyInfo.UplinkPort {
+			// "key": "uplink_name"
+			uplinkKv[uplinkPort.Key] = uplinkPort.Value
+		}
+
+		if len(pnicBacking.PnicSpec) == 0 {
+			v.Log.Infof("Pnic backing is empty")
+		}
+		for _, pnicSpec := range pnicBacking.PnicSpec {
+			pnicDevice := pnicSpec.PnicDevice
+			pnicKey := pnicSpec.UplinkPortKey
+			pnicMac, ok := hostObj.Pnics[pnicDevice]
+			if !ok {
+				v.Log.Errorf("Cannot map %s to mac address", pnicDevice)
+				continue
+			}
+			v.Log.Debugf("Find uplink for pnic %s", pnicDevice)
+			if uplinkName, ok := uplinkKv[pnicKey]; ok {
+				// "uplinkName": "vmnic_Name"
+				dvsProxy.UplinkPnics[uplinkName] = pnicDevice
+				dvsProxy.ConnectedPnics = append(dvsProxy.ConnectedPnics, pnicMac)
+			}
+		}
+		// sort connectedPnics
+		sort.Slice(dvsProxy.ConnectedPnics, func(i, j int) bool {
+			return dvsProxy.ConnectedPnics[i] < dvsProxy.ConnectedPnics[j]
+		})
+		v.Log.Infof("Connected pnics for host %s on DVS %s: %v", hostObj.Name, dvs.DvsRef.Value,
+			dvsProxyInfo[dvs.DvsRef.Value].ConnectedPnics)
+		v.Log.Infof("Uplink pnics for host %s: %v", hostObj.Name,
+			dvsProxyInfo[dvs.DvsRef.Value].UplinkPnics)
+		dvsProxyInfo[dvs.DvsRef.Value] = dvsProxy
+	}
+	dvsInfoChanged := !reflect.DeepEqual(dvsProxyInfo, hostObj.DvsProxyInfo)
+	if dvsInfoChanged {
+		hostObj.DvsProxyInfo = dvsProxyInfo
+	}
+	if dvsInfoChanged || pnicsChanged {
+		// commit the info to cache
+		v.Log.Debugf("Commit HostInfo - %v - %v", hostObj.ObjectMeta, hostObj.HostInfo)
+		v.cache.SetHostInfo(hostObj)
+		return true
+	}
+	return false
 }

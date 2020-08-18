@@ -179,7 +179,7 @@ func TestVCWrite(t *testing.T) {
 					return false, err
 				}
 
-				attachedTags, err := tagClient.GetAttachedTags(context.Background(), dc.dcRef)
+				attachedTags, err := tagClient.GetAttachedTags(context.Background(), dc.DcRef)
 				AssertOk(t, err, "failed to get tags")
 				if len(attachedTags) != 1 {
 					return false, fmt.Errorf("DC didn't have expected tags, had %v", attachedTags)
@@ -202,7 +202,7 @@ func TestVCWrite(t *testing.T) {
 				AssertEquals(t, defs.CreateVCTagManagedTag(clusterID), attachedTags[0].Name, "DVS didn't have managed tag")
 
 				for _, pgName := range pgNames {
-					pgObj := dvs.GetPenPG(pgName)
+					pgObj := dvs.GetPG(pgName)
 					if pgObj == nil {
 						err := fmt.Errorf("Failed to find %s in DC %s", pgName, name)
 						logger.Errorf("%s", err)
@@ -438,13 +438,16 @@ func TestVCHubDestroy1(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -558,13 +561,16 @@ func TestVCHubDestroy2(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -670,13 +676,16 @@ func TestVCHubDestroy3(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -896,13 +905,16 @@ func TestUsegVlanLimit(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -937,7 +949,7 @@ func TestUsegVlanLimit(t *testing.T) {
 			logger.Errorf("%s", err)
 			return false, err
 		}
-		pgObj := dvs.GetPenPG(pgName)
+		pgObj := dvs.GetPG(pgName)
 		if pgObj == nil {
 			err := fmt.Errorf("Failed to find %s in DC", pgName)
 			logger.Errorf("%s", err)
@@ -960,7 +972,6 @@ func TestUsegVlanLimit(t *testing.T) {
 			Val: defs.VCEventMsg{
 				VcObject:   defs.VirtualMachine,
 				DcID:       dc1.Obj.Self.Value,
-				DcName:     dc1.Obj.Name,
 				Key:        fmt.Sprintf("vm-%d", i),
 				Originator: vchub.OrchID,
 				Changes: []types.PropertyChange{
@@ -1014,7 +1025,6 @@ func TestUsegVlanLimit(t *testing.T) {
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dc1.Obj.Self.Value,
-			DcName:     dc1.Obj.Name,
 			Key:        fmt.Sprintf("vm-%d", vmCount+1),
 			Originator: vchub.OrchID,
 			Changes: []types.PropertyChange{
@@ -1146,6 +1156,7 @@ func TestRapidEvents(t *testing.T) {
 			t.Skipf("Skipping test due to issue with external package vcsim")
 		}
 		AssertOk(t, err, "failed host create")
+		dvsName := CreateDVSName(dc.Obj.Name)
 		dvs, ok := dc.GetDVS(CreateDVSName(dc.Obj.Name))
 		Assert(t, ok, "failed to get dvs for DC %s", dc.Obj.Name)
 
@@ -1156,7 +1167,8 @@ func TestRapidEvents(t *testing.T) {
 		AssertOk(t, err, "failed to add Host to DVS")
 
 		macStr := conv.MacString(pnic)
-		err = hostSystem.AddNic("vmnic0", macStr)
+		err = hostSystem.AddNic("vmnic1", macStr)
+		hostSystem.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 		// Generate host create event
 		vchub.vcReadCh <- createHostEvent(dc.Obj.Name, dc.Obj.Self.Value, hostName, hostSystem.Obj.Self.Value, dvs.Obj.Name, macStr)
 		return hostSystem
@@ -1233,7 +1245,7 @@ func TestRapidEvents(t *testing.T) {
 					logger.Errorf("%s", err)
 					return false, err
 				}
-				pgObj := dvs.GetPenPG(pgName)
+				pgObj := dvs.GetPG(pgName)
 				if pgObj == nil {
 					err := fmt.Errorf("Failed to find %s in DC", pgName)
 					logger.Errorf("%s", err)
@@ -1247,6 +1259,7 @@ func TestRapidEvents(t *testing.T) {
 				pNicMac := append(createPenPnicBase(), 0xaa, byte(i/256), byte(j%256))
 				hostName := fmt.Sprintf("host-%d-%d", i, j)
 				host := addHost(dc, hostName, pNicMac)
+				createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 				for k := 0; k < numVMs; k++ {
 					vnics := []sim.VNIC{}
 					for l := 0; l < numVNICs; l++ {
@@ -1310,7 +1323,6 @@ func createVMEvent(dcName, dcID, vmName, vmID, hostID string, vnics []sim.VNIC) 
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        vmID,
 			Originator: "127.0.0.1:8990",
 			Changes: []types.PropertyChange{
@@ -1344,7 +1356,6 @@ func deleteVMEvent(dcName, dcID, vmID string) defs.Probe2StoreMsg {
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        vmID,
 			Originator: "127.0.0.1:8990",
 			Changes:    []types.PropertyChange{},
@@ -1360,7 +1371,6 @@ func createHostEvent(dcName, dcID, hostName, hostID, dvsName, macStr string) def
 		Val: defs.VCEventMsg{
 			VcObject:   defs.HostSystem,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        hostID,
 			Originator: "127.0.0.1:8990",
 			Changes: []types.PropertyChange{
@@ -1377,13 +1387,25 @@ func createHostEvent(dcName, dcID, hostName, hostID, dvsName, macStr string) def
 							Pnic: []types.PhysicalNic{
 								types.PhysicalNic{
 									Mac: macStr,
-									Key: "pnic-2",
+									Key: "pnic-2", Device: "vmnic2",
 								},
 							},
 							ProxySwitch: []types.HostProxySwitch{
 								types.HostProxySwitch{
 									DvsName: dvsName,
 									Pnic:    []string{"pnic-1", "pnic-2"},
+									Spec: types.HostProxySwitchSpec{
+										Backing: &types.DistributedVirtualSwitchHostMemberPnicBacking{
+											PnicSpec: []types.DistributedVirtualSwitchHostMemberPnicSpec{
+												{PnicDevice: "vmnic1", UplinkPortKey: "1"},
+												{PnicDevice: "vmnic2", UplinkPortKey: "2"},
+											},
+										},
+									},
+									UplinkPort: []types.KeyValue{
+										{Key: "1", Value: "uplink1"},
+										{Key: "2", Value: "uplink2"},
+									},
 								},
 							},
 						},
@@ -1400,7 +1422,6 @@ func deleteHostEvent(dcName, dcID, hostID string) defs.Probe2StoreMsg {
 		Val: defs.VCEventMsg{
 			VcObject:   defs.VirtualMachine,
 			DcID:       dcID,
-			DcName:     dcName,
 			Key:        hostID,
 			Originator: "127.0.0.1:8990",
 			Changes:    []types.PropertyChange{},
@@ -1747,7 +1768,13 @@ func TestManageGivenNamespaces(t *testing.T) {
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	// We just want to manage dcName1 and dcName2
-	orchConfig.Spec.ManageNamespaces = []string{dcName1, dcName2}
+	orchConfig.Spec.ManageNamespaces = []string{dcName1}
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		&orchestration.NamespaceSpec{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName2,
+		},
+	}
 	orchConfig.Spec.URI = defaultTestParams.TestHostName
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
@@ -1785,6 +1812,19 @@ func TestManageGivenNamespaces(t *testing.T) {
 		dc := vchub.GetDC(dcName3)
 		if dc != nil {
 			return false, fmt.Errorf("Found DC %s, the expectation is NO DC is found", dcName3)
+		}
+		return true, nil
+	}, "found unexpected DC")
+
+	// Remove dc2
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{}
+	vchub.UpdateConfig(orchConfig)
+
+	// check dcName2 is not managed by our orchestrator
+	AssertEventually(t, func() (bool, interface{}) {
+		dc := vchub.GetDC(dcName2)
+		if dc != nil {
+			return false, fmt.Errorf("Found DC %s, the expectation is NO DC is found", dcName2)
 		}
 		return true, nil
 	}, "found unexpected DC")
@@ -2020,7 +2060,6 @@ func TestOrchRemoveManagedDC(t *testing.T) {
 		os.Remove(tmpFile.Name()) // clean up
 	}()
 
-	logger.Infof("Place holder")
 	u := createURL(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 
 	s, err = sim.NewVcSim(sim.Config{Addr: u.String()})
@@ -2060,55 +2099,70 @@ func TestOrchRemoveManagedDC(t *testing.T) {
 		return vchub.IsSyncDone(), nil
 	}, "VCHub sync never finished")
 
-	AssertEventually(t, func() (bool, interface{}) {
-		dc := vchub.GetDC(dcNames[0])
-		if dc == nil {
-			return false, fmt.Errorf("Did not find DC %v", dcNames[0])
-		}
-
-		_, ok := dcs[0].GetDVS(CreateDVSName(dcNames[0]))
-		if !ok {
-			return false, fmt.Errorf("Pensando DVS not found in DC %v", dcNames[0])
-		}
-
-		return true, nil
-	}, "Did not find DC")
-
-	AssertEventually(t, func() (bool, interface{}) {
-		for i := 1; i < dcCount; i++ {
-			dc := vchub.GetDC(dcNames[i])
-			if dc != nil {
-				return false, fmt.Errorf("Found unexpected DC %v", dcNames[i])
+	verifyDC0 := func() {
+		AssertEventually(t, func() (bool, interface{}) {
+			dc := vchub.GetDC(dcNames[0])
+			if dc == nil {
+				return false, fmt.Errorf("Did not find DC %v", dcNames[0])
 			}
-		}
-		return true, nil
-	}, "found unexpected DC")
 
-	AssertEventually(t, func() (bool, interface{}) {
-		for i := 1; i < dcCount; i++ {
-			_, ok := dcs[i].GetDVS(CreateDVSName(dcNames[i]))
-			if ok {
-				return false, fmt.Errorf("unexpected pensando DVS found in DC %s", dcNames[i])
+			_, ok := dcs[0].GetDVS(CreateDVSName(dcNames[0]))
+			if !ok {
+				return false, fmt.Errorf("Pensando DVS not found in DC %v", dcNames[0])
 			}
-		}
 
-		return true, nil
-	}, "Unexpected Pensando DVS found in DC")
+			return true, nil
+		}, "Did not find DC")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			for i := 1; i < dcCount; i++ {
+				dc := vchub.GetDC(dcNames[i])
+				if dc != nil {
+					return false, fmt.Errorf("Found unexpected DC %v", dcNames[i])
+				}
+			}
+			return true, nil
+		}, "found unexpected DC")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			for i := 1; i < dcCount; i++ {
+				_, ok := dcs[i].GetDVS(CreateDVSName(dcNames[i]))
+				if ok {
+					return false, fmt.Errorf("unexpected pensando DVS found in DC %s", dcNames[i])
+				}
+			}
+
+			return true, nil
+		}, "Unexpected Pensando DVS found in DC")
+	}
+
+	verifyDC0()
+
+	// Move config to Namespace field
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		&orchestration.NamespaceSpec{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcNames[0],
+		},
+	}
+	vchub.UpdateConfig(orchConfig)
+	// Config shouldn't have changed
+	verifyDC0()
+
+	// Remove config only from ManageNamespaces field
+	orchConfig.Spec.ManageNamespaces = []string{}
+	vchub.UpdateConfig(orchConfig)
+	verifyDC0()
 
 	// REMOVE all DCs
-	orchConfig.Spec.ManageNamespaces = []string{}
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{}
 	vchub.UpdateConfig(orchConfig)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		for i := 0; i < dcCount; i++ {
 			dc := vchub.GetDC(dcNames[i])
-			if dc == nil {
-				return true, nil
-			}
-
-			dvs := dc.GetDVS(CreateDVSName(dcNames[i]))
-			if dvs != nil {
-				return false, fmt.Errorf("unexpected pensando DVS found in DC %s", dcNames[i])
+			if dc != nil {
+				return false, fmt.Errorf("DC %s had state", dc.DcName)
 			}
 		}
 
@@ -2238,6 +2292,27 @@ func TestOrchRemoveManagedDC(t *testing.T) {
 		return true, nil
 	}, "non existing dc test failed")
 
+	// Add DC-1
+	orchConfig.Spec.ManageNamespaces = []string{dcNames[1]}
+	vchub.UpdateConfig(orchConfig)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		dc := vchub.GetDC(dcNames[1])
+		if dc == nil {
+			return false, fmt.Errorf("Did not find DC %v", dcNames[1])
+		}
+
+		_, ok := dcs[1].GetDVS(CreateDVSName(dcNames[1]))
+		if !ok {
+			return false, fmt.Errorf("Pensando DVS not found in DC %v", dcNames[0])
+		}
+
+		if len(vchub.DcMap) != 1 {
+			return false, fmt.Errorf("VCHub in-memory state not cleared")
+		}
+		return true, nil
+	}, "Did not find DC")
+
 	// REMOVE ALL DCs - Ensure the above host is not deleted
 	// Leave as manage all but change URL. Should trigger delete of all old DCs
 	orchConfig.Spec.URI = "test.com"
@@ -2256,6 +2331,14 @@ func TestOrchRemoveManagedDC(t *testing.T) {
 		}
 		return true, nil
 	}, "Unexpected DC found")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, ok := dcs[1].GetDVS(CreateDVSName(dcNames[1]))
+		if ok {
+			return false, fmt.Errorf("Pensando DVS should have been deleted")
+		}
+		return true, nil
+	}, "DVS should have been deleted")
 }
 
 func TestDiscoveredDCs(t *testing.T) {
@@ -2581,13 +2664,16 @@ func TestVCHubStalePG(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -2710,13 +2796,16 @@ func TestVCHubAPIServerReconnect(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
 		return
 	}
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
@@ -2754,17 +2843,17 @@ func TestVCHubAPIServerReconnect(t *testing.T) {
 			if !apiServerConnected {
 				return false, false
 			}
-			return v.validateWorkload(in)
+			return v.cache.ValidateWorkload(in)
 		}
-		v.pCache.SetValidator(string(workload.KindWorkload), workloadFn)
+		v.cache.SetValidator(string(workload.KindWorkload), workloadFn)
 
 		hostFn := func(in interface{}) (bool, bool) {
 			if !apiServerConnected {
 				return false, false
 			}
-			return v.validateHost(in)
+			return v.cache.ValidateHost(in)
 		}
-		v.pCache.SetValidator(string(cluster.KindHost), hostFn)
+		v.cache.SetValidator(string(cluster.KindHost), hostFn)
 	}
 
 	vchub = LaunchVCHub(sm, orchConfig, logger, apiSrvConnValidator)
@@ -2841,6 +2930,8 @@ func TestVCHubDcDelete(t *testing.T) {
 	AssertOk(t, err, "Failed to create vcsim")
 	dc1, err := s.AddDC(defaultTestParams.TestDCName)
 	AssertOk(t, err, "failed dc create")
+	dc2, err := s.AddDC("dc2")
+	AssertOk(t, err, "failed dc create")
 
 	vcp = createProbe(ctx, defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 
@@ -2850,6 +2941,12 @@ func TestVCHubDcDelete(t *testing.T) {
 		}
 		return true, nil
 	}, "Session is not Ready", "1s", "10s")
+
+	sm, _, err := smmock.NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed to create state manager. Err : %v", err)
+		return
+	}
 
 	// Create DVS
 	pvlanConfigSpecArray := testutils.GenPVLANConfigSpecArray(defaultTestParams, "add")
@@ -2867,17 +2964,42 @@ func TestVCHubDcDelete(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
-	sm, _, err := smmock.NewMockStateManager()
-	if err != nil {
-		t.Fatalf("Failed to create state manager. Err : %v", err)
-		return
-	}
+	// Create User dvs and pg for DC2
+	userDvsName := "UserDVS"
+	pgName := "UserPG"
+	err = createUserDVS(dc2, userDvsName)
+	Assert(t, ok, "failed to create user dvs")
+
+	err = createUserPG(vcp, "dc2", userDvsName, pgName)
+	AssertOk(t, err, "failed to create user pg")
+	userDvs, _ := dc2.GetDVS(userDvsName)
+	userPg, _ := vcp.GetPenPG("dc2", pgName, 1)
+
+	hostSystem2, err := dc2.AddHost("host2")
+	AssertOk(t, err, "failed host2 create")
+	err = userDvs.AddHost(hostSystem2)
+	AssertOk(t, err, "failed to add Host to DVS")
+
+	pNicMac = append(createPenPnicBase(), 0xaa, 0x11, 0x00)
+	// Make it Pensando host
+	err = hostSystem2.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem2.AddUplinksToDVS(userDvsName, map[string]string{"uplink1": "vmnic1"})
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 	orchConfig.Name = "vc"
-	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
+	orchConfig.Spec.ManageNamespaces = []string{defaultTestParams.TestDCName}
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		{
+			Name: "dc2",
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+		},
+	}
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
 
@@ -2905,6 +3027,13 @@ func TestVCHubDcDelete(t *testing.T) {
 			PortKey:      "11",
 		},
 	})
+	_, err = dc2.AddVM("vm2", "host2", []sim.VNIC{
+		sim.VNIC{
+			MacAddress:   "aa:aa:bb:bb:dd:dd",
+			PortgroupKey: userPg.Reference().Value,
+			PortKey:      "11",
+		},
+	})
 
 	vchub = LaunchVCHub(sm, orchConfig, logger)
 
@@ -2912,6 +3041,29 @@ func TestVCHubDcDelete(t *testing.T) {
 	AssertEventually(t, func() (bool, interface{}) {
 		return vchub.IsSyncDone(), nil
 	}, "VCHub sync never finished")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(wl) != 2 {
+			return false, fmt.Errorf("Found %d workloads", len(wl))
+		}
+
+		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(hosts) != 2 {
+			return false, fmt.Errorf("Found %d hosts", len(wl))
+		}
+
+		return true, nil
+	}, "Failed to get wl and host")
+
+	// Send a DC delete event
+	vchub.vcReadCh <- deleteDCEvent(dc1.Obj.Self.Value)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
@@ -2934,7 +3086,7 @@ func TestVCHubDcDelete(t *testing.T) {
 	}, "Failed to get wl and host")
 
 	// Send a DC delete event
-	vchub.vcReadCh <- deleteDCEvent(dc1.Obj.Self.Value)
+	vchub.vcReadCh <- deleteDCEvent(dc2.Obj.Self.Value)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
@@ -3000,6 +3152,12 @@ func TestVerifyOverride(t *testing.T) {
 		return true, nil
 	}, "Session is not Ready", "1s", "10s")
 
+	sm, _, err := smmock.NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed to create state manager. Err : %v", err)
+		return
+	}
+
 	// Create DVS
 	pvlanConfigSpecArray := testutils.GenPVLANConfigSpecArray(defaultTestParams, "add")
 	dvsCreateSpec := testutils.GenDVSCreateSpec(defaultTestParams, pvlanConfigSpecArray)
@@ -3016,22 +3174,22 @@ func TestVerifyOverride(t *testing.T) {
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
 	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem1.AddNic("vmnic1", conv.MacString(pNicMac))
+	hostSystem1.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
+
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
 
 	hostSystem2, err := dc1.AddHost("host2")
 	AssertOk(t, err, "failed host2 create")
 	err = dvs.AddHostWithoutRuntime(hostSystem2)
 	AssertOk(t, err, "failed to add Host to DVS")
 
-	pNicMac2 := append(createPenPnicBase(), 0xab, 0x00, 0x00)
+	pNicMac2 := append(createPenPnicBase(), 0xab, 0xaa, 0x00)
 	// Make it Pensando host
-	err = hostSystem2.AddNic("vmnic0", conv.MacString(pNicMac2))
+	err = hostSystem2.AddNic("vmnic1", conv.MacString(pNicMac2))
+	hostSystem2.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic1"})
 
-	sm, _, err := smmock.NewMockStateManager()
-	if err != nil {
-		t.Fatalf("Failed to create state manager. Err : %v", err)
-		return
-	}
+	createDistributedServiceCard(sm, "", conv.MacString(pNicMac2), "", "", map[string]string{})
 
 	spec := testutils.GenPGConfigSpec(CreatePGName("pg1"), 2, 3)
 	err = vcp.AddPenPG(dc1.Obj.Name, dvs.Obj.Name, &spec, nil, retryCount)
@@ -3233,11 +3391,12 @@ func TestVerifyOverride(t *testing.T) {
 
 }
 
-func TestHostUplinkModification(t *testing.T) {
-	logger := setupLogger("vchub_test_uplinkMod")
+func TestModeChanges(t *testing.T) {
+	// Switch DC mode from monitored to managed and back
+	// VMs and hosts should be deleted/created properly
+	logger := setupLogger("vchub_testModeSwitch")
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	var vchub *VCHub
 	var s *sim.VcSim
 	var err error
@@ -3256,13 +3415,11 @@ func TestHostUplinkModification(t *testing.T) {
 			s.Destroy()
 		}
 	}()
+
 	u := createURL(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 
 	s, err = sim.NewVcSim(sim.Config{Addr: u.String()})
 	AssertOk(t, err, "Failed to create vcsim")
-	dcName := defaultTestParams.TestDCName
-	dc1, err := s.AddDC(dcName)
-	AssertOk(t, err, "failed dc create")
 
 	vcp = createProbe(ctx, defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
 
@@ -3273,301 +3430,285 @@ func TestHostUplinkModification(t *testing.T) {
 		return true, nil
 	}, "Session is not Ready", "1s", "10s")
 
-	// Create DVS
-	pvlanConfigSpecArray := testutils.GenPVLANConfigSpecArray(defaultTestParams, "add")
-	dvsCreateSpec := testutils.GenDVSCreateSpec(defaultTestParams, pvlanConfigSpecArray)
-
-	err = vcp.AddPenDVS(dcName, dvsCreateSpec, nil, retryCount)
-	dvsName := CreateDVSName(dcName)
-	dvs, ok := dc1.GetDVS(dvsName)
-	Assert(t, ok, "failed dvs create")
-
-	hostSystem1, err := dc1.AddHost("host1")
-	AssertOk(t, err, "failed host1 create")
-	err = dvs.AddHost(hostSystem1)
-	AssertOk(t, err, "failed to add Host to DVS")
-
-	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
-	// Make it Pensando host
-	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
+	dcName1 := "PenDC1"
+	dcName2 := "PenDC2"
+	dcName3 := "PenDC3"
+	userDvsName := "UserDVS"
+	userPgName := "UserPG"
 
 	sm, _, err := smmock.NewMockStateManager()
-	if err != nil {
-		t.Fatalf("Failed to create state manager. Err : %v", err)
-		return
+	AssertOk(t, err, "Failed to create state manager. Err : %v", err)
+
+	addDC := func(dcName string, i int) (*sim.Datacenter, *sim.Host, *sim.Host) {
+		dc, err := s.AddDC(dcName)
+		AssertOk(t, err, "failed dc create")
+		err = createUserDVS(dc, userDvsName)
+		AssertOk(t, err, "failed dvs create")
+		err = createUserPG(vcp, dcName, userDvsName, userPgName)
+		AssertOk(t, err, "failed pg create")
+		userPg, _ := vcp.GetPenPG(dcName, userPgName, 1)
+
+		// Create User host and VM
+		userHost, err := dc.AddHost("userHost")
+		AssertOk(t, err, "failed to create host")
+		pNicMac := append(createPenPnicBase(), 0xaa, byte(i%256), 0x00)
+		err = userHost.AddNic("vmnic0", conv.MacString(pNicMac))
+		userHost.AddUplinksToDVS(userDvsName, map[string]string{"uplink1": "vmnic0"})
+
+		createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
+
+		_, err = dc.AddVM("userVM", "userHost", []sim.VNIC{
+			sim.VNIC{
+				MacAddress:   "aa:aa:bb:bb:dd:dd",
+				PortgroupKey: userPg.Reference().Value,
+				PortKey:      "11",
+			},
+		})
+		AssertOk(t, err, "failed to create vm")
+
+		// Create Host to later be added to pen DVS
+		penHost, err := dc.AddHost("penHost")
+		AssertOk(t, err, "failed to create host")
+		pNicMac = append(createPenPnicBase(), 0xaa, byte(i%256), 0x11)
+		err = penHost.AddNic("vmnic0", conv.MacString(pNicMac))
+
+		createDistributedServiceCard(sm, "", conv.MacString(pNicMac), "", "", map[string]string{})
+
+		return dc, userHost, penHost
 	}
 
+	dc1, _, _ := addDC(dcName1, 1)
+	dc2, _, penHost2 := addDC(dcName2, 2)
+	dc3, _, _ := addDC(dcName3, 3)
+
+	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		{
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName1,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName2,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName3,
+		},
+	}
+	orchConfig.Spec.URI = defaultTestParams.TestHostName
+
+	err = sm.Controller().Orchestrator().Create(orchConfig)
+
+	orchInfo1 := []*network.OrchestratorInfo{
+		{
+			Name:      orchConfig.Name,
+			Namespace: utils.ManageAllDcs,
+		},
+	}
+	smmock.CreateNetwork(sm, "default", "pg1", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
+
+	vchub = LaunchVCHub(sm, orchConfig, logger)
+
+	checkManaged := func(simDC *sim.Datacenter, expManaged bool) {
+		AssertEventually(t, func() (bool, interface{}) {
+			dcName := simDC.Obj.Name
+			dc := vchub.GetDC(dcName)
+			if dc == nil {
+				return false, fmt.Errorf("Did not find DC %v", dcName)
+			}
+
+			_, ok := simDC.GetDVS(CreateDVSName(dcName))
+			if !ok && expManaged {
+				return false, fmt.Errorf("Pensando DVS not found in managed DC %v", dcName)
+			} else if ok && !expManaged {
+				return false, fmt.Errorf("Pensando DVS was found in monitored DC %v", dcName)
+			}
+			if expManaged {
+				_, err = vcp.GetPenPG(dcName, CreatePGName("pg1"), retryCount)
+				if err != nil {
+					return false, fmt.Errorf("Failed to find Pen PG %s", err)
+				}
+			}
+
+			return true, nil
+		}, "DC managed check failed")
+	}
+
+	checkMonitored := func(simDC *sim.Datacenter, expMonitored bool) {
+		AssertEventually(t, func() (bool, interface{}) {
+			dcName := simDC.Obj.Name
+			dc := vchub.GetDC(dcName)
+			if dc == nil {
+				return false, fmt.Errorf("Did not find DC %v", dcName)
+			}
+
+			dvs := dc.GetUserDVS(userDvsName)
+			if dvs == nil && expMonitored {
+				return false, fmt.Errorf("User DVS not found in monitoed DC %v", dcName)
+			} else if dvs != nil && !expMonitored {
+				return false, fmt.Errorf("User DVS was found in managed DC %v", dcName)
+			}
+
+			return true, nil
+		}, "DC monitor check failed")
+	}
+
+	checkManaged(dc1, false)
+	checkManaged(dc2, true)
+	checkManaged(dc3, false)
+
+	checkMonitored(dc1, true)
+	checkMonitored(dc2, false)
+	checkMonitored(dc3, true)
+
+	// Monitored hosts and workloads should be in Venice
+	AssertEventually(t, func() (bool, interface{}) {
+		h, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if len(h) != 2 || err != nil {
+			return false, fmt.Errorf("found %v hosts. Err : %v", len(h), err)
+		}
+		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
+
+		if len(wl) != 2 || err != nil {
+			return false, fmt.Errorf("Found %d workloads. Err : %v", len(wl), err)
+		}
+
+		return true, nil
+	}, "hosts and workloads did not match")
+
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName1,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName2,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName3,
+		},
+	}
+	vchub.UpdateConfig(orchConfig)
+
+	checkManaged(dc1, true)
+	checkManaged(dc2, false)
+	checkManaged(dc3, true)
+
+	checkMonitored(dc1, false)
+	checkMonitored(dc2, true)
+	checkMonitored(dc3, false)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		h, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if len(h) != 1 || err != nil {
+			return false, fmt.Errorf("found %v hosts. Err : %v", len(h), err)
+		}
+		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
+
+		if len(wl) != 1 || err != nil {
+			return false, fmt.Errorf("Found %d workloads. Err : %v", len(wl), err)
+		}
+
+		return true, nil
+	}, "hosts and workloads did not match")
+
+	// Setup DC2 with pen DVS/PG and a workload
+	pvlanConfigSpecArray := testutils.GenPVLANConfigSpecArray(defaultTestParams, "add")
+	dvsCreateSpec := testutils.GenDVSCreateSpec(defaultTestParams, pvlanConfigSpecArray)
+	dvsCreateSpec.ConfigSpec.GetDVSConfigSpec().Name = CreateDVSName(dcName2)
+
+	err = vcp.AddPenDVS(dcName2, dvsCreateSpec, nil, retryCount)
+	AssertOk(t, err, "failed to create dvs")
+	dvsName := CreateDVSName(dcName2)
+	dvs2, ok := dc2.GetDVS(dvsName)
+	Assert(t, ok, "failed dvs create")
+	penHost2.AddUplinksToDVS(dvsName, map[string]string{"uplink1": "vmnic0"})
+
 	spec := testutils.GenPGConfigSpec(CreatePGName("pg1"), 2, 3)
-	err = vcp.AddPenPG(dc1.Obj.Name, dvs.Obj.Name, &spec, nil, retryCount)
+	err = vcp.AddPenPG(dc2.Obj.Name, dvs2.Obj.Name, &spec, nil, retryCount)
 	AssertOk(t, err, "failed to create pg")
-	pg, err := vcp.GetPenPG(dc1.Obj.Name, CreatePGName("pg1"), retryCount)
+	pg, err := vcp.GetPenPG(dc2.Obj.Name, CreatePGName("pg1"), retryCount)
 	AssertOk(t, err, "failed to get pg")
 
-	// Create VM on this PG
-	_, err = dc1.AddVM("vm1", "host1", []sim.VNIC{
+	_, err = dc2.AddVM("penVM", "penHost", []sim.VNIC{
 		sim.VNIC{
 			MacAddress:   "aa:aa:bb:bb:dd:dd",
 			PortgroupKey: pg.Reference().Value,
 			PortKey:      "11",
 		},
-		sim.VNIC{
-			MacAddress:   "aa:aa:bb:bb:dd:ee",
-			PortgroupKey: pg.Reference().Value,
-			PortKey:      "12",
-		},
 	})
 
-	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
-	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
-
-	err = sm.Controller().Orchestrator().Create(orchConfig)
-
-	// Add network, workload should appear
-	orchInfo1 := []*network.OrchestratorInfo{
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
 		{
-			Name:      orchConfig.Name,
-			Namespace: defaultTestParams.TestDCName,
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName1,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName2,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName3,
 		},
 	}
-	smmock.CreateNetwork(sm, "default", "pg1", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
+	vchub.UpdateConfig(orchConfig)
 
-	overrideRewriteDelay = 500 * time.Millisecond
-	vchub = LaunchVCHub(sm, orchConfig, logger)
+	checkManaged(dc1, false)
+	checkManaged(dc2, true)
+	checkManaged(dc3, false)
 
-	// Wait for it to come up
+	checkMonitored(dc1, true)
+	checkMonitored(dc2, false)
+	checkMonitored(dc3, true)
+
+	// Monitored plus managed objects in DC2
 	AssertEventually(t, func() (bool, interface{}) {
-		return vchub.IsSyncDone(), nil
-	}, "VCHub sync never finished")
-
-	AssertEventually(t, func() (bool, interface{}) {
+		h, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if len(h) != 3 || err != nil {
+			return false, fmt.Errorf("found %v hosts. Err : %v", len(h), err)
+		}
 		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(wl) != 1 {
-			return false, fmt.Errorf("Found %d workloads", len(wl))
-		}
 
-		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(hosts) != 1 {
-			return false, fmt.Errorf("Found %d hosts", len(wl))
+		if len(wl) != 3 || err != nil {
+			return false, fmt.Errorf("Found %d workloads. Err : %v", len(wl), err)
 		}
 
 		return true, nil
-	}, "Failed to get wl and host")
+	}, "hosts and workloads did not match")
 
-	// Remove uplinks
-	err = dvs.RemoveHost(hostSystem1)
-	AssertOk(t, err, "Failed to remove host")
-
-	// Host and workload should be gone from statemgr
-	AssertEventually(t, func() (bool, interface{}) {
-		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(wl) != 0 {
-			return false, fmt.Errorf("Found %d workloads", len(wl))
-		}
-
-		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(hosts) != 0 {
-			return false, fmt.Errorf("Found %d hosts", len(wl))
-		}
-
-		return true, nil
-	}, "Failed to get wl and host")
-
-	// Adding uplink back should re-add hosts
-	dvs.AddHost(hostSystem1)
-
-	AssertEventually(t, func() (bool, interface{}) {
-		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(wl) != 1 {
-			return false, fmt.Errorf("Found %d workloads", len(wl))
-		}
-
-		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(hosts) != 1 {
-			return false, fmt.Errorf("Found %d hosts", len(wl))
-		}
-
-		return true, nil
-	}, "Failed to get wl and host")
-
-}
-
-func TestHostStatusPreserved(t *testing.T) {
-	// STARTING SIM
-	u := createURL(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
-
-	logger, tmpFile, err := setupLoggerWithFile("vchub_test_host_status_preserved")
-	AssertOk(t, err, "Failed to setup logger")
-
-	var vchub *VCHub
-	var s *sim.VcSim
-
-	defer func() {
-		logger.Infof("Tearing Down")
-		if vchub != nil {
-			vchub.Destroy(false)
-		}
-
-		if s != nil {
-			s.Destroy()
-		}
-		fileBytes, err := ioutil.ReadFile(tmpFile.Name())
-		AssertOk(t, err, "Failed to read log file")
-		Assert(t, !strings.Contains(string(fileBytes), defaultTestParams.TestPassword), "Logs had password in plaintext")
-		os.Remove(tmpFile.Name()) // clean up
-	}()
-
-	s, err = sim.NewVcSim(sim.Config{Addr: u.String()})
-	AssertOk(t, err, "Failed to create vcsim")
-
-	sm, _, err := smmock.NewMockStateManager()
-	if err != nil {
-		t.Fatalf("Failed to create state manager. Err : %v", err)
-		return
-	}
-
-	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
-	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
-	orchConfig.Spec.URI = defaultTestParams.TestHostName
-
-	err = sm.Controller().Orchestrator().Create(orchConfig)
-	// Make channels really small to verify there are no deadlocks from channel issues
-	evCh := make(chan defs.Probe2StoreMsg, 2)
-	readCh := make(chan defs.Probe2StoreMsg, 2)
-
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithVcEventsCh(evCh), WithVcReadCh(readCh))
-
-	// Wait for it to come up
-	AssertEventually(t, func() (bool, interface{}) {
-		return vchub.IsSyncDone(), nil
-	}, "VCHub sync never finished")
-	dcName := defaultTestParams.TestDCName
-	dc, err := s.AddDC(dcName)
-	dc.Obj.Name = dcName
-	if err != nil && strings.Contains(err.Error(), "intermittent") {
-		t.Skipf("Skipping test due to issue with external package vcsim")
-	}
-	AssertOk(t, err, "failed to create DC %s", dcName)
-	vchub.vcReadCh <- createDCEvent(dcName, dc.Obj.Self.Value)
-
-	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
-	// Make it Pensando host
-	macStr := conv.MacString(pNicMac)
-
-	// Send host event without display name
-	hostEvt := defs.Probe2StoreMsg{
-		MsgType: defs.VCEvent,
-		Val: defs.VCEventMsg{
-			VcObject:   defs.HostSystem,
-			DcID:       dc.Obj.Self.Value,
-			DcName:     dcName,
-			Key:        "host-1",
-			Originator: "127.0.0.1:8990",
-			Changes: []types.PropertyChange{
-				types.PropertyChange{
-					Op:   types.PropertyChangeOpAdd,
-					Name: "config",
-					Val: types.HostConfigInfo{
-						Network: &types.HostNetworkInfo{
-							Pnic: []types.PhysicalNic{
-								types.PhysicalNic{
-									Mac: macStr,
-									Key: "pnic-2",
-								},
-							},
-							ProxySwitch: []types.HostProxySwitch{
-								types.HostProxySwitch{
-									DvsName: defaultTestParams.TestDVSName,
-									Pnic:    []string{"pnic-1", "pnic-2"},
-								},
-							},
-						},
-					},
-				},
-			},
+	orchConfig.Spec.Namespaces = []*orchestration.NamespaceSpec{
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName1,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Monitored.String(),
+			Name: dcName2,
+		},
+		{
+			Mode: orchestration.NamespaceSpec_Managed.String(),
+			Name: dcName3,
 		},
 	}
-	vchub.vcReadCh <- hostEvt
+	vchub.UpdateConfig(orchConfig)
 
-	// Verify statemgr has object
-	var host cluster.Host
 	AssertEventually(t, func() (bool, interface{}) {
-		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
+		h, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if len(h) != 1 || err != nil {
+			return false, fmt.Errorf("found %v hosts. Err : %v", len(h), err)
 		}
-		if len(hosts) != 1 {
-			return false, fmt.Errorf("Found %d hosts", len(hosts))
-		}
-		host = hosts[0].Host
+		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
 
-		return true, nil
-	}, "Failed to get host")
-
-	// Update host status
-	host.Status.AdmittedDSCs = []string{"DSC"}
-	err = sm.Controller().Host().Update(&host)
-	AssertOk(t, err, "Failed to update host")
-
-	// Send name update
-	hostEvt = defs.Probe2StoreMsg{
-		MsgType: defs.VCEvent,
-		Val: defs.VCEventMsg{
-			VcObject:   defs.HostSystem,
-			DcID:       dc.Obj.Self.Value,
-			DcName:     dcName,
-			Key:        "host-1",
-			Originator: "127.0.0.1:8990",
-			Changes: []types.PropertyChange{
-				types.PropertyChange{
-					Op:   types.PropertyChangeOpAdd,
-					Name: "name",
-					Val:  "host1",
-				},
-			},
-		},
-	}
-
-	vchub.vcReadCh <- hostEvt
-	// Wait for label
-	AssertEventually(t, func() (bool, interface{}) {
-		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
-		if err != nil {
-			return false, err
-		}
-		if len(hosts) != 1 {
-			return false, fmt.Errorf("Found %d hosts", len(hosts))
-		}
-		host = hosts[0].Host
-		if host.Labels[NameKey] != "host1" {
-			return false, fmt.Errorf("Host name label isn't added")
-		}
-		// Verify status is not overwritten
-
-		if len(host.Status.AdmittedDSCs) == 0 {
-			return false, fmt.Errorf("Host status was overwritten")
+		if len(wl) != 1 || err != nil {
+			return false, fmt.Errorf("Found %d workloads. Err : %v", len(wl), err)
 		}
 
 		return true, nil
-	}, "Failed to get host")
-
+	}, "hosts and workloads did not match")
 }
 
 func setupLogger(logName string) log.Logger {
@@ -3621,7 +3762,7 @@ func createDSCProfile(stateMgr *smmock.Statemgr) error {
 	return stateMgr.Controller().DSCProfile().Create(&dscProfile)
 }
 
-func createDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name, id string, labels map[string]string) error {
+func createDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name, id, hostname string, labels map[string]string) error {
 	np := cluster.DistributedServiceCard{
 		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
 		ObjectMeta: api.ObjectMeta{
@@ -3633,9 +3774,207 @@ func createDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name, id st
 		Status: cluster.DistributedServiceCardStatus{
 			PrimaryMAC:     name,
 			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
+			Host:           hostname,
 		},
 	}
 
 	// create a DistributedServiceCard
 	return stateMgr.Controller().DistributedServiceCard().Create(&np)
+}
+
+func deleteDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name string) error {
+	np := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name:   name,
+			Tenant: tenant,
+		},
+	}
+
+	// create a DistributedServiceCard
+	return stateMgr.Controller().DistributedServiceCard().Delete(&np)
+}
+
+func TestGetDVSConfig(t *testing.T) {
+	var vchub *VCHub
+	var s *sim.VcSim
+	u := createURL(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
+	dcName := "PenDC1"
+
+	teardown := func(tmpFile string) {
+		logger.Infof("Tearing Down")
+		if vchub != nil {
+			vchub.Destroy(false)
+		}
+		if s != nil {
+			s.Destroy()
+		}
+		fileBytes, err := ioutil.ReadFile(tmpFile)
+		AssertOk(t, err, "Failed to read log file")
+		Assert(t, !strings.Contains(string(fileBytes), defaultTestParams.TestPassword), "Logs had password in plaintext")
+		os.Remove(tmpFile) // clean up
+	}
+
+	type Test struct {
+		ManageNamespaces      []string
+		Namespaces            []*orchestration.NamespaceSpec
+		expectedFiltering     string
+		expectedLinkProtocol  string
+		expectedLinkOperation string
+		expectedMaxMtu        int32
+	}
+
+	testCases := []Test{
+		{
+			ManageNamespaces:      []string{dcName},
+			expectedFiltering:     "legacyFiltering",
+			expectedLinkProtocol:  "lldp",
+			expectedLinkOperation: "none",
+			expectedMaxMtu:        1500,
+		},
+		{
+			ManageNamespaces: []string{},
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: dcName,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						MTU: 9000,
+					},
+				},
+			},
+			expectedMaxMtu: 9000,
+		},
+		{
+			ManageNamespaces: []string{},
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: dcName,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						DiscoveryProtocol: orchestration.ManagedNamespaceSpec_Disabled.String(),
+						MulticastFilter:   orchestration.ManagedNamespaceSpec_Snooping.String(),
+					},
+				},
+			},
+			expectedLinkProtocol:  "lldp",
+			expectedLinkOperation: "none",
+			expectedMaxMtu:        1500,
+			expectedFiltering:     "snooping",
+		},
+		{
+			ManageNamespaces: []string{},
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: dcName,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						DiscoveryProtocol: orchestration.ManagedNamespaceSpec_Disabled.String(),
+						MulticastFilter:   orchestration.ManagedNamespaceSpec_Snooping.String(),
+						MTU:               9000,
+					},
+				},
+			},
+			expectedLinkProtocol:  "lldp",
+			expectedLinkOperation: "none",
+			expectedMaxMtu:        9000,
+			expectedFiltering:     "snooping",
+		},
+		{
+			ManageNamespaces: []string{},
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: dcName,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						MulticastFilter:   orchestration.ManagedNamespaceSpec_Snooping.String(),
+						MTU:               9000,
+						DiscoveryProtocol: orchestration.ManagedNamespaceSpec_LLDP.String(),
+					},
+				},
+			},
+			expectedLinkOperation: "listen",
+			expectedLinkProtocol:  "lldp",
+			expectedMaxMtu:        9000,
+			expectedFiltering:     "snooping",
+		},
+		{
+			ManageNamespaces: []string{},
+			Namespaces: []*orchestration.NamespaceSpec{
+				&orchestration.NamespaceSpec{
+					Name: dcName,
+					Mode: orchestration.NamespaceSpec_Managed.String(),
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						MulticastFilter:    orchestration.ManagedNamespaceSpec_Snooping.String(),
+						MTU:                9000,
+						DiscoveryProtocol:  orchestration.ManagedNamespaceSpec_CDP.String(),
+						DiscoveryOperation: orchestration.ManagedNamespaceSpec_Advertise.String(),
+					},
+				},
+			},
+			expectedLinkOperation: "advertise",
+			expectedLinkProtocol:  "cdp",
+			expectedMaxMtu:        9000,
+			expectedFiltering:     "snooping",
+		},
+	}
+
+	for idx, tc := range testCases {
+		logger, tmpFile, err := setupLoggerWithFile("vchub_testgetdvsconfig")
+		AssertOk(t, err, "Failed to setup logger")
+
+		log.Infof("Running tescase %v : %v", idx, tc)
+
+		s, err = sim.NewVcSim(sim.Config{Addr: u.String()})
+		AssertOk(t, err, "Failed to create vcsim")
+
+		_, err = s.AddDC(dcName)
+		AssertOk(t, err, "failed dc create")
+
+		sm, _, err := smmock.NewMockStateManager()
+		AssertOk(t, err, "Failed to create state manager. Err : %v", err)
+
+		orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
+		orchConfig.Spec.ManageNamespaces = tc.ManageNamespaces
+		orchConfig.Spec.URI = defaultTestParams.TestHostName
+		orchConfig.Spec.Namespaces = tc.Namespaces
+
+		err = sm.Controller().Orchestrator().Create(orchConfig)
+
+		vchub = LaunchVCHub(sm, orchConfig, logger)
+
+		// Check if dcName1 is managed by our orchestrator
+		AssertEventually(t, func() (bool, interface{}) {
+			dc := vchub.GetDC(dcName)
+			if dc == nil {
+				return false, fmt.Errorf("Did not find DC %v", dcName)
+			}
+
+			createSpec := dc.GetDVSConfig(nil).ConfigSpec.(*types.VMwareDVSConfigSpec)
+			if createSpec == nil {
+				return false, fmt.Errorf("failed to get DVS config spec")
+			}
+
+			if createSpec.MulticastFilteringMode != tc.expectedFiltering {
+				return false, fmt.Errorf("Expected filtering mode [%v] found [%v]", tc.expectedFiltering, createSpec.MulticastFilteringMode)
+			}
+
+			log.Infof("LINK PROTO : %v", tc.expectedLinkProtocol)
+			if createSpec.LinkDiscoveryProtocolConfig.Protocol != tc.expectedLinkProtocol {
+				return false, fmt.Errorf("Expected Discovery protocol [%v] found [%v]", tc.expectedLinkProtocol, createSpec.LinkDiscoveryProtocolConfig.Protocol)
+			}
+
+			if createSpec.LinkDiscoveryProtocolConfig.Operation != tc.expectedLinkOperation {
+				return false, fmt.Errorf("Expected Discovery operation [%v] found [%v]", tc.expectedLinkOperation, createSpec.LinkDiscoveryProtocolConfig.Operation)
+			}
+
+			if createSpec.MaxMtu != tc.expectedMaxMtu {
+				return false, fmt.Errorf("Expected MTU [%v] found [%v]", tc.expectedMaxMtu, createSpec.MaxMtu)
+			}
+
+			return true, nil
+		}, fmt.Sprintf("Testcase %v with parameters %v failed", idx, tc))
+
+		teardown(tmpFile.Name())
+	}
 }
