@@ -3,7 +3,6 @@ package statemgr
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
@@ -19,7 +18,6 @@ import (
 //SmFlowExportPolicyInterface is statemanagers struct for export policy
 type SmFlowExportPolicyInterface struct {
 	featureMgrBase
-	sync.Mutex
 	sm *Statemgr
 }
 
@@ -37,8 +35,8 @@ func NewFlowExportPolicyState(fe *ctkit.FlowExportPolicy, stateMgr *Statemgr) (*
 		FlowExportPolicy: fe,
 		stateMgr:         stateMgr,
 	}
-	fe.HandlerCtx = fes
 	fes.smObjectTracker.init(fes)
+	fe.HandlerCtx = fes
 
 	return fes, nil
 }
@@ -93,6 +91,8 @@ func (fes *FlowExportPolicyState) Write() error {
 	//Do write only if changed
 	if propgatationStatusDifferent(prop, newProp) {
 		fes.FlowExportPolicy.Status.PropagationStatus = *newProp
+		log.Infof("Updating status for %v : State: %+v",
+			fes.FlowExportPolicy.Name, fes.FlowExportPolicy.Status)
 		return fes.FlowExportPolicy.Write()
 	}
 

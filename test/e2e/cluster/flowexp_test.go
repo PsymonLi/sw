@@ -22,6 +22,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
+	cmd "github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/test/utils"
 	"github.com/pensando/sw/venice/ctrler/tpm"
@@ -36,6 +37,10 @@ var _ = Describe("flow export policy tests", func() {
 		AfterEach(func() {
 			pctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
+			dscCtx := context.Background()
+			snIf := ts.tu.APIClient.ClusterV1().DistributedServiceCard()
+			validateCluster()
+			validateNICHealth(dscCtx, snIf, ts.tu.NumNaplesHosts, cmd.ConditionStatus_TRUE)
 			ctx := ts.tu.MustGetLoggedInContext(pctx)
 
 			By("cleanup flow export policy")
@@ -65,6 +70,10 @@ var _ = Describe("flow export policy tests", func() {
 					flowExpClient.Delete(ctx, &testFlowExpSpecList[i].ObjectMeta)
 				}
 			}
+			snIf := ts.tu.APIClient.ClusterV1().DistributedServiceCard()
+			validateCluster()
+			dscCtx := context.Background()
+			validateNICHealth(dscCtx, snIf, ts.tu.NumNaplesHosts, cmd.ConditionStatus_TRUE)
 		})
 
 		It("Should create/update/delete flow export policy", func() {
@@ -1415,6 +1424,7 @@ var _ = Describe("flow export policy tests", func() {
 					},
 				},
 			}
+			By(fmt.Sprintf("Creating flowExportPolicy : %v", policy.Name))
 			_, err := flowExpClient.Create(ctx, policy)
 			Expect(err).Should(BeNil(), fmt.Sprintf("failed to create  %v, %v", policy.Name, err))
 			Eventually(func() bool {

@@ -127,8 +127,8 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 		workloadsMigratingIn:   make(map[string]*WorkloadState),
 		workloadsMigratingOut:  make(map[string]*WorkloadState),
 	}
-	smartNic.HandlerCtx = hs
 	hs.smObjectTracker.init(hs)
+	smartNic.HandlerCtx = hs
 
 	return hs, nil
 }

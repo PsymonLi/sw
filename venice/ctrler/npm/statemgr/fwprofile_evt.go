@@ -56,8 +56,8 @@ func NewFirewallProfileState(fwProfile *ctkit.FirewallProfile, stateMgr *Statemg
 		FirewallProfile: fwProfile,
 		stateMgr:        stateMgr,
 	}
-	fwProfile.HandlerCtx = &fps
 	fps.smObjectTracker.init(&fps)
+	fwProfile.HandlerCtx = &fps
 
 	return &fps, nil
 }
@@ -165,6 +165,8 @@ func (fps *FirewallProfileState) Write() error {
 	//Do write only if changed
 	if fps.stateMgr.propgatationStatusDifferent(prop, newProp) {
 		fps.FirewallProfile.Status.PropagationStatus = *newProp
+		log.Infof("Updating status for %v : State: %+v",
+			fps.FirewallProfile.Name, fps.FirewallProfile.Status)
 		return fps.FirewallProfile.Write()
 	}
 

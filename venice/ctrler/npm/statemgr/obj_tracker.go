@@ -164,7 +164,7 @@ func (objTracker *smObjectTracker) updateNodeVersion(nodeuuid, generationID stri
 	data, ok := objTracker.nodeVersions[nodeuuid]
 	//Update only if entry found or gen ID matches
 	if ok && objTracker.generationID == generationID && data.version != generationID {
-		log.Infof("DSC %v acked for propogation status on object %s", nodeuuid, objTracker.obj.GetKey())
+		log.Infof("DSC %v acked for propogation status on object %s key %s", nodeuuid, objTracker.obj.GetKind(), objTracker.obj.GetKey())
 		objTracker.nodeVersions[nodeuuid].version = generationID
 		data.updateTime = time.Now().Unix()
 		update = true

@@ -195,8 +195,8 @@ func NewPolicerProfileState(tp *ctkit.PolicerProfile, sm *SmPolicer) (*PolicerPr
 		PolicerProfile: tp,
 		stateMgr:       sm.sm,
 	}
-	tp.HandlerCtx = &tpstate
 	tpstate.smObjectTracker.init(&tpstate)
+	tp.HandlerCtx = &tpstate
 	return &tpstate, nil
 }
 
