@@ -23,6 +23,8 @@ static thread_local void *__zmq_context;
 const char* __lmodel_env = getenv("ASIC_MOCK_MODE");
 const char* __lmodel_mock_memory_mode = getenv("ASIC_MOCK_MEMORY_MODE");
 const char* __write_verify_enable = getenv("CAPRI_WRITE_VERIFY_ENABLE");
+const char* __reset_verify_enable = getenv("CAPRI_MEM_RESET_VERIFY_ENABLE");
+static char zero_buffer[MODEL_ZMQ_MEM_BUFF_SIZE] = {0};
 std::mutex g_zmq_mutex;
 
 uint64_t __mock_mem_base = 0xC0000000ul;
@@ -32,7 +34,7 @@ uint8_t *__mock_mem;
 int mock_memory_init()
 {
     __mock_mem = (uint8_t *)malloc(__mock_mem_size);
-    memset(__mock_mem, 0, sizeof(__mock_mem_size));
+    memset(__mock_mem, 0, __mock_mem_size);
     return 0;
 }
 
@@ -47,6 +49,20 @@ bool mock_memory_write (uint64_t addr, uint8_t * data, uint32_t size)
     //printf("mock_memory_write: addr:%p size:%d\n",
     //       __mock_mem + offset, size);
     memcpy(__mock_mem + offset, data, size);
+    return true;
+}
+
+bool mock_memory_reset (uint64_t addr, uint32_t size)
+{
+    uint64_t offset = 0;
+    if (!__mock_mem) mock_memory_init();
+    offset = addr - __mock_mem_base;
+    if (offset > __mock_mem_size) {
+        assert(0);
+    }
+    // printf("mock_memory_write: addr:%p size:%d\n",
+    //        __mock_mem + offset, size);
+    memset(__mock_mem + offset, 0x0, size);
     return true;
 }
 
@@ -431,6 +447,59 @@ bool write_mem (uint64_t addr, uint8_t * data, uint32_t size)
         data += tmp_size;
         addr += tmp_size;
     } while (size);
+    return true;
+}
+
+bool reset_mem (uint64_t addr, uint32_t size)
+{
+    int rc;
+    int64_t rem = size;
+    uint32_t chunk_size = 256 << 10;
+    uint32_t csz;
+    uint64_t caddr = addr;
+
+     // thread safe
+    SOCK_OP_GUARD
+
+    char buffer[MODEL_ZMQ_MEM_BUFF_SIZE] = {0};
+    buffer_hdr_t *buff;
+
+    if (__lmodel_mock_memory_mode) {
+        return mock_memory_reset(addr, size);
+    }
+
+    if (__lmodel_env)
+        return true;
+
+    buff = (buffer_hdr_t *) buffer;
+    // as model server is single threaded, we cannot hold the server
+    // for more time
+    while (rem > 0) {
+        buff->type = BUFF_TYPE_MEM_RESET;
+        buff->addr = caddr;
+        csz = rem > chunk_size ? chunk_size : rem;
+        buff->size = csz;
+        rc = zmq_send(__zmq_sock, buffer, sizeof(buffer_hdr_t), 0);
+        assert(rc != -1);
+        rc = zmq_recv(__zmq_sock, buffer, sizeof(buffer_hdr_t), 0);
+        assert(rc != -1);
+        caddr += csz;
+        rem -= csz;
+    }
+    // printf("Reset mem addr %lx size %u\n", addr, size);
+    if (__reset_verify_enable) {
+        do {
+            auto tmp_size = size < MODEL_ZMQ_MEM_BUFF_SIZE-offsetof(buffer_hdr_t,data) ?
+                size : MODEL_ZMQ_MEM_BUFF_SIZE-offsetof(buffer_hdr_t,data);
+
+            read_mem(addr, (uint8_t *)buffer, tmp_size);
+            if (memcmp(buffer, zero_buffer, tmp_size)) {
+                assert(0);
+            }
+            size -= tmp_size;
+            addr += tmp_size;
+        } while (size);
+    }
     return true;
 }
 

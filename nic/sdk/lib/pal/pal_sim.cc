@@ -22,6 +22,7 @@ typedef bool (*write_mem_fn_t)(uint64_t addr, uint8_t * data, uint32_t size);
 typedef bool (*ring_dbfn_t)(uint64_t addr, uint64_t data);
 typedef bool (*step_cpu_pkt_fn_t)(const uint8_t* pkt, size_t pkt_len);
 typedef void* (*mem_map_fn_t)(uint64_t addr, uint32_t size);
+typedef bool (*reset_mem_fn_t)(uint64_t addr, uint32_t size);
 
 typedef struct pal_sim_vectors_s {
     connect_fn_t            connect;
@@ -33,6 +34,7 @@ typedef struct pal_sim_vectors_s {
     ring_dbfn_t             ring_doorbell;
     step_cpu_pkt_fn_t       step_cpu_pkt;
     mem_map_fn_t            mem_map;
+    reset_mem_fn_t          reset_mem;
 } pal_sim_vectors_t;
 
 static pal_sim_vectors_t   gl_sim_vecs;
@@ -53,6 +55,7 @@ pal_init_sim_vectors ()
     gl_sim_vecs.step_cpu_pkt =
             (step_cpu_pkt_fn_t)dlsym(gl_lib_handle, "step_cpu_pkt");
     gl_sim_vecs.mem_map = (mem_map_fn_t)dlsym(gl_lib_handle, "mem_map");
+    gl_sim_vecs.reset_mem = (reset_mem_fn_t)dlsym(gl_lib_handle, "reset_mem");
     return PAL_RET_OK;
 }
 
@@ -123,6 +126,14 @@ pal_ret_t
 pal_sim_mem_set (uint64_t addr, uint8_t data, uint32_t size, uint32_t flags)
 {
     uint32_t i = 0;
+
+    /* call reset mem if data is zero */
+    if (data == 0) {
+        if (!(*gl_sim_vecs.reset_mem)(addr, size)) {
+            return PAL_RET_NOK;
+        }
+        return PAL_RET_OK;
+    }
 
     /* We could recycle i, but choosing this instead for understandability */
     uint32_t bytes_written = 0;

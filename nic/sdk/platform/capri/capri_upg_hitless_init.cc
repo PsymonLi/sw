@@ -15,10 +15,26 @@
 #include "platform/capri/capri_state.hpp"
 #include "platform/capri/capri_quiesce.hpp"
 #include "platform/capri/capri_barco_crypto.hpp"
+#include "platform/utils/mpartition.hpp"
+#include "asic/common/asic_mem.hpp"
 
 namespace sdk {
 namespace platform {
 namespace capri {
+
+static bool
+mpartition_reset_regions_by_kind_cb (mpartition_region_t *reg, void *ctx)
+{
+    // reset all regions used by A during A to B upgrade
+    // now we reset state regions also. but later when the support for state
+    // table re-use exists, should do this based on a switch
+    if (reg->reset &&
+        (reg->kind == sdk::platform::utils::region_kind_t::MEM_REGION_KIND_CFGTBL ||
+        reg->kind == sdk::platform::utils::region_kind_t::MEM_REGION_KIND_OPERTBL)) {
+        sdk::asic::asic_reset_mem_region(reg);
+    }
+    return false;
+}
 
 // capri hitless initialization
 sdk_ret_t
@@ -37,6 +53,9 @@ capri_upgrade_hitless_init (asic_cfg_t *cfg)
     ret = capri_table_rw_soft_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "capri_tbl_rw_init failure, err : %d", ret);
+
+    // reset all config and state tables
+    g_capri_state_pd->mempartition()->walk(mpartition_reset_regions_by_kind_cb, NULL);
 
     // just populate the program info. don't write to the memory
     ret = sdk::asic::asic_asm_init(cfg, asm_write_to_mem);

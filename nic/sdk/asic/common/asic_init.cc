@@ -139,27 +139,6 @@ asic_asm_init (asic_cfg_t *cfg, bool write_to_mem)
    return SDK_RET_OK;
 }
 
-sdk_ret_t
-asic_hbm_regions_init (asic_cfg_t *cfg)
-{
-    sdk_ret_t           ret = SDK_RET_OK;
-    bool                asm_write_to_mem = true;
-
-    // reset all the HBM regions that are marked for reset
-    asic_reset_hbm_regions(cfg);
-
-    ret = asic_asm_init(cfg, asm_write_to_mem);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = asic_pgm_init(cfg);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    return ret;
-}
 
 }    // asic
 }    // sdk 

@@ -777,6 +777,11 @@ static sdk_ret_t
 upg_ev_finish (upg_ev_params_t *params)
 {
     sdk_ret_t ret;
+    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+
+    // clear of the states
+    pstate->pipeline_switchover_done = false;
+    pstate->linkmgr_switchover_done = false;
 
     api::g_pds_state.mempartition()->walk(mpartition_reset_regions_by_kind_walk, NULL);
     ret = pds_teardown();

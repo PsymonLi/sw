@@ -32,6 +32,7 @@ if [[ $SET_DOM = "1" ]];then
     source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
     upgmgr_set_init_domain $HITLESS_DOM
     export IPC_SUFFIX="_${HITLESS_DOM}"
+    export OPERD_SUFFIX="_${HITLESS_DOM}"
 fi
 
 function trap_finish () {

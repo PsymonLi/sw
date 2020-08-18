@@ -137,7 +137,7 @@ class UpgradeObject(base.ConfigObjectBase):
         return True
 
     def PollConfigReplayReady(self, spec=None):
-        retry = getattr(spec, "retry", 300)
+        retry = getattr(spec, "retry", 600)
         sleep_interval = getattr(spec, "sleep_interval", 1)
         while retry:
             logger.info(f"retry{retry}: Polling upgrade manager for ConfigReplay state")

@@ -1345,6 +1345,11 @@ lif_impl::reset_stats(void) {
     base_addr = g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
     lif_addr = base_addr + (id_ << LIF_STATS_SIZE_SHIFT);
 
+    if (sdk::platform::sysinit_mode_hitless(api::g_upg_state->init_mode())) {
+        PDS_TRACE_DEBUG("Skipping reset lif stats region %s", MEM_REGION_LIF_STATS_NAME);
+        return SDK_RET_OK;
+    }
+    PDS_TRACE_DEBUG("Resetting lif stats region %s", MEM_REGION_LIF_STATS_NAME);
     sdk::lib::pal_mem_set(lif_addr, 0, 1 << LIF_STATS_SIZE_SHIFT);
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(lif_addr, 1 << LIF_STATS_SIZE_SHIFT,
                                                   P4PLUS_CACHE_INVALIDATE_BOTH);

@@ -406,9 +406,16 @@ capri_init (asic_cfg_t *cfg)
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "capri_tbl_rw_init failure, err %d", ret);
 
-    ret = sdk::asic::asic_hbm_regions_init(cfg);
+    // reset all the HBM regions that are marked for reset
+    asic_reset_hbm_regions(cfg);
+
+    ret = asic_asm_init(cfg, true);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Asic HBM region init failure, err %d", ret);
+                            "Asic ASM init failure, err %u", ret);
+
+    ret = asic_pgm_init(cfg);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "Asic PGM init failure, err %u", ret);
 
     ret = capri_block_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,

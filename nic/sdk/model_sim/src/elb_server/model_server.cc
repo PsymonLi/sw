@@ -27,6 +27,7 @@
 #endif
 
 elb_env_base *g_env;
+static uint8_t zero_kb[1024] = { 0 };
 std::queue<std::vector<uint8_t>> g_cpu_pkts;
 extern "C" void __gcov_flush();
 namespace utils {
@@ -229,6 +230,22 @@ void process_buff (buffer_hdr_t *buff, elb_env_base *env) {
             }
         }
             break;
+        case BUFF_TYPE_MEM_RESET:
+        {
+            uint64_t addr = buff->addr;
+            int64_t rem = (int64_t)buff->size;
+
+            while (rem > 0) {
+                env->write_mem(addr, zero_kb, ((uint64_t)rem > sizeof(zero_kb)) ?
+                                                sizeof(zero_kb) : rem);
+                addr += sizeof(zero_kb);
+                rem -= sizeof(zero_kb);
+            }
+            buff->type = BUFF_TYPE_STATUS;
+            buff->status = 0;
+            printf("reset_mem addr 0x%lx size: %u\n", buff->addr, buff->size);
+        }
+        break;
         case BUFF_TYPE_DOORBELL:
         {
             uint64_t data;

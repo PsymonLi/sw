@@ -300,7 +300,7 @@ private:
     void LifConfigStatusMem(bool mem_clr);
     status_code_t LifQInit(bool mem_clr);
     void QinfoInit(void);
-    void LifStatsInit();
+    void LifStatsInit(bool mem_clr);
     void LifStatsClear();
 
     // Lif state functions

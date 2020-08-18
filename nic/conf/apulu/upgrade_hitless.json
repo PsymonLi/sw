@@ -154,9 +154,9 @@
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "repeal" },
-                { "name": "svc_rsp_fail", "next_stage": "exit"   },
-                { "name": "svc_rsp_crit", "next_stage": "exit"   },
-                { "name": "svc_no_rsp",   "next_stage": "exit"   }
+                { "name": "svc_rsp_fail", "next_stage": "repeal" },
+                { "name": "svc_rsp_crit", "next_stage": "repeal" },
+                { "name": "svc_no_rsp",   "next_stage": "repeal" }
             ]
         },
 

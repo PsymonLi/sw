@@ -511,9 +511,16 @@ elba_init (asic_cfg_t *cfg)
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "elba table rw init failure, err %u", ret);
 
-    ret = sdk::asic::asic_hbm_regions_init(cfg);
+    // reset all the HBM regions that are marked for reset
+    asic_reset_hbm_regions(cfg);
+
+    ret = asic_asm_init(cfg, true);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba HBM region init failure, err %u", ret);
+                            "Asic ASM init failure, err %u", ret);
+
+    ret = asic_pgm_init(cfg);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "Asic PGM init failure, err %u", ret);
 
     ret = elba_timer_hbm_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,

@@ -208,7 +208,7 @@ EthLif::Init(void)
                  spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
 
-    LifStatsInit();
+    LifStatsInit(true);
     AddLifMetrics();
     LifConfigStatusMem(true);
 
@@ -294,7 +294,7 @@ EthLif::UpgradeGracefulInit(void)
                  spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
 
-    LifStatsInit();
+    LifStatsInit(true);
     AddLifMetrics();
     LifConfigStatusMem(false);
 
@@ -407,7 +407,7 @@ EthLif::UpgradeHitlessInit(void)
     NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}", spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
 
-    LifStatsInit();
+    LifStatsInit(false);
     AddLifMetrics();
     LifConfigStatusMem(false);
 
@@ -494,7 +494,7 @@ end:
 
 
 void
-EthLif::LifStatsInit()
+EthLif::LifStatsInit(bool mem_clr)
 {
     // Stats
     lif_stats_addr = pd->mp_->start_addr(MEM_REGION_LIF_STATS_NAME);
@@ -505,7 +505,9 @@ EthLif::LifStatsInit()
     lif_stats_addr += (hal_lif_info_.lif_id << LG2_LIF_STATS_SIZE);
 
     NIC_LOG_INFO("{}: lif_stats_addr: {:#x}", hal_lif_info_.name, lif_stats_addr);
-    LifStatsClear();
+    if (mem_clr) {
+        LifStatsClear();
+    }
 }
 
 void

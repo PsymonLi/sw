@@ -26,9 +26,26 @@ const int SPIN_MAX_TRIES = 100;
 const uint8_t UPDATE_IN_PROGRESS = 1;
 const uint8_t UPDATE_READY = 0;
 
+// In sim env, need to have different named files during hitless upgrade
+#define OPERD_SUFFIX_ENV "OPERD_SUFFIX"
+
+const std::string
+operd_env_suffix (std::string original)
+{
+    const char *suffix;
+
+    suffix = getenv(OPERD_SUFFIX_ENV);
+    if (suffix == NULL) {
+        return std::string(original);
+    }
+
+    return std::string(original) + std::string(suffix);
+}
+
 region::region(std::string name) {
     this->name_ = name;
     this->load_config_();
+    this->name_ = operd_env_suffix(this->name_);
     this->create_shm_();
     this->open_shm_();
 }
