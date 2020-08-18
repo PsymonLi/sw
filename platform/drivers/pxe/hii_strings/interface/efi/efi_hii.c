@@ -826,7 +826,9 @@ void efi_ifr_numeric_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
     EFI_IFR_NUMERIC *numeric;
     EFI_IFR_NUMERIC_BASE *Base;
     unsigned int size;
-    UINTN	ValueLen = mNumericDefaultTypeToWidth[flags];
+    UINTN	ValueLen;
+
+    ValueLen = mNumericDefaultTypeToWidth[flags & EFI_IFR_NUMERIC_SIZE];
 
     /* Add opcode */
     numeric = efi_ifr_op ( ifr, EFI_IFR_NUMERIC_OP, sizeof ( *Base )+ ValueLen);

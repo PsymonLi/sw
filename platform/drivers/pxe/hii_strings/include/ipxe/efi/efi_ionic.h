@@ -65,7 +65,7 @@
 #define IONIC_VLAN_MODE_QUESTION        0x29
 
 #define IONIC_VLAN_ID_INFO              "Virtual LAN ID"
-#define IONIC_VLAN_ID_HELP              "Virtual LAN ID Information"
+#define IONIC_VLAN_ID_HELP              "Virtual LAN ID Information, Value can only be 0-4094."
 #define IONIC_VLAN_ID_VALUE             IONIC_HII_NONE_VALUE
 #define IONIC_VLAN_ID_QUESTION          0x30
 

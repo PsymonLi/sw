@@ -325,7 +325,7 @@ static void ionic_hii_process( struct efi_ifr_builder *ifr ,UINT16 FormId,UINT8 
                                 0,
                                 4094,
                                 1,
-                                EFI_IFR_NUMERIC_SIZE_2);
+                                EFI_IFR_NUMERIC_SIZE_2 | EFI_IFR_DISPLAY_UINT_DEC);
             efi_ifr_end_op ( ifr );
 
             if(NicHiiPtr->ControlId != 0) efi_ifr_end_op ( ifr );
@@ -1127,6 +1127,7 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
             break;
         case IONIC_VLAN_ID_QUESTION:
             Nic->VlanIdVar = value->u16_1;
+
             if(NicHii->VlanId.Callback) NicHii->VlanId.Callback(Index,&Buffer,&BufferLen);
             break;
         case IONIC_VIRTUAL_MODE_QUESTION:
