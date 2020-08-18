@@ -78,11 +78,17 @@ type ActionIntf interface {
 	WorkloadActionIntf
 	NodeActionIntf
 	NaplesActionIntf
+	SwitchActionIntf
+}
+
+type SwitchActionIntf interface {
+	FlapDataSwitchPorts(ports *objects.SwitchPortCollection, downTime time.Duration) error
+	FlapDataSwitchPortsPeriodically(ctx context.Context, ports *objects.SwitchPortCollection,
+		downTime time.Duration, flapInterval time.Duration, flapCount int) error
+	LLDPInfoGet(ports *objects.SwitchPortCollection) error
 }
 
 type ClusterActionIntf interface {
-	FlapDataSwitchPorts(ports *objects.SwitchPortCollection, downTime time.Duration) error
-
 	AllowVeniceNodesFromNaples(vnc *objects.VeniceNodeCollection, naples *objects.NaplesCollection) error
 
 	PerformTechsupport(techsupport *monitoring.TechSupportRequest) error
@@ -111,8 +117,6 @@ type ClusterActionIntf interface {
 	AddNaplesNodes(names []string) error
 	DeleteNaplesNodes(names []string) error
 	RemoveAddNaples(naples *objects.NaplesCollection) error
-	FlapDataSwitchPortsPeriodically(ctx context.Context, ports *objects.SwitchPortCollection,
-		downTime time.Duration, flapInterval time.Duration, flapCount int) error
 
 	AddNetworks(spec common.NetworkSpec) error
 	RemoveNetworks(spec common.NetworkSpec) error

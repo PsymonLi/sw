@@ -30,6 +30,13 @@ var _ = Describe("LLDP", func() {
 			Eventually(func() error {
 				return verifyUplinkNeighbor()
 			}).Should(Succeed())
+
+			swPorts := ts.model.SwitchPorts()
+			err := ts.model.LLDPInfoGet(swPorts)
+			Expect(err).Should(Succeed())
+			for _, swPort := range swPorts.Ports {
+				log.Infof("LLDP Infop Naples %v Port %v Info %#v", swPort.Node, swPort.Port, swPort.LLDP)
+			}
 		})
 	})
 })

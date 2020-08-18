@@ -1,6 +1,7 @@
 package DataSwitch
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -430,4 +431,63 @@ func (sw *nexus3kRest) DeletePortChannel(portChannelNumber string, ports []strin
 		"no interface port-channel " + portChannelNumber,
 	}
 	return sw.runConfigCommands(pcDeleteCmds)
+}
+
+type lldpNeighborN3k struct {
+	NeighHdr        string `json:"neigh_hdr"`
+	NeighCount      string `json:"neigh_count"`
+	TABLENborDetail struct {
+		ROWNborDetail struct {
+			ChassisType       string `json:"chassis_type"`
+			ChassisID         string `json:"chassis_id"`
+			PortType          string `json:"port_type"`
+			PortID            string `json:"port_id"`
+			LPortID           string `json:"l_port_id"`
+			PortDesc          string `json:"port_desc"`
+			SysName           string `json:"sys_name"`
+			SysDesc           string `json:"sys_desc"`
+			TTL               string `json:"ttl"`
+			SystemCapability  string `json:"system_capability"`
+			EnabledCapability string `json:"enabled_capability"`
+			MgmtAddrType      string `json:"mgmt_addr_type"`
+			MgmtAddr          string `json:"mgmt_addr"`
+			MgmtAddrIpv6Type  string `json:"mgmt_addr_ipv6_type"`
+			MgmtAddrIpv6      string `json:"mgmt_addr_ipv6"`
+			InvalidVlanID     string `json:"invalid_vlan_id"`
+		} `json:"ROW_nbor_detail"`
+	} `json:"TABLE_nbor_detail"`
+}
+
+func (sw *nexus3kRest) GetLLDPOutput(port string) (LLDPPortConfig, error) {
+
+	cmd := fmt.Sprintf("show lldp neighbors interface %v detail", port)
+	output, err := sw.clt.GetGeneric(cmd)
+
+	var respJSON client.JSONRPCResponse
+	err = json.Unmarshal(output, &respJSON)
+	if err != nil {
+		return LLDPPortConfig{}, err
+	}
+
+	var body client.JSONRPCResponseBody
+	err = json.Unmarshal(respJSON.Result, &body)
+	if err != nil {
+		fmt.Printf("%v\n", string(respJSON.Result))
+		return LLDPPortConfig{}, err
+	}
+
+	var lldp lldpNeighborN3k
+	err = json.Unmarshal(body.Body, &lldp)
+	if err != nil {
+		return LLDPPortConfig{}, err
+	}
+
+	return LLDPPortConfig{
+		MgmtAddr:     lldp.TABLENborDetail.ROWNborDetail.MgmtAddr,
+		PortDesc:     lldp.TABLENborDetail.ROWNborDetail.PortDesc,
+		SysDesc:      lldp.TABLENborDetail.ROWNborDetail.SysDesc,
+		SysName:      lldp.TABLENborDetail.ROWNborDetail.SysName,
+		PortID:       port,
+		MgmtAddrIpv6: lldp.TABLENborDetail.ROWNborDetail.MgmtAddrIpv6,
+	}, nil
 }

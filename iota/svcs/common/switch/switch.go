@@ -97,6 +97,16 @@ type QueueConfig struct {
 	Classes []QueueClass
 }
 
+//LLDPPortConfig lldp config for port
+type LLDPPortConfig struct {
+	PortID       string
+	PortDesc     string
+	SysName      string
+	SysDesc      string
+	MgmtAddr     string
+	MgmtAddrIpv6 string
+}
+
 //Switch interface
 type Switch interface {
 	Disconnect()
@@ -124,6 +134,7 @@ type Switch interface {
 	UnsetBreakoutMode(string) error
 	CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error
 	DeletePortChannel(portChannelNumber string, ports []string) error
+	GetLLDPOutput(port string) (LLDPPortConfig, error)
 }
 
 //NewSwitch Create a new switch handler

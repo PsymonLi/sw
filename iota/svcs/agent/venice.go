@@ -362,7 +362,7 @@ func (venice *veniceNode) makeVeniceCluster(ctx context.Context) error {
 	for i := 0; i < maxClusterInitRetry; i++ {
 		_, response, err = Common.HTTPPost(ep, "", &clusterCfg)
 		venice.logger.Infof("CFG SVC | DEBUG | MakeCluster. Received REST Response Msg: %v, err: %v", response, err)
-		if err == nil {
+		if err == nil && !strings.Contains(response, "Failure") {
 			break
 		}
 

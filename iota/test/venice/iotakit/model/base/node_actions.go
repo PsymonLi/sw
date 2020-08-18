@@ -877,6 +877,53 @@ func (sm *SysModel) FlapDataSwitchPortsPeriodically(ctx context.Context, ports *
 	return nil
 }
 
+//LLDPInfoGet lldp info get
+func (sm *SysModel) LLDPInfoGet(ports *objects.SwitchPortCollection) error {
+	switchMsg := &iota.SwitchMsg{
+		ApiResponse:  &iota.IotaAPIResponse{},
+		DataSwitches: []*iota.DataSwitch{},
+	}
+
+	for _, port := range ports.Ports {
+		log.Infof("LLDPInfo Get for  %v(%v)", port.Port, port.SwitchIP())
+
+		added := false
+		for _, sw := range switchMsg.DataSwitches {
+			if sw.GetIp() == port.SwitchIP() {
+				added = true
+				sw.Ports = append(sw.Ports, port.Port)
+			}
+		}
+		if !added {
+			switchMsg.DataSwitches = append(switchMsg.DataSwitches, &iota.DataSwitch{Ip: port.SwitchIP(),
+				Password: port.SwitchPassword(), Username: port.SwitchUsernme(), Ports: []string{port.Port}})
+		}
+	}
+
+	switchMsg.Op = iota.SwitchOp_LLDP_INFO_GET
+
+	topoClient := iota.NewTopologyApiClient(sm.Tb.Client().Client)
+	switchResp, err := topoClient.DoSwitchOperation(context.Background(), switchMsg)
+	if err != nil {
+		return fmt.Errorf("Failed to get lldp info | Err: %v", err)
+	} else if switchResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+		return fmt.Errorf("Failed to get lldp info   API Status: %+v | Err: %v", switchResp.ApiResponse, err)
+	}
+
+	for _, port := range ports.Ports {
+		for _, lldp := range switchResp.GetLldpInfo().PortsLldpInfo {
+			if lldp.Switch == port.SwitchIP() && port.Port == lldp.Port {
+				port.LLDP.MgmtAddr = lldp.MgmtAddr
+				port.LLDP.PortDesc = lldp.PortDesc
+				port.LLDP.SysDesc = lldp.SysDesc
+				port.LLDP.SysName = lldp.SysName
+			}
+		}
+	}
+
+	return nil
+}
+
 // RemoveAddNaples remove and add naples
 func (sm *SysModel) RemoveAddNaples(naples *objects.NaplesCollection) error {
 

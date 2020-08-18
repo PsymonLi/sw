@@ -25,18 +25,27 @@ type SwitchPortCollection struct {
 	Ports []*SwitchPort
 }
 
+//LLDPInfo info
+type LLDPInfo struct {
+	MgmtAddr string
+	PortDesc string
+	SysDesc  string
+	SysName  string
+}
+
 // SwitchPort represents a port in a data switch
 type SwitchPort struct {
-	sw       *Switch
-	hostName string
-	Port     string
+	sw   *Switch
+	Node string
+	Port string
+	LLDP LLDPInfo
 }
 
 func NewSwitchPort(hostname string, sw *Switch, port string) *SwitchPort {
 	return &SwitchPort{
-		Port:     port,
-		sw:       sw,
-		hostName: hostname,
+		Port: port,
+		sw:   sw,
+		Node: hostname,
 	}
 }
 
@@ -65,10 +74,10 @@ func (pc *SwitchPortCollection) SelectByPercentage(percent int) (*SwitchPortColl
 	//Get equal share from each host to be fair
 	hostPortMap := make(map[string]*[]*SwitchPort)
 	for _, port := range pc.Ports {
-		if _, ok := hostPortMap[port.hostName]; !ok {
-			hostPortMap[port.hostName] = &[]*SwitchPort{}
+		if _, ok := hostPortMap[port.Node]; !ok {
+			hostPortMap[port.Node] = &[]*SwitchPort{}
 		}
-		swPorts, _ := hostPortMap[port.hostName]
+		swPorts, _ := hostPortMap[port.Node]
 		*swPorts = append(*swPorts, port)
 	}
 

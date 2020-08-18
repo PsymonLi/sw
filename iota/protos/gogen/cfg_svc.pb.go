@@ -77,6 +77,8 @@
 		PortPfcConfig
 		PortQosConfig
 		PortQueuingConfig
+		PortLLDPInfo
+		LLDPInfo
 		SwitchMsg
 		TestBedNode
 		EntityCopyMsg

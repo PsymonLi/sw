@@ -102,3 +102,12 @@ type CommandResp struct {
 	NodeName   string
 	Stdout     string
 }
+
+//LLDPInfo lldp info
+type LLDPInfo struct {
+	PortID   string
+	PortDesc string
+	SysName  string
+	SysDesc  string
+	MgmtAddr string
+}

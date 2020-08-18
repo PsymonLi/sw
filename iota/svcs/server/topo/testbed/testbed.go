@@ -826,6 +826,23 @@ func DoSwitchOperation(ctx context.Context, switchPortID uint32, nativeVlan uint
 					}
 				}
 			}
+		case iota.SwitchOp_LLDP_INFO_GET:
+			req.LldpInfo = &iota.LLDPInfo{}
+			for _, port := range ds.Ports {
+				lldpInfo, err := n3k.GetLLDPOutput(port)
+				if err != nil {
+					return errors.Wrap(err, "LLDP port get failed")
+				}
+				req.LldpInfo.PortsLldpInfo = append(req.LldpInfo.PortsLldpInfo,
+					&iota.PortLLDPInfo{
+						MgmtAddr: lldpInfo.MgmtAddr,
+						SysDesc:  lldpInfo.SysDesc,
+						SysName:  lldpInfo.SysName,
+						PortDesc: lldpInfo.PortDesc,
+						Switch:   ds.Ip,
+						Port:     port,
+					})
+			}
 		}
 	}
 

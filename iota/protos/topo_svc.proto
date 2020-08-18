@@ -1065,6 +1065,7 @@ enum SwitchOp {
     CREATE_QOS_CONFIG   = 10;
     CREATE_PORT_CHANNEL = 11;
     DELETE_PORT_CHANNEL = 12;
+    LLDP_INFO_GET       = 13;
 }
 
 message VlanConfig {
@@ -1107,6 +1108,19 @@ message PortQueuingConfig {
 	string params	= 2;
 }
 
+message PortLLDPInfo {
+    string  mgmt_addr  = 1;
+    string  port_desc  = 2;
+    string  sys_desc   = 3;
+    string  sys_name   = 4;
+    string  port       = 5;
+    string  switch     = 6;
+}
+
+message LLDPInfo {
+    repeated PortLLDPInfo ports_lldp_info = 1;
+}
+
 message SwitchMsg {
     // API Response
     IotaAPIResponse api_response        = 1;
@@ -1140,9 +1154,12 @@ message SwitchMsg {
 
 	oneof port_queuing_info {
 		PortQueuingConfig port_queuing	= 9;
-	}
+    }
+    
 
     PortChannelConfigs  port_channel_configs = 10;
+
+    LLDPInfo        lldp_info                = 11;
 }
 
 enum TestBedNodeType {

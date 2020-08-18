@@ -1017,3 +1017,7 @@ func (sw *nexus3k) UnsetBreakoutMode(port string) error {
 	sw.runConfigCommands(cmds)
 	return nil
 }
+
+func (sw *nexus3k) GetLLDPOutput(port string) (LLDPPortConfig, error) {
+	return LLDPPortConfig{}, errors.New("Not implemented")
+}
