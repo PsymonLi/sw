@@ -551,8 +551,6 @@ func (vm *vmVcenterWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		if spec.NetworkName != "" {
 			//Use network name specified.
 			pgName = spec.NetworkName
-			relaxSecurity = true
-
 		} else {
 			pgName, err = vm.vhost.FindDvsPortGroup(vsname, vmware.DvsPGMatchCriteria{Type: vmware.DvsVlanID, VlanID: int32(spec.PrimaryVlan)})
 			if err != nil {
@@ -572,10 +570,10 @@ func (vm *vmVcenterWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 
 	for i := 0; true; i++ {
 		if err := vm.vhost.ReconfigureVMNetwork(vm.vm, constants.EsxDefaultNetwork, vsname, pgName, 1, relaxSecurity); err != nil {
-			if i == 3 {
+			if i == 6 {
 				return "", errors.Wrapf(err, "Error in Reconfiguring Def network to %v", pgName)
 			}
-			time.Sleep(1 * time.Second)
+			time.Sleep(3 * time.Second)
 			continue
 		}
 		break

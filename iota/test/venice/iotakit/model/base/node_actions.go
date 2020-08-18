@@ -1404,6 +1404,6 @@ func (sm *SysModel) AddNetworks(common.NetworkSpec) error {
 }
 
 //RemoveNetworks remove networks from switch
-func (sm *SysModel) RemoveNetworks(switchName string) error {
+func (sm *SysModel) RemoveNetworks(common.NetworkSpec) error {
 	return nil
 }

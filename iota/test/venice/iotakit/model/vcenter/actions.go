@@ -309,6 +309,7 @@ func (sm *VcenterSysModel) MoveWorkloads(spec common.MoveWorkloadsSpec) error {
 		}
 		wMove.WorkloadMoves = append(wMove.WorkloadMoves, &iota.WorkloadMove{
 			WorkloadName: w.Name(),
+			SrcDcName:    orch.Orchestrators[0].DCs[0].Name,
 			DstNodeName:  dstNodeName,
 			SrcNodeName:  w.NodeName(),
 			AbortTime:    spec.Timeout,
@@ -373,14 +374,15 @@ func (sm *VcenterSysModel) AddNetworks(spec common.NetworkSpec) error {
 
 	addNetworkMsg := &iota.NetworksMsg{
 		Switch:           spec.Switch,
+		Dc:               spec.DC,
+		Cluster:          spec.Cluster,
 		OrchestratorNode: orch.Orchestrators[0].Name,
 	}
 
 	for _, node := range spec.Nodes {
 		nw := &iota.Network{
-			Cluster: sm.Tb.GetCluster(),
-			Name:    spec.Name,
-			Node:    node,
+			Name: spec.Name,
+			Node: node,
 		}
 		switch spec.NwType {
 		case common.VmotionNetworkType:
@@ -405,7 +407,7 @@ func (sm *VcenterSysModel) AddNetworks(spec common.NetworkSpec) error {
 }
 
 //RemoveNetworks remove networks from switch
-func (sm *VcenterSysModel) RemoveNetworks(switchName string) error {
+func (sm *VcenterSysModel) RemoveNetworks(spec common.NetworkSpec) error {
 
 	if sm.vcenterSim != nil {
 		return nil
@@ -419,11 +421,11 @@ func (sm *VcenterSysModel) RemoveNetworks(switchName string) error {
 	}
 
 	removeNetworkMsg := &iota.NetworksMsg{
-		Switch:           switchName,
+		Dc:               spec.DC,
+		Switch:           spec.Switch,
+		Cluster:          spec.Cluster,
 		OrchestratorNode: orch.Orchestrators[0].Name,
-		Network: []*iota.Network{&iota.Network{
-			Cluster: sm.Tb.GetCluster(),
-		}},
+		Network:          []*iota.Network{&iota.Network{}},
 	}
 
 	removeResp, err := topoClient.RemoveNetworks(context.Background(), removeNetworkMsg)

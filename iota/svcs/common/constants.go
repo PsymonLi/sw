@@ -185,6 +185,9 @@ const (
 
 	// WindowsPortMappingFile
 	WindowsPortMappingFile = "/pensando/iota/name-mapping.json"
+
+	// Vmotion subnet used for vmotion
+	VmotionSubnet = "169.254.0"
 )
 
 // incrementing constants. List all constants whose value you don't care here

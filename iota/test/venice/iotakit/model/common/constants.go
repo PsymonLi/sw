@@ -35,10 +35,12 @@ const (
 
 //NetworkSpec to ceate
 type NetworkSpec struct {
-	Name   string
-	Switch string
-	Nodes  []string
-	NwType NetworkType
+	Name    string
+	DC      string
+	Cluster string
+	Switch  string
+	Nodes   []string
+	NwType  NetworkType
 }
 
 //MoveWorkloadsSpec move workloads spec

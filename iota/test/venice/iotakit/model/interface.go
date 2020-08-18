@@ -115,7 +115,7 @@ type ClusterActionIntf interface {
 		downTime time.Duration, flapInterval time.Duration, flapCount int) error
 
 	AddNetworks(spec common.NetworkSpec) error
-	RemoveNetworks(switchName string) error
+	RemoveNetworks(spec common.NetworkSpec) error
 }
 
 type ObjectIntf interface {

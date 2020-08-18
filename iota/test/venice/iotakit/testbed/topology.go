@@ -12,6 +12,20 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+//ManagedNode managed node
+type ManagedNode struct {
+	Name     string
+	Optional bool
+}
+
+//DataCenter represents datacenter
+type DataCenter struct {
+	ManagedNodes []ManagedNode
+	DCName       string
+	ClusterName  string
+	SwitchName   string
+}
+
 // TopoNode contains info about a node in the topology
 type TopoNode struct {
 	NodeName     string               // node name specific to this topology
@@ -19,8 +33,9 @@ type TopoNode struct {
 	Personality  iota.PersonalityType // node topology
 	HostOS       string               // OS on the host
 	NumInstances int                  // Number of instances (used for sim for now)
-	MangedNodes  []string             //nodes managed by this node
-	Optional     bool                 //optional node
+	//	MangedNodes  []string             //nodes managed by this node
+	Optional    bool          //optional node
+	Datacenters []*DataCenter //datacenters
 }
 
 //ModelType type
@@ -83,8 +98,14 @@ type TopoMeta struct {
 			Instances int    `yaml:"instances"`
 		} `yaml:"naples-sim"`
 		Vcenter struct {
-			Instances int `yaml:"instances"`
-			Naples    int `yaml:"naples"`
+			Instances  int `yaml:"instances"`
+			Datacenter struct {
+				Count  int `yaml:"count"`
+				Naples struct {
+					MinInstances int `yaml:"min-instances"`
+					MaxInstances int `yaml:"max-instances"`
+				} `yaml:"naples"`
+			} `yaml:"datacenter"`
 		} `yaml:"vcenter"`
 		K8sMaster struct {
 			Instances int `yaml:"instances"`
@@ -147,20 +168,41 @@ func ParseTopology(fileName string) (*Topology, error) {
 	naplesHwPersonality := iota.PersonalityType_PERSONALITY_NAPLES
 	for i := 0; i < topoMeta.Nodes.Vcenter.Instances; i++ {
 
-		if topoMeta.Nodes.Naples.Instances < topoMeta.Nodes.Vcenter.Naples {
+		if topoMeta.Nodes.Naples.Instances < topoMeta.Nodes.Vcenter.Datacenter.Count*topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances {
 			return nil, fmt.Errorf("Number of naples %v instances are less compared to vcenter expectation %v",
-				topoMeta.Nodes.Naples.Instances, topoMeta.Nodes.Vcenter.Naples)
+				topoMeta.Nodes.Naples.Instances, topoMeta.Nodes.Vcenter.Datacenter.Count*topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances)
 		}
 		node := TopoNode{NodeName: "vcenter-" + fmt.Sprintf("%v", i+1),
 			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_VCENTER,
 			Personality: iota.PersonalityType_PERSONALITY_VCENTER_NODE,
 			HostOS:      "vcenter",
 		}
-		for j := 0; j < topoMeta.Nodes.Vcenter.Naples; j++ {
-			node.MangedNodes = append(node.MangedNodes,
-				"naples-"+fmt.Sprintf("%v", j+1))
+
+		id := 0
+		for j := 0; j < topoMeta.Nodes.Vcenter.Datacenter.Count; j++ {
+			dc := &DataCenter{}
+			node.Datacenters = append(node.Datacenters, dc)
+			for k := 0; k < topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances; k++ {
+				dc.ManagedNodes = append(dc.ManagedNodes,
+					ManagedNode{
+
+						Name: fmt.Sprintf("naples-%v", id+1),
+					})
+				id++
+			}
 		}
 
+		for j := 0; j < topoMeta.Nodes.Vcenter.Datacenter.Count; j++ {
+			dc := node.Datacenters[j]
+			for k := 0; k < topoMeta.Nodes.Vcenter.Datacenter.Naples.MaxInstances-topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances; k++ {
+				dc.ManagedNodes = append(dc.ManagedNodes,
+					ManagedNode{
+						Name:     fmt.Sprintf("naples-%v", id+1),
+						Optional: true,
+					})
+				id++
+			}
+		}
 		naplesHwPersonality = iota.PersonalityType_PERSONALITY_NAPLES_DVS
 		topo.Nodes = append(topo.Nodes, node)
 

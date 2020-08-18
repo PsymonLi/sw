@@ -12,6 +12,7 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	iota "github.com/pensando/sw/iota/protos/gogen"
 	cfgModel "github.com/pensando/sw/iota/test/venice/iotakit/cfg/enterprise"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/enterprise/base"
@@ -19,6 +20,7 @@ import (
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/enterprise"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
@@ -44,7 +46,7 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 		port = fmt.Sprintf("%v", orchSimInstanceStartPort)
 		name := fmt.Sprintf("vcsim-%s-dc", port)
 		collection := objects.NewOrchestrator(sm.ObjClient(),
-			name,
+			[]string{name},
 			name,
 			sm.vcenterSim.GetIotaNode().GetIpAddress(),
 			port,
@@ -55,7 +57,7 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 			port = fmt.Sprintf("%v", orchSimInstanceStartPort+i)
 			name := fmt.Sprintf("vcsim-%s-dc", port)
 			newCollection := objects.NewOrchestrator(sm.ObjClient(),
-				name,
+				[]string{name},
 				name,
 				sm.vcenterSim.GetIotaNode().GetIpAddress(),
 				port,
@@ -67,10 +69,15 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 		}
 		return collection, nil
 	}
+	dcs := sm.Tb.GetDCs()
+	dcnames := []string{}
+	for _, dc := range dcs {
+		dcnames = append(dcnames, dc.DCName)
+	}
 	for _, node := range sm.Tb.Nodes {
 		if node.Personality == iota.PersonalityType_PERSONALITY_VCENTER_NODE {
 			return objects.NewOrchestrator(sm.ObjClient(),
-				sm.Tb.GetDC(),
+				dcnames,
 				node.NodeName,
 				node.NodeMgmtIP,
 				port,
@@ -251,18 +258,50 @@ func (sm *VcenterSysModel) setupVmotionNetwork() error {
 		return fmt.Errorf("Insufficient networks to enable vmotion")
 	}
 
-	vmotionNet := nc.Subnets()[0].Name
+	for _, dc := range sm.Tb.GetDCs() {
+		vmotionNet := nc.Subnets()[0].Name
 
-	log.Infof("Create vmk interface for vmotion using network %s on hosts %v", vmotionNet,
-		sm.Hosts().Names())
-	networkSpec := common.NetworkSpec{
-		Name:   vmotionNet,
-		Switch: "",
-		Nodes:  sm.Hosts().Names(),
-		NwType: common.VmotionNetworkType,
+		log.Infof("Create vmk interface for vmotion using network %s on hosts %v", vmotionNet,
+			sm.Hosts().Names())
+		networkSpec := common.NetworkSpec{
+			Name:    vmotionNet,
+			Switch:  "",
+			Cluster: dc.ClusterName,
+			DC:      dc.DCName,
+			Nodes:   sm.Hosts().Names(),
+			NwType:  common.VmotionNetworkType,
+		}
+
+		err := sm.AddNetworks(networkSpec)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (sm *VcenterSysModel) associateDCs() error {
+
+	dcs := sm.Testbed().GetDCs()
+
+	for _, host := range sm.NaplesHosts {
+		notAssociated := false
+	L:
+		for _, dc := range dcs {
+			for _, mn := range dc.ManagedNodes {
+				if mn.Name == host.GetIotaNode().Name {
+					host.DCName = dc.DCName
+					notAssociated = true
+					break L
+				}
+			}
+		}
+		if !notAssociated {
+			return fmt.Errorf("Node %v does not have DC associated", host.GetIotaNode().Name)
+		}
 	}
 
-	return sm.AddNetworks(networkSpec)
+	return nil
 }
 
 // SetupDefaultConfig sets up a default config for the system
@@ -296,6 +335,10 @@ L:
 			log.Errorf("Error associating hosts: %s", err)
 			time.Sleep(2 * time.Second)
 		}
+	}
+
+	if err := sm.associateDCs(); err != nil {
+		return fmt.Errorf("Setting DCs failed %v", err.Error())
 	}
 
 	if err := sm.setupVmotionNetwork(); err != nil {
@@ -419,7 +462,7 @@ func (sm *VcenterSysModel) modifyConfig() error {
 		for _, orch := range orch.Orchestrators {
 			nw.Spec.Orchestrators = append(nw.Spec.Orchestrators, &network.OrchestratorInfo{
 				Name:      orch.Name,
-				Namespace: orch.DC,
+				Namespace: orch.DCs[0].Name, //TODO
 			})
 		}
 
@@ -429,6 +472,20 @@ func (sm *VcenterSysModel) modifyConfig() error {
 					cfgObjects.Workloads[i].Spec.Interfaces[j].Network = getVcenterNetworkName(nw)
 				}
 			}
+		}
+	}
+
+	for _, pol := range cfgObjects.SgPolicies {
+		if pol.Tenant == globals.DefaultTenant {
+			//Add Default allow all
+			pol.Spec.Rules = append(pol.Spec.Rules, security.SGRule{
+				Action: "PERMIT",
+				ProtoPorts: []security.ProtoPort{security.ProtoPort{
+					Protocol: "any",
+				}},
+				ToIPAddresses:   []string{"any"},
+				FromIPAddresses: []string{"any"},
+			})
 		}
 	}
 
@@ -558,10 +615,18 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 		}
 
 		//Clean up networks too
-		err = sm.RemoveNetworks(sm.Tb.GetSwitch())
-		if err != nil {
-			log.Infof("Error removing networks from switch %v", err)
-			return err
+		dcs := sm.Testbed().GetDCs()
+		for _, dc := range dcs {
+			spec := common.NetworkSpec{
+				Cluster: dc.ClusterName,
+				Switch:  dc.SwitchName,
+				DC:      dc.DCName,
+			}
+			err = sm.RemoveNetworks(spec)
+			if err != nil {
+				log.Infof("Error removing networks from switch %v", err)
+				return err
+			}
 		}
 
 		if scale && sm.vcenterSim != nil {

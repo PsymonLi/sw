@@ -293,8 +293,7 @@ type TestBed struct {
 	unallocatedInstances []*InstanceParams     // currently unallocated instances
 	DataSwitches         []*iota.DataSwitch    // data switches associated to this testbed
 	naplesDataMap        map[string]naplesData //naples name data map
-	dcName               string
-	clusterName          string
+	Datacenters          []*DataCenter
 	warmdJsonFile        string // warmd json file
 
 	// cached message responses from iota server
@@ -309,8 +308,26 @@ type TestBed struct {
 	k8sClient       *kubernetes.Clientset
 }
 
-func (tb *TestBed) GetSwitch() string {
-	return tb.switchName
+//GetDCs get dcs
+func (tb *TestBed) GetDCs() []DataCenter {
+
+	dcs := []DataCenter{}
+	for _, dc := range tb.Datacenters {
+		dcs = append(dcs, *dc)
+	}
+
+	return dcs
+}
+
+//GetSwitch get switch name
+func (tb *TestBed) GetSwitch(dc string) (string, error) {
+
+	for _, dc := range tb.Datacenters {
+		if dc.DCName == dc.DCName {
+			return dc.SwitchName, nil
+		}
+	}
+	return "", fmt.Errorf("Switch %v not found", dc)
 }
 
 //Client returns client
@@ -875,14 +892,6 @@ func (tb *TestBed) GetHostIntfs(nodeName string, uuid string) []string {
 	return []string{}
 }
 
-func (tb *TestBed) GetDC() string {
-	return tb.dcName
-}
-
-func (tb *TestBed) GetCluster() string {
-	return tb.clusterName
-}
-
 func (tb *TestBed) setupVcenterNode(node *TestNode) error {
 
 	uid := os.Getenv("USER")
@@ -906,29 +915,36 @@ func (tb *TestBed) setupVcenterNode(node *TestNode) error {
 	log.Info("Setting up vcenter node...")
 	switch node.Personality {
 	case iota.PersonalityType_PERSONALITY_VCENTER_NODE:
-		node.VcenterConfig.DcName = uid + "-iota-dc"
-		node.VcenterConfig.ClusterName = uid + "-iota-cluster"
-		node.VcenterConfig.DistributedSwitch = "#Pen-DVS-" + node.VcenterConfig.DcName
 
 		info, ok := tb.Topo.WkldInfo["esx"]
 		if !ok {
 			return fmt.Errorf("Vcenter node but ESX workload not found")
 		}
 		node.VcenterConfig.WorkloadImages = []string{info.WorkloadImage}
-		tb.switchName = node.VcenterConfig.DistributedSwitch
-		tb.dcName = node.VcenterConfig.DcName
-		tb.clusterName = node.VcenterConfig.ClusterName
-		node.VcenterConfig.EsxConfigs = []*iota.VmwareESXConfig{}
-		for _, mn := range node.topoNode.MangedNodes {
-			for _, tbn := range tb.Nodes {
-				if tbn.NodeName == mn {
-					node.VcenterConfig.EsxConfigs = append(node.VcenterConfig.EsxConfigs,
-						&iota.VmwareESXConfig{Name: mn, IpAddress: tbn.NodeMgmtIP,
-							Username: tb.Params.Provision.Vars["EsxUsername"],
-							Password: tb.Params.Provision.Vars["EsxPassword"]})
+		node.VcenterConfig.DcConfigs = []*iota.DatacenterConfig{}
+		for index, dc := range node.topoNode.Datacenters {
+			cfg := &iota.DatacenterConfig{
+				DcName:            fmt.Sprintf("%v-iota-dc-%v", uid, index),
+				ClusterName:       uid + "-iota-cluster",
+				DistributedSwitch: "#Pen-DVS-" + fmt.Sprintf("%v-iota-dc-%v", uid, index),
+			}
+			dc.DCName = cfg.DcName
+			dc.ClusterName = cfg.ClusterName
+			dc.SwitchName = cfg.DistributedSwitch
+			node.VcenterConfig.DcConfigs = append(node.VcenterConfig.DcConfigs, cfg)
+			for _, mn := range dc.ManagedNodes {
+				for _, tbn := range tb.Nodes {
+					if tbn.NodeName == mn.Name {
+						cfg.EsxConfigs = append(cfg.EsxConfigs,
+							&iota.VmwareESXConfig{Name: mn.Name, IpAddress: tbn.NodeMgmtIP,
+								Username: tb.Params.Provision.Vars["EsxUsername"],
+								Password: tb.Params.Provision.Vars["EsxPassword"]})
+					}
 				}
 			}
 		}
+		tb.Datacenters = node.topoNode.Datacenters
+
 	}
 	return nil
 }
@@ -1680,8 +1696,8 @@ func (tb *TestBed) setupTestBed() error {
 			if err != nil {
 				return err
 			}
-			tbn.DcName = node.VcenterConfig.DcName
-			tbn.Switch = node.VcenterConfig.DistributedSwitch
+			//	tbn.DcName = node.VcenterConfig.DcName
+			//tbn.Switch = node.VcenterConfig.DistributedSwitch
 		} else if node.topoNode.HostOS == "esx" {
 			tbn.EsxUsername = tb.Params.Provision.Vars["EsxUsername"]
 			tbn.EsxPassword = tb.Params.Provision.Vars["EsxPassword"]

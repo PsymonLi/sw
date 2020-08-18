@@ -25,6 +25,7 @@
 		ReloadMsg
 		Entity
 		VmwareESXConfig
+		DatacenterConfig
 		VcenterConfig
 		BondConfig
 		BondConfigs

@@ -130,7 +130,7 @@ func (sm *SysModel) BringUpNewWorkloads(hc *objects.HostCollection, snc *objects
 			wc.SetError(err)
 			return wc
 		}
-		log.Infof("GOt workloads %v", len(wloads))
+		log.Infof("Total config workloads %v", len(wloads))
 	hostL:
 		for _, nw := range snc.Subnets() {
 			for _, wload := range wloads {
@@ -171,8 +171,14 @@ func (sm *SysModel) BringUpNewWorkloads(hc *objects.HostCollection, snc *objects
 					wc.SetError(err)
 					return wc
 				}
+				sw, err := sm.Tb.GetSwitch(hosts[i].DCName)
+				if err != nil {
+					log.Errorf("Error finding switch for DC %v", hosts[i].DCName)
+					wc.SetError(err)
+					return wc
+				}
 				sm.WorkloadsObjs[wload.wload.Name] = objects.NewWorkload(hosts[i], wload.wload, info.WorkloadType,
-					info.WorkloadImage, sm.Tb.GetSwitch(), nil)
+					info.WorkloadImage, sw, nil)
 				if sm.WorkloadsObjs[wload.wload.Name] == nil {
 					err := fmt.Errorf("Error adding workload %v", wload.wload.Name)
 					log.Errorf("%v", err.Error())

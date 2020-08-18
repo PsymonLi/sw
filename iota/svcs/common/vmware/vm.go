@@ -228,7 +228,8 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 
 		fmt.Println("Configuring network...", newNW)
 		task, err = vm.vm.Reconfigure(vm.entity.Ctx(),
-			types.VirtualMachineConfigSpec{DeviceChange: []types.BaseVirtualDeviceConfigSpec{&types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d}}})
+			types.VirtualMachineConfigSpec{
+				DeviceChange: []types.BaseVirtualDeviceConfigSpec{&types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d}}})
 		if err != nil {
 			return err
 		}

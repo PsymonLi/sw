@@ -902,10 +902,25 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 	for _, mn := range n.managedNodes {
 		mn := mn
 		name := name
+
+		var vdc *VcenterDatacenter
+	L:
+		for _, dc := range n.dcMap {
+			for _, dmn := range dc.managedNodes {
+				if dmn.GetNodeInfo().Name == name {
+					vdc = dc
+					break L
+				}
+			}
+		}
+		if vdc == nil {
+			log.Errorf("TOPO SVC |  Reload Node | Failed to find DC for node %v", name)
+			return fmt.Errorf("TOPO SVC |  Reload Node | Failed to find DC for node %v", name)
+		}
 		pool.Go(func() error {
 			if mn.GetNodeInfo().Name == name && mn.GetNodeAgent() != nil {
 				log.Infof("Reloading vcenter node %v , name %v", n.GetNodeInfo().Name, name)
-				err := n.cl.DeleteHost(mn.GetNodeInfo().IPAddress)
+				err := vdc.cl.DeleteHost(mn.GetNodeInfo().IPAddress)
 				if err != nil {
 					log.Errorf("TOPO SVC |  Reload Node | Failed to disconnect host from cluster %v", err.Error())
 					return err
@@ -924,7 +939,7 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 					return err
 				}
 
-				err = n.cl.AddHost(mn.GetNodeInfo().IPAddress,
+				err = vdc.cl.AddHost(mn.GetNodeInfo().IPAddress,
 					mn.GetNodeInfo().Username, mn.GetNodeInfo().Password, sslThumbprint)
 				if err != nil {
 					log.Errorf("TOPO SVC |  Reload Node | Failed to Add host to cluster after reboot %v", err.Error())
@@ -944,12 +959,12 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 					},
 				}
 				dvsSpec := vmware.DVSwitchSpec{Hosts: hostSpecs,
-					Name: n.DistributedSwitch, Cluster: n.ClusterName,
+					Name: mn.GetNodeInfo().DistributedSwitch, Cluster: mn.GetNodeInfo().ClusterName,
 					Version:  constants.DvsVersion,
 					MaxPorts: 10,
 					Pvlans: []vmware.DvsPvlanPair{vmware.DvsPvlanPair{Primary: constants.VcenterPvlanStart,
 						Secondary: constants.VcenterPvlanStart, Type: "promiscuous"}}}
-				err = n.dc.AddDvs(dvsSpec)
+				err = vdc.hdl.AddDvs(dvsSpec)
 				if err != nil {
 					log.Errorf("TOPO SVC | InitTestbed  | Error add DVS with host spec after reload %v", err.Error())
 					return err
@@ -1125,17 +1140,17 @@ func (n *TestNode) SetNodeAgent(agent iota.IotaAgentApiClient) {
 
 //SetDC set dc
 func (n *TestNode) SetDC(dc string) {
-	n.DCName = dc
+	n.info.DCName = dc
 }
 
 //SetCluster sets cluster
 func (n *TestNode) SetCluster(cl string) {
-	n.ClusterName = cl
+	n.info.ClusterName = cl
 }
 
 //SetSwitch sets switch
 func (n *TestNode) SetSwitch(sw string) {
-	n.DistributedSwitch = sw
+	n.info.DistributedSwitch = sw
 }
 
 //RunTriggerLocally run trigger locally for the node

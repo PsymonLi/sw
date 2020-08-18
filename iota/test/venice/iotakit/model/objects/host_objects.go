@@ -17,6 +17,7 @@ type Host struct {
 	Naples      *Naples
 	vlanBitmask *bitset.BitSet
 	maxVlans    uint32
+	DCName      string
 }
 
 // HostCollection is collection of hosts

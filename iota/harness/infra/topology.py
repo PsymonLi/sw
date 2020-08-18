@@ -931,20 +931,21 @@ class Node(object):
             msg.os = topo_pb2.TESTBED_NODE_OS_WINDOWS
 
         if self.Role() == topo_pb2.PERSONALITY_VCENTER_NODE:
-            msg.vcenter_config.pvlan_start = int(self.__spec.vlan_start)
-            msg.vcenter_config.pvlan_end  = int(self.__spec.vlan_end)
+            dc_config = msg.vcenter_config.dc_configs.add()
+            dc_config.pvlan_start = int(self.__spec.vlan_start)
+            dc_config.pvlan_end  = int(self.__spec.vlan_end)
             self.__topo.vlan_start = int(self.__spec.vlan_start)
             self.__topo.vlan_end = int(self.__spec.vlan_end)
             managed_nodes = self.__spec.managednodes
             for node in managed_nodes:
-                esx_config = msg.vcenter_config.esx_configs.add()
+                esx_config = dc_config.esx_configs.add()
                 esx_config.username = getattr(self.__tb_params, "EsxUsername", "")
                 esx_config.password = getattr(self.__tb_params, "EsxPassword", "")
                 esx_config.ip_address = self.__topo.GetMgmtIPAddress(node)
                 esx_config.name = node
-            msg.vcenter_config.dc_name = store.GetTestbed().GetVCenterDataCenterName()
-            msg.vcenter_config.cluster_name = store.GetTestbed().GetVCenterClusterName()
-            msg.vcenter_config.distributed_switch = store.GetTestbed().GetVCenterDVSName()
+            dc_config.dc_name = store.GetTestbed().GetVCenterDataCenterName()
+            dc_config.cluster_name = store.GetTestbed().GetVCenterClusterName()
+            dc_config.distributed_switch = store.GetTestbed().GetVCenterDVSName()
             for image in self.__topo.GetWorkloadImages():
                 msg.vcenter_config.workload_images.append(image)
             #msg.vcenter_config.enable_vmotion_over_mgmt = True

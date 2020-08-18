@@ -250,10 +250,10 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 			n := testbed.NewTestNode(nodeInfo)
 			ts.Nodes[node.IpAddress] = n
 
-			if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
+			/*if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
 				n.SetDC(node.DcName)
 				n.SetSwitch(node.Switch)
-			}
+			}*/
 
 			pool.Go(func() error {
 				n := n
@@ -333,10 +333,10 @@ func (ts *TopologyService) initTestNodes(ctx context.Context, req *iota.TestNode
 		}
 		n := testbed.NewTestNode(nodeInfo)
 		ts.Nodes[node.IpAddress] = n
-		if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
+		/*if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
 			n.SetDC(node.DcName)
 			n.SetSwitch(node.Switch)
-		}
+		}*/
 
 		pool.Go(func() error {
 			n := n
@@ -387,8 +387,8 @@ func (ts *TopologyService) cleanUpTestNodes(ctx context.Context, cfg *ssh.Client
 		}
 		n := testbed.NewTestNode(nodeInfo)
 		if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
-			n.SetDC(node.DcName)
-			n.SetSwitch(node.Switch)
+			/*	n.SetDC(node.DcName)
+				n.SetSwitch(node.Switch) */
 			n.SetupNode()
 		}
 		cnodes = append(cnodes, n)

@@ -702,8 +702,9 @@ def EnableVmotionOnNetwork(host, network, mac_address):
     Logger.info("Enabling vmotion on host %s netowrk %s" % (host, network))
     req = topo_svc.NetworksMsg()
     req.orchestrator_node = GetOrchestratorNode()
+    req.cluster = GetVCenterClusterName()
+    req.dc = GetVCenterDataCenterName()
     nw = req.Network.add()
-    nw.cluster = GetVCenterClusterName()
     nw.name = network
     nw.Type = topo_svc.NETWORK_TYPE_VMK_VMOTION
     nw.node = host
@@ -847,6 +848,8 @@ def Trigger_WorkloadMoveAddRequest(req, wloads, dst, abort_time=0):
         for s_wl in store_wloads:
             if wl.workload_name == s_wl.workload_name and dst != s_wl.node_name:
                 move_req = req.workload_moves.add()
+                move_req.src_dc_name = store.GetTestbed().GetVCenterDataCenterName()
+                move_req.dst_dc_name = store.GetTestbed().GetVCenterDataCenterName()
                 move_req.workload_name = wl.workload_name
                 move_req.dst_node_name = dst
                 move_req.src_node_name = s_wl.node_name

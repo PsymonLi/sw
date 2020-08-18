@@ -1,13 +1,16 @@
 package objects
 
 import (
-	"strings"
-
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
 )
+
+type DC struct {
+	Name string
+	Mode string
+}
 
 //Orchestrator Return orchestrator
 type Orchestrator struct {
@@ -16,7 +19,7 @@ type Orchestrator struct {
 	Username string
 	Password string
 	License  string
-	DC       string
+	DCs      []DC
 	orch     *orchestration.Orchestrator
 	client   objClient.ObjClient
 }
@@ -57,7 +60,7 @@ func createOrchestrator(name, ip, port, user, password string) *orchestration.Or
 }
 
 //NewOrchestrator create orchestrator.
-func NewOrchestrator(client objClient.ObjClient, dcname, name, ip, port, user, password string) *OrchestratorCollection {
+func NewOrchestrator(client objClient.ObjClient, dcnames []string, name, ip, port, user, password string) *OrchestratorCollection {
 
 	orch := createOrchestrator(name, ip, port, user, password)
 
@@ -66,9 +69,12 @@ func NewOrchestrator(client objClient.ObjClient, dcname, name, ip, port, user, p
 		IP:       ip,
 		Username: user,
 		Password: password,
-		DC:       dcname,
 		orch:     orch,
 		client:   client,
+	}
+
+	for _, dc := range dcnames {
+		orchObj.DCs = append(orchObj.DCs, DC{Name: dc})
 	}
 
 	return &OrchestratorCollection{CollectionCommon: CollectionCommon{Client: client}, Orchestrators: []*Orchestrator{orchObj}}
@@ -125,7 +131,11 @@ func (orchCol *OrchestratorCollection) Connected() (bool, error) {
 func (orch *Orchestrator) Commit() error {
 	//orch.client.
 
-	orch.orch.Spec.ManageNamespaces = strings.Split(orch.DC, ",")
+	orch.orch.Spec.ManageNamespaces = []string{}
+	for _, dc := range orch.DCs {
+		orch.orch.Spec.ManageNamespaces = append(orch.orch.Spec.ManageNamespaces,
+			dc.Name)
+	}
 	return orch.client.CreateOrchestration(orch.orch)
 }
 

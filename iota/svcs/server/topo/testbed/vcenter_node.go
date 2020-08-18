@@ -11,7 +11,6 @@ import (
 	"github.com/pensando/sw/iota/svcs/agent/workload"
 	constants "github.com/pensando/sw/iota/svcs/common"
 	vmware "github.com/pensando/sw/iota/svcs/common/vmware"
-	modelconsts "github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -46,34 +45,36 @@ func (n *VcenterNode) cleanUpVcenter() error {
 		time.Sleep(2 * time.Second) // Give an interval
 	}
 
-	dvsSpec := vmware.DVSwitchSpec{Name: n.DistributedSwitch}
+	for _, dc := range n.dcMap {
+		dataCenter, err := vc.SetupDataCenter(dc.dcName)
+		if err == nil {
 
-	dc, err := vc.SetupDataCenter(n.DCName)
-	if err == nil {
+			//Datacenter exists
+			err := dataCenter.DeleteAllVMs()
+			if err != nil {
+				log.Errorf("TOPO SVC | CleanTestBed | Error disconnecting all hosts from dvs  %v", err.Error())
+				return err
+			}
+			for _, dcIter := range n.dcMap {
+				dvsSpec := vmware.DVSwitchSpec{Name: dcIter.distributedSwitch}
+				err = dataCenter.DisconnectAllHostFromDvs(dvsSpec)
+				if err != nil {
+					log.Errorf("TOPO SVC | CleanTestBed | Error disconnecting all hosts from dvs  %v", err.Error())
+				}
 
-		//Datacenter exists
-		err := dc.DeleteAllVMs()
-		if err != nil {
-			log.Errorf("TOPO SVC | CleanTestBed | Error disconnecting all hosts from dvs  %v", err.Error())
-			return err
-		}
+			}
+			err = dataCenter.DeleteAllHosts()
+			if err != nil {
+				log.Warnf("TOPO SVC | CleanTestBed | deleting all hosts from datacenter failed, ignoring  %v", err.Error())
+			}
 
-		err = dc.DisconnectAllHostFromDvs(dvsSpec)
-		if err != nil {
-			log.Errorf("TOPO SVC | CleanTestBed | Error disconnecting all hosts from dvs  %v", err.Error())
-			return err
-		}
+			err = vc.DestroyDataCenter(dc.dcName)
+			if err != nil {
+				fmt.Printf("Initing failed %v.\n", err.Error())
+				log.Errorf("TOPO SVC | CleanTestBed | Destroying data center failed %v", err.Error())
+				return err
+			}
 
-		err = dc.DeleteAllHosts()
-		if err != nil {
-			log.Warnf("TOPO SVC | CleanTestBed | deleting all hosts from datacenter failed, ignoring  %v", err.Error())
-		}
-
-		err = vc.DestroyDataCenter(n.DCName)
-		if err != nil {
-			fmt.Printf("Initing failed %v.\n", err.Error())
-			log.Errorf("TOPO SVC | CleanTestBed | Destroying data center failed %v", err.Error())
-			return err
 		}
 	}
 
@@ -91,22 +92,24 @@ func (n *VcenterNode) deployWorkloadTemplates() error {
 	}
 
 	pool, _ := errgroup.WithContext(context.Background())
-	for _, node := range n.managedNodes {
+	for _, dc := range n.dcMap {
+		for _, node := range dc.managedNodes {
 
-		node := node
-		pool.Go(func() error {
-			for _, image := range images {
-				imageDir, _ := imageRep.GetImageDir(image)
-				tName := templateName(node.GetNodeInfo().IPAddress, image)
-				_, err := n.dc.DeployVM(n.ClusterName, node.GetNodeInfo().IPAddress, tName,
-					4, 4, constants.EsxDataVMNetworks, imageDir)
-				if err != nil {
-					return errors.Wrap(err, "Deploy VM failed")
+			node := node
+			pool.Go(func() error {
+				for _, image := range images {
+					imageDir, _ := imageRep.GetImageDir(image)
+					tName := templateName(node.GetNodeInfo().IPAddress, image)
+					_, err := dc.hdl.DeployVM(dc.clusterName, node.GetNodeInfo().IPAddress, tName,
+						4, 4, constants.EsxDataVMNetworks, imageDir)
+					if err != nil {
+						return errors.Wrap(err, "Deploy VM failed")
+					}
+					imageRep.SetImageTemplate(node.GetNodeInfo().IPAddress, image, tName)
 				}
-				imageRep.SetImageTemplate(node.GetNodeInfo().IPAddress, image, tName)
-			}
-			return nil
-		})
+				return nil
+			})
+		}
 	}
 
 	err := pool.Wait()
@@ -134,107 +137,110 @@ func (n *VcenterNode) initVcenter() error {
 
 	n.vc = vc
 
-	//TODO , create based on current User -ID
-	dc, err := vc.CreateDataCenter(n.DCName)
-	if err != nil {
-		log.Errorf("TOPO SVC | InitTestbed  | Failed to create datacenter  %v", err.Error())
-		return err
-	}
-
-	n.dc = dc
-
-	//Create cluster
-	cl, err := dc.CreateCluster(n.ClusterName)
-	if err != nil {
-		log.Errorf("TOPO SVC | InitTestbed  | Failed to create cluster %v", err.Error())
-		return err
-	}
-	n.cl = cl
-
-	hostSpecs := []vmware.DVSwitchHostSpec{}
-	//Connect hosts
-
-	for _, node := range n.managedNodes {
-
-		sslThumbprint, err := node.GetSSLThumbprint()
+	for _, dc := range n.dcMap {
+		//TODO , create based on current User -ID
+		dataCenter, err := vc.CreateDataCenter(dc.dcName)
 		if err != nil {
-			log.Errorf("TOPO SVC | InitTestbed  | Failed to get ssl thumbprint %v", err.Error())
+			log.Errorf("TOPO SVC | InitTestbed  | Failed to create datacenter  %v", err.Error())
 			return err
 		}
-		err = cl.AddHost(node.GetNodeInfo().IPAddress, node.GetNodeInfo().Username,
-			node.GetNodeInfo().Password, sslThumbprint)
+
+		dc.hdl = dataCenter
+		//Create cluster
+		cl, err := dataCenter.CreateCluster(dc.clusterName)
 		if err != nil {
-			log.Errorf("TOPO SVC | InitTestbed  | Failed to add hosts to cluster %v", err.Error())
+			log.Errorf("TOPO SVC | InitTestbed  | Failed to create cluster %v", err.Error())
 			return err
 		}
-		intfs, err := node.GetHostInterfaces()
-		if err != nil {
-			return err
-		}
-		log.Infof("Adding pnic %v of host %v (%v) to dvs", intfs, node.GetNodeInfo().Name, node.GetNodeInfo().IPAddress)
-		hostSpec := vmware.DVSwitchHostSpec{
-			Name: node.GetNodeInfo().IPAddress,
-		}
-		for _, intf := range intfs {
-			hostSpec.Pnics = append(hostSpec.Pnics, intf)
-		}
-		hostSpecs = append(hostSpecs, hostSpec)
 
-		if n.Node.GetVcenterConfig().EnableVmotionOverMgmt {
-			vNWs := []vmware.NWSpec{
-				{Name: constants.IotaVmotionPortgroup},
-			}
-			vspec := vmware.VswitchSpec{Name: constants.IotaVmotionSwitch}
+		dc.cl = cl
 
-			err = dc.AddNetworks(n.ClusterName, node.GetNodeInfo().IPAddress, vNWs, vspec)
+		hostSpecs := []vmware.DVSwitchHostSpec{}
+		for _, node := range dc.managedNodes {
+
+			sslThumbprint, err := node.GetSSLThumbprint()
 			if err != nil {
-				//Ignore as it may be created already.
-				log.Errorf("Error creating vmotion pg %v", err.Error())
+				log.Errorf("TOPO SVC | InitTestbed  | Failed to get ssl thumbprint %v", err.Error())
+				return err
 			}
-
-			nwSpec := vmware.KernelNetworkSpec{
-				EnableVmotion: true,
-				Portgroup:     constants.IotaVmotionPortgroup,
-			}
-			err = dc.AddKernelNic(n.ClusterName, node.GetNodeInfo().IPAddress, nwSpec)
-
+			err = cl.AddHost(node.GetNodeInfo().IPAddress, node.GetNodeInfo().Username,
+				node.GetNodeInfo().Password, sslThumbprint)
 			if err != nil {
-				//Ignore as it may be created already.
-				log.Errorf("Error creating vmotion pg %v", err.Error())
+				log.Errorf("TOPO SVC | InitTestbed  | Failed to add hosts to cluster %v", err.Error())
+				return err
 			}
-		}
-	}
+			intfs, err := node.GetHostInterfaces()
+			if err != nil {
+				return err
+			}
+			log.Infof("Adding pnic %v of host %v (%v) to dvs %v", intfs, node.GetNodeInfo().Name, node.GetNodeInfo().IPAddress, dc.distributedSwitch)
+			hostSpec := vmware.DVSwitchHostSpec{
+				Name: node.GetNodeInfo().IPAddress,
+			}
+			for _, intf := range intfs {
+				hostSpec.Pnics = append(hostSpec.Pnics, intf)
+			}
+			hostSpecs = append(hostSpecs, hostSpec)
 
-	dvsSpec := vmware.DVSwitchSpec{Hosts: hostSpecs,
-		Name: n.DistributedSwitch, Cluster: n.ClusterName,
-		Version:  constants.DvsVersion,
-		MaxPorts: 100}
+			if dc.vmotioOverMgmt {
+				vNWs := []vmware.NWSpec{
+					{Name: constants.IotaVmotionPortgroup},
+				}
+				vspec := vmware.VswitchSpec{Name: constants.IotaVmotionSwitch}
 
-	start := n.Node.GetVcenterConfig().PvlanStart
-	end := n.Node.GetVcenterConfig().PvlanEnd
-	if start == 0 {
-		start = 2
-		end = constants.ReservedPGVlanCount
-	}
-	for i := start; i < end; i += 2 {
-		pvlanSpecProm := vmware.DvsPvlanPair{
-			Primary:   int32(i),
-			Type:      "promiscuous",
-			Secondary: int32(i),
-		}
-		pvlanSpecIsolated := vmware.DvsPvlanPair{
-			Primary:   int32(i),
-			Type:      "isolated",
-			Secondary: int32(i + 1),
-		}
-		dvsSpec.Pvlans = append(dvsSpec.Pvlans, pvlanSpecProm)
-		dvsSpec.Pvlans = append(dvsSpec.Pvlans, pvlanSpecIsolated)
-	}
+				err = dataCenter.AddNetworks(dc.clusterName, node.GetNodeInfo().IPAddress, vNWs, vspec)
+				if err != nil {
+					//Ignore as it may be created already.
+					log.Errorf("Error creating vmotion pg %v", err.Error())
+				}
 
-	err = dc.AddDvs(dvsSpec)
-	if err != nil {
-		log.Errorf("TOPO SVC | InitTestbed  | Error add DVS with host spec %v", err.Error())
-		return err
+				nwSpec := vmware.KernelNetworkSpec{
+					EnableVmotion: true,
+					Portgroup:     constants.IotaVmotionPortgroup,
+				}
+				err = dataCenter.AddKernelNic(n.info.ClusterName, node.GetNodeInfo().IPAddress, nwSpec)
+
+				if err != nil {
+					//Ignore as it may be created already.
+					log.Errorf("Error creating vmotion pg %v", err.Error())
+				}
+			}
+			node.SetConnector(dataCenter)
+			node.SetCluster(dc.clusterName)
+			node.SetDC(dc.dcName)
+		}
+		dvsSpec := vmware.DVSwitchSpec{Hosts: hostSpecs,
+			Name: dc.distributedSwitch, Cluster: dc.clusterName,
+			Version:  constants.DvsVersion,
+			MaxPorts: 100}
+
+		start := dc.pvlanStart
+		end := dc.pvlanEnd
+		if start == 0 {
+			start = 2
+			end = constants.ReservedPGVlanCount
+		}
+		for i := start; i < end; i += 2 {
+			pvlanSpecProm := vmware.DvsPvlanPair{
+				Primary:   int32(i),
+				Type:      "promiscuous",
+				Secondary: int32(i),
+			}
+			pvlanSpecIsolated := vmware.DvsPvlanPair{
+				Primary:   int32(i),
+				Type:      "isolated",
+				Secondary: int32(i + 1),
+			}
+			dvsSpec.Pvlans = append(dvsSpec.Pvlans, pvlanSpecProm)
+			dvsSpec.Pvlans = append(dvsSpec.Pvlans, pvlanSpecIsolated)
+		}
+
+		err = dataCenter.AddDvs(dvsSpec)
+		if err != nil {
+			log.Errorf("TOPO SVC | InitTestbed  | Error add DVS with host spec %v", err.Error())
+			return err
+		}
+
 	}
 
 	err = n.deployWorkloadTemplates()
@@ -247,7 +253,6 @@ func (n *VcenterNode) initVcenter() error {
 	for _, mnode := range n.managedNodes {
 		mnode.SetNodeController(n)
 		mnode.RunTriggerLocally()
-		mnode.SetConnector(n.dc)
 	}
 
 	return nil
@@ -328,34 +333,54 @@ func (n *VcenterNode) SetupNode() error {
 		return nil
 	}
 
-	n.connector = n.dc
 	n.managedNodes = make(map[string]ManagedNodeInterface)
 	n.independentNodes = make(map[string]ManagedNodeInterface)
 	n.info.ManagedNodes = make(map[string]NodeInfo)
-	n.DCName = n.Node.GetVcenterConfig().DcName
-	n.ClusterName = n.Node.GetVcenterConfig().ClusterName
-	n.DistributedSwitch = n.Node.GetVcenterConfig().DistributedSwitch
-	for _, mnode := range n.Node.GetVcenterConfig().EsxConfigs {
-		inf := NodeInfo{
-			Os:        iota.TestBedNodeOs_TESTBED_NODE_OS_ESX,
-			IPAddress: mnode.IpAddress,
-			Username:  mnode.Username,
-			Name:      mnode.Name,
-			SSHCfg:    InitSSHConfig(mnode.Username, mnode.Password),
-			Password:  mnode.Password}
-		tNode := NewTestNode(inf)
-		mNode, ok := tNode.(ManagedNodeInterface)
-		if !ok {
-			return errors.Errorf("Node does not implement managed node interface %v", tNode.GetNodeInfo().Name)
-		}
-		n.managedNodes[mnode.Name] = mNode
-		//F
-		tNode.SetNodeController(n)
-		tNode.RunTriggerLocally()
-		tNode.SetConnector(n.dc)
-		n.logger.Infof("Adding %v to managed node", mnode.Name)
-		n.info.ManagedNodes[mnode.Name] = inf
+	n.dcMap = make(map[string]*VcenterDatacenter)
 
+	if len(n.Node.GetVcenterConfig().DcConfigs) == 0 {
+		return errors.Errorf("No datacenters requested in datacanter %v", n.Node.Name)
+	}
+	for _, dc := range n.Node.GetVcenterConfig().DcConfigs {
+
+		n.dcMap[dc.DcName] = &VcenterDatacenter{
+			workloads:         make(map[string]workload.Workload),
+			managedNodes:      make(map[string]ManagedNodeInterface),
+			vmotioOverMgmt:    dc.EnableVmotionOverMgmt,
+			pvlanEnd:          dc.PvlanEnd,
+			pvlanStart:        dc.PvlanStart,
+			clusterName:       dc.ClusterName,
+			dcName:            dc.DcName,
+			distributedSwitch: dc.DistributedSwitch,
+		}
+
+		for _, mnode := range dc.EsxConfigs {
+			inf := NodeInfo{
+				Os:                iota.TestBedNodeOs_TESTBED_NODE_OS_ESX,
+				IPAddress:         mnode.IpAddress,
+				Username:          mnode.Username,
+				Name:              mnode.Name,
+				SSHCfg:            InitSSHConfig(mnode.Username, mnode.Password),
+				Password:          mnode.Password,
+				ManagedNodes:      make(map[string]NodeInfo),
+				DCName:            dc.DcName,
+				DistributedSwitch: dc.DistributedSwitch,
+				ClusterName:       dc.ClusterName,
+			}
+			tNode := NewTestNode(inf)
+			mNode, ok := tNode.(ManagedNodeInterface)
+			if !ok {
+				return errors.Errorf("Node does not implement managed node interface %v", tNode.GetNodeInfo().Name)
+			}
+
+			n.managedNodes[mnode.Name] = mNode
+			n.dcMap[dc.DcName].managedNodes[mnode.Name] = mNode
+			//F
+			tNode.RunTriggerLocally()
+			n.logger.Infof("Adding %v to managed node", mnode.Name)
+			n.info.ManagedNodes[mnode.Name] = inf
+
+		}
 	}
 
 	return nil
@@ -411,11 +436,18 @@ func (n *VcenterNode) AssocaiateIndependentNode(node TestNodeInterface) error {
 			mn.(*EsxNode).Node = node.(*EsxNode).Node
 			n.managedNodes[index] = mNode
 
+			for _, dc := range n.dcMap {
+				for j, dmn := range dc.managedNodes {
+					if dmn.GetNodeInfo().Name == node.GetNodeInfo().Name {
+						dmn.SetNodeAgent(agent)
+						//Save node info for reload
+						dmn.(*EsxNode).Node = node.(*EsxNode).Node
+						dc.managedNodes[j] = mNode
+					}
+				}
+			}
 			mNode.SetNodeController(n)
 			mNode.RunTriggerLocally()
-			mNode.SetConnector(n.dc)
-			mNode.SetDC(n.DCName)
-			mNode.SetCluster(n.ClusterName)
 			log.Infof("Added managed node %v %v", node.GetNodeInfo().Name, mNode.NodeConnector())
 			break
 		}
@@ -447,6 +479,14 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 	networkMsg.ApiResponse = &iota.IotaAPIResponse{
 		ApiStatus: iota.APIResponseType_API_STATUS_OK,
 	}
+
+	datacenter, ok := n.dcMap[networkMsg.Dc]
+	if !ok {
+		networkMsg.ApiResponse.ErrorMsg = fmt.Sprintf("DC %v not found", networkMsg.Dc)
+		networkMsg.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
+		return networkMsg, nil
+	}
+	dc := datacenter.hdl
 
 	managedNodes := n.GetManagedNodes()
 	for _, nw := range networkMsg.Network {
@@ -482,7 +522,7 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 							networkMsg.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
 							return networkMsg, nil
 						}
-						nwSpec.IPAddress = modelconsts.VmotionSubnet + "." + strings.Split(ipAddr, ".")[3]
+						nwSpec.IPAddress = constants.VmotionSubnet + "." + strings.Split(ipAddr, ".")[3]
 						nwSpec.Subnet = "255.255.255.0"
 					}
 
@@ -491,7 +531,7 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 					}
 					log.Infof("Add vmk IP addr %v, %v on node %v", nwSpec.IPAddress, nwSpec.Subnet, nw.Node)
 					for i := 0; i < 5; i++ {
-						err = n.dc.AddKernelNic(nw.Cluster, mn.GetNodeInfo().IPAddress, nwSpec)
+						err = dc.AddKernelNic(networkMsg.Cluster, mn.GetNodeInfo().IPAddress, nwSpec)
 						if err == nil {
 							break
 						}
@@ -512,7 +552,15 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 //RemoveNetworks not supported for other nodes
 func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg) (*iota.NetworksMsg, error) {
 
-	pgs, err := n.dc.FetchDVPortGroupsNames(req.Switch)
+	datacenter, ok := n.dcMap[req.Dc]
+	if !ok {
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("DC %v not found", req.Dc)
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
+		return req, nil
+	}
+	dc := datacenter.hdl
+
+	pgs, err := dc.FetchDVPortGroupsNames(req.Switch)
 	if err != nil {
 		req.ApiResponse.ErrorMsg = errors.Wrap(err, "Error removing networks - no PGs found").Error()
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -527,7 +575,8 @@ func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg)
 	for _, pg := range pgs {
 		for _, mn := range managedNodes {
 			log.Infof("Remove vmks on PG %v on host %v", pg, mn.GetNodeInfo().Name)
-			err := n.dc.RemoveKernelNic(req.Network[0].Cluster, mn.GetNodeInfo().IPAddress, pg)
+
+			err := dc.RemoveKernelNic(req.Cluster, mn.GetNodeInfo().IPAddress, pg)
 			if err != nil {
 				req.ApiResponse.ErrorMsg = errors.Wrap(err, "Error removing vmknic").Error()
 				req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -536,7 +585,7 @@ func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg)
 		}
 	}
 
-	err = n.dc.RemoveAllPortGroupsFromDvs(req.Switch)
+	err = dc.RemoveAllPortGroupsFromDvs(req.Switch)
 	if err != nil {
 		req.ApiResponse = &iota.IotaAPIResponse{
 			ApiStatus: iota.APIResponseType_API_SERVER_ERROR,

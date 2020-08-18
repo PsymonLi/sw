@@ -10,7 +10,11 @@ nodes:
         instances: 3
     vcenter:
         instances: 1
-        naples: 2
+        datacenter:
+          count: 1
+          naples: 
+            min-instances: 1
+            max-instances: 8
 
 workload: 
   esx: 

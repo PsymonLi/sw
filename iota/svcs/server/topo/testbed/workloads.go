@@ -137,7 +137,7 @@ func (n *TestNode) setupWorkload(wload workload.Workload, in *iota.Workload) (*i
 	wDir := constants.DstIotaEntitiesDir + "/" + in.GetWorkloadName()
 	wload.SetBaseDir(wDir)
 
-	wload.SetConnector(n.ClusterName, wload.Host(), n.connector)
+	wload.SetConnector(n.info.ClusterName, wload.Host(), n.connector)
 	template, err := imageRep.GetImageTemplate(n.info.IPAddress, in.GetWorkloadImage())
 	if err != nil {
 		msg := fmt.Sprintf("Error in finding template : %s : %s", in.GetWorkloadName(), err.Error())
@@ -146,7 +146,7 @@ func (n *TestNode) setupWorkload(wload workload.Workload, in *iota.Workload) (*i
 		return resp, err
 	}
 	if err := wload.BringUp(in.GetWorkloadName(), template,
-		n.ClusterName, n.info.IPAddress, constants.IotaAgentBinaryPathLinux); err != nil {
+		n.info.ClusterName, n.info.IPAddress, constants.IotaAgentBinaryPathLinux); err != nil {
 		msg := fmt.Sprintf("Error in workload image bring up : %s : %s", in.GetWorkloadName(), err.Error())
 		n.logger.Error(msg)
 		resp := &iota.Workload{WorkloadStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}

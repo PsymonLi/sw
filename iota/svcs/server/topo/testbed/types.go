@@ -38,14 +38,24 @@ type TestNode struct {
 	CimcNcsiIp   string
 	info         NodeInfo
 	//Use when workload are local managed rather than agent
-	controlNode       TestNodeInterface
-	workloadMap       *sync.Map
-	logger            *log.Logger
-	connector         interface{}
-	triggerLocal      bool
-	DCName            string
-	ClusterName       string
-	DistributedSwitch string
+	controlNode  TestNodeInterface
+	workloadMap  *sync.Map
+	logger       *log.Logger
+	connector    interface{}
+	triggerLocal bool
+}
+
+type VcenterDatacenter struct {
+	dcName            string
+	clusterName       string
+	hdl               *vmware.DataCenter
+	cl                *vmware.Cluster
+	workloads         map[string]workload.Workload
+	managedNodes      map[string]ManagedNodeInterface
+	vmotioOverMgmt    bool
+	distributedSwitch string
+	pvlanStart        uint32
+	pvlanEnd          uint32
 }
 
 // VcenterNode implements functions for Vcenter
@@ -54,11 +64,11 @@ type VcenterNode struct {
 	managedNodes     map[string]ManagedNodeInterface
 	independentNodes map[string]ManagedNodeInterface
 	vc               *vmware.Vcenter
-	dc               *vmware.DataCenter
-	cl               *vmware.Cluster
 	imagesMap        map[string]string
 	workloads        map[string]workload.Workload
 	license          string
+
+	dcMap map[string]*VcenterDatacenter
 }
 
 type imageRepository struct {
@@ -213,21 +223,24 @@ type ManagedNodeInterface interface {
 
 //NodeInfo Encapsulates all node information
 type NodeInfo struct {
-	Name           string
-	Os             iota.TestBedNodeOs
-	CimcUserName   string
-	CimcPassword   string
-	CimcIP         string
-	CimcNcsiIp     string
-	ApcInfo        *iota.ApcInfo
-	IPAddress      string
-	Username       string
-	Password       string
-	SSHCfg         *ssh.ClientConfig
-	ManagedNodes   map[string]NodeInfo
-	License        string
-	GlobalLicenses []*iota.License
-	InstallInfo    *iota.InstallInfo
+	Name              string
+	Os                iota.TestBedNodeOs
+	CimcUserName      string
+	CimcPassword      string
+	CimcIP            string
+	CimcNcsiIp        string
+	ApcInfo           *iota.ApcInfo
+	IPAddress         string
+	Username          string
+	Password          string
+	SSHCfg            *ssh.ClientConfig
+	ManagedNodes      map[string]NodeInfo
+	License           string
+	GlobalLicenses    []*iota.License
+	InstallInfo       *iota.InstallInfo
+	ClusterName       string
+	DCName            string
+	DistributedSwitch string
 }
 
 //NewTestNode Create a new node interface

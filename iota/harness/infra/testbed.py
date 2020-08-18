@@ -292,8 +292,6 @@ class _Testbed:
 
             if getattr(instance, "Tag", None) ==  "vcenter":
                 node_msg.os = topo_pb2.TESTBED_NODE_OS_VCENTER
-                node_msg.dc_name = self.GetVCenterDataCenterName()
-                node_msg.switch = self.GetVCenterDVSName()
                 node_msg.esx_username = self.__tbspec.Provision.Vars.VcenterUsername
                 node_msg.esx_password = self.__tbspec.Provision.Vars.VcenterPassword
                 node_msg.license = self.__tbspec.Provision.Vars.VcenterLicense

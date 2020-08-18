@@ -210,7 +210,7 @@ message VmwareESXConfig {
     string name = 5;
 }
 
-message VcenterConfig {
+message DatacenterConfig {
     repeated VmwareESXConfig esx_configs = 1;
 
     string dc_name                       = 2;
@@ -224,8 +224,12 @@ message VcenterConfig {
     uint32 pvlan_end                     = 6;
 
     bool   enable_vmotion_over_mgmt      = 7;
+}
 
-    repeated string workload_images      = 8;
+message VcenterConfig {
+    repeated DatacenterConfig  dc_configs           = 1;
+
+    repeated string            workload_images      = 2;
 }
 
 message BondConfig {
@@ -720,29 +724,35 @@ message WorkloadMove {
     // workload move type
     WorkloadMoveType     type            = 1;
 
+   // src node name
+   string              src_dc_name       = 2;
+
+   // dst node name
+   string              dst_dc_name       = 3;
+
     // src node name
-    string              src_node_name    = 2;
+    string              src_node_name    = 4;
 
     // dst node name
-    string              dst_node_name    = 3;
+    string              dst_node_name    = 5;
 
     // entity name to run command on
-    string              workload_name    = 4;
+    string              workload_name    = 6;
 
     //override vlan after vmotion if set
-    uint32              vlan_override    = 5;
+    uint32              vlan_override    = 7;
 
     //current vlan if we want to override after move
-    uint32              current_vlan     = 6;
+    uint32              current_vlan     = 8;
 
     //Switch name for vlan override
-    string              switch_name      = 7;
+    string              switch_name      = 9;
 
     //Abort Workload Move after time in sec (if non-zero)
-    uint32              abort_time       = 8;
+    uint32              abort_time       = 10;
 
     // workload move response
-    IotaAPIResponse     api_response     = 9;
+    IotaAPIResponse     api_response     = 11;
 }
 
 // WorkloadMoveMsg move workloads 
@@ -776,7 +786,6 @@ message Network {
     //nodes that network has to be on
     string               node     = 4; 
 
-    string               cluster   =  5;
 
     bool                 dhcp      =  6;
 
@@ -791,10 +800,14 @@ message NetworksMsg {
     // List of workload moves
     repeated Network Network         = 2;
 
-    string    switch                 = 3;
+    string    dc                     = 3;
+
+    string    cluster                = 4;
+   
+    string    switch                 = 5;
   
     //Orchestrator node 
-    string orchestrator_node         = 4;
+    string orchestrator_node         = 6;
 }
 
 
@@ -1214,20 +1227,16 @@ message TestBedNode {
     //mgmt intf
     string mgmt_intf                = 25;
 
-    string dc_name                  = 26;
-
-    string switch                   = 27;
-
     //Don't setup mgmt on naples
-    bool no_mgmt                    = 28;                   
+    bool no_mgmt                    = 26;
 
-    string cimc_ncsi_ip             = 29;
+    string cimc_ncsi_ip             = 27;
 
     //auto discover on install
-    bool auto_discover_on_install   = 30;
+    bool auto_discover_on_install   = 28;
 
     // warmd instance name
-    string instance_name            = 31;
+    string instance_name            = 29;
 }
 
 // CopyDirection defines direction whether to copy in or copy out

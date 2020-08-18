@@ -1479,6 +1479,7 @@ func (dc *DataCenter) relaxSecurityOnPg(name string, pgName string) error {
 				Scope:         port.Config.Scope,
 				ConfigVersion: port.Config.ConfigVersion,
 				Operation:     "edit",
+
 				Setting: &types.VMwareDVSPortSetting{
 					SecurityPolicy: &types.DVSSecurityPolicy{
 						MacChanges:       &types.BoolPolicy{Value: &allow},
@@ -1518,9 +1519,12 @@ func (dc *DataCenter) relaxSecurityOnPg(name string, pgName string) error {
 		}
 		task, err = dvs.ReconfigureDVPort(dc.Ctx(), pSpec)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Error in reconfiguring DV port")
 		}
 		_, err = task.WaitForResult(dc.Ctx())
+		if err != nil {
+			return errors.Wrapf(err, "Error in reconfiguring DV port task")
+		}
 		return err
 	}
 
