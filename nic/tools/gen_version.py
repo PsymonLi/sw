@@ -29,8 +29,12 @@ version_dict    = {}
 #############################
 # Generate version for nic
 #############################
+if os.path.exists('.git'):
+    nic_version = subprocess.run(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip('\n')
+else:
+    with open('git_tag', 'r') as tag_file:
+        nic_version = tag_file.read().replace('\n', '')
 
-nic_version    = subprocess.run(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip('\n')
 nic_build_time = subprocess.run(['date'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip('\n')
 nic_sha        = subprocess.run(['git', 'log', '-1', '--pretty=format:\'%H\''], stdout=subprocess.PIPE).stdout.decode('utf-8').strip('\n')
 

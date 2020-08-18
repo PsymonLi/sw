@@ -19,7 +19,7 @@ sshpass -p $PASSWD scp pen-src.tar.gz build@$BUILD_SERVER:$WORK_DIR
 sshpass -p $PASSWD ssh -o StrictHostKeyChecking=no "$BUILD_USER"@"$BUILD_SERVER" "cd $WORK_DIR; tar zxf pen-src.tar.gz"
 
 sshpass -p $PASSWD ssh -o StrictHostKeyChecking=no "$BUILD_USER"@"$BUILD_SERVER" \
-    "docker run --rm --user build --name ba$JID -h ba$JID -v $WORK_DIR:$WORK_DIR jzcq/pen:olc-2 bin/bash -c \
+    "docker run --rm --user build --name ba$JID -h ba$JID -v $WORK_DIR:$WORK_DIR jzcq/pen:olc-3 bin/bash -c \
     \"export PATH=/opt/oracle/oracle-armtoolset-1/root/usr/bin:/usr/local/bin:/usr/bin; \
     export LD_LIBRARY_PATH=/usr/local/lib; export GOPATH=$WORK_DIR; \
     cd $WORK_DIR/src/github.com/pensando/sw/nic; \

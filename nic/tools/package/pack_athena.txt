@@ -342,8 +342,5 @@ lib/pen/libAAPL.so            /nic/lib/
 nic/sdk/third-party/avago/aapl-2.7/build/aarch64/bin/aapl /nic/bin/
 
 # for arm native environment only
-nic/bin/ionic_mnic.ko                                             /nic/bin/
-nic/bin/mnet.ko                                                   /nic/bin/
-nic/bin/mnet_uio_pdrv_genirq.ko                                   /nic/bin/
 nic/bin/pdsctl                                                    /nic/bin/
 
