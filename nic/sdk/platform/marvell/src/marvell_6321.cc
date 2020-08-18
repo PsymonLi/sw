@@ -202,8 +202,8 @@ marvell_switch_init (marvell_cfg_t *marvell_cfg)
             marvell_serdes_enable(MARVELL_SERDES_PORT0, true);
             marvell_serdes_enable(MARVELL_SERDES_PORT1, true);
         } else {
-            // bitmask of all 7 ports
-            marvell_ports_enable(0x7F);
+            // bitmask of all 7 ports except port5 (BMC)
+            marvell_ports_enable(0x5F);
             marvell_serdes_enable(MARVELL_SERDES_PORT0, true);
             marvell_serdes_enable(MARVELL_SERDES_PORT1, true);
             marvell_phy_enable(MARVELL_PHY_PORT0, true);
