@@ -25,7 +25,7 @@ var (
 var _ = Describe("Network", func() {
 	var (
 		defaultTenants []string
-		dscCount       int32
+		naplesCount    = make(map[string]int32)
 	)
 
 	BeforeEach(func() {
@@ -41,12 +41,12 @@ var _ = Describe("Network", func() {
 			for _, t := range tenantList {
 				if t.GetName() != "default" {
 					defaultTenants = append(defaultTenants, t.GetName())
+					naplesCount[t.GetName()] = getNaplesCount(t.GetName())
 				}
 			}
 		}
-
-		dscCount = int32(len(ts.model.Naples().Nodes) + len(ts.model.Naples().FakeNodes))
 	})
+
 	AfterEach(func() {
 	})
 
@@ -106,7 +106,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -127,7 +127,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -171,7 +171,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -193,7 +193,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -233,7 +233,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -255,7 +255,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -369,7 +369,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -395,7 +395,7 @@ var _ = Describe("Network", func() {
 			for _, tenantName := range defaultTenants {
 				//Verify propagation status
 				Eventually(func() error {
-					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {

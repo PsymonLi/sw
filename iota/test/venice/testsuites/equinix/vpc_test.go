@@ -29,7 +29,7 @@ func getUniqueMac(i int) string {
 var _ = Describe("VPC", func() {
 	var (
 		defaultTenants []string
-		dscCount       int32
+		naplesCount    = make(map[string]int32)
 	)
 
 	BeforeEach(func() {
@@ -44,19 +44,19 @@ var _ = Describe("VPC", func() {
 			for _, t := range tenantList {
 				if t.GetName() != "default" {
 					defaultTenants = append(defaultTenants, t.GetName())
+					naplesCount[t.GetName()] = getNaplesCount(t.GetName())
 				}
 			}
 		}
-
-		dscCount = int32(len(ts.model.Naples().Nodes) + len(ts.model.Naples().FakeNodes))
 	})
+
 	AfterEach(func() {
 	})
 
 	Context("VPC tests", func() {
 		It("Add & delete VPC two times", func() {
-			vpcAddDel(defaultTenants, dscCount)
-			vpcAddDel(defaultTenants, dscCount)
+			vpcAddDel(defaultTenants, naplesCount)
+			vpcAddDel(defaultTenants, naplesCount)
 		})
 
 		It("Multiple VPCs per Tenant", func() {
@@ -87,25 +87,25 @@ var _ = Describe("VPC", func() {
 				veniceVpc, err = ts.model.GetVPC(vpcName2, tenantName)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(veniceVpc.Obj.Name == vpcName2).Should(BeTrue())
+			}
 
+			for _, tenantName := range defaultTenants {
 				//check propagation status
 				Eventually(func() error {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
-				}).Should(Succeed())
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
+				}, "5m", "10s").Should(Succeed())
 
 				if *scaleFlag {
 					continue
 				}
-
 				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 					ts.model.Testbed())
 				Expect(err).ShouldNot(HaveOccurred())
 				verifyNetAgentVpcState(vpcc)
 				verifyPDSVpcState(vpcc)
-
 			}
 
 			//Delete VPC
@@ -120,19 +120,17 @@ var _ = Describe("VPC", func() {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
-				}).Should(Succeed())
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
+				}, "5m", "10s").Should(Succeed())
 
 				if *scaleFlag {
 					continue
 				}
-
 				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 					ts.model.Testbed())
 				Expect(err).ShouldNot(HaveOccurred())
 				verifyNetAgentVpcState(vpcc)
 				verifyPDSVpcState(vpcc)
-
 			}
 		})
 
@@ -178,7 +176,7 @@ var _ = Describe("VPC", func() {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -204,7 +202,7 @@ var _ = Describe("VPC", func() {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -255,7 +253,7 @@ var _ = Describe("VPC", func() {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -286,7 +284,7 @@ var _ = Describe("VPC", func() {
 					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 						ts.model.Testbed())
 					Expect(err).ShouldNot(HaveOccurred())
-					return vpcc.VerifyPropagationStatus(dscCount)
+					return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
 				}).Should(Succeed())
 
 				if *scaleFlag {
@@ -304,7 +302,14 @@ var _ = Describe("VPC", func() {
 	})
 })
 
-func vpcAddDel(tenants []string, dscCount int32) {
+func getNaplesCount(tenant string) int32 {
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	return int32(len(npc.FakeNodes) + len(npc.Nodes))
+
+}
+
+func vpcAddDel(tenants []string, naplesCount map[string]int32) {
 
 	vpcName := "testVPC"
 
@@ -320,14 +325,16 @@ func vpcAddDel(tenants []string, dscCount int32) {
 		veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
+	}
 
+	for _, tenantName := range tenants {
 		//check propagation status
 		Eventually(func() error {
 			vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 				ts.model.Testbed())
 			Expect(err).ShouldNot(HaveOccurred())
-			return vpcc.VerifyPropagationStatus(dscCount)
-		}).Should(Succeed())
+			return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
+		}, "5m", "10s").Should(Succeed())
 
 		if *scaleFlag {
 			continue
@@ -350,8 +357,8 @@ func vpcAddDel(tenants []string, dscCount int32) {
 			vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
 				ts.model.Testbed())
 			Expect(err).ShouldNot(HaveOccurred())
-			return vpcc.VerifyPropagationStatus(dscCount)
-		}).Should(Succeed())
+			return vpcc.VerifyPropagationStatus(naplesCount[tenantName])
+		}, "5m", "10s").Should(Succeed())
 
 		if *scaleFlag {
 			continue
