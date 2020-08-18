@@ -1,0 +1,20 @@
+{
+  "Package": "rulemetrics",
+  "Pipeline": "apulu",
+  "Messages": [
+    {
+      "Name": "RuleMetrics",
+      "Description": "policy rule statistics",
+      "DisplayName": "policy rule statistics",
+      "Fields": [
+        {
+          "Name": "Hits",
+          "DisplayName": "Hits",
+          "Description": "Number of packets that hit the rule",
+          "Units": "Count",
+          "BaseType": "Counter"
+        }
+      ]
+    }
+  ]
+}

@@ -3283,6 +3283,39 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   "objectKind": "DistributedServiceCard",
   "uiGroup": "PciePortMetrics"
 },
+  RuleMetrics: {
+  "name": "RuleMetrics",
+  "description": "policy rule statistics",
+  "displayName": "policy rule statistics",
+  "fields": [
+    {
+      "name": "Hits",
+      "displayName": "Hits",
+      "description": "Number of packets that hit the rule",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    }
+  ],
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "RuleMetrics"
+},
   MemoryMetrics: {
   "name": "MemoryMetrics",
   "description": "System Memory",
