@@ -457,7 +457,7 @@ func (sm *Statemgr) listNetworksByTenant(tenant string) ([]*NetworkState, error)
 //GetNetworkWatchOptions gets options
 func (sm *SmNetwork) GetNetworkWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec", "ObjectMeta.GenerationID"}
+	opts.FieldChangeSelector = []string{"Spec", "ObjectMeta.GenerationID", "Status"}
 	return &opts
 }
 

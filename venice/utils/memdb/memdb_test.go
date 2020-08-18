@@ -1530,8 +1530,8 @@ func TestMemdbDepDelAddTest_6(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 50},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 5},
 	}
 
 	generateObjectReferences(relations)
@@ -1545,25 +1545,25 @@ func TestMemdbDepDelAddTest_6(t *testing.T) {
 	md.WatchObjects("b", &watcher)
 	md.WatchObjects("c", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 100)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 50)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 5)
 	AssertOk(t, err, "Error creating object")
 	//Make sure we receive objects of b as it has no deps
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
-	kindMap[CreateEvent]["c"] = 50
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
+	kindMap[CreateEvent]["c"] = 5
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 50)
+	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 5)
 	AssertOk(t, err, "Error deleting object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 
 	//Make sure we receive no objects
@@ -1571,16 +1571,16 @@ func TestMemdbDepDelAddTest_6(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjectsWithNoRefs(md.UpdateObjectWithReferences, "a", 0, 100)
+	err = sendObjectsWithNoRefs(md.UpdateObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 	//Make sure we receive objects of b as it has no deps
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[DeleteEvent] = make(map[string]int)
 	//kindMap[CreateEvent] = make(map[string]int)
 	kindMap[UpdateEvent] = make(map[string]int)
-	kindMap[UpdateEvent]["a"] = 100
-	kindMap[DeleteEvent]["b"] = 100
-	kindMap[DeleteEvent]["c"] = 50
+	kindMap[UpdateEvent]["a"] = 10
+	kindMap[DeleteEvent]["b"] = 10
+	kindMap[DeleteEvent]["c"] = 5
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(50*time.Millisecond))
 	AssertOk(t, err, "Error verifying objects")
 }
@@ -1656,8 +1656,8 @@ func TestMemdbAddUpdateTest_2(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 
 	generateObjectReferences(relations)
@@ -1671,25 +1671,25 @@ func TestMemdbAddUpdateTest_2(t *testing.T) {
 	md.WatchObjects("b", &watcher)
 	md.WatchObjects("c", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 0)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 0)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 0)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error creating object")
 	//Make sure we receive objects of b as it has no deps
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
-	kindMap[CreateEvent]["c"] = 100
-	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
+	kindMap[CreateEvent]["c"] = 10
+	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(2*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 
 	//Make sure we receive no objects
@@ -1698,18 +1698,18 @@ func TestMemdbAddUpdateTest_2(t *testing.T) {
 	AssertOk(t, err, "Error verifying objects")
 
 	//Send a fake update
-	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error deleting object")
 
 	//No updates should be received.
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[DeleteEvent] = make(map[string]int)
-	kindMap[DeleteEvent]["a"] = 100
-	kindMap[DeleteEvent]["b"] = 100
-	kindMap[DeleteEvent]["c"] = 100
+	kindMap[DeleteEvent]["a"] = 10
+	kindMap[DeleteEvent]["b"] = 10
+	kindMap[DeleteEvent]["c"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
@@ -1720,8 +1720,8 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 50},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 5},
 	}
 
 	generateObjectReferences(relations)
@@ -1737,7 +1737,7 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	md.WatchObjects("c", &watcher)
 	md.WatchObjects("d", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 100)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1745,7 +1745,7 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1753,36 +1753,36 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 50)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 5)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
 	initObjectStore()
 	relations = []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 	generateObjectReferences(relations)
 	//Send 50-100
-	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Send 50-100
-	err = sendObjects(md.AddObjectWithReferences, "c", 50, 100)
+	err = sendObjects(md.AddObjectWithReferences, "c", 5, 10)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[UpdateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
-	kindMap[UpdateEvent]["b"] = 100
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[UpdateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 }
@@ -1792,8 +1792,8 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 50},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 5},
 	}
 
 	generateObjectReferences(relations)
@@ -1809,7 +1809,7 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	md.WatchObjects("c", &watcher)
 	md.WatchObjects("d", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 100)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1817,7 +1817,7 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1825,35 +1825,36 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 50)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 5)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
 	initObjectStore()
 	relations = []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 	generateObjectReferences(relations)
 	//Send 50-100
-	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Send 50-100
-	err = sendObjects(md.AddObjectWithReferences, "c", 50, 100)
+	err = sendObjects(md.AddObjectWithReferences, "c", 5, 10)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[UpdateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[UpdateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 }
@@ -1863,8 +1864,8 @@ func TestMemdbAddUpdateTest_5(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 50},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 5},
 	}
 
 	generateObjectReferences(relations)
@@ -1880,7 +1881,7 @@ func TestMemdbAddUpdateTest_5(t *testing.T) {
 	md.WatchObjects("c", &watcher)
 	md.WatchObjects("d", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 100)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1888,7 +1889,7 @@ func TestMemdbAddUpdateTest_5(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1896,45 +1897,45 @@ func TestMemdbAddUpdateTest_5(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 50)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 5)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
 	initObjectStore()
 	relations = []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 	generateObjectReferences(relations)
 	//Send 50-100
-	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.UpdateObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Send 50-100
-	err = sendObjects(md.AddObjectWithReferences, "c", 50, 100)
+	err = sendObjects(md.AddObjectWithReferences, "c", 5, 10)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[UpdateEvent] = make(map[string]int)
 	kindMap[DeleteEvent] = make(map[string]int)
-	kindMap[CreateEvent]["c"] = 50
-	kindMap[UpdateEvent]["b"] = 100
-	kindMap[DeleteEvent]["b"] = 100
-	kindMap[DeleteEvent]["a"] = 100
+	kindMap[CreateEvent]["c"] = 5
+	kindMap[UpdateEvent]["b"] = 10
+	kindMap[DeleteEvent]["b"] = 10
+	kindMap[DeleteEvent]["a"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 }
@@ -1944,8 +1945,8 @@ func TestMemdbDelAddTest_2(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 
 	generateObjectReferences(relations)
@@ -1959,19 +1960,9 @@ func TestMemdbDelAddTest_2(t *testing.T) {
 	md.WatchObjects("b", &watcher)
 	md.WatchObjects("c", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 100)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
-	AssertOk(t, err, "Error creating object")
-
-	//Make sure we receive no objects
-	kindMap = make(map[EventType]map[string]int)
-	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Millisecond))
-	AssertOk(t, err, "Error verifying objects")
-
-	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 100)
-	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -1979,17 +1970,27 @@ func TestMemdbDelAddTest_2(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Millisecond))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 10)
+	AssertOk(t, err, "Error creating object")
+	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 10)
+	AssertOk(t, err, "Error creating object")
+
+	//Make sure we receive no objects
+	kindMap = make(map[EventType]map[string]int)
+	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Millisecond))
+	AssertOk(t, err, "Error verifying objects")
+
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error creating object")
 	//Make sure we receive objects of b as it has no deps
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[DeleteEvent] = make(map[string]int)
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
-	kindMap[CreateEvent]["c"] = 100
-	kindMap[DeleteEvent]["a"] = 100
-	kindMap[DeleteEvent]["b"] = 100
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
+	kindMap[CreateEvent]["c"] = 10
+	kindMap[DeleteEvent]["a"] = 10
+	kindMap[DeleteEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
@@ -2000,8 +2001,8 @@ func TestMemdbDelAddTest_3(t *testing.T) {
 	kindMap := make(map[EventType]map[string]int)
 
 	relations := []relation{
-		{"a", "b", 0, 100},
-		{"b", "c", 0, 100},
+		{"a", "b", 0, 10},
+		{"b", "c", 0, 10},
 	}
 
 	generateObjectReferences(relations)
@@ -2015,24 +2016,24 @@ func TestMemdbDelAddTest_3(t *testing.T) {
 	md.WatchObjects("b", &watcher)
 	md.WatchObjects("c", &watcher)
 
-	err := sendObjects(md.AddObjectWithReferences, "a", 0, 0)
+	err := sendObjects(md.AddObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 0)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 0)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
-	kindMap[CreateEvent]["a"] = 100
-	kindMap[CreateEvent]["b"] = 100
-	kindMap[CreateEvent]["c"] = 100
+	kindMap[CreateEvent]["a"] = 10
+	kindMap[CreateEvent]["b"] = 10
+	kindMap[CreateEvent]["c"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 0)
+	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 0)
+	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
@@ -2040,22 +2041,22 @@ func TestMemdbDelAddTest_3(t *testing.T) {
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(md.AddObjectWithReferences, "b", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "b", 0, 10)
 	AssertOk(t, err, "Error creating object")
-	err = sendObjects(md.AddObjectWithReferences, "c", 0, 100)
+	err = sendObjects(md.AddObjectWithReferences, "c", 0, 10)
 	AssertOk(t, err, "Error creating object")
 
-	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 100)
+	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 10)
 	AssertOk(t, err, "Error creating object")
 	//Make sure we receive objects of b as it has no deps
 	kindMap = make(map[EventType]map[string]int)
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[DeleteEvent] = make(map[string]int)
-	kindMap[DeleteEvent]["a"] = 100
-	kindMap[DeleteEvent]["b"] = 100
-	kindMap[DeleteEvent]["c"] = 100
-	kindMap[CreateEvent]["c"] = 100
-	kindMap[CreateEvent]["b"] = 100
+	kindMap[DeleteEvent]["a"] = 10
+	kindMap[DeleteEvent]["b"] = 10
+	kindMap[DeleteEvent]["c"] = 10
+	kindMap[CreateEvent]["c"] = 10
+	kindMap[CreateEvent]["b"] = 10
 	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
