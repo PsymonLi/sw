@@ -12,6 +12,8 @@
 /sw/nic/athena/api/impl
 /sw/nic/athena/apps/athena_app
 -/sw/nic/athena/apps/athena_app/Makefile
+/sw/nic/athena/asm/rxdma
+/sw/nic/athena/asm/txdma
 /sw/nic/athena/p4/p4
 /sw/nic/athena/p4/p4-16
 /sw/nic/athena/p4/rxdma
@@ -33,8 +35,6 @@
 -/sw/nic/apollo/api/impl/artemis
 -/sw/nic/apollo/api/impl/lpm
 -/sw/nic/apollo/api/impl/rfc
-/sw/nic/apollo/asm/athena_rxdma
-/sw/nic/apollo/asm/athena_txdma
 /sw/nic/infra/core
 /sw/nic/apollo/framework
 /sw/nic/apollo/include
