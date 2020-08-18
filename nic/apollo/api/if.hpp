@@ -27,6 +27,7 @@
 #define PDS_IF_UPD_TX_POLICER          0x2
 #define PDS_IF_UPD_TX_MIRROR_SESSION   0x4
 #define PDS_IF_UPD_RX_MIRROR_SESSION   0x8
+#define PDS_IF_UPD_CONN_TRACK_EN       0x10
 
 namespace api {
 
@@ -282,6 +283,14 @@ public:
         return if_info_.host_.tx_policer_;
     }
 
+    /// \brief     return true if connection tracking is enabled or else false
+    /// \return    true or false based on whether connection tracking is enabled
+    ///            or not
+    /// \remark    this API is applicable only for host interfaces
+    bool conn_track_en(void) const {
+        return if_info_.host_.conn_track_en_;
+    }
+
     /// \brief    return port specific information
     /// \return return pointer to the port specific information
     void *port_info(void) { return if_info_.port_.port_info_; }
@@ -435,6 +444,8 @@ private:
             pds_obj_key_t tx_policer_;    ///< tx policer of this host interface
             char name_[SDK_MAX_NAME_LEN]; ///< host interface name
             mac_addr_t mac_;              ///< host interface mac address
+            /// true if connection tracking is enabed
+            bool conn_track_en_;
         } host_;
         struct {
             ip_prefix_t ip_pfx_;       ///< loopback interface IP prefix

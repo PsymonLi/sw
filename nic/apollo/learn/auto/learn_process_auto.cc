@@ -325,8 +325,9 @@ static sdk_ret_t
 process_new_local_mac (learn_ctxt_t *ctxt)
 {
     sdk_ret_t ret;
-    pds_vnic_spec_t spec = { 0 };
+    if_entry *intf;
     uint32_t vnic_obj_id;
+    pds_vnic_spec_t spec = { 0 };
     impl::learn_info_t *impl = &ctxt->pkt_ctxt.impl_info;
 
     // allocate MAC entry, VNIC object id and create new vnic
@@ -349,6 +350,8 @@ process_new_local_mac (learn_ctxt_t *ctxt)
     spec.vnic_encap = impl->encap;
     MAC_ADDR_COPY(spec.mac_addr, ctxt->mac_key.mac_addr);
     spec.host_if = api::uuid_from_objid(ctxt->ifindex);
+    intf = if_db()->find(&spec.host_if);
+    spec.conn_track_en = intf->conn_track_en();
 
     PDS_TRACE_DEBUG("Creating VNIC %s for EP %s", spec.key.str(), ctxt->str());
     return vnic_create(ctxt, &spec);

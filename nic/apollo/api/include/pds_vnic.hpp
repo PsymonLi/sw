@@ -95,6 +95,11 @@ typedef struct pds_vnic_spec_s {
     /// when movable attribute is set to true, this vnic is moveable from one
     /// host to another (e.g., as part of vmotion event)
     bool movable;
+    /// enable or disable connection tracking on the vnic
+    /// NOTE: connection tracking is enabled on vnic, if conn_track_en is set to
+    ///       on the vnic object or corresponding host interface object or
+    ///       security profile object
+    bool  conn_track_en;
 } __PACK__ pds_vnic_spec_t;
 
 /// \brief vnic status

@@ -226,6 +226,7 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         for (uint8_t i = 0; i < num_rx_mirror_session_; i++) {
             rx_mirror_session_[i] = spec->rx_mirror_session[i];
         }
+        if_info_.host_.conn_track_en_ = spec->host_if_info.conn_track_en;
         break;
 
     case IF_TYPE_ETH:
@@ -344,6 +345,9 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
     } else if (type_ == IF_TYPE_HOST) {
         if (if_info_.host_.tx_policer_ != spec->host_if_info.tx_policer) {
             obj_ctxt->upd_bmap |= PDS_IF_UPD_TX_POLICER;
+        }
+        if (if_info_.host_.conn_track_en_ != spec->host_if_info.conn_track_en) {
+            obj_ctxt->upd_bmap |= PDS_IF_UPD_CONN_TRACK_EN;
         }
     }
     if ((num_tx_mirror_session_ != spec->num_tx_mirror_session) ||
