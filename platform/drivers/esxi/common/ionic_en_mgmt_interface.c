@@ -46,7 +46,7 @@ vmk_MgmtCallbackInfo ionic_en_mgmt_cbs[IONIC_EN_MGMT_INTERFACE_CB_NUM] = {
                                  sizeof(ionic_en_fw_flush_params),
                              },
                 .parmTypes = {
-                                 VMK_MGMT_PARMTYPE_IN,
+                                 VMK_MGMT_PARMTYPE_INOUT,
                              },
                 .callbackId = IONIC_EN_MGMT_INTERFACE_CB_FLASH_FW,
         },

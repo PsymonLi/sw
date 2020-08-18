@@ -44,6 +44,7 @@ typedef struct ionic_en_fw_flush_params {
         vmk_uint64 fw_img_size;
         vmk_uint64 uplink_name_addr;
         vmk_Bool is_adminq_based;
+        VMK_ReturnStatus comp_status;
 } __attribute__((__packed__)) ionic_en_fw_flush_params;
 
 

@@ -157,7 +157,8 @@ ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
                                        &priv_data);
         if (status != VMK_OK) {
                 ionic_en_err("Uplink: %s is not found", vmk_NameToString(&uplink_name));
-                return VMK_NOT_FOUND;
+                fw_flush_params->comp_status = status;
+                return VMK_OK;
         }
 
         status = ionic_firmware_update(priv_data,
@@ -169,6 +170,7 @@ ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
                 ionic_en_err("ionic_firmware_update() failed, status: %s",
                              vmk_StatusToString(status));
         }
+        fw_flush_params->comp_status = status;
 
         return VMK_OK;
 }

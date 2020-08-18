@@ -205,9 +205,9 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
                                         VMK_MGMT_NO_INSTANCE_ID,
                                         IONIC_EN_MGMT_INTERFACE_CB_FLASH_FW,
                                         &fw_flush_params);
-        if (rc) {
+        if (rc || fw_flush_params.comp_status) {
                 ionic_print_info(fstream, intfName,"Failed to call ionic_en_mgmt_inf_flush_fw_cb(),"
-                                 " (rcUser=0x%x)", rc);
+                                 " (rcUser=0x%x, comp_status:0x%x)", rc, fw_flush_params.comp_status);
                 rc = HPE_SPP_INSTALL_HW_ERROR;
         }
 
