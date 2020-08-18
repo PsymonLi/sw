@@ -112,3 +112,23 @@ actions:
       disk_space: 20 # 20gb
       use_age: True
       source: creation_date
+  7:
+    action: delete_indices
+    description: Delete firewall logs objects indices that are older than 24 hours
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: regex
+      value: '^.*objectsfirewalllogs.*$'
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y-%m-%dt%H'
+      unit: hours
+      unit_count: 24
+      exclude:

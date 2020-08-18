@@ -264,4 +264,15 @@ func TestESMockFunctions(t *testing.T) {
 		// This function should cause a panic
 		mc.GetRawClient()
 	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("CatIndices should have panicked!")
+			}
+		}()
+
+		// This function should cause a panic
+		mc.CatIndices(context.Background(), []string{}, []string{})
+	}()
 }

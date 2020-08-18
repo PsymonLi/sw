@@ -100,7 +100,7 @@ func GetIndex(dtype globals.DataType, tenant string) string {
 		hour := getClockHourTimeForIndex(time.Now(), 6)
 		return strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", ExternalIndexPrefix, tenant, String(dtype), hour))
 	case globals.FwLogsObjects:
-		return strings.ToLower(fmt.Sprintf("%s.%s", InternalIndexPrefix, String(dtype)))
+		return strings.ToLower(fmt.Sprintf("%s.%s.%s", InternalIndexPrefix, String(dtype), currentDay))
 	case globals.Configs:
 		return strings.ToLower(fmt.Sprintf("%s.%s.%s", ExternalIndexPrefix, tenant, String(dtype)))
 	case globals.Alerts, globals.Events, globals.AuditLogs, globals.DebugLogs:
@@ -112,6 +112,16 @@ func GetIndex(dtype globals.DataType, tenant string) string {
 		return "N/A"
 	}
 
+	return ""
+}
+
+// GetIndexForDay returns the index name for a specific day
+func GetIndexForDay(dtype globals.DataType, tenant string, day time.Time) string {
+	currentDay := day.Local().Format("2006-01-02")
+	switch dtype {
+	case globals.FwLogsObjects:
+		return strings.ToLower(fmt.Sprintf("%s.%s.%s", InternalIndexPrefix, String(dtype), currentDay))
+	}
 	return ""
 }
 
@@ -145,7 +155,7 @@ func String(dtype globals.DataType) string {
 // GetTemplateName returns the template name for the given data type
 func GetTemplateName(dtype globals.DataType) string {
 	switch dtype {
-	case globals.Events, globals.AuditLogs, globals.FwLogs:
+	case globals.Events, globals.AuditLogs, globals.FwLogs, globals.FwLogsObjects:
 		return fmt.Sprintf("%s-template", String(dtype))
 	}
 

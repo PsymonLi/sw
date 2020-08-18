@@ -47,6 +47,15 @@ const (
 	contextDeadline = 90 * time.Second
 )
 
+// CatIndicesResponse represents the response of CatIndices API call
+type CatIndicesResponse []CatIndicesResponseRow
+
+// CatIndicesResponseRow represents the response of CatIndices API call
+type CatIndicesResponseRow struct {
+	Index              string
+	CreationDateString string
+}
+
 type request func() (interface{}, error)
 
 type options struct {
@@ -177,6 +186,58 @@ func (e *Client) Version() (string, error) {
 // IndexNames returns the names of indices present on Es
 func (e *Client) IndexNames() ([]string, error) {
 	return e.esClient.IndexNames()
+}
+
+// CatIndices returns the index stats for the given fields. It will return these details for all the indices present in elastic.
+// Columns represents the list of columns to return.
+// Sort is used for sorting the output.
+func (e *Client) CatIndices(ctx context.Context, columns []string, sort []string) (CatIndicesResponse, error) {
+	retryCount := 0
+	retryInterval := initialRetryInterval
+
+	var rResp interface{}
+	var rErr error
+	var retry bool
+
+	for {
+		retry, rResp, rErr = e.Perform(func() (interface{}, error) {
+			ctxWithDeadline, cancel := context.WithDeadline(ctx, time.Now().Add(contextDeadline))
+			defer cancel()
+
+			// create index
+			resp, err := e.esClient.CatIndices().Columns(columns...).Sort(sort...).Do(ctxWithDeadline)
+			if err != nil {
+				return nil, err
+			}
+
+			response := CatIndicesResponse{}
+			for _, row := range resp {
+				temp := CatIndicesResponseRow{Index: row.Index, CreationDateString: row.CreationDateString}
+				response = append(response, temp)
+			}
+
+			return response, err
+		}, retryCount, rResp, rErr)
+
+		if retry {
+			if 2*retryInterval > maxRetryInterval {
+				retryInterval = maxRetryInterval
+			} else {
+				retryInterval = retryInterval * 2
+			}
+
+			time.Sleep(retryInterval)
+
+			retryCount++
+			continue
+		}
+
+		if rErr != nil {
+			return nil, rErr
+		}
+
+		return rResp.(CatIndicesResponse), nil
+	}
 }
 
 // CreateIndexTemplate creates the requested index template with given setting and name.

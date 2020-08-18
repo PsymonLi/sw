@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/elastic"
 	"github.com/pensando/sw/venice/utils/log"
 	objstore "github.com/pensando/sw/venice/utils/objstore/client"
@@ -162,9 +164,22 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 			maxResults = vw.numFwLogObjectsToDelete - objectsFetched
 		}
 
-		objs, num, err := vw.getOldestFwLogObjects(maxResults)
+		var objs map[string][]*FwLogObjectV1
+		var num int
+		var err error
+		utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+			return func() (interface{}, error) {
+				objs, num, err = vw.getOldestFwLogObjects(maxResults)
+				if err != nil {
+					vw.logger.Debugf("error in fetching old object keys from elastic, err: %s", err.Error())
+					return nil, err
+				}
+				return objs, err
+			}()
+		}, time.Second*5, 100)
+
 		if err != nil {
-			vw.logger.Debugf("error in fetching old object keys from elastic, err: %s", err.Error())
+			vw.logger.Infof("error in fetching old object keys from elastic, err: %s", err.Error())
 			return
 		}
 
@@ -298,31 +313,47 @@ func (vw *vosDiskWatcher) getOldestFwLogObjects(maxResults int) (map[string][]*F
 
 	// Per tenant objects
 	objs := map[string][]*FwLogObjectV1{}
-
-	// execute query
-	result, err := vw.elasticClient.Search(vw.ctx,
-		elastic.GetIndex(globals.FwLogsObjects, ""), // index
-		query,             // query to be executed
-		nil,               // no aggregation
-		0,                 // from
-		int32(maxResults), // to
-		"creationts",      // sorting is required
-		true)              // sort in desc order
-
+	catIndicesResponse, err := vw.elasticClient.CatIndices(vw.ctx, []string{"creation.date.string"}, []string{"creation.date.string"})
 	if err != nil {
-		vw.logger.Errorf("failed to query elasticsearch, err: %+v", err)
-		return nil, 0, fmt.Errorf("failed to query elasticsearch, err: %+v", err)
+		return nil, 0, fmt.Errorf("failed to call CatIndices API, err: %+v", err)
 	}
 
-	// parse the result
-	for _, res := range result.Hits.Hits {
-		var obj FwLogObjectV1
-		if err := json.Unmarshal(*res.Source, &obj); err != nil {
-			vw.logger.Debugf("failed to unmarshal elasticsearch result, err: %+v", err)
-			continue
+	for _, resp := range catIndicesResponse {
+		if strings.Contains(resp.Index, elastic.String(globals.FwLogsObjects)) {
+			// execute query
+			result, err := vw.elasticClient.Search(vw.ctx,
+				resp.Index,        // index
+				query,             // query to be executed
+				nil,               // no aggregation
+				0,                 // from
+				int32(maxResults), // to
+				"creationts",      // sorting is required
+				true)              // sort in asc order
+
+			if err != nil {
+				if elastic.IsIndexNotExists(err) {
+					continue
+				}
+
+				vw.logger.Errorf("failed to query elasticsearch, err: %+v", err)
+				return nil, 0, fmt.Errorf("failed to query elasticsearch, err: %+v", err)
+			}
+
+			// parse the result
+			for _, res := range result.Hits.Hits {
+				var obj FwLogObjectV1
+				if err := json.Unmarshal(*res.Source, &obj); err != nil {
+					vw.logger.Debugf("failed to unmarshal elasticsearch result, err: %+v", err)
+					continue
+				}
+				objs[obj.Tenant] = append(objs[obj.Tenant], &obj)
+				objectsFetched++
+			}
+
+			if objectsFetched >= maxResults {
+				break
+			}
 		}
-		objs[obj.Tenant] = append(objs[obj.Tenant], &obj)
-		objectsFetched++
 	}
 
 	vw.logger.Debugf("GetOldestFwLogObjects response: {%+v}", objs)

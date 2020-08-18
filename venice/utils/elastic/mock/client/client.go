@@ -136,7 +136,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 			if _, indexFound := e.indexes[obj.Index]; indexFound && objOk {
 				e.docs[obj.Index][obj.ID] = mc
 				response.Items = append(response.Items,
-					map[string]*es.BulkResponseItem{elastic.Index: &es.BulkResponseItem{
+					map[string]*es.BulkResponseItem{elastic.Index: {
 						Index: obj.Index, Id: obj.ID},
 					})
 			} else {
@@ -147,7 +147,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 			if _, indexFound := e.indexes[obj.Index]; indexFound && objOk {
 				e.docs[obj.Index][obj.ID] = mc
 				response.Items = append(response.Items,
-					map[string]*es.BulkResponseItem{elastic.Update: &es.BulkResponseItem{
+					map[string]*es.BulkResponseItem{elastic.Update: {
 						Index: obj.Index, Id: obj.ID},
 					})
 			} else {
@@ -157,7 +157,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 			if _, indexFound := e.indexes[obj.Index]; indexFound {
 				delete(e.docs[obj.Index], obj.ID)
 				response.Items = append(response.Items,
-					map[string]*es.BulkResponseItem{elastic.Delete: &es.BulkResponseItem{
+					map[string]*es.BulkResponseItem{elastic.Delete: {
 						Index: obj.Index, Id: obj.ID},
 					})
 			}
@@ -241,5 +241,10 @@ func (e *mockClient) IndexNames() ([]string, error) {
 
 // GetRawClient - used for testing purposes only
 func (e *mockClient) GetRawClient() *es.Client {
+	panic("not implemented")
+}
+
+// CatIndices returns the indices details for the given fields. It will return these details for all the indices present in elastic.
+func (e *mockClient) CatIndices(ctx context.Context, columns []string, sort []string) (elastic.CatIndicesResponse, error) {
 	panic("not implemented")
 }

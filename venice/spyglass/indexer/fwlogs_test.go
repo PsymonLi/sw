@@ -92,7 +92,7 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 	credsMgrChannel <- mockCredentialManager
 	setupVos(t, ctx, logger, "127.0.0.1", credsMgrChannel)
 	setupSpyglass(ctx, t, r, esClient, logger, mockCredentialManager)
-	setupTmAgent(ctx, t, r, mockCredentialManager)
+	tmAgentState := setupTmAgent(ctx, t, r, mockCredentialManager)
 	startFwLogGen(100, 5000)
 
 	// TestVerifyFirewallIndexName verifies that the firewall index is created
@@ -122,7 +122,7 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 
 	// Verify rate limiting done at Spyglass
 	t.Run("TestVerifyVosRateLimitingAndEventsAtSpyglass", func(t *testing.T) {
-		verifyVosRateLimitingAndEventsAtSpyglass(t)
+		verifyVosRateLimitingAndEventsAtSpyglass(t, tmAgentState)
 	})
 }
 
@@ -476,7 +476,10 @@ func verifyDebugRESTHandle(ctx context.Context, t *testing.T, r resolver.Interfa
 	AssertOk(t, err, "error is POSTing request for /debug/config")
 }
 
-func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T) {
+func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T, tmagentState *tmagentstate.PolicyState) {
+	// update hostname on the agent
+	tmagentState.UpdateHostName(dscID)
+
 	// Clear the old events
 	mockEventsRecorder.ClearEvents()
 

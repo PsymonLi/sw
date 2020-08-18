@@ -697,8 +697,8 @@ func (idr *Indexer) initSearchDB() error {
 			return err
 		}
 
-		// Create index and mapping for Firewall logs
-		if err := idr.createIndexHelper(globals.FwLogsObjects, ""); err != nil && !elastic.IsIndexExists(err) {
+		if err := idr.createFwLogsObjectsIndexTemplate(); err != nil {
+			idr.logger.Errorf("failed to create fwlogsobjects template in elastic, err: %v", err)
 			return err
 		}
 	}
@@ -941,7 +941,26 @@ func (idr *Indexer) createFwLogsIndexTemplate() error {
 	// create events template
 	if err := idr.elasticClient.CreateIndexTemplate(
 		context.Background(), elastic.GetTemplateName(globals.FwLogs), mapping); err != nil {
-		idr.logger.Errorf("failed to create events index template, err: %v", err)
+		idr.logger.Errorf("failed to create %+v index template, err: %v", globals.FwLogs, err)
+		return err
+	}
+
+	return nil
+}
+
+// createFwLogsIndexTemplate helper function to create index template for fwlogs.
+func (idr *Indexer) createFwLogsObjectsIndexTemplate() error {
+	mapping, err := idr.getIndexMapping(globals.FwLogsObjects)
+
+	if err != nil {
+		idr.logger.Errorf("failed get elastic mapping for fwlog object, err: %v", err)
+		return err
+	}
+
+	// create events template
+	if err := idr.elasticClient.CreateIndexTemplate(
+		context.Background(), elastic.GetTemplateName(globals.FwLogsObjects), mapping); err != nil {
+		idr.logger.Errorf("failed to create %+v index template, err: %v", globals.FwLogsObjects, err)
 		return err
 	}
 

@@ -82,6 +82,9 @@ type ESClient interface {
 
 	// GetRawClient - used for testing purposes only
 	GetRawClient() *es.Client
+
+	// CatIndices returns the indices details for the given fields. It will return these details for all the indices present in elastic.
+	CatIndices(ctx context.Context, columns []string, sort []string) (CatIndicesResponse, error)
 }
 
 // Scroller provides io.Reader interface to scrolling in Elastic. This is not thread safe.

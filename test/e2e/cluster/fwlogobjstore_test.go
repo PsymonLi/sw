@@ -432,13 +432,13 @@ func verifyMinioObjectsOnElastic(c elastic.ESClient, fwLogClient objstore.Client
 
 			// execute query
 			result, err := c.Search(context.Background(),
-				indexName,       // index
-				query,           // query to be executed
-				nil,             // no aggregation
-				0,               // from
-				maxResults,      // to
-				"creation-time", // sorting is required
-				true)            // sort in desc order
+				indexName,    // index
+				query,        // query to be executed
+				nil,          // no aggregation
+				0,            // from
+				maxResults,   // to
+				"creationts", // sorting is required
+				true)         // sort in asc order
 
 			Expect(err).NotTo(HaveOccurred())
 

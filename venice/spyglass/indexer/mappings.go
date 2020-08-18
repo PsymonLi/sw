@@ -189,6 +189,7 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(2),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
+			mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", elastic.String(dType))),
 			mapper.WithCharFilter(),
 			mapper.WithAllcationMaxRetries(10))
 		if err != nil {
