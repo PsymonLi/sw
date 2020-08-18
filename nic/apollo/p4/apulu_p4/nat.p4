@@ -108,6 +108,7 @@ table nat {
 }
 
 @pragma stage 1
+@pragma hbm_table
 @pragma index_table
 table nat2 {
     reads {

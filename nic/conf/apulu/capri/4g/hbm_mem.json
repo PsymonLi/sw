@@ -616,6 +616,13 @@
             "_comment": "1M * 32B"
         },
         {
+            "name": "nat2",
+            "kind": "cfgtbl",
+            "size": "256K",
+            "cache": "p4eg",
+            "_comment": "8K * 32B"
+        },
+        {
             "name": "tx-scheduler",
             "kind": "cfgtbl",
             "size": "2048K"

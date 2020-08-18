@@ -654,6 +654,13 @@
             "_comment": "TBD"
         },
         {
+            "name": "nat2",
+            "kind": "cfgtbl",
+            "size": "256K",
+            "cache": "p4eg",
+            "_comment": "8K * 32B"
+        },
+        {
             "name": "qos-hbm-fifo",
             "kind": "cfgtbl",
             "size": "256M",

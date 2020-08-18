@@ -13,8 +13,7 @@
 #include <nic/p4/common/defines.h>
 #include <nic/apollo/p4/include/defines.h>
 #include <nic/vpp/impl/nat.h>
-#include <gen/p4gen/apulu/include/p4pd.h>
-#include "gen/p4gen/p4/include/ftl.h"
+#include "gen/p4gen/p4/include/ftl2.h"
 
 using namespace sdk;
 using namespace sdk::table;
@@ -22,12 +21,9 @@ using namespace sdk::platform;
 
 extern "C" {
 
-p4pd_table_properties_t g_nat_tbl_ctx;
-
 int
 pds_nat_init(void)
 {
-    p4pd_table_properties_get(P4TBL_ID_NAT, &g_nat_tbl_ctx);
     return 0;
 }
 
@@ -38,8 +34,8 @@ pds_snat_tbl_write_ip4(int nat_index, uint32_t ip, uint16_t port)
     nat_rewrite_entry_t nat_rewrite_entry;
 
     memset(&nat_rewrite_entry, 0, sizeof(nat_rewrite_entry_t));
-    nat_rewrite_entry.set_port(port);
-    *(uint32_t *)&nat_rewrite_entry.ip[0] = ip;
+    nat_rewrite_entry.set_port(htons(port));
+    *(uint32_t *)&nat_rewrite_entry.ip[12] = htonl(ip);
  
     ret = nat_rewrite_entry.write(nat_index);
     if (ret != SDK_RET_OK) {
@@ -53,14 +49,19 @@ pds_snat_tbl_write_ip4(int nat_index, uint32_t ip, uint16_t port)
 int
 pds_dnat_tbl_write_ip4(int nat_index, uint32_t ip, uint16_t port)
 {
-    // TODO : change to more efficient mmap and write
-    nat_actiondata_t nat_data = { 0 };
+    sdk_ret_t ret = SDK_RET_OK;
+    nat2_rewrite_entry_t nat2_rewrite_entry;
 
-    *(uint32_t *)&nat_data.action_u.nat_nat_rewrite.ip[0] = ip;
-    nat_data.action_u.nat_nat_rewrite.port = port;
-
-    p4pd_entry_write(P4TBL_ID_NAT2, nat_index, NULL, NULL, &nat_data);
-
+    memset(&nat2_rewrite_entry, 0, sizeof(nat2_rewrite_entry_t));
+    nat2_rewrite_entry.set_port(htons(port));
+    *(uint32_t *)&nat2_rewrite_entry.ip[12] = htonl(ip);
+ 
+    ret = nat2_rewrite_entry.write(nat_index);
+    if (ret != SDK_RET_OK) {
+        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
+        return ret;
+    }
+    
     return 0;
 }
 
@@ -76,8 +77,8 @@ pds_snat_tbl_read_ip4(int nat_index, uint32_t *ip, uint16_t *port)
         return ret;
     }
 
-    *port = nat_rewrite_entry.get_port();
-    *ip = *(uint32_t *)&nat_rewrite_entry.ip[0];
+    *port = ntohs(nat_rewrite_entry.get_port());
+    *ip = ntohl(*(uint32_t *)&nat_rewrite_entry.ip[12]);
  
     return 0;
 }
@@ -85,13 +86,18 @@ pds_snat_tbl_read_ip4(int nat_index, uint32_t *ip, uint16_t *port)
 int
 pds_dnat_tbl_read_ip4(int nat_index, uint32_t *ip, uint16_t *port)
 {
-    // TODO : change to more efficient mmap and write
-    nat_actiondata_t nat_data = { 0 };
+    sdk_ret_t ret = SDK_RET_OK;
+    nat2_rewrite_entry_t nat2_rewrite_entry;
 
-    p4pd_entry_read(P4TBL_ID_NAT2, nat_index, NULL, NULL, &nat_data);
-    *ip = *(uint32_t *)&nat_data.action_u.nat_nat_rewrite.ip[0];
-    *port = nat_data.action_u.nat_nat_rewrite.port;
+    ret = nat2_rewrite_entry.read(nat_index);
+    if (ret != SDK_RET_OK) {
+        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
+        return ret;
+    }
 
+    *port = ntohs(nat2_rewrite_entry.get_port());
+    *ip = ntohl(*(uint32_t *)&nat2_rewrite_entry.ip[12]);
+ 
     return 0;
 }
 
