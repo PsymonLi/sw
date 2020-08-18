@@ -9,8 +9,8 @@ import utils
 class NodeObject():
     def __init__(self, node="node1"):
         api.Init()
-        grpcmsg = interface_pb2.LifGetRequest()
-        objs = api.client_node[node].Retrieve(api.ObjectTypes.LIF, [grpcmsg])
+        grpcmsg = interface_pb2.InterfaceGetRequest()
+        objs = api.client_node[node].Retrieve(api.ObjectTypes.INTERFACE, [grpcmsg])
 
         # save node uuid
         macaddress = utils.PdsUuid.GetUuidMacString((objs[0].Response[0].Spec.Id))
@@ -23,14 +23,16 @@ class NodeObject():
 
         # save ctrl0 mac
         for resp in objs[0].Response:
-            if resp.Spec.Type == types_pb2.LIF_TYPE_CONTROL:
-                self.vcn_intf_mac_address = utils.getnum2mac(resp.Spec.MacAddress)
-                self.vcn_intf_if_index = hex(utils.LifIfIdx2HostIfIdx(resp.Status.IfIndex))
-            elif resp.Spec.Type == types_pb2.LIF_TYPE_HOST:
-                host_ifidx = hex(utils.LifIfIdx2HostIfIdx(resp.Status.IfIndex))
-                self.intf_mac_address[resp.Status.Name] = utils.getnum2mac(resp.Spec.MacAddress)
-                self.intf_mac_address_by_if_index[host_ifidx] = utils.getnum2mac(resp.Spec.MacAddress)
-                self.intf_if_index[resp.Status.Name] = host_ifidx
+            ifType = resp.Spec.WhichOneof("ifinfo")
+            if ifType == "HostIfSpec":
+                if "ctrl" in resp.Status.HostIfStatus.Name:
+                    self.vcn_intf_mac_address = utils.getnum2mac(resp.Status.HostIfStatus.MacAddress)
+                    self.vcn_intf_if_index = hex(resp.Status.IfIndex)
+                else:
+                    host_ifidx = hex(resp.Status.IfIndex)
+                    self.intf_mac_address[resp.Status.HostIfStatus.Name] = utils.getnum2mac(resp.Status.HostIfStatus.MacAddress)
+                    self.intf_mac_address_by_if_index[host_ifidx] = utils.getnum2mac(resp.Status.HostIfStatus.MacAddress)
+                    self.intf_if_index[resp.Status.HostIfStatus.Name] = host_ifidx
         return
 
     def GetNodeMac(self):
