@@ -1,7 +1,7 @@
 # This should be executed from <sw> directory
 FROM registry.test.pensando.io:5000/pensando/nic:1.42
 LABEL maintainer="Pensando Systems Inc"
-COPY ./nic/athena/tools/sanity/customer-docker/dev_docker_entrypoint.sh /entrypoint.sh
+COPY ./nic/athena/test/sanity/customer-docker/dev_docker_entrypoint.sh /entrypoint.sh
 ADD  ./sw.tar /
 ADD  ./inc.tar /usr/local/include
 ENTRYPOINT ["/entrypoint.sh"]

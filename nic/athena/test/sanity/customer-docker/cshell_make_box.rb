@@ -38,7 +38,7 @@ end
 
 workdir "/sw"
 
-copy "nic/athena/tools/sanity/customer-docker/cshell_make_entrypoint.sh", "/entrypoint.sh"
+copy "nic/athena/test/sanity/customer-docker/cshell_make_entrypoint.sh", "/entrypoint.sh"
 run "chmod +x /entrypoint.sh"
 
 entrypoint "/entrypoint.sh"
