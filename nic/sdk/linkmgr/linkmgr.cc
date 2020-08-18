@@ -1566,6 +1566,14 @@ port_get (void *pd_p, port_args_t *args)
                         args->oper_status =
                             port_oper_status_t::PORT_OPER_STATUS_UP;
                         break;
+#ifdef ELBA
+                    } else {
+                        // TODO elba bring up hack. cleanup once cpld issues
+                        // are resolved and able to get status from marvell.
+                        args->oper_status =
+                            port_oper_status_t::PORT_OPER_STATUS_UP;
+                        break;
+#endif
                     }
                 }
             }
