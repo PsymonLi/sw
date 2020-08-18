@@ -5,6 +5,7 @@ meta:
     cfgmode     : netagent
     nicmode     : classic
     os          : [ linux, freebsd ]
+    allowduplicatebundle : True
 
 packages:
     - iota.test.apulu
@@ -41,9 +42,29 @@ common:
 testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
+        - networking/underlay_direct.testbundle
+        - networking/networking.testbundle
+        - networking/h2h.testbundle
+        - arp_proxy.testbundle
+        - h2vrip.testbundle
+        - api_crud/api_crud.testbundle
+        - api_crud/dhcp_crud.testbundle
+        - p4ctl/p4ctl.testbundle
+        - techsupport/techsupport.testbundle
         - firewall/normalization.testbundle
         - upgrade/hitless.testbundle
+        - networking/underlay_direct.testbundle
+        - networking/networking.testbundle
+        #- networking/h2h.testbundle
+        #- arp_proxy.testbundle
+        #- h2vrip.testbundle
+        #- api_crud/api_crud.testbundle
+        #- api_crud/dhcp_crud.testbundle
+        #- p4ctl/p4ctl.testbundle
+        #- techsupport/techsupport.testbundle
+        - firewall/normalization.testbundle
         - upgrade/hitless_neg.testbundle
+        #- upgrade/pds_graceful.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

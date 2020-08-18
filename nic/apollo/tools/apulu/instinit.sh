@@ -152,7 +152,7 @@ then
     start_sysmgr
 elif [ "$1" = "switchover" ]
 then
-    bringup_intfs
+    #bringup_intfs
     start_cronjobs
     start_ssh
 elif [ "$1" = "shutdown" ]
