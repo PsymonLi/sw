@@ -30,18 +30,31 @@ typedef struct schema_ {
 typedef std::pair<std::string, uint64_t> metrics_counter_pair_t;
 typedef std::vector<metrics_counter_pair_t> counters_t;
 
-// Returns a handle. NULL in case of failure
-extern void *create(schema_t *schema);
+// register a metrics schema with metrics module
+// this API can also be used to register counter blocks i.e., variable
+// number of counters per key and all counters are of same type (i.e,
+// there is no need to enumerate each counter)
+//
+// returns a handle. NULL in case of failure
+extern void *create(schema_t *schema, bool counter_block = false);
 
-extern void row_address(void *handler, key_t key, void *address);
+// register memory address of a metrics table for a given key
+// using the handle created before. when counter_block_size is
+// non-zero, it indicates the number of valid counters in the
+// counter block (for exporting only relevant counters)
+// NOTE: this API can be used with same handle & key multiple times
+//       as the address can change during the lifetime of an associated
+//       object
+extern void row_address(void *handle, key_t key, void *address,
+                        uint32_t counter_block_size = 0);
 
-extern void metrics_update(void *handler, key_t key, uint64_t values[]);
+extern void metrics_update(void *handle, key_t key, uint64_t values[]);
 
 // For reader
 extern void *metrics_open(const char *name);
-extern counters_t metrics_read(void *handler, key_t key);
+extern counters_t metrics_read(void *handle, key_t key);
 
-} // namespace metrics
-} // namespace sdk
+}    // namespace metrics
+}    // namespace sdk
 
 #endif    // __METRICS_HPP__

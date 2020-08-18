@@ -210,7 +210,7 @@ load_table_ (const char *name)
         delete tbl;
         return NULL;
     }
-    
+
     tbl->type = srlzd->type;
 
     for (unsigned int i = 0; i < srlzd->counter_count; i++) {
@@ -232,7 +232,7 @@ load_table_ (const char *name)
 }
 
 void *
-create (schema_t *schema)
+create (schema_t *schema, bool counter_block)
 {
     metrics_table_t *tbl;
     TableMgrUptr tbmgr;
@@ -257,8 +257,9 @@ create (schema_t *schema)
 }
 
 void
-row_address(void *handler, key_t key, void *address) {
-    metrics_table_t *tbl = (metrics_table_t *)handler;
+row_address(void *handle, key_t key, void *address,
+            uint32_t counter_block_size) {
+    metrics_table_t *tbl = (metrics_table_t *)handle;
     assert(tbl->type == HBM);
 
     error err = tbl->tbl->Publish((char *)&key, sizeof(key), (char *)&address,
@@ -268,9 +269,9 @@ row_address(void *handler, key_t key, void *address) {
 }
 
 void
-metrics_update (void *handler, key_t key, uint64_t *values)
+metrics_update (void *handle, key_t key, uint64_t *values)
 {
-    metrics_table_t *tbl = (metrics_table_t *)handler;
+    metrics_table_t *tbl = (metrics_table_t *)handle;
 
     error err = tbl->tbl->Publish((char *)&key, sizeof(key), (char *)values,
                                   tbl->row_size);
@@ -295,13 +296,13 @@ metrics_open (const char *name)
 }
 
 static counters_t
-metrics_read_values (void  *handler, key_t key)
+metrics_read_values (void *handle, key_t key)
 {
     metrics_table_t *tbl;
     counters_t counters;
     uint64_t *values;
 
-    tbl = (metrics_table_t *)handler;
+    tbl = (metrics_table_t *)handle;
 
     values = (uint64_t *)tbl->tbl->Find((char *)&key, sizeof(key));
 
@@ -334,13 +335,13 @@ read_value (uint64_t base, unsigned int offset)
 }
 
 static counters_t
-metrics_read_pointers (void  *handler, key_t key)
+metrics_read_pointers (void *handle, key_t key)
 {
     metrics_table_t *tbl;
     counters_t counters;
     uint64_t *base;
 
-    tbl = (metrics_table_t *)handler;
+    tbl = (metrics_table_t *)handle;
 
     base = (uint64_t *)tbl->tbl->Find((char *)&key, sizeof(key));
     if (base == NULL) {
@@ -361,16 +362,16 @@ metrics_read_pointers (void  *handler, key_t key)
 }
 
 counters_t
-metrics_read (void  *handler, key_t key)
+metrics_read (void *handle, key_t key)
 {
     metrics_table_t *tbl;
 
-    tbl = (metrics_table_t *)handler;
+    tbl = (metrics_table_t *)handle;
 
     if (tbl->type == SW) {
-        return metrics_read_values(handler, key);
+        return metrics_read_values(handle, key);
     } else {
-        return metrics_read_pointers(handler, key);
+        return metrics_read_pointers(handle, key);
     }
 }
 

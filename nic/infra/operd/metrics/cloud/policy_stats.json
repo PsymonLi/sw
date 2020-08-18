@@ -1,10 +1,9 @@
 {
-  "Package": "rulemetrics",
   "Messages": [
     {
-      "Name": "RuleMetrics",
-      "Description": "policy rule statistics",
-      "DisplayName": "policy rule statistics",
+      "Name": "PolicyMetrics",
+      "Description": "policy statistics",
+      "DisplayName": "policy statistics",
       "Fields": [
         {
           "Name": "Hits",
