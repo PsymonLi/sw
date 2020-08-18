@@ -11,8 +11,8 @@
 #include "nic/athena/api/include/pds_flow_session_info.h"
 #include "nic/athena/api/include//pds_flow_session_rewrite.h"
 #include "gen/p4gen/p4/include/p4pd.h"
-#include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/p4/include/athena_table_sizes.h"
+#include "nic/athena/p4/include/defines.h"
+#include "nic/athena/p4/include/table_sizes.h"
 
 #include "athena_gtest.hpp"
 

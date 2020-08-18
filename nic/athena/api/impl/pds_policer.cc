@@ -15,7 +15,7 @@
 #include "nic/athena/api/include/pds_policer.h"
 #include "gen/p4gen/athena/include/p4pd.h"
 #include "gen/p4gen/p4/include/ftl.h"
-#include "nic/apollo/p4/athena_p4-16/athena_defines.h"
+#include "nic/athena/p4/p4-16/athena_defines.h"
 #include "nic/athena/api/impl/pds_policer_impl.hpp"
 
 using namespace sdk;

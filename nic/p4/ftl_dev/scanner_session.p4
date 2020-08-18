@@ -4,8 +4,8 @@
 
 #if defined(ARTEMIS)
 #include "nic/apollo/p4/artemis_txdma/common_txdma_dummy.p4"
-#elif defined(ATEHNA)
-#include "nic/apollo/p4/athena_txdma/common_txdma_dummy.p4"
+#elif defined(ATHENA)
+#include "nic/athena/p4/txdma/common_txdma_dummy.p4"
 #else
 #include "nic/p4/common-p4+/common_txdma_dummy.p4"
 #endif
@@ -113,7 +113,7 @@
 #if defined(ARTEMIS)
 #include "nic/apollo/p4/artemis_txdma/common_txdma.p4"
 #elif defined(ATHENA)
-#include "nic/apollo/p4/athena_txdma/common_txdma.p4"
+#include "nic/athena/p4/txdma/common_txdma.p4"
 #else
 #include "nic/p4/common-p4+/common_txdma.p4"
 #endif
@@ -134,7 +134,7 @@ header_type session_kivec0_t {
         cb_cfg_discard                  : 1;
         force_session_expired_ts        : 1;    // for SIM platform debug
         force_conntrack_expired_ts      : 1;
-        
+
         // The following is arranged in big endian layout,
         // with higher rounds/sessions in the MSB
         round3_session3_expired         : 1;
@@ -222,7 +222,7 @@ SESSION_KIVEC_AGE_TMO(5)
     modify_field(scratch.tcp_timewait_tmo, kivec.tcp_timewait_tmo);             \
     modify_field(scratch.tcp_rst_tmo, kivec.tcp_rst_tmo);                       \
     modify_field(scratch.others_tmo, kivec.others_tmo);                         \
-    
+
 /*
  * kivec7: header union with to_stage7 (128 bits max)
  */
@@ -232,11 +232,11 @@ header_type session_kivec7_t {
         poller_qstate_addr              : 64;
     }
 }
-        
+
 #define SESSION_KIVEC7_USE(scratch, kivec)                                      \
     modify_field(scratch.lif, kivec.lif);                                       \
     modify_field(scratch.poller_qstate_addr, kivec.poller_qstate_addr);         \
-    
+
 /*
  * kivec8: header union with stage_2_stage for table 0 (160 bits max)
  */
@@ -260,7 +260,7 @@ header_type session_kivec8_t {
     modify_field(scratch.expiry_maps_full, kivec.expiry_maps_full);             \
     modify_field(scratch.range_has_posted, kivec.range_has_posted);             \
     modify_field(scratch.resched_uses_slow_timer, kivec.resched_uses_slow_timer);\
-    
+
 /*
  * kivec9: header union with stage_2_stage for table 3 (160 bits max)
  */
@@ -280,7 +280,7 @@ header_type session_kivec9_t {
     modify_field(scratch.scan_invocations, kivec.scan_invocations);             \
     modify_field(scratch.range_elapsed_ticks, kivec.range_elapsed_ticks);       \
     modify_field(scratch.metrics0_end, kivec.metrics0_end);                     \
-    
+
 /*
  * Header unions for d-vector
  */
@@ -364,7 +364,7 @@ metadata session_kivec9_t               session_kivec9_scratch;
  * PHV following k (for app DMA etc.)
  */
 @pragma dont_trim
-metadata ring_entry_t                   ring_entry; 
+metadata ring_entry_t                   ring_entry;
 
 @pragma dont_trim
 metadata doorbell_data_raw_t            db_data_no_index;
@@ -377,23 +377,23 @@ metadata doorbell_data_raw_t            db_data_qfull_repost_ticks;
 
 @pragma dont_trim
 @pragma pa_align 512
-metadata poller_slot_data_t             poller_slot_data; 
+metadata poller_slot_data_t             poller_slot_data;
 
 @pragma dont_trim
 metadata doorbell_data_raw_t            db_data_range_empty_ticks;
 
 @pragma dont_trim
-metadata ring_pi_t                      poller_posted_pi; 
+metadata ring_pi_t                      poller_posted_pi;
 
 @pragma dont_trim
-metadata scanner_session_fsm_state_t    fsm_state_next; 
+metadata scanner_session_fsm_state_t    fsm_state_next;
 
 @pragma dont_trim
 metadata poller_range_has_posted_t      poller_range_has_posted;
 
 @pragma dont_trim
 @pragma pa_align 512
-metadata poller_slot_data_t             poller_null_data; 
+metadata poller_slot_data_t             poller_null_data;
 
 // DMA commands metadata
 @pragma dont_trim
@@ -757,7 +757,7 @@ action conntrack_round3_session3(CONNTRACK_INFO_DATA)
 /*****************************************************************************
  *  Summarize result into bitmap
  *****************************************************************************/
-SCANNER_SESSION_SUMMARIZE_PRAGMA 
+SCANNER_SESSION_SUMMARIZE_PRAGMA
 action session_summarize(SCANNER_SESSION_SUMMARIZE_DATA)
 {
     SESSION_KIVEC0_USE(session_kivec0_scratch, session_kivec0)

@@ -5,7 +5,7 @@
 #include "ingress.h"
 #include "capri-macros.h"
 #include "ftl_dev_shared.h"
-#include "nic/apollo/p4/athena_p4-16/athena_defines.h"
+#include "nic/athena/p4/p4-16/athena_defines.h"
 
 #define BITS_PER_BYTE                           8
 #define SIZE_IN_BITS(bytes)                     ((bytes) * BITS_PER_BYTE)

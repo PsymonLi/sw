@@ -16,7 +16,7 @@
 #include "nic/athena/api/include/pds_flow_session_info.h"
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "nic/athena/api/impl/ftl_pollers_client.hpp"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/athena/p4/include/defines.h"
 #include "fte_athena.hpp"
 
 namespace test {

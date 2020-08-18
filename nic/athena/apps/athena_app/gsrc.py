@@ -159,9 +159,9 @@ def copy_mod(dst):
 
     print('Dict len =%s ' % len(d1))
 
-    d2 = {'libp4pd_athena_rxdma' : '/sw/nic/apollo/p4/athena_rxdma',
-            'libp4pd_athena_txdma' : '/sw/nic/apollo/p4/athena_txdma',
-            'libp4pd_athena' : '/sw/nic/apollo/p4/athena_p4',
+    d2 = {'libp4pd_athena_rxdma' : '/sw/nic/athena/p4/rxdma',
+            'libp4pd_athena_txdma' : '/sw/nic/athena/p4/txdma',
+            'libp4pd_athena' : '/sw/nic/athena/p4/p4',
             'libsdkp4utils' : '/sw/nic/sdk/lib/p4',
             'libsdklinkmgrcsr' : '/sw/nic/sdk/linkmgr/csr',
             'libnicmgr_athena' : '/sw/platform/src/lib/nicmgr/src',
@@ -309,6 +309,7 @@ def copy_includes (dest, arch):
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("apollo/include","{0}/nic/apollo/include".format(dest))
     copytree("apollo/p4/include","{0}/nic/apollo/p4/include".format(dest))
+    copytree("athena/p4/include","{0}/nic/athena/p4/include".format(dest))
     copytree("athena/test/api/utils",
              "{0}/nic/athena/test/api/utils".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))

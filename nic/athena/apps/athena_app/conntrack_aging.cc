@@ -13,7 +13,7 @@
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/athena/api/impl/pds_conntrack_ctx.hpp"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/athena/p4/include/defines.h"
 #include "conntrack_aging.hpp"
 #include "session_aging.hpp"
 #include "athena_test.hpp"

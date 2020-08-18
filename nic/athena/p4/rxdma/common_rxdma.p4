@@ -1,12 +1,9 @@
-#include "../include/common_headers.p4"
-
-#include "../../../p4/include/intrinsic.p4"
-
-#include "../include/defines.h"
-#include "../include/table_sizes.h"
-#include "../include/headers.p4"
-
-#include "./common_metadata.p4"
+#include "nic/p4/include/intrinsic.p4"
+#include "nic/apollo/p4/include/common_headers.p4"
+#include "nic/apollo/p4/include/headers.p4"
+#include "nic/athena/p4/include/defines.h"
+#include "nic/athena/p4/include/table_sizes.h"
+#include "nic/athena/p4/rxdma/common_metadata.p4"
 
 @pragma scratch_metadata
 metadata common_scratch_metadata_t common_scratch_metadata0;

@@ -17,8 +17,8 @@
 #include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_dnat.h"
 #include "nic/athena/api/include/pds_vnic.h"
-#include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/p4/include/athena_table_sizes.h"
+#include "nic/athena/p4/include/defines.h"
+#include "nic/athena/p4/include/table_sizes.h"
 #include "ftl_wrapper.h"
 #include "gen/p4gen/athena/include/p4pd.h"
 

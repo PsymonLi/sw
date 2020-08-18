@@ -28,8 +28,8 @@
 #include <boost/property_tree/json_parser.hpp>
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/p4/include/p4pd.h"
-#include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/p4/athena_p4-16/athena_table_sizes.h"
+#include "nic/athena/p4/include/defines.h"
+#include "nic/athena/p4/p4-16/athena_table_sizes.h"
 #include "trace.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "gen/p4gen/p4/include/ftl_table.hpp"

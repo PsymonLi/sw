@@ -15,7 +15,7 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/p4/loader/loader.hpp"
 #include "nic/apollo/framework/pipeline_impl_base.hpp"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/athena/p4/include/defines.h"
 
 #define PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID    0
 #define PDS_IMPL_MYTEP_NEXTHOP_HW_ID          1

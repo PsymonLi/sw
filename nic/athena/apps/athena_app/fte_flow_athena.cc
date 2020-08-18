@@ -43,7 +43,7 @@
 #include "nic/sdk/lib/bitmap/bitmap.hpp"
 #include "nic/infra/core/trace.hpp"
 #include "fte_athena.hpp"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/athena/p4/include/defines.h"
 #include "nic/athena/api/include/pds_init.h"
 #include "nic/athena/api/include/pds_vnic.h"
 #include "nic/athena/api/include/pds_flow_session_info.h"

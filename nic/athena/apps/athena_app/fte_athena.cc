@@ -58,7 +58,7 @@
 #include "nic/athena/api/impl/pds_flow_session_ctx.hpp"
 #include "nic/athena/api/impl/pds_conntrack_ctx.hpp"
 #include "nic/athena/api/include/pds_conntrack.h"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/athena/p4/include/defines.h"
 #include "app_test_utils.hpp"
 #include "fte_athena.hpp"
 #include "athena_app_server.hpp"

@@ -7,8 +7,8 @@
 #include "nic/apollo/p4/artemis_txdma/common_txdma_dummy.p4"
 #elif defined(APULU)
 #include "nic/apollo/p4/apulu_txdma/common_txdma_dummy.p4"
-#elif defined(ATEHNA)
-#include "nic/apollo/p4/athena_txdma/common_txdma_dummy.p4"
+#elif defined(ATHENA)
+#include "nic/athena/p4/txdma/common_txdma_dummy.p4"
 #else
 #include "nic/p4/common-p4+/common_txdma_dummy.p4"
 #endif

@@ -12,6 +12,11 @@
 /sw/nic/athena/api/impl
 /sw/nic/athena/apps/athena_app
 -/sw/nic/athena/apps/athena_app/Makefile
+/sw/nic/athena/p4/p4
+/sw/nic/athena/p4/p4-16
+/sw/nic/athena/p4/rxdma
+/sw/nic/athena/p4/txdma
+/sw/nic/athena/p4/include
 /sw/nic/athena/test/api/utils/base.hpp
 /sw/nic/athena/test/base/base.hpp
 /sw/nic/athena/tools
@@ -35,10 +40,6 @@
 /sw/nic/apollo/include
 /sw/nic/apollo/learn
 /sw/nic/apollo/nicmgr
-/sw/nic/apollo/p4/athena_p4
-/sw/nic/apollo/p4/athena_p4-16
-/sw/nic/apollo/p4/athena_rxdma
-/sw/nic/apollo/p4/athena_txdma
 /sw/nic/apollo/p4/include
 /sw/nic/apollo/pciemgr
 /sw/nic/apollo/tools/run_cron.sh
