@@ -93,7 +93,7 @@ class TestSuite:
         self.__process_provision_spec()
         self.__defaultNicMode = getattr(spec.meta, "nicmode", "classic")
         self.__defaultNicPipeline = GlobalOptions.pipeline
-        self.__portspeed = self.__getPortSpeedFromTestsuite(spec.meta)
+        self.__portspeed = topo_pb2.DataSwitch.Speed_auto
         return
 
     def Abort(self):
@@ -112,15 +112,19 @@ class TestSuite:
         else:
             raise ValueError("speed value must be auto, 100g, or 50g. user entered {0}".format(speed))
 
-    def GetPortSpeed(self, node=None, nic=None):
-        if not node:
-            return self.__portspeed
-        pipeline = self.GetPipelineFromProvisionInfo(node, nic)
-        if pipeline == "athena":
-            speed = self.__portspeed
-        else:
-            speed = self.__portspeed
-        api.Logger.debug("{0}:{1} is {2}. using port speed {3}".format(node, nic, pipeline, speed))
+    def GetPortSpeed(self, node=None, nic=None, processor='capri'):
+        speed = self.__portspeed
+        if node and nic:
+            pipeline = self.GetPipelineFromProvisionInfo(node, nic)
+            if processor == "capri":
+                if pipeline == "athena":
+                    speed = self.__getPortSpeedFromTestsuite(self.__spec.meta)
+                else:
+                    speed = self.__portspeed
+            elif processor == 'elba': 
+                # temp-soln (FIXME) to be revised after elba supports auto-nego
+                speed = topo_pb2.DataSwitch.Speed_100G
+            api.Logger.debug("{0}:{1} is {2}. using port speed {3}".format(node, nic, pipeline, speed))
         return speed 
 
     def GetTestbedType(self):

@@ -133,7 +133,8 @@ class Node(object):
             self.__ports = []
             self.__data_networks = []
             self.__nodeName = None
-            self.__processor = "capri"
+            self.__processor = types.processors.CAPRI
+            self.__port_speed = topo_pb2.DataSwitch.Speed_auto
 
         def GetProcessor(self):
             return self.__processor
@@ -237,6 +238,7 @@ class Node(object):
 
         def SetPorts(self, ports, speed):
             self.__ports = ports
+            self.__port_speed = speed
             for port in self.__ports:
                 if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                     nw_obj = parser.Dict2Object(dict())
@@ -248,6 +250,9 @@ class Node(object):
                     setattr(nw_obj, "Speed", speed)
                     self.__data_networks.append(nw_obj)
             return
+
+        def GetPortSpeed(self):
+            return self.__port_speed
 
         def AllocateHostInterface(self, device = None):
            if GlobalOptions.dryrun:
@@ -434,7 +439,6 @@ class Node(object):
 
         defaultMode =store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode()
         defaultPipeline =store.GetTestbed().GetCurrentTestsuite().GetDefaultNicPipeline()
-        portSpeed = store.GetTestbed().GetCurrentTestsuite().GetPortSpeed()
         
         nics = getattr(self.__inst, "Nics", None)
         if  self.__node_type == "bm":
@@ -470,6 +474,7 @@ class Node(object):
                         device.SetNaplesPipeline(defaultPipeline)
 
                     device.SetNicFirewallRules()
+                    portSpeed = store.GetTestbed().GetCurrentTestsuite().GetPortSpeed(self.Name(), name, warmd_processor)
                     device.SetPorts(getattr(nic, 'Ports', []), portSpeed)
                     if not GlobalOptions.enable_multi_naples:
                         break

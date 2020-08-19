@@ -205,6 +205,7 @@ class _Testbed:
             return
         if hasattr(instance, 'Nics') and instance.Nics != None:
             for nicIndex, nic in enumerate(instance.Nics):
+                nic_processor = getattr(nic, 'Processor', 'capri')
                 for port in nic.Ports:
                     if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                         switch_ctx = switch_ips.get(port.SwitchIP, None)
@@ -220,7 +221,7 @@ class _Testbed:
                             switch_ctx.igmp_disabled = True
                             if setup_qos:
                                 setUpSwitchQos(switch_ctx)
-                        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed("node{0}".format(nodeIndex), "naples{0}".format(nicIndex+1))
+                        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed("node{0}".format(nodeIndex), "naples{0}".format(nicIndex+1), nic_processor)
                         portStr = "e1/" + str(port.SwitchPort)
                         #if switch_ctx.speed == topo_pb2.DataSwitch.Speed_50G:
                         #    portStr = portStr + "/1"
@@ -875,8 +876,8 @@ class _Testbed:
                         allocator.addMember(entry.node, entry.nic, entry.port)
                     node = topo.GetNodeByName(entry.node) #this returns topo node object
                     port = node.GetPortByIndex(entry.nic, entry.port)
-                    nicName = "naples{0}".format(entry.nic)
-                    portspeed = api.GetCurrentTestsuite().GetPortSpeed(node.Name(), nicName)
+                    nic_device = node.GetDeviceByNicNumber(entry.nic)
+                    portspeed = nic_device.GetPortSpeed()
                     self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),
                                               origVlanRangeString, port.get("SwitchUsername"), 
                                               port.get("SwitchPassword"), True, portspeed)

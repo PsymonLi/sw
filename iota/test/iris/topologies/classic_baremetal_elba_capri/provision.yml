@@ -1,0 +1,27 @@
+meta:
+    name: Elba-Capri-IRIS-testbed
+    description: Elba-Capri Mixed testbed provisioning
+
+spec:
+    images:
+        - 1.8.0-E-48
+
+nodes:
+    - node: 
+        name: node1
+        nics: 
+            - nic : 
+                name            : naples1
+                pipeline        : iris
+                image           : /sw/images/latest.json
+                mode            : classic
+
+    - node: 
+        name: node2
+        nics: 
+            - nic :
+                name            : naples1
+                pipeline        : iris
+                image           : /sw/images/1.8.0-E-48.json
+                mode            : classic
+
