@@ -4,6 +4,12 @@ counter=300
 oob0_up=0
 dsc0_up=0
 dsc1_up=0
+int_mnic0_up=0
+
+log() {
+    d=`date '+%Y-%m-%d %H:%M:%S'`
+    echo "[$d] $1"
+}
 
 while [ $counter -gt 0 ]
 do
@@ -52,6 +58,25 @@ do
         counter=$(( $counter - 1 ))
     fi
 done
+
+if [ -d "/sys/class/net/int_mnic0" ] ; then
+    sysctl -w net.ipv4.conf.int_mnic0.arp_ignore=1
+    counter=100
+    while [ $counter -gt 0 ]
+    do
+        bus=`/nic/bin/pcieutil dev -D 1dd8:1004`
+        if [ ! -z "$bus" ]; then
+            ipaddr="169.254.$bus.1"
+            log "Bringing up int_mnic0 $ipaddr"
+            ifconfig int_mnic0 $ipaddr netmask 255.255.255.0 up && int_mnic0_up=1
+            echo "int_mnic0 interface is up"
+            break
+        else
+            log "Waiting to configure ipaddr for int_mnic0"
+            ifconfig int_mnic0 up && int_mnic0_up=1
+        fi
+    done
+fi
 
 echo ""
 if [ $oob0_up -eq 1 ] && [ $dsc0_up -eq 1 ] && [ $dsc1_up -eq 1 ]; then
