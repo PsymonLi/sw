@@ -91,7 +91,7 @@ void
 pds_clock_sync::start_rollover_timer(uint64_t timeout_ms) {
     rollover_timer_ =
         sdk::lib::timer_schedule(PDS_TIMER_ID_CLOCK_ROLLOVER, timeout_ms,
-                                 NULL, compute_clock_delta_cb, false);
+                                 this, compute_clock_delta_cb, false);
 }
 
 sdk_ret_t
