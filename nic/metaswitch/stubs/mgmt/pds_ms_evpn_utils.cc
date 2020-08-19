@@ -4,10 +4,10 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_orf.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
 #include "evpn_mgmt_if.h"
-using namespace pds_ms;
 
 namespace pds_ms {
 NBB_VOID
@@ -493,7 +493,7 @@ evpn_evi_rt_pre_set (EvpnEviRtSpec  &req,
     if (update_orf) {
         // Disabling the EVI RT in the ORF route-map since we are doing the
         // outbound filtering at the RR based on the VRF RT
-        // update_bgp_route_map_table(test_correlator);
+        // bgp_orf_upd_route_map(test_correlator);
     }
 }
 
@@ -673,7 +673,7 @@ evpn_ip_vrf_rt_pre_set (EvpnIpVrfRtSpec &req,
 
     // update RT in bgpRouteMapTable
     if (update_orf) {
-        update_bgp_route_map_table(test_correlator);
+        bgp_route_map_upd(test_correlator);
     }
 }
 

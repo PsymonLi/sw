@@ -133,7 +133,7 @@ nbase_init ()
     pds_ms_reg_post_getall_bgppeerstatus_amb_bgp_peer_status(bgp_peerstatus_post_getall);
 
     // we dont need some post-get registrations on RR
-    if (mgmt_state_t::thread_context().state()->rr_mode() == false) {
+    if (!mgmt_state_t::rr_mode()) {
         pds_ms_reg_post_get_bgpspec_amb_bgp_rm_ent (bgp_rm_ent_post_get);
         pds_ms_reg_post_getall_bgpspec_amb_bgp_rm_ent (bgp_rm_ent_post_getall);
         pds_ms_reg_post_get_bgppeerspec_amb_bgp_peer(bgp_peer_post_get);
@@ -332,7 +332,7 @@ bool pds_ms_mgmt_init(bool rr_mode)
     {
         auto ctx = mgmt_state_t::thread_context();
         ctx.state()->set_nbase_thread(sdk::lib::thread::current_thread());
-        ctx.state()->set_rr_mode(rr_mode);
+        mgmt_state_t::set_rr_mode(rr_mode);
         PDS_TRACE_DEBUG("Set RR mode %d", rr_mode);
     }
     // register for suspend and resume handlers
@@ -347,6 +347,7 @@ bool pds_ms_mgmt_init(bool rr_mode)
 void pds_ms_terminate()
 {
     nbs_pen_spin_exit();
+    mgmt_state_t::thread_context().state()->rr_worker_stop();
 }
 
 namespace pds_ms {

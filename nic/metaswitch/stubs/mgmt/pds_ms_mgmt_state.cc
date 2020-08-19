@@ -19,6 +19,9 @@ std::mutex mgmt_state_t::g_grpc_lock_;
 std::recursive_mutex mgmt_state_t::g_state_mtx_;
 std::condition_variable mgmt_state_t::g_cv_resp_;
 types::ApiStatus mgmt_state_t::g_ms_response_;
+rr_worker_t *mgmt_state_t::g_rr_worker_ = nullptr;
+std::thread *mgmt_state_t::g_rr_worker_thr_ = nullptr;
+bool mgmt_state_t::g_rr_mode_ = false;
 
 mgmt_state_t::mgmt_state_t(void) {
     bgp_peer_uuid_obj_slab_init(slabs_, PDS_MS_MGMT_BGP_PEER_SLAB_ID);
@@ -165,7 +168,7 @@ void mgmt_state_t::redo_bgp_peer_pend (vector<bgp_peer_pend_obj_t>& list) {
             bgp_peer_store.del(obj.local_addr, obj.peer_addr);
         } else {
             //bgp peer is deleted from list, add it now
-            bgp_peer_store.add(obj.local_addr, obj.peer_addr);
+            bgp_peer_store.add(obj.local_addr, obj.peer_addr, obj.rrclient);
         }
     }
 }
@@ -292,6 +295,25 @@ mgmt_state_t::vpc_uuid_obj (const pds_obj_key_t& key) {
                     SDK_RET_INVALID_ARG);
     }
     return (vpc_uuid_obj_t*) uuid_obj;
+}
+
+void mgmt_state_t::rr_worker_init(void) {
+    if (g_rr_worker_ != nullptr) {
+        return;
+    }
+
+    // Starting RR worker thread
+    g_rr_worker_ = new rr_worker_t();
+    g_rr_worker_thr_ = new std::thread([](void) {
+        while (true) {
+            auto jobp = mgmt_state_t::rr_worker()->wait_for_job();
+            if (!jobp) {
+                // empty job pointer is used stop worker loop
+                break;
+            }
+            jobp->hdlr_cb()(jobp.get());
+        }
+    }); 
 }
 
 bool

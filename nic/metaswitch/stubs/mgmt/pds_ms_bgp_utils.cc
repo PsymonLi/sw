@@ -4,6 +4,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_orf.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
@@ -320,14 +321,51 @@ bgp_clear_route_action_func (const pds::BGPClearRouteRequest *req,
     return ret;
 }
 
-NBB_VOID
-update_bgp_route_map_table (NBB_ULONG correlator)
+static void
+config_ms_route_map_ (const std::set<ms_rt_t>& set_of_rts, NBB_ULONG correlator)
 {
     BgpRouteMapSpec spec;
     std::string str;
     NBB_ULONG len = 0;
+
+    // walk the sorted RT set with unique RTs
+    std::set<ms_rt_t>::iterator it = set_of_rts.begin();
+    while (it != set_of_rts.end()) {
+        str = str + (*it).ms_str() + ',';
+        it++;
+    }
+
+    if (str.empty()) {
+        // By default send deny all routes in the ORF to RR
+        // by setting an invalid RT in the route-map
+        str="0000000000000000,";
+    }
+    len = str.length()-1;
+
+    PDS_TRACE_DEBUG ("ORF: bgpRouteMapTable ext-comm:: %s (len=%d)\n",
+                      str.c_str(), len);
+
+    spec.set_rmindex (PDS_MS_BGP_RM_ENT_INDEX);
+    spec.set_index (PDS_MS_BGP_ROUTE_MAP_DEF_INDEX);
+    spec.set_number (PDS_MS_BGP_ROUTE_MAP_DEF_NUBMER);
+    spec.set_afi (AMB_BGP_AFI_L2VPN);
+    spec.set_afidefined (true);
+    spec.set_safi (AMB_BGP_EVPN);
+    spec.set_safidefined (true);
+    spec.set_orfassociation (AMB_BGP_ORF_ASSOC_LOCAL);
+    spec.set_matchextcomm (str.c_str(), len);
+    pds_ms_set_bgproutemapspec_amb_bgp_route_map (spec, AMB_ROW_ACTIVE,
+                                                  correlator, FALSE);
+}
+
+// update route map table on DSC
+void
+bgp_route_map_upd (NBB_ULONG correlator)
+{
     std::set<ms_rt_t> set_of_rts;
 
+    // build the current list of sorted RTs
+    {
     auto state_ctxt = state_t::thread_context();
     // Disabling the EVI RT in the ORF route-map since we are doing the
     // outbound filtering at the RR based on the VRF RT
@@ -357,35 +395,30 @@ update_bgp_route_map_table (NBB_ULONG correlator)
             });
             return true;
         });
+    }
 
     // now walk the sorted RT set with unique RTs
-    std::set<ms_rt_t>::iterator it = set_of_rts.begin();
-    while (it != set_of_rts.end()) {
-        str = str + (*it).ms_str() + ',';
-        it++;
+    config_ms_route_map_(set_of_rts, correlator);
+}
+
+// update route map table on RR
+void
+bgp_route_map_upd_rr (NBB_ULONG correlator)
+{
+    std::set<ms_rt_t> sorted_rts;
+
+    // build the current list of sorted RTs
+    {
+        auto mgmt_thread_ctxt = mgmt_state_t::thread_context();
+        auto mgmt_state = mgmt_thread_ctxt.state();
+        auto& orfs = mgmt_state->orf_rr.orfs;
+
+        for (auto it = orfs.begin(); it != orfs.end(); ++it) {
+            sorted_rts.insert(it->first);
+        }
     }
-
-    if (str.empty()) {
-        // By default send deny all routes in the ORF to RR
-        // by setting an invalid RT in the route-map
-        str="0000000000000000,";
-    }
-    len = str.length()-1;
-
-    PDS_TRACE_DEBUG ("ORF: bgpRouteMapTable ext-comm:: %s (len=%d)\n",
-                      str.c_str(), len);
-
-    spec.set_rmindex (PDS_MS_BGP_RM_ENT_INDEX);
-    spec.set_index (PDS_MS_BGP_ROUTE_MAP_DEF_INDEX);
-    spec.set_number (PDS_MS_BGP_ROUTE_MAP_DEF_NUBMER);
-    spec.set_afi (AMB_BGP_AFI_L2VPN);
-    spec.set_afidefined (true);
-    spec.set_safi (AMB_BGP_EVPN);
-    spec.set_safidefined (true);
-    spec.set_orfassociation (AMB_BGP_ORF_ASSOC_LOCAL);
-    spec.set_matchextcomm (str.c_str(), len);
-    pds_ms_set_bgproutemapspec_amb_bgp_route_map (spec, AMB_ROW_ACTIVE,
-                                                  correlator, FALSE);
+    // apply sorted RTs as route-map
+    config_ms_route_map_(sorted_rts, correlator);
 }
 
 static NBB_VOID 
@@ -686,12 +719,16 @@ bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
 
         if (row_status == AMB_ROW_ACTIVE) {
             // add entry to store
-            bgp_peer_store.add(laddr, paddr);
-            mgmt_ctxt.state()->set_bgp_peer_pend (laddr, paddr, true);
+            bool rrclient = (req.rrclient() == BGP_PEER_RR_CLIENT);
+            bgp_peer_store.add(laddr, paddr, rrclient);
+            mgmt_ctxt.state()->set_bgp_peer_pend(laddr, paddr, true,
+                                                 rrclient);
         } else {
            // delete entry from store
+           bool rrclient = bgp_peer_store.rrclient(laddr, paddr);
            bgp_peer_store.del(laddr, paddr);
-           mgmt_ctxt.state()->set_bgp_peer_pend (laddr, paddr, false);
+           mgmt_ctxt.state()->set_bgp_peer_pend(laddr, paddr, false,
+                                                rrclient);
         }
     }
 }
@@ -873,7 +910,9 @@ bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
 
     ip_addr_spec_to_ip_addr (req.localaddr(), &local_ipaddr);
     ip_addr_spec_to_ip_addr (req.peeraddr(), &peer_ipaddr);
+
     bool route_map_init = false;
+
     // check if the peer is valid or not.
     {
         auto mgmt_ctxt = mgmt_state_t::thread_context();
@@ -883,20 +922,28 @@ bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
                          append("local addr: ").append(ipaddr2str(&local_ipaddr)).
                          append(" peer addr: ").append(ipaddr2str(&peer_ipaddr)));
         }
-        if (!mgmt_ctxt.state()->rr_mode() &&
-            req.afi() == AMB_BGP_AFI_L2VPN && req.safi() == AMB_BGP_EVPN) {
-            // Is this the first EVPN peering session configured on Naples ?
+        if (req.afi() == AMB_BGP_AFI_L2VPN && req.safi() == AMB_BGP_EVPN
+            && !mgmt_ctxt.state()->bgp_peer_rrclient(local_ipaddr, peer_ipaddr)) {
+            // Is this the first EVPN upstream (non RR-client)
+            // peering session configured ?
             route_map_init = !mgmt_ctxt.state()->route_map_created();
             mgmt_ctxt.state()->set_route_map_created();
         }
     }
 
     if (route_map_init) {
-        // EVPN peering sessions on Naples are assigned an import policy
+        // EVPN peering sessions to upstream peers (non RR-clients) on
+        // DSC and Pegasus are assigned an import policy
         // pointing to a routemap entry that will be sent as ORF to the RR
         // If this is the first EVPN peer then initialize the
         // route map table entry that is shared by all EVPN peers
-        update_bgp_route_map_table (correlator);
+        if (mgmt_state_t::rr_mode()) {
+            PDS_TRACE_DEBUG("First upstream EVPN Peer on RR, create route map");
+            bgp_route_map_upd_rr(correlator);
+        } else {
+            PDS_TRACE_DEBUG("First EVPN Peer on DSC, create route map");
+            bgp_route_map_upd(correlator);
+        }
     }
     // Address Family enable/disable should be set internally as per
     // create-update/delete operation. these rows cannot be destroyed
@@ -1131,8 +1178,15 @@ bgp_peer_af_set_fill_func (BGPPeerAfSpec         &req,
     if (req.afi() == AMB_BGP_AFI_L2VPN && req.safi() == AMB_BGP_EVPN &&
         req.disable() != true) {
         auto mgmt_ctxt = mgmt_state_t::thread_context();
-        if (!mgmt_ctxt.state()->rr_mode()) {
-            // always set import map for peer evpn af, if not in rr-mode
+        ip_addr_t local_ipaddr, peer_ipaddr;
+
+        ip_addr_spec_to_ip_addr (req.localaddr(), &local_ipaddr);
+        ip_addr_spec_to_ip_addr (req.peeraddr(), &peer_ipaddr);
+
+        // set import map for upstream (non RR-client) BGP evpn peers
+        if (!mgmt_ctxt.state()->bgp_peer_rrclient(local_ipaddr, peer_ipaddr)) {
+            PDS_TRACE_DEBUG("Set import route map for upstream EVPN peer %s",
+                            bgp_peer_t(local_ipaddr, peer_ipaddr).str().c_str());
             v_amb_bgp_peer_af->import_map = PDS_MS_BGP_ROUTE_MAP_DEF_INDEX;
             AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_PAS_IMP_MAP);
         }
@@ -1206,7 +1260,7 @@ pds_ms_fill_amb_bgp_rm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
         data->orf_supported  = AMB_TRUE;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_ORF_SUPPORTED);
 
-        if (mgmt_state_t::thread_context().state()->rr_mode()) {
+        if (mgmt_state_t::rr_mode()) {
             // Enable update-groups support
             PDS_TRACE_DEBUG("Enable BGP update groups");
             data->update_groups = AMB_TRUE;
@@ -1658,7 +1712,7 @@ pds_ms_bgp_create (pds_ms_config_t *conf)
 
     // On Naples wait for Device object to enable EVPN address family
     // On Pegasus enable EVPN address family by default
-    if (mgmt_state_t::thread_context().state()->rr_mode()) {
+    if (mgmt_state_t::rr_mode()) {
         PDS_TRACE_INFO("RR - Enable EVPN address family");
         bgp_enable_l2vpn_evpn_(conf);
     }

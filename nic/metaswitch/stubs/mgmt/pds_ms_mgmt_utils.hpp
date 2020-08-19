@@ -173,9 +173,9 @@ NBB_VOID bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
 types::ApiStatus
 bgp_rm_ent_state_set(types::AdminState state);
 
-NBB_VOID
-bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
-                          NBB_ULONG correlator, NBB_VOID* kh, bool op_update=false);
+NBB_VOID bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
+                                   NBB_ULONG correlator, NBB_VOID* kh,
+                                   bool op_update=false);
 
 NBB_VOID bgp_rm_ent_pre_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh);
 NBB_VOID bgp_rm_ent_post_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh);
@@ -185,6 +185,9 @@ NBB_VOID bgp_peer_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID*
 NBB_VOID bgp_peer_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp);
 NBB_VOID bgp_peerstatus_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
 NBB_VOID bgp_peerstatus_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp);
+
+void bgp_route_map_upd(NBB_ULONG correlator);
+void bgp_route_map_upd_rr(NBB_ULONG correlator);
 
 NBB_VOID bgp_peer_afi_safi_pre_get(BGPPeerAfSpec &req,
                                    BGPPeerAfGetResponse* resp,
@@ -336,7 +339,6 @@ NBB_VOID lim_l3_if_addr_pre_set(LimInterfaceAddrSpec &req,
                                 bool      op_update=false);
 NBB_VOID cp_route_pre_set(CPStaticRouteSpec &req, NBB_LONG row_status,
                           NBB_ULONG correlator, NBB_VOID* kh, bool op_update=false);
-NBB_VOID update_bgp_route_map_table (NBB_ULONG correlator);
 NBB_VOID pds_ms_rtm_redis_connected (pds_ms::pds_ms_config_t *conf);
 NBB_VOID pds_ms_li_stub_create (pds_ms_config_t *conf);
 NBB_VOID pds_ms_l2f_stub_create (pds_ms_config_t *conf);

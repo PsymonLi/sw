@@ -6,23 +6,27 @@
 #ifndef __PDS_MS_MGMT_STATE_HPP__
 #define __PDS_MS_MGMT_STATE_HPP__
 
-#include <mutex>
-#include <condition_variable>
-#include <random>
-#include <chrono>
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mib_idx_gen.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_orf.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_rr_worker.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_object_store.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_store.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/infra/core/trace.hpp"
 #include "nic/apollo/agent/core/state.hpp"
 #include "nic/apollo/api/include/pds.hpp"
-#include "nic/metaswitch/stubs/mgmt/pds_ms_mib_idx_gen.hpp"
-#include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
-#include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
-#include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
-#include "nic/metaswitch/stubs/common/pds_ms_object_store.hpp"
-#include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_store.hpp"
 #include "gen/proto/types.pb.h"
+#include <mutex>
+#include <condition_variable>
+#include <random>
+#include <chrono>
+#include <thread>
+#include <unordered_map>
 
 #define PDS_MOCK_MODE() \
             (mgmt_state_t::thread_context().state()->pds_mock_mode())
@@ -141,8 +145,20 @@ public:
     bool pds_mock_mode(void) const { return pds_mock_mode_;  }
     void set_pds_mock_mode(bool val) { pds_mock_mode_ = val; }
 
-    bool rr_mode(void) const { return rr_mode_;  }
-    void set_rr_mode(bool val) { rr_mode_ = val; }
+    static bool rr_mode(void) { return g_rr_mode_; }
+    static void set_rr_mode(bool val) {
+        g_rr_mode_ = val;
+        if (g_rr_mode_) {
+            rr_worker_init();
+        }
+    }
+    static void rr_worker_init(void);
+    static void rr_worker_stop(void) {
+        if (g_rr_mode_) {
+            g_rr_worker_->set_stop();
+            g_rr_worker_thr_->join();
+        }
+    }
 
     void set_pending_uuid_create(const pds_obj_key_t& uuid,
                                  uuid_obj_uptr_t&& obj);
@@ -192,8 +208,9 @@ public:
 
     // bgp peer store
     bgp_peer_store_t& bgp_peer_store(void) {return bgp_peer_store_;}
-    void set_bgp_peer_pend(const ip_addr_t& l, const ip_addr_t& p, bool add) {
-        bgp_peer_pend_.emplace_back(l,p,add);
+    void set_bgp_peer_pend(const ip_addr_t& l, const ip_addr_t& p,
+                           bool add, bool rrclient) {
+        bgp_peer_pend_.emplace_back(l, p, add, rrclient);
     }
     void clear_bgp_peer_pend(void) {
         bgp_peer_pend_.clear();
@@ -216,6 +233,11 @@ public:
     bool route_map_created() {return route_map_created_;}
     bool is_amx_open() {return amx_open_;}
     void set_amx_open(bool open) {amx_open_ = open;}
+    bool bgp_peer_rrclient(const ip_addr_t& localip,
+                           const ip_addr_t& peerip) const {
+        // is this BGP peer configured as an RR client
+        return (rr_mode() && bgp_peer_store_.rrclient(localip, peerip));
+    }
 
     // should we advertise BGP Graceful restart capaility
     static bool bgp_gr_supported();
@@ -233,6 +255,10 @@ public:
     void set_upg_ht_rollback(void) {
         upg_ht_b_starting_up_ = false;
     }
+    static rr_worker_t* rr_worker() {
+        return g_rr_worker_;
+    }
+    bgp_orf_rr_state_t orf_rr;
 
 private:
     static mgmt_state_t* g_state_;
@@ -243,10 +269,12 @@ private:
     static std::recursive_mutex g_state_mtx_;
     static std::condition_variable g_cv_resp_;
     static types::ApiStatus g_ms_response_;
+    static rr_worker_t *g_rr_worker_;
+    static std::thread *g_rr_worker_thr_;
+    static bool g_rr_mode_;
 
     uint32_t epoch_;
     bool pds_mock_mode_ = false;
-    bool rr_mode_ = false;
     std::unordered_map<pds_obj_key_t, uuid_obj_uptr_t, pds_obj_key_hash> uuid_store_;
     std::unordered_map<pds_obj_key_t, uuid_obj_uptr_t, pds_obj_key_hash> uuid_pending_create_;
     std::vector<pds_obj_key_t> uuid_pending_delete_;

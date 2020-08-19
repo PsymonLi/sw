@@ -48,20 +48,23 @@ ms_to_pds_ipaddr (const ATG_INET_ADDRESS& in_ip, ip_addr_t* out_ip)
     switch (in_ip.type) {
     case AMB_INETWK_ADDR_TYPE_IPV4:
         out_ip->af = IP_AF_IPV4;
-        SDK_ASSERT (in_ip.length == IP4_ADDR8_LEN);
+        SDK_ASSERT (in_ip.length == IP4_ADDR8_LEN || in_ip.length == 0);
         break;
     case AMB_INETWK_ADDR_TYPE_IPV6:
         out_ip->af = IP_AF_IPV6;
-        SDK_ASSERT (in_ip.length == IP6_ADDR8_LEN);
+        SDK_ASSERT (in_ip.length == IP6_ADDR8_LEN || in_ip.length == 0);
         break;
     default:
         SDK_ASSERT (0);
     }
-    memcpy (&(out_ip->addr), &(in_ip.address), in_ip.length);
-    if (out_ip->af == IP_AF_IPV4) {
-        // MS IP addresses are byte arrays
-        // HAL uses SDK ipv4_addr_t address which is in host order
-        out_ip->addr.v4_addr = ntohl(out_ip->addr.v4_addr);
+    if (in_ip.length != 0) {
+        memcpy (&(out_ip->addr), &(in_ip.address), in_ip.length);
+
+        if (out_ip->af == IP_AF_IPV4) {
+            // MS IP addresses are byte arrays
+            // HAL uses SDK ipv4_addr_t address which is in host order
+            out_ip->addr.v4_addr = ntohl(out_ip->addr.v4_addr);
+        }
     }
 }
 
@@ -266,7 +269,17 @@ typedef struct ms_rt_t {
         }
         return false;
     }
+    void reset(void) {
+        memset(rt_str, 0, AMB_BGP_EXT_COMM_LEN);
+    }
 } ms_rt_t;
+
+class ms_rt_hash {
+public:
+    std::size_t operator()(const ms_rt_t& rt) const {
+        return hash_algo::fnv_hash((void *)&rt, sizeof(rt));
+    }
+};
 
 static inline bool operator < (const ms_rt_t& a, const ms_rt_t& b) {
     for (int i = 0; i < AMB_BGP_EXT_COMM_LEN; ++i) {

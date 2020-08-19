@@ -111,7 +111,7 @@ static void create_device_proto_grpc (bool overlay_routing = true) {
     pds_device_api_spec_to_proto (request.mutable_request(), &device_spec);
 
     printf ("Pushing Device Proto...\n");
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_device_stub_->DeviceCreate(&context, request, &response);
     } else {
         ret_status = g_device_stub_->DeviceCreate(&context, request, &response);
@@ -135,7 +135,7 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false, bool updat
     if (lo) {
         pds_if.key = dol_intf_uuid_from_objid(k_lo_if_id, g_system_mac_addr);
         pds_if.type = ::IF_TYPE_LOOPBACK;
-        if (g_node_id !=3) {
+        if (g_node_id < 3) {
             pds_if.loopback_if_info.ip_prefix.addr.af = IP_AF_IPV4;
             if (input_ip) {
                 pds_if.loopback_if_info.ip_prefix.addr.addr.v4_addr = ipv4;
@@ -172,7 +172,7 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false, bool updat
     pds_if_api_spec_to_proto (request.add_request(), &pds_if);
 
     printf ("Pushing %sInterface %s Proto...\n", lo?"lo ":"", pds_if.key.str());
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_if_stub_->InterfaceCreate(&context, request, &response);
     } else {
         if (update) {
@@ -247,7 +247,7 @@ static void create_bgp_global_proto_grpc () {
     proto_spec->set_routerid(g_test_conf_.local_lo_ip_addr);
 
     printf ("Pushing BGP Global proto...\n");
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_bgp_stub_->BGPCreate(&context, request, &response);
     } else {
         ret_status = g_bgp_stub_->BGPCreate(&context, request, &response);
@@ -270,7 +270,7 @@ static void set_amx_control (bool open) {
     proto_spec->set_open (open);
 
     printf ("Pushing AMX proto...\n");
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_debug_stub_->AMXControl(&context, request, &response);
     } else {
         ret_status = g_debug_stub_->AMXControl(&context, request, &response);
@@ -440,7 +440,7 @@ static void create_route_proto_grpc (bool second=false) {
     proto_spec->set_admindist (250);
 
     printf ("Pushing Static Route proto...\n");
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_route_stub_->CPStaticRouteCreate(&context, request, &response);
     } else {
         ret_status = g_route_stub_->CPStaticRouteCreate(&context, request, &response);
@@ -556,7 +556,7 @@ static void delete_l2f_test_mac_ip_proto_grpc (bool second=false) {
     }
 }
 
-static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool passwd=false) {
+static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool passwd=false, bool upstream=false) {
     BGPPeerRequest  request;
     BGPPeerResponse response;
     ClientContext   context;
@@ -565,8 +565,11 @@ static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool p
     auto proto_spec = request.add_request();
     auto peeraddr = proto_spec->mutable_peeraddr();
     peeraddr->set_af(types::IP_AF_INET);
+    auto upstream_ip_addr = inet_network ("10.1.1.4");
     if (lo) {
-        if (second) {
+        if (upstream) {
+            peeraddr->set_v4addr(upstream_ip_addr);
+        } else if (second) {
             peeraddr->set_v4addr(g_test_conf_.remote_lo_ip_addr_2);
         } else {
             peeraddr->set_v4addr(g_test_conf_.remote_lo_ip_addr);
@@ -580,12 +583,12 @@ static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool p
     proto_spec->set_state(ADMIN_STATE_ENABLE);
     auto localaddr = proto_spec->mutable_localaddr();
     localaddr->set_af(types::IP_AF_INET);
-    if (lo && g_node_id !=3) {
+    if (lo && g_node_id < 3) {
         localaddr->set_v4addr(g_test_conf_.local_lo_ip_addr);
     } else {
         localaddr->set_v4addr(0);
     }
-    if (lo && g_node_id == 3) {
+    if (lo && g_node_id >= 3 && !upstream) {
         proto_spec->set_rrclient(BGP_PEER_RR_CLIENT);
     }
     proto_spec->set_remoteasn(g_test_conf_.remote_asn);
@@ -605,7 +608,7 @@ static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool p
     }
 
     printf ("Pushing BGP %s Peer proto...\n", (lo) ? "Overlay" : "Underlay" );
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_bgp_stub_->BGPPeerCreate(&context, request, &response);
     } else {
         ret_status = g_bgp_stub_->BGPPeerCreate(&context, request, &response);
@@ -618,7 +621,7 @@ static void create_bgp_peer_proto_grpc (bool lo=false, bool second=false, bool p
     }
 }
 
-static void create_bgp_peer_af_proto_grpc (bool lo=false, bool second=false) {
+static void create_bgp_peer_af_proto_grpc (bool lo=false, bool second=false, bool upstream=false) {
     BGPPeerAfRequest  request;
     BGPPeerAfResponse response;
     ClientContext   context;
@@ -628,8 +631,11 @@ static void create_bgp_peer_af_proto_grpc (bool lo=false, bool second=false) {
     auto peeraddr = proto_spec->mutable_peeraddr();
     peeraddr->set_af(types::IP_AF_INET);
 
+    auto upstream_ip_addr = inet_network ("10.1.1.4");
     if (lo) {
-        if (second) {
+        if (upstream) {
+            peeraddr->set_v4addr(upstream_ip_addr);
+        } else if (second) {
             peeraddr->set_v4addr(g_test_conf_.remote_lo_ip_addr_2);
         } else {
             peeraddr->set_v4addr(g_test_conf_.remote_lo_ip_addr);
@@ -642,7 +648,7 @@ static void create_bgp_peer_af_proto_grpc (bool lo=false, bool second=false) {
     proto_spec->set_id(pds_ms::msidx2pdsobjkey(k_bgp_id).id);
     auto localaddr = proto_spec->mutable_localaddr();
     localaddr->set_af(types::IP_AF_INET);
-    if (lo && g_node_id != 3) {
+    if (lo && g_node_id < 3) {
         localaddr->set_v4addr(g_test_conf_.local_lo_ip_addr);
     } else {
         localaddr->set_v4addr(0);
@@ -666,7 +672,7 @@ static void create_bgp_peer_af_proto_grpc (bool lo=false, bool second=false) {
     proto_spec->set_nexthopself(false);
 
     printf ("Pushing BGP %s Peer AF proto...\n", (lo) ? "Overlay" : "Underlay" );
-    if (g_node_id == 3) {
+    if (g_node_id >= 3) {
         ret_status = g_rr_bgp_stub_->BGPPeerAfCreate(&context, request, &response);
     } else {
         ret_status = g_bgp_stub_->BGPPeerAfCreate(&context, request, &response);
@@ -956,7 +962,7 @@ static void create_evpn_ip_vrf_rt_proto_grpc (bool different=false) {
     proto_spec->set_id (pds_ms::msidx2pdsobjkey(k_vpc_id).id, PDS_MAX_KEY_LEN);
     proto_spec->set_vpcid (pds_ms::msidx2pdsobjkey(k_vpc_id).id, PDS_MAX_KEY_LEN);
     if (different) {
-    NBB_BYTE rt[] = {0x00,0x02,0x00,0x00,0x00,0x00,0x00,0xd9};
+    NBB_BYTE rt[] = {0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x19};
     proto_spec->set_rt(rt,8);
     } else {
     NBB_BYTE rt[] = {0x00,0x02,0x00,0x00,0x00,0x00,0x00,0xc8};
@@ -1013,7 +1019,7 @@ static void delete_evpn_ip_vrf_proto_grpc () {
     }
 }
 
-static void delete_evpn_ip_vrf_rt_proto_grpc () {
+static void delete_evpn_ip_vrf_rt_proto_grpc (bool different=false) {
     EvpnIpVrfRtDeleteRequest request;
     EvpnIpVrfRtDeleteResponse response;
     ClientContext   context;
@@ -1022,9 +1028,13 @@ static void delete_evpn_ip_vrf_rt_proto_grpc () {
     auto keyh = request.add_request();
     auto proto_spec = keyh->mutable_key();
     proto_spec->set_vpcid (pds_ms::msidx2pdsobjkey(k_vpc_id).id, PDS_MAX_KEY_LEN);
+    if (different) {
+    NBB_BYTE rt[] = {0x00,0x02,0x00,0x00,0x00,0x00,0x00,0xd9};
+    proto_spec->set_rt(rt,8);
+    } else {
     NBB_BYTE rt[] = {0x00,0x02,0x00,0x00,0x00,0x00,0x00,0xc8};
     proto_spec->set_rt(rt,8);
-
+    }
     printf ("Pushing EVPN IP VRF RT Delete proto...\n");
     ret_status = g_evpn_stub_->EvpnIpVrfRtDelete(&context, request, &response);
     if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
@@ -1232,7 +1242,7 @@ int main(int argc, char** argv)
 
     if (argc == 1 || underlay_only) {
         // Send protos to grpc server
-        if (g_node_id != 3) {
+        if (g_node_id < 3) {
             create_device_proto_grpc(underlay_only ? false : true);
             create_underlay_vpc_proto_grpc();
         }
@@ -1267,7 +1277,7 @@ int main(int argc, char** argv)
             create_ip_track (ip, g_mirror_id-20);
             create_ip_track (ip, g_mirror_id-20+1);
         }
-        if (g_node_id != 3) {
+        if (g_node_id < 3) {
             create_intf_proto_grpc();
             create_intf_proto_grpc(false, true /* second interface */);
         }
@@ -1278,7 +1288,7 @@ int main(int argc, char** argv)
             create_route_proto_grpc(true);
         }
         create_bgp_global_proto_grpc();
-        if (g_node_id != 3) {
+        if (g_node_id < 3) {
             /*no IPv4 BGP sessions for Pegasus */
             create_bgp_peer_proto_grpc();
             create_bgp_peer_af_proto_grpc();
@@ -1298,10 +1308,14 @@ int main(int argc, char** argv)
             // No direct Overlay BGP session between DUT1 and C2
             create_bgp_peer_proto_grpc(true /* loopback */);
             create_bgp_peer_af_proto_grpc(true /* loopback */);
+            // upstream
+            create_bgp_peer_proto_grpc(true /* loopback */,
+                                       false, false, true /* upstream */);
+            create_bgp_peer_af_proto_grpc(true /* loopback */, false, true);
         }
         create_bgp_peer_proto_grpc(true, true);
         create_bgp_peer_af_proto_grpc(true, true );
-        if (g_node_id != 3) {
+        if (g_node_id < 3) {
             configure_overlay();
         }
         if (g_node_id == 2) {
@@ -1318,6 +1332,14 @@ int main(int argc, char** argv)
         } else if (!strcmp (argv[1], "evpn_mac_ip")) {
             get_evpn_mac_ip_all();
             return 0;
+        } else if (!strcmp(argv[1], "ipvrf-rt-del")) {
+            delete_evpn_ip_vrf_rt_proto_grpc();
+        } else if (!strcmp(argv[1], "ipvrf-rt-create")) {
+            create_evpn_ip_vrf_rt_proto_grpc();
+        } else if (!strcmp(argv[1], "ipvrf-rt1-create")) {
+            create_evpn_ip_vrf_rt_proto_grpc(true);
+        } else if (!strcmp(argv[1], "ipvrf-rt1-del")) {
+            delete_evpn_ip_vrf_rt_proto_grpc(true);
         } else if (!strcmp(argv[1], "vpc-del")) {
             delete_evpn_ip_vrf_rt_proto_grpc();
             delete_evpn_ip_vrf_proto_grpc();
