@@ -61,7 +61,7 @@ message DSCProfile {
     option (venice.objectPrefix) = {Collection: "dscprofiles"};
     api.TypeMeta          T      = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
     api.ObjectMeta        O      = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,omitempty"];
-    DSCProfileSpec        Spec   = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,inline"];
+    DSCProfileSpec        Spec   = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,omitempty"];
     DSCProfileStatus      Status = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status,omitempty"];
 }
 

@@ -135,6 +135,6 @@ message TroubleshootingSession {
     option (venice.objectPrefix) = {Collection: "TroubleshootingSession", Path: "/{O.Tenant}"}; // ??? Tenant -> ??
     api.TypeMeta                    T           = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
     api.ObjectMeta                  O           = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,omitempty"];
-    TroubleshootingSessionSpec      Spec        = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,inline"];
+    TroubleshootingSessionSpec      Spec        = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,omitempty"];
     TroubleshootingSessionStatus    Status      = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status,omitempty"];
 }
