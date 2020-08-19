@@ -141,8 +141,13 @@ def Setup(tc):
     api.Logger.info("Interface  is : {}".format(server.parent_interface))
     cmd = "sshpass -p docker ssh -o StrictHostKeyChecking=no root@{} rm -f /tmp/pktgen_multiqueue.sh".format(client.mgmt_ip)
     RunLocalCommand(cmd)
-    resp = api.CopyToWorkload(client.node_name, client.workload_name, pktgen_loc, "/tmp")
-    #cmd = "sshpass -p docker scp -o StrictHostKeyChecking=no {} root@{}:/tmp/".format(pktgen_loc, client.mgmt_ip)
+    
+    cmd = "sshpass -p docker ssh -o StrictHostKeyChecking=no root@{} cat /proc/cpuinfo".format(client.mgmt_ip)
+    RunLocalCommand(cmd)
+
+    #resp = api.CopyToWorkload(client.node_name, client.workload_name, pktgen_loc, "/tmp")
+    cmd = "sshpass -p docker scp -o StrictHostKeyChecking=no {} root@{}:/tmp/".format(pktgen_loc, client.mgmt_ip)
+    RunLocalCommand(cmd)
     
     flowutils.clearFlowTable(tc.workload_pairs)
     vppctl.__clearVPPEntity("errors")
@@ -214,7 +219,7 @@ def Verify(tc):
     final_cps = total_connects/xmittime
     api.Logger.info("Today's CPS number for pktsize(%d), cores(%d), burst(%d): %d"%
             (tc.iterators.packet_size, tc.iterators.cores, tc.iterators.burst, int(final_cps)))
-    if int(final_cps) < 400000:
+    if int(final_cps) < 200000:
         api.Logger.info("CPS test does not pass")
         return api.types.status.FAILURE
 

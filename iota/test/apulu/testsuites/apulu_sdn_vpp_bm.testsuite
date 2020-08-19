@@ -1,6 +1,6 @@
 meta:
-    name        : apulu_sdn_pds_pktgen
-    description : Apulu SDN PDS Kernel Pktgen CPS Testsuite
+    name        : apulu_sdn_vpp_bm
+    description : Apulu SDN VPP Baremetal Testsuite
     mode        : hardware
     cfgmode     : netagent
     nicmode     : hostpin
@@ -36,7 +36,7 @@ common:
 testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
-        - networking/pktgen.testbundle
+        - vpp/cps_kernel_pktgen.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

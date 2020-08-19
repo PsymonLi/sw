@@ -38,7 +38,7 @@ common:
 testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
-        - dp_assist_scale/cps_trex.testbundle
+        - vpp/cps_trex.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

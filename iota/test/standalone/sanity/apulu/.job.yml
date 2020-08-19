@@ -76,6 +76,29 @@ e2e-targets:
        vars:
           BmOs: linux
 
+ apulu-sdn-vpp-bm:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_sdn_vpp_bm"]
+   owners: ["email:bmital@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-17
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
  apulu-sdn-pds-scale-4G:
    commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_sdn_pds_scale_4G"]
    owners: ["email:param@pensando.io"]
