@@ -128,7 +128,26 @@ sfw_populate_default_enforce_security_profile(SecurityProfileSpec &prof)
 }
 
 hal_ret_t
-sfw_update_default_security_profile(uint32_t id, bool policy_enforce_en)
+sfw_update_default_security_profile_spec (SecurityProfileSpec& prof)
+{
+    hal_ret_t                ret;
+    SecurityProfileResponse  rsp;
+
+    hal::hal_cfg_db_open(CFG_OP_WRITE);
+    ret = securityprofile_update(prof, &rsp);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Could not update default security profile err: {}", ret);
+        goto end;
+    }
+
+end:
+    hal::hal_cfg_db_close();
+    return ret;
+}
+
+
+hal_ret_t
+sfw_update_default_security_profile (uint32_t id, bool policy_enforce_en)
 {
     hal_ret_t                ret;
     SecurityProfileSpec      prof; 

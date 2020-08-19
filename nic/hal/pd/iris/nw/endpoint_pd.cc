@@ -946,6 +946,19 @@ pd_ep_reg_mac_info (l2seg_t *ep_l2seg, l2seg_t *cl_l2seg, l2seg_t *hp_l2seg,
             reg_mac.flow_learn = 1;
         } else {
             reg_mac.flow_learn = 0;
+            /* 
+             * Pkts to non-host which are created from nicmgr will always have skip set.
+             * - To Inband mnic.
+             * - To OOB mnic
+             * - Internal MNICs and Host internal mgmt
+             * Transparent - Base net: tcp_non_syn_first_pkt_drop: 0
+             * Transparent - Flow Aware: tcp_non_syn_first_pkt_drop: 0
+             * Transparent - Enforce: tcp_non_syn_first_pkt_drop: 1,
+             *                        skips for pkts to above mnics
+             * MicroSeg - Enforce: tcp_non_syn_first_pkt_drop: 0 (Unshared)
+             * MicroSeg - Enforce: tcp_non_syn_first_pkt_drop: 1 (Shared) - Goes to first IF.
+             */
+            reg_mac.skip_ip_drop = 1;
         }
     }
 

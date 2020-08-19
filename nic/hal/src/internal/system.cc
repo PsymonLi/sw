@@ -18,10 +18,16 @@
 #include "nic/hal/plugins/cfg/nw/interface.hpp"
 #include "nic/hal/plugins/cfg/nw/microseg.hpp"
 #include "nic/hal/vmotion/vmotion.hpp"
+#include "gen/proto/nwsec.pb.h"
+
+using nwsec::NormalizationAction;
 
 namespace hal {
 
 #define HAL_MICRO_SEG_ENF_FLAP_TIME (60 * 1000)
+
+#define IS_MODE(fwd_mode, fwd_mode_val, policy_mode, policy_mode_val) \
+    ((fwd_mode == fwd_mode_val) && (policy_mode == policy_mode_val))
 
 void
 api_stats_fill_entry (ApiStatsEntry *entry, ApiCounter type)
@@ -776,6 +782,47 @@ micro_seg_status_update(MicroSegSpec &req,
 }
 
 hal_ret_t
+system_sfw_update_host_security_profile (sys::ForwardMode fwd_mode,
+                                         sys::PolicyMode pol_mode)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    SecurityProfileSpec prof;
+
+    prof.mutable_key_or_handle()->set_profile_id(L4_PROFILE_HOST_DEFAULT);
+
+    if (IS_MODE(fwd_mode, sys::FWD_MODE_TRANSPARENT,
+                pol_mode, sys::POLICY_MODE_ENFORCE)) {
+        prof.set_policy_enforce_en(true);
+        prof.set_ip_fragment_drop(true);
+        prof.set_tcp_non_syn_first_pkt_drop(true);
+        prof.set_ip_invalid_len_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_unexpected_mss_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_unexpected_win_scale_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_unexpected_sack_perm_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_urg_ptr_not_set_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_urg_flag_not_set_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_urg_payload_missing_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_data_len_gt_mss_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_data_len_gt_win_size_action(NormalizationAction::NORM_ACTION_ALLOW);
+        prof.set_tcp_unexpected_ts_option_action(NormalizationAction::NORM_ACTION_ALLOW);
+    } else if (IS_MODE(fwd_mode, sys::FWD_MODE_TRANSPARENT,
+                       pol_mode, sys::POLICY_MODE_FLOW_AWARE)) {
+        prof.set_policy_enforce_en(true);
+        prof.set_ip_fragment_drop(true);
+    } else {
+        prof.set_policy_enforce_en(false);
+        prof.set_ip_fragment_drop(false);
+    }
+
+    ret = hal::plugins::sfw::sfw_update_default_security_profile_spec(prof);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed to update host sec prof. err: {}", ret);
+    }
+
+    return ret;
+}
+
+hal_ret_t
 system_mseg_enf_to_transp (const SysSpec *spec)
 {
     hal_ret_t ret = HAL_RET_OK;
@@ -824,8 +871,8 @@ system_mseg_enf_to_transp_enf_flaware (const SysSpec *spec)
     fte::fte_set_quiesce(0 /* FTE ID */, false);
 
     // Make host traffic WL traffic
-    ret = hal::plugins::sfw::
-        sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT,true);
+    ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                  spec->policy_mode());
 
     return ret;
 }
@@ -840,8 +887,6 @@ system_mseg_enf_to_transp_bnet (const SysSpec *spec)
     return ret;
 }
 
-#define IS_MODE(fwd_mode, fwd_mode_val, policy_mode, policy_mode_val) \
-    ((fwd_mode == fwd_mode_val) && (policy_mode == policy_mode_val))
 //------------------------------------------------------------------------------
 //  Handle system mode changes (fwd & policy)
 //------------------------------------------------------------------------------
@@ -880,8 +925,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
             IS_MODE(spec->fwd_mode(), sys::FWD_MODE_TRANSPARENT,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
              // 1. Change l4 profile to enable policy_enf_cfg_en to pull packets to FTE
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT,true);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // 2. Set FTE to stop Quiescing
             fte::fte_set_quiesce(0 /* FTE ID */, false);
@@ -903,8 +948,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
              * Change l4 profile to disable policy_enf_cfg_en to not pull packets to FTE
              *    To prevent shared mgmt pkts from uplink or host to not come to FTE
              */
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
@@ -954,9 +999,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
 
             // Change l4 profile to disable policy_enf_cfg_en to
             // stop pulling packets to FTE
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT,
-                                                    false);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // Clear sessions
             hal::session_delete_all();
@@ -974,8 +1018,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
 
             // Make host traffic management
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
@@ -1027,9 +1071,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
             fte::fte_set_quiesce(0 /* FTE ID */, true);
 
             // Change l4 profile to not send packets to FTE
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT,
-                                                    false);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // Clear sessions
             hal::session_delete_all();
@@ -1057,8 +1100,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
 
             // Make host traffic management
-            ret = hal::plugins::sfw::
-                sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
+            ret = system_sfw_update_host_security_profile(spec->fwd_mode(),
+                                                          spec->policy_mode());
 
             // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
