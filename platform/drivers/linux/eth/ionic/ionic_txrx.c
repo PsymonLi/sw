@@ -5,7 +5,6 @@
 #include <linux/ipv6.h>
 #include <linux/if_vlan.h>
 #include <net/ip6_checksum.h>
-#include <linux/if_macvlan.h>
 
 #include "ionic.h"
 #include "ionic_lif.h"
@@ -33,7 +32,7 @@ static inline void ionic_rxq_post(struct ionic_queue *q, bool ring_dbell,
 {
 	ionic_q_post(q, ring_dbell, cb_func, cb_arg);
 
-	DEBUG_STATS_RX_BUFF_CNT(q_to_qcq(q));
+	DEBUG_STATS_RX_BUFF_CNT(q->lif);
 }
 
 static inline struct netdev_queue *q_to_ndq(struct ionic_queue *q)
@@ -296,8 +295,7 @@ static void ionic_rx_clean(struct ionic_queue *q,
 	csum = ip_compute_csum(skb->data, skb->len);
 #endif
 
-	if (is_master_lif(q->lif))
-		skb_record_rx_queue(skb, q->index);
+	skb_record_rx_queue(skb, q->index);
 
 	if (likely(netdev->features & NETIF_F_RXHASH)) {
 		switch (comp->pkt_type_color & IONIC_RXQ_COMP_PKT_TYPE_MASK) {
@@ -609,8 +607,8 @@ int ionic_txrx_napi(struct napi_struct *napi, int budget)
 
 	lif = rxcq->bound_q->lif;
 	idev = &lif->ionic->idev;
-	txqcq = lif->txqcqs[qi].qcq;
-	txcq = &lif->txqcqs[qi].qcq->cq;
+	txqcq = lif->txqcqs[qi];
+	txcq = &lif->txqcqs[qi]->cq;
 
 	tx_work_done = ionic_cq_service(txcq, tx_budget,
 					ionic_tx_service, NULL, NULL);
@@ -1281,31 +1279,6 @@ static int ionic_maybe_stop_tx(struct ionic_queue *q, int ndescs)
 
 	return stopped;
 }
-
-#ifndef HAVE_NDO_SELECT_QUEUE_SB_DEV
-u16 ionic_select_queue(struct net_device *netdev, struct sk_buff *skb,
-			void *accel_priv, select_queue_fallback_t fallback)
-{
-	u16 index;
-
-	if (netdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
-		if (accel_priv) {
-			struct ionic_lif *lif = (struct ionic_lif *)accel_priv;
-			struct ionic_lif *master_lif = lif->ionic->master_lif;
-
-			index = master_lif->nxqs + lif->index - 1;
-		} else {
-			struct ionic_lif *lif = netdev_priv(netdev);
-
-			index = lif->index;
-		}
-	} else {
-		index = fallback(netdev, skb);
-	}
-
-	return index;
-}
-#endif
 
 netdev_tx_t ionic_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 {

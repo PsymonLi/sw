@@ -16,7 +16,7 @@
 static void ionic_watchdog_cb(struct timer_list *t)
 {
 	struct ionic *ionic = from_timer(ionic, t, watchdog_timer);
-	struct ionic_lif *lif = ionic->master_lif;
+	struct ionic_lif *lif = ionic->lif;
 	int hb;
 
 	mod_timer(&ionic->watchdog_timer,
@@ -169,7 +169,7 @@ int ionic_heartbeat_check(struct ionic *ionic)
 	/* is this a transition? */
 	if (fw_status != idev->last_fw_status &&
 	    idev->last_fw_status != 0xff) {
-		struct ionic_lif *lif = ionic->master_lif;
+		struct ionic_lif *lif = ionic->lif;
 		bool trigger = false;
 
 		if (!fw_status || fw_status == 0xff) {
@@ -546,19 +546,18 @@ int ionic_db_page_num(struct ionic_lif *lif, int pid)
 static void ionic_txrx_notify(struct ionic *ionic,
 			      int lif_index, int qcq_id, bool is_tx)
 {
-	struct ionic_lif *lif;
+	struct ionic_lif *lif = ionic->lif;;
 
-	lif = radix_tree_lookup(&ionic->lifs, lif_index);
 	if (!lif)
 		return;
 
 	if (is_tx)
-		lif->txqcqs[qcq_id].qcq->armed = false;
+		lif->txqcqs[qcq_id]->armed = false;
 	else
-		lif->rxqcqs[qcq_id].qcq->armed = false;
+		lif->rxqcqs[qcq_id]->armed = false;
 
 	/* We schedule rx napi, it handles both tx and rx */
-	napi_schedule_irqoff(&lif->rxqcqs[qcq_id].qcq->napi);
+	napi_schedule_irqoff(&lif->rxqcqs[qcq_id]->napi);
 }
 
 static bool ionic_next_eq_comp(struct ionic_eq *eq, int ring_index,

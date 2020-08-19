@@ -28,7 +28,6 @@ struct ionic_lif;
 #define SHORT_TIMEOUT   1
 #define MAX_ETH_EQS	64
 
-extern unsigned int max_slaves;
 extern unsigned int rx_copybreak;
 extern unsigned int tx_budget;
 extern unsigned int devcmd_timeout;
@@ -56,8 +55,7 @@ struct ionic {
 	struct ionic_dev_bar bars[IONIC_BARS_MAX];
 	unsigned int num_bars;
 	bool is_mgmt_nic;
-	struct ionic_lif *master_lif;
-	struct radix_tree_root lifs;
+	struct ionic_lif *lif;
 	struct ionic_eq **eqs;
 	struct ionic_identity ident;
 	unsigned int nnqs_per_lif;

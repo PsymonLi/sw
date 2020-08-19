@@ -103,11 +103,10 @@ struct net_device *ionic_alloc_netdev(struct ionic *ionic)
 {
 	struct net_device *netdev = NULL;
 	struct ionic_lif *lif;
-	int nqueues;
 
-	nqueues = ionic->ntxqs_per_lif + (ionic->nlifs - 1);
 	netdev = alloc_netdev_mqs(sizeof(struct ionic_lif), ionic->pfdev->name,
-				  NET_NAME_USER, ether_setup, nqueues, nqueues);
+				  NET_NAME_USER, ether_setup,
+				  ionic->ntxqs_per_lif, ionic->ntxqs_per_lif);
 	if (!netdev)
 		return netdev;
 
@@ -281,42 +280,43 @@ static int ionic_probe(struct platform_device *pfdev)
 	err = ionic_lif_identify(ionic, IONIC_LIF_TYPE_CLASSIC,
 				 &ionic->ident.lif);
 	if (err) {
-		dev_err(dev, "Cannot identify LIFs: %d, aborting\n", err);
+		dev_err(dev, "Cannot identify LIF: %d, aborting\n", err);
 		goto err_out_unmap_bars;
 	}
 
-	err = ionic_lifs_size(ionic);
+	err = ionic_lif_size(ionic);
 	if (err) {
-		dev_err(dev, "Cannot size LIFs, aborting\n");
+		dev_err(dev, "Cannot size LIF: %d, aborting\n", err);
 		goto err_out_unmap_bars;
 	}
 
-	err = ionic_lifs_alloc(ionic);
+	err = ionic_lif_alloc(ionic);
 	if (err) {
-		dev_err(dev, "Cannot allocate LIFs, aborting\n");
+		dev_err(dev, "Cannot allocate LIF: %d, aborting\n", err);
 		goto err_out_free_lifs;
 	}
 
-	err = ionic_lifs_init(ionic);
+	err = ionic_lif_init(ionic->lif);
 	if (err) {
-		dev_err(dev, "Cannot init LIFs, aborting\n");
+		dev_err(dev, "Cannot init LIF: %d, aborting\n", err);
 		goto err_out_deinit_lifs;
 	}
 
-	err = ionic_lifs_register(ionic);
+	err = ionic_lif_register(ionic->lif);
 	if (err) {
-		dev_err(dev, "Cannot register LIFs, aborting\n");
+		dev_err(dev, "Cannot register LIF: %d, aborting\n", err);
 		goto err_out_unregister_lifs;
 	}
 
 	return 0;
 
 err_out_unregister_lifs:
-	ionic_lifs_unregister(ionic);
+	ionic_lif_unregister(ionic->lif);
 err_out_deinit_lifs:
-	ionic_lifs_deinit(ionic);
+	ionic_lif_deinit(ionic->lif);
 err_out_free_lifs:
-	ionic_lifs_free(ionic);
+	ionic_lif_free(ionic->lif);
+	ionic->lif = NULL;
 	ionic_bus_free_irq_vectors(ionic);
 err_out_unmap_bars:
 	ionic_unmap_bars(ionic);
@@ -333,9 +333,10 @@ static int ionic_remove(struct platform_device *pfdev)
 	struct ionic *ionic = platform_get_drvdata(pfdev);
 
 	if (ionic) {
-		ionic_lifs_unregister(ionic);
-		ionic_lifs_deinit(ionic);
-		ionic_lifs_free(ionic);
+		ionic_lif_unregister(ionic->lif);
+		ionic_lif_deinit(ionic->lif);
+		ionic_lif_free(ionic->lif);
+		ionic->lif = NULL;
 		ionic_port_reset(ionic);
 		ionic_reset(ionic);
 		ionic_bus_free_irq_vectors(ionic);

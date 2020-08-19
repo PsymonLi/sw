@@ -18,10 +18,6 @@ MODULE_LICENSE("GPL");
 MODULE_VERSION(IONIC_DRV_VERSION);
 MODULE_INFO(supported, "external");
 
-unsigned int max_slaves;
-module_param(max_slaves, uint, 0400);
-MODULE_PARM_DESC(max_slaves, "Maximum number of slave lifs");
-
 unsigned int rx_copybreak = IONIC_RX_COPYBREAK_DEFAULT;
 module_param(rx_copybreak, uint, 0600);
 MODULE_PARM_DESC(rx_copybreak, "Maximum size of packet that is copied to a bounce buffer on RX");
