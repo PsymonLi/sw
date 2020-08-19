@@ -280,10 +280,10 @@ export class PolicyhealthComponent implements OnInit, OnChanges, AfterViewInit, 
           }
           this.sessionData.series[i].values.forEach((item, idx) => {
             let val = item[yFieldIndex];
-            if (val != null) {
+            if (data[idx] && (val || val === 0)) {
               val = Math.round(val);
+              data[idx].y = data[idx].y + val;
             }
-            data[idx].y = data[idx].y + val;
           });
         }
       }
@@ -399,11 +399,13 @@ export class PolicyhealthComponent implements OnInit, OnChanges, AfterViewInit, 
             // _.uniqWith keeps the first object of duplication, we want to keep the latest
             const uniqueArr: any[] = [];
             for (const val of currData.series[idx].values) {
-              const index = uniqueArr.findIndex(item => item[0] === val[0]);
-              if (index > -1 && (val[1] || val[1] === 0)) { // if value is null, still keep the early ones
-                uniqueArr[index] = val;
-              } else {
-                uniqueArr.push(val);
+              if (val[1] !== null) {
+                const index = uniqueArr.findIndex(item => (item[0] === val[0])  && (item[1] !== null));
+                if (index > -1) { // if value is null, still keep the early ones
+                  uniqueArr[index] = val;
+                } else {
+                  uniqueArr.push(val);
+                }
               }
             }
             currData.series[idx].values = uniqueArr;
