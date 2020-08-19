@@ -427,7 +427,8 @@ func ValidateVrf(i types.InfraAPI, tenant, namespace, name string) (vrf netproto
 		}
 		for _, r := range rs {
 			vf := netproto.Vrf{}
-			log.Infof("unmarshal is %v/%v", r, vf.Unmarshal(r))
+			vf.Unmarshal(r)
+			log.Infof("ValidateVrf: raw val is %v, unmarshalled val is %v", r, vf)
 		}
 	}
 	log.Infof("Trying to find VRF [%v/%v/%v][%+v]", tenant, namespace, name, v)

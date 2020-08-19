@@ -25,7 +25,7 @@ import (
 var MirrorKeyToSessionIDMapping = map[string][]uint64{}
 
 //HandleInterfaceMirrorSession handles the CRUD operations on mirror object
-func HandleInterfaceMirrorSession(infraAPI types.InfraAPI, halMirrorSvcClient halapi.MirrorSvcClient, intfClient halapi.IfSvcClient, subnetClient halapi.SubnetSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID uint64) error {
+func HandleInterfaceMirrorSession(infraAPI types.InfraAPI, halMirrorSvcClient halapi.MirrorSvcClient, intfClient halapi.IfSvcClient, subnetClient halapi.SubnetSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID string) error {
 	switch oper {
 	case types.Create:
 		return createHalMirrorSession(infraAPI, halMirrorSvcClient, oper, mirror, vpcID)
@@ -38,7 +38,7 @@ func HandleInterfaceMirrorSession(infraAPI types.InfraAPI, halMirrorSvcClient ha
 	}
 }
 
-func createHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID uint64) error {
+func createHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID string) error {
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
 	for _, collector := range mirror.Spec.Collectors {
 		sessionID := infraAPI.AllocateID(types.MirrorSessionID, 0)
@@ -46,8 +46,10 @@ func createHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 
 		colObj := commonutils.BuildCollector(collectorName, sessionID, collector, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 
-		halMirrorSessionRequest := getHalMirrorSessionRequest(colObj, mirror.UUID, vpcID)
+		halMirrorSessionRequest := getHalMirrorSessionRequest(colObj, vpcID)
+
 		halMirrorSessionResponse, err := halClient.MirrorSessionCreate(context.Background(), halMirrorSessionRequest)
+
 		if halMirrorSessionResponse != nil {
 			if err := utils.HandleErr(types.Create, halMirrorSessionResponse.ApiStatus, err, fmt.Sprintf("Create Failed for MirrorSession | %s", colObj.Name)); err != nil {
 				return err
@@ -55,6 +57,8 @@ func createHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 		}
 		MirrorKeyToSessionIDMapping[mirrorKey] = append(MirrorKeyToSessionIDMapping[mirrorKey], sessionID)
 	}
+
+	mirror.Status.MirrorSessionIDs = MirrorKeyToSessionIDMapping[mirrorKey]
 
 	mirrorByteArr, _ := mirror.Marshal()
 	//store the mirror obj to BoltDB
@@ -65,7 +69,7 @@ func createHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 	return nil
 }
 
-func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, intfClient halapi.IfSvcClient, subnetClient halapi.SubnetSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID uint64) error {
+func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, intfClient halapi.IfSvcClient, subnetClient halapi.SubnetSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID string) error {
 	var existingMirror netproto.InterfaceMirrorSession
 	dat, err := infraAPI.Read(mirror.Kind, mirror.GetKey())
 	if err != nil {
@@ -149,7 +153,7 @@ func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Update collector
 			col := commonutils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-			resp, err := halClient.MirrorSessionUpdate(context.Background(), getHalMirrorSessionRequest(col, mirror.UUID, vpcID))
+			resp, err := halClient.MirrorSessionUpdate(context.Background(), getHalMirrorSessionRequest(col, vpcID))
 			if resp != nil {
 				if err := utils.HandleErr(types.Update, resp.ApiStatus, err, fmt.Sprintf("Update Failed for MirrorSession | %s", col.Name)); err != nil {
 					return err
@@ -165,7 +169,7 @@ func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
 		col := commonutils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-		resp, err := halClient.MirrorSessionCreate(context.Background(), getHalMirrorSessionRequest(col, mirror.UUID, vpcID))
+		resp, err := halClient.MirrorSessionCreate(context.Background(), getHalMirrorSessionRequest(col, vpcID))
 		if resp != nil {
 			if err := utils.HandleErr(types.Create, resp.ApiStatus, err, fmt.Sprintf("Update Failed for MirrorSession | %s", col.Name)); err != nil {
 				return err
@@ -209,6 +213,7 @@ func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 			}
 		}
 	}
+	mirror.Status.MirrorSessionIDs = MirrorKeyToSessionIDMapping[mirrorKey]
 
 	dat, _ = mirror.Marshal()
 
@@ -219,7 +224,7 @@ func updateHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 	return nil
 }
 
-func deleteHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID uint64) error {
+func deleteHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcClient, oper types.Operation, mirror netproto.InterfaceMirrorSession, vpcID string) error {
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
 	sessionIDs := MirrorKeyToSessionIDMapping[mirrorKey]
 
@@ -246,26 +251,25 @@ func deleteHalMirrorSession(infraAPI types.InfraAPI, halClient halapi.MirrorSvcC
 }
 
 // getHalMirrorSessionRequest is used to construct Hal Mirror request(used for create and update calls)
-func getHalMirrorSessionRequest(collector commonutils.Collector, UUID string, vpcID uint64) *halapi.MirrorSessionRequest {
-
+func getHalMirrorSessionRequest(collector commonutils.Collector, vpcID string) *halapi.MirrorSessionRequest {
 	var mirrorSpecs []*halapi.MirrorSessionSpec
 	ctype := strings.ToUpper(collector.Type)
 	if _, ok := halapi.ERSpanType_value[ctype]; !ok {
 		// erspan type 3 by default
 		ctype = halapi.ERSpanType_ERSPAN_TYPE_3.String()
 	}
-	uid, _ := uuid.FromString(UUID)
+	uid, _ := uuid.FromString(vpcID)
 	cspec := &halapi.MirrorSessionSpec{
-		Id:      uid.Bytes(),
+		Id:      convertID64(collector.SessionID),
 		SnapLen: collector.PacketSize,
 		Mirrordst: &halapi.MirrorSessionSpec_ErspanSpec{
 			ErspanSpec: &halapi.ERSpanSpec{
 				Type:  halapi.ERSpanType(halapi.ERSpanType_value[ctype]),
-				VPCId: convertID64(vpcID),
+				VPCId: uid.Bytes(),
 				Erspandst: &halapi.ERSpanSpec_DstIP{
 					DstIP: utils.ConvertIPAddresses(collector.Destination)[0],
 				},
-				SpanId:      uint32(collector.SessionID),
+				SpanId:      uint32(collector.SpanID),
 				VlanStripEn: collector.StripVlanHdr,
 			},
 		},

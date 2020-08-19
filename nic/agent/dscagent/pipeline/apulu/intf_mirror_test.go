@@ -5,6 +5,8 @@ package apulu
 import (
 	"testing"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -43,17 +45,18 @@ func TestHandleInterfaceMirrorSession(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	err := HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Create, mirror, 65)
+	uuidStr := uuid.NewV4().String()
+	err := HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Create, mirror, uuidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	mirror.Spec.Collectors[0].ExportCfg.Destination = "192.168.100.103"
-	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Update, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Update, mirror, uuidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Delete, mirror, uuidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,17 +100,18 @@ func TestHandleInterfaceMirrorSessions(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	err := HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Create, mirror, 65)
+	uuidStr := uuid.NewV4().String()
+	err := HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Create, mirror, uuidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, types.Delete, mirror, uuidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, 42, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, mirrorClient, intfClient, subnetClient, 42, mirror, uuidStr)
 	if err == nil {
 		t.Fatal("Invalid op must return a valid error.")
 	}
@@ -132,18 +136,19 @@ func TestHandleInterfaceMirrorInfraFailures(t *testing.T) {
 		},
 	}
 
+	uuidStr := uuid.NewV4().String()
 	i := newBadInfraAPI()
-	err := HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Create, mirror, 65)
+	err := HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Create, mirror, uuidStr)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Update, mirror, 65)
+	err = HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Update, mirror, uuidStr)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(i, mirrorClient, intfClient, subnetClient, types.Delete, mirror, uuidStr)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}

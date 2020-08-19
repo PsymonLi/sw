@@ -1421,7 +1421,7 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 	case types.Get:
 		//read from BoltDB
 		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
-		if err != nil {
+		if err == nil {
 			mirrors = append(mirrors, existingMirrorSession)
 			return mirrors, nil
 		}
@@ -1444,7 +1444,6 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 			mirrors = append(mirrors, mirrorSessionObj)
 		}
 		return mirrors, err
-	case types.Create:
 	case types.Update:
 		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
 		//check if existing session and new request are same and ignore
@@ -1456,13 +1455,12 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 		}
 	case types.Delete:
 		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
-		if err != nil {
+		if err == nil {
 			mirror = existingMirrorSession
 		} else {
 			return nil, err
 		}
 	}
-
 	log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
 
@@ -1476,8 +1474,7 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 		log.Error(err)
 		return nil, err
 	}
-
-	err = apulu.HandleInterfaceMirrorSession(a.InfraAPI, a.MirrorClient, a.InterfaceClient, a.SubnetClient, oper, mirror, vrf.Status.VrfID)
+	err = apulu.HandleInterfaceMirrorSession(a.InfraAPI, a.MirrorClient, a.InterfaceClient, a.SubnetClient, oper, mirror, vrf.UUID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
