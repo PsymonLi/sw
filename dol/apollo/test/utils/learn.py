@@ -17,6 +17,7 @@ def PdsUuidToUuidStr(pdsuuid):
 class EpMacRuntimeInfo(object):
     def __init__(self, yaml_str):
         data = yaml.load(yaml_str, Loader=yaml.Loader)
+        data = data['macentry']['entryauto']
         self.MacStr = utils.Int2MacStr(data['key']['macaddr'])
         self.SubnetUuidStr = utils.List2UuidStr(data['key']['subnetid'])
         self.VnicUuidStr = utils.List2UuidStr(data['vnicid'])
@@ -29,7 +30,9 @@ class EpMac:
         self.SubnetUuidStr = PdsUuidToUuidStr(localmapping.VNIC.SUBNET.UUID)
         self.VnicUuidStr = PdsUuidToUuidStr(localmapping.VNIC.UUID)
         self.CliCmd = "learn mac"
-        self.CliArgs = "--mac %s --subnet %s" % \
+        self.ShowCliArgs = "--mode auto --mac %s --subnet %s" % \
+                (self.MacStr, self.SubnetUuidStr)
+        self.ClearCliArgs = "--mac %s --subnet %s" % \
                 (self.MacStr, self.SubnetUuidStr)
         self.RuntimeInfo = None
 
@@ -46,6 +49,7 @@ class EpMac:
 class EpIpRuntimeInfo(object):
     def __init__(self, yaml_str):
         data = yaml.load(yaml_str, Loader=yaml.Loader)
+        data = data['ipentry']['entryauto']
         self.IpStr = utils.Int2IPAddrStr(data['key']['ipaddr']['v4orv6']['v4addr'])
         self.VpcUuidStr = utils.List2UuidStr(data['key']['vpcid'])
         self.MacStr = utils.Int2MacStr(data['macinfo']['macaddr'])
@@ -60,7 +64,9 @@ class EpIp:
         self.MacStr = str(localmapping.VNIC.MACAddr)
         self.SubnetUuidStr = PdsUuidToUuidStr(localmapping.VNIC.SUBNET.UUID)
         self.CliCmd = "learn ip"
-        self.CliArgs = "--ip %s --vpc %s" % \
+        self.ShowCliArgs = "--mode auto --ip %s --vpc %s" % \
+                (self.IpStr, self.VpcUuidStr)
+        self.ClearCliArgs = "--ip %s --vpc %s" % \
                 (self.IpStr, self.VpcUuidStr)
         self.RuntimeInfo = None
 
@@ -79,13 +85,13 @@ class EpIp:
 def PopulateRuntimeInfo(ep_mac_ip):
     ep_mac_ip.RuntimeInfo = None
     status_ok, output = pdsctl.ExecutePdsctlShowCommand(ep_mac_ip.CliCmd, \
-                                                        ep_mac_ip.CliArgs, True)
+                                                        ep_mac_ip.ShowCliArgs, True)
     if not status_ok:
         logger.error(" - ERROR: pdstcl show failed for cmd %s %s" % \
-                     (ep_mac_ip.CliCmd, ep_mac_ip.CliArgs))
+                     (ep_mac_ip.CliCmd, ep_mac_ip.ShowCliArgs))
         return False
     if 'API_STATUS_NOT_FOUND' in output:
-        logger.info(" - INFO: entry not found %s" % ep_mac_ip.CliArgs)
+        logger.info(" - INFO: entry not found %s" % ep_mac_ip.ShowCliArgs)
         return False
     if isinstance(ep_mac_ip, EpMac):
         ep_mac_ip.RuntimeInfo = EpMacRuntimeInfo(output.split('---')[0])
@@ -108,36 +114,12 @@ def VerifyIPAgeRefreshed(tc, ep_ip):
 
 def ClearOnDevice(ep_mac_ip):
     status_ok, output = pdsctl.ExecutePdsctlClearCommand(ep_mac_ip.CliCmd, \
-                                                         ep_mac_ip.CliArgs)
+                                                         ep_mac_ip.ClearCliArgs)
     if not status_ok:
         logger.error(" - ERROR: pdstcl clear failed for cmd %s %s" % \
-                     (ep_mac_ip.CliCmd, ep_mac_ip.CliArgs))
+                     (ep_mac_ip.CliCmd, ep_mac_ip.ClearCliArgs))
         return False
     return True
-
-def GetAllLearntEpInfo(ep_mac_or_ip):
-    if ep_mac_or_ip == "mac":
-        cmd = "learn mac"
-        runtimeInfo = EpMacRuntimeInfo
-    else:
-        cmd = "learn ip"
-        runtimeInfo = EPIpRuntimeInfo
-        status_ok, output = pdsctl.ExecutePdsctlShowCommand(cmd)
-        if not status_ok:
-            logger.error(" - ERROR: pdstcl show failed for cmd %s" % (cmd))
-            return None
-        epinfos = output.split('---')
-        infos = []
-        for epi in epinfos:
-            if (epi):
-                infos.push(runtimeInfo(epi))
-        return infos
-
-def GetAllLearntMacs():
-    return GetAllLearntEpInfo("mac")
-
-def GetAllLearntIps():
-    return GetAllLearntEpInfo("ip")
 
 def GetLearnStatistics():
     status_ok, output = pdsctl.ExecutePdsctlShowCommand("learn statistics")

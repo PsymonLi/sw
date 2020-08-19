@@ -28,33 +28,60 @@ ep_mac_walk_ip_list_cb (void *entry, void *user_data)
 {
     pds::LearnMACEntry *proto_entry = (pds::LearnMACEntry *)user_data;
     ep_ip_entry *ip_entry = (ep_ip_entry *)entry;
+    pds_obj_key_t key;
+    pds_learn_mode_t mode = device_db()->find()->learn_mode();
 
-    pds::LearnIPKey *ip_key = proto_entry->add_ipinfo();
-    ipaddr_api_spec_to_proto_spec(
-                ip_key->mutable_ipaddr(), &ip_entry->key()->ip_addr);
-    ip_key->set_vpcid(ip_entry->key()->vpc.id, PDS_MAX_KEY_LEN);
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        auto entry = proto_entry->mutable_entryauto();
+        auto ip_key = entry->add_ipinfo();
+        ipaddr_api_spec_to_proto_spec(ip_key->mutable_ipaddr(),
+                                      &ip_entry->key()->ip_addr);
+        ip_key->set_vpcid(ip_entry->key()->vpc.id, PDS_MAX_KEY_LEN);
+    } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+        auto entry = proto_entry->mutable_entrynotify();
+        auto ip_key = entry->add_ipinfo();
+        ipaddr_api_spec_to_proto_spec(ip_key->mutable_ipaddr(),
+                                      &ip_entry->key()->ip_addr);
+        key = api::uuid_from_objid(HOST_IFINDEX(ip_entry->key()->lif));
+        ip_key->set_hostif(key.id, PDS_MAX_KEY_LEN);
+    }
     return false; // returning false to continue iterating
 }
 
 static void
-ep_mac_entry_to_proto (ep_mac_entry *mac_entry, pds::LearnMACEntry *proto_entry)
+ep_mac_entry_to_proto (ep_mac_entry *mac_entry,
+                       pds::LearnMACEntry *proto_entry, pds_learn_mode_t mode)
 {
-    pds_obj_key_t vnic_key;
+    pds_obj_key_t key;
+    pds_encap_t encap;
 
-    vnic_key = learn::ep_vnic_key(mac_entry);
-    proto_entry->set_state(pds_learn_state_to_proto(mac_entry->state()));
-    proto_entry->set_vnicid(vnic_key.id, PDS_MAX_KEY_LEN);
-    proto_entry->mutable_key()->set_macaddr(
-                                MAC_TO_UINT64(mac_entry->key()->mac_addr));
-    proto_entry->mutable_key()->set_subnetid(mac_entry->key()->subnet.id,
-                                             PDS_MAX_KEY_LEN);
-    proto_entry->set_ttl(remaining_age_mac(mac_entry));
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        key = learn::ep_vnic_key(mac_entry);
+        auto entry = proto_entry->mutable_entryauto();
+        entry->set_state(pds_learn_state_to_proto(mac_entry->state()));
+        entry->set_vnicid(key.id, PDS_MAX_KEY_LEN);
+        entry->mutable_key()->set_macaddr(
+                              MAC_TO_UINT64(mac_entry->key()->mac_addr));
+        entry->mutable_key()->set_subnetid(mac_entry->key()->subnet.id,
+                                           PDS_MAX_KEY_LEN);
+        entry->set_ttl(remaining_age_mac(mac_entry));
+    } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+        auto entry = proto_entry->mutable_entrynotify();
+        encap = mac_entry->encap();
+        pds_encap_to_proto_encap(entry->mutable_encap(), &encap);
+        entry->mutable_key()->set_macaddr(
+                              MAC_TO_UINT64(mac_entry->key()->mac_addr));
+        key = api::uuid_from_objid(HOST_IFINDEX(mac_entry->key()->lif));
+        entry->mutable_key()->set_hostif(key.id, PDS_MAX_KEY_LEN);
+        entry->set_ttl(remaining_age_mac(mac_entry));
+    }
 }
 
 static sdk_ret_t
 ep_mac_get (ep_mac_key_t *key, pds::LearnMACGetResponse *proto_rsp)
 {
     ep_mac_entry *mac_entry;
+    pds_learn_mode_t mode = device_db()->find()->learn_mode();
 
     mac_entry = (ep_mac_entry *)learn_db()->ep_mac_db()->find(key);
     if (!mac_entry) {
@@ -62,7 +89,7 @@ ep_mac_get (ep_mac_key_t *key, pds::LearnMACGetResponse *proto_rsp)
     }
 
     pds::LearnMACEntry *proto_entry = proto_rsp->add_response();
-    ep_mac_entry_to_proto(mac_entry, proto_entry);
+    ep_mac_entry_to_proto(mac_entry, proto_entry, mode);
     mac_entry->walk_ip_list(ep_mac_walk_ip_list_cb, proto_entry);
     return SDK_RET_OK;
 }
@@ -72,9 +99,10 @@ ep_mac_entry_walk_cb (void *entry, void *rsp)
 {
     pds::LearnMACGetResponse *proto_rsp = (pds::LearnMACGetResponse *)rsp;
     ep_mac_entry *mac_entry = (ep_mac_entry *)entry;
+    pds_learn_mode_t mode = device_db()->find()->learn_mode();
 
     pds::LearnMACEntry *proto_entry = proto_rsp->add_response();
-    ep_mac_entry_to_proto(mac_entry, proto_entry);
+    ep_mac_entry_to_proto(mac_entry, proto_entry, mode);
     mac_entry->walk_ip_list(ep_mac_walk_ip_list_cb, proto_entry);
     return false;
 }
@@ -93,19 +121,31 @@ ep_ip_entry_to_proto (void *entry, void *rsp)
     pds::LearnIPEntry *proto_entry = proto_rsp->add_response();
     ep_ip_entry *ip_entry = (ep_ip_entry *)entry;
     ep_mac_entry *mac_entry = (ep_mac_entry *)ip_entry->mac_entry();
+    pds_learn_mode_t mode = device_db()->find()->learn_mode();
+    pds_obj_key_t key;
 
-    proto_entry->set_state(pds_learn_state_to_proto(ip_entry->state()));
-    ipaddr_api_spec_to_proto_spec(
-                          proto_entry->mutable_key()->mutable_ipaddr(),
-                          &ip_entry->key()->ip_addr);
-    proto_entry->mutable_key()->set_vpcid(ip_entry->key()->vpc.id,
-                                          PDS_MAX_KEY_LEN);
-    proto_entry->set_ttl(remaining_age_ip(ip_entry));
-    if (mac_entry) {
-        proto_entry->mutable_macinfo()->set_macaddr(
-                          MAC_TO_UINT64(mac_entry->key()->mac_addr));
-        proto_entry->mutable_macinfo()->set_subnetid(mac_entry->key()->subnet.id,
-                                                    PDS_MAX_KEY_LEN);
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        auto entry = proto_entry->mutable_entryauto();
+        entry->set_state(pds_learn_state_to_proto(ip_entry->state()));
+        ipaddr_api_spec_to_proto_spec(entry->mutable_key()->mutable_ipaddr(),
+                                      &ip_entry->key()->ip_addr);
+        entry->mutable_key()->set_vpcid(ip_entry->key()->vpc.id,
+                                        PDS_MAX_KEY_LEN);
+        entry->set_ttl(remaining_age_ip(ip_entry));
+        if (mac_entry) {
+            entry->mutable_macinfo()->set_macaddr(
+                           MAC_TO_UINT64(mac_entry->key()->mac_addr));
+            entry->mutable_macinfo()->set_subnetid(mac_entry->key()->subnet.id,
+                                                   PDS_MAX_KEY_LEN);
+        }
+    } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+        auto entry = proto_entry->mutable_entrynotify();
+        ipaddr_api_spec_to_proto_spec(entry->mutable_key()->mutable_ipaddr(),
+                                      &ip_entry->key()->ip_addr);
+        key = api::uuid_from_objid(HOST_IFINDEX(ip_entry->key()->lif));
+        entry->mutable_key()->set_hostif(key.id, PDS_MAX_KEY_LEN);
+        entry->set_ttl(remaining_age_ip(ip_entry));
+        entry->set_macaddr(MAC_TO_UINT64(ip_entry->mac_addr()));
     }
     return false;
 }
@@ -220,6 +260,11 @@ ep_learn_stats_fill (pds::LearnStatsGetResponse *proto_rsp)
         FILL_LEARN_EVENT_COUNTERS(ip_learns_ok, i, iplearnevents, true);
         FILL_LEARN_EVENT_COUNTERS(mac_learns_err, i, maclearnerrors, false);
         FILL_LEARN_EVENT_COUNTERS(ip_learns_err, i, iplearnerrors, false);
+    }
+
+    if (learn_oper_mode() != PDS_LEARN_MODE_AUTO) {
+        // validation and API counters are not applicable for notify mode
+         return SDK_RET_OK;
     }
 
     // learn validation errors

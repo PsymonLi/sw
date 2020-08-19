@@ -268,6 +268,7 @@ class RemoteMappingObjectClient(base.MappingClientBase):
             yamlOp = utils.LoadYaml(ip)
             if not yamlOp:
                 continue
+            yamlOp = yamlOp['ipentry']['entryauto']
             ip = yamlOp['key']['ipaddr']['v4orv6']['v4addr']
             ip_str = utils.Int2IPAddrStr(ip)
             vpc_uuid = utils.GetYamlSpecAttr(yamlOp['key'], 'vpcid')
@@ -283,7 +284,7 @@ class RemoteMappingObjectClient(base.MappingClientBase):
         if not EzAccessStoreClient[node].IsDeviceLearningEnabled():
             return True
         # verify learn db against store
-        ret, cli_op = utils.RunPdsctlShowCmd(peer_node, "learn ip", None)
+        ret, cli_op = utils.RunPdsctlShowCmd(peer_node, "learn ip", "--mode auto")
         if not self.VerifyLearntIpEntriesWithRemoteMapping(node, peer_node, ret, cli_op):
             logger.error(f"learn ip object validation failed {ret} for remote {node} {cli_op}")
             return False

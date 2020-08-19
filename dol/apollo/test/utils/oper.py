@@ -17,7 +17,7 @@ def GetNumVnic(node, subnet=None):
     
 def GetNumLearnMac(node, subnet=None):
     if subnet:
-        args = f" | grep {subnet.UUID.UuidStr}"
+        args = f"--mode auto | grep {subnet.UUID.UuidStr}"
     else:
         args = None
     ret, cli_op = utils.RunPdsctlShowCmd(node, "learn mac", args, yaml=False)
@@ -28,7 +28,7 @@ def GetNumLearnMac(node, subnet=None):
 
 def GetNumLearnIp(node, subnet=None):
     if subnet:
-        args = f"--subnet {subnet.UUID.UuidStr}"
+        args = f"--mode auto --subnet {subnet.UUID.UuidStr}"
     else:
         args = ""
     ret, cli_op = utils.RunPdsctlShowCmd(node, "learn ip", args, yaml=True)

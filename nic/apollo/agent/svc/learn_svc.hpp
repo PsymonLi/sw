@@ -15,6 +15,7 @@
 #include "nic/apollo/agent/svc/learn.hpp"
 #include "nic/apollo/learn/learn.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
+#include "nic/apollo/api/utils.hpp"
 
 using learn::ep_mac_key_t;
 using learn::ep_ip_key_t;
@@ -24,16 +25,49 @@ static inline void
 pds_learn_mackey_proto_to_api (learn::ep_mac_key_t *mac_key,
                                const pds::LearnMACKey &key)
 {
-    MAC_UINT64_TO_ADDR(mac_key->mac_addr, key.macaddr());
-    pds_obj_key_proto_to_api_spec(&mac_key->subnet, key.subnetid());
+    pds_obj_key_t hostif;
+
+    switch (key.mackey_case()) {
+    case pds::LearnMACKey::kKeyAuto:
+        MAC_UINT64_TO_ADDR(mac_key->mac_addr, key.keyauto().macaddr());
+        pds_obj_key_proto_to_api_spec(&mac_key->subnet,
+                                      key.keyauto().subnetid());
+        break;
+
+    case pds::LearnMACKey::kKeyNotify:
+        MAC_UINT64_TO_ADDR(mac_key->mac_addr, key.keynotify().macaddr());
+        pds_obj_key_proto_to_api_spec(&hostif, key.keynotify().hostif());
+        mac_key->lif = HOST_IFINDEX_TO_IF_ID(api::objid_from_uuid(hostif));
+        break;
+
+    default:
+        break;
+    }
 }
 
 static inline void
 pds_learn_ipkey_proto_to_api (learn::ep_ip_key_t *ip_key,
                               const pds::LearnIPKey &key)
 {
-    ipaddr_proto_spec_to_api_spec(&ip_key->ip_addr, key.ipaddr());
-    pds_obj_key_proto_to_api_spec(&ip_key->vpc, key.vpcid());
+    pds_obj_key_t hostif;
+
+    switch (key.ipkey_case()) {
+    case pds::LearnIPKey::kKeyAuto:
+        ipaddr_proto_spec_to_api_spec(&ip_key->ip_addr,
+                                      key.keyauto().ipaddr());
+        pds_obj_key_proto_to_api_spec(&ip_key->vpc, key.keyauto().vpcid());
+        break;
+
+    case pds::LearnIPKey::kKeyNotify:
+        ipaddr_proto_spec_to_api_spec(&ip_key->ip_addr,
+                                      key.keynotify().ipaddr());
+        pds_obj_key_proto_to_api_spec(&hostif, key.keynotify().hostif());
+        ip_key->lif = HOST_IFINDEX_TO_IF_ID(api::objid_from_uuid(hostif));
+        break;
+
+    default:
+        break;
+    }
 }
 
 static inline pds::EpState

@@ -625,6 +625,7 @@ class VnicObjectClient(base.ConfigClientBase):
             yamlOp = utils.LoadYaml(mac)
             if not yamlOp:
                 continue
+            yamlOp = yamlOp['macentry']['entryauto']
             mac_key = yamlOp['key']['macaddr']
             subnet_uuid = utils.GetYamlSpecAttr(yamlOp['key'], 'subnetid')
             vnic_uuid_str = utils.List2UuidStr(utils.GetYamlSpecAttr(yamlOp, 'vnicid'))
@@ -666,7 +667,7 @@ class VnicObjectClient(base.ConfigClientBase):
             return True
         logger.info(f"Reading VNIC & learn mac objects from {node} ")
         # verify learn db against store
-        ret, cli_op = utils.RunPdsctlShowCmd(node, "learn mac", None)
+        ret, cli_op = utils.RunPdsctlShowCmd(node, "learn mac", "--mode auto")
         if not self.ValidateLearntMacEntries(node, ret, cli_op):
             logger.error(f"learn mac object validation failed {ret} for {node} {cli_op}")
             return False

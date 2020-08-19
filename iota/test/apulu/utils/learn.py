@@ -25,9 +25,9 @@ def GetLearnIPObjects(node, vnic=None):
 
 def ExecuteShowLearnMAC(node, vnic=None, yaml=True):
     cmd = "learn mac"
-    args = ""
+    args = "--mode auto "
     if vnic != None:
-        args = "--mac %s --subnet %s" %(vnic.MACAddr, vnic.SUBNET.UUID.UuidStr)
+        args += "--mac %s --subnet %s" %(vnic.MACAddr, vnic.SUBNET.UUID.UuidStr)
 
     ret, resp = pdsctl.ExecutePdsctlShowCommand(node, cmd, args, yaml)
     if ret != True:
@@ -36,13 +36,13 @@ def ExecuteShowLearnMAC(node, vnic=None, yaml=True):
 
 def ExecuteShowLearnIP(node, lmapping=None, yaml=True):
     cmd = "learn ip"
-    args = ""
+    args = "--mode auto "
     if lmapping != None:
-        args = "--ip %s --vpc %s" %(lmapping.IP, lmapping.VNIC.SUBNET.VPC.UUID.UuidStr)
+        args += "--ip %s --vpc %s" %(lmapping.IP, lmapping.VNIC.SUBNET.VPC.UUID.UuidStr)
 
     ret, resp = pdsctl.ExecutePdsctlShowCommand(node, cmd, args, yaml)
     if ret != True:
-        api.Logger.error("Failed to execute show learn mac at node %s : %s" %(node, resp))
+        api.Logger.error("Failed to execute show learn ip at node %s : %s" %(node, resp))
     return ret, resp
 
 def ExecuteShowLearnStats(node, yaml=True, print_op=False):
@@ -121,6 +121,7 @@ def ReadLearnMACOperData(node, vnic):
         return True, None
     try:
         data = yaml.load(resp.split('---')[0], Loader=yaml.Loader)
+        data = data['macentry']['entryauto']
         return True, { key: data[key] for key in ['vnicid', 'state', 'ttl'] }
     except:
         data = None
@@ -136,6 +137,7 @@ def ReadLearnIPOperData(node, lmapping):
         return True, None
     try:
         data = yaml.load(resp.split('---')[0], Loader=yaml.Loader)
+        data = data['ipentry']['entryauto']
         return True, { key: data[key] for key in ['state', 'ttl'] }
     except:
         data = None

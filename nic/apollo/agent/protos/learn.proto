@@ -20,14 +20,44 @@ service LearnSvc {
   rpc LearnStatsClear (types.Empty) returns (types.Empty) {}
 }
 
-message LearnIPKey {
-  bytes           VPCId  = 1;
-  types.IPAddress IPAddr = 2;
+// key for endpoint IP in auto learning mode
+message LearnIPKeyAuto {
+  bytes           VPCId  = 1; // id of VPC this IP address belongs to
+  types.IPAddress IPAddr = 2; // IP address
 }
 
+// key for endpoint MAC in auto learning mode
+message LearnMACKeyAuto {
+  bytes  SubnetId = 1; // id of subnet this MAC address belongs to
+  uint64 MACAddr  = 2; // MAC address
+}
+
+// key for endpoint IP in notify learning mode
+message LearnIPKeyNotify {
+  bytes           HostIf = 1; // id of host interface this IP was learnt on
+  types.IPAddress IPAddr = 2; // IP address
+}
+
+// key for endpoint MAC in notify learning mode
+message LearnMACKeyNotify {
+  bytes  HostIf  = 1; // id of Host interface this MAC was learnt on
+  uint64 MACAddr = 2; // MAC address
+}
+
+// key to uniquely identify endpoint IP in all learning modes
+message LearnIPKey {
+  oneof ipkey {
+    LearnIPKeyAuto   KeyAuto   = 1;
+    LearnIPKeyNotify KeyNotify = 2;
+  }
+}
+
+// key to uniquely identify endpoint MAC in all learn modes
 message LearnMACKey {
-  bytes  SubnetId = 1;
-  uint64 MACAddr  = 2;
+  oneof mackey {
+    LearnMACKeyAuto   KeyAuto   = 1;
+    LearnMACKeyNotify KeyNotify = 2;
+  }
 }
 
 enum EpState {
@@ -40,19 +70,59 @@ enum EpState {
   EP_STATE_DELETED  = 6;
 }
 
-message LearnIPEntry {
-  LearnIPKey  Key     = 1;
-  LearnMACKey MACInfo = 2;
-  EpState     State   = 3;
-  uint32      TTL     = 4;
+// endpoint IP information used in auto learning mode
+message LearnIPEntryAuto {
+  LearnIPKeyAuto  Key     = 1;
+  LearnMACKeyAuto MACInfo = 2;
+  EpState         State   = 3;
+  uint32          TTL     = 4;
 }
 
+// endpoint MAC information used in auto learning mode
+message LearnMACEntryAuto {
+  LearnMACKeyAuto         Key    = 1;
+  bytes                   VnicId = 2;
+  EpState                 State  = 3;
+  uint32                  TTL    = 4;
+  repeated LearnIPKeyAuto IPInfo = 5;
+}
+
+// endpoint IP information used in notify learning mode
+message LearnIPEntryNotify {
+  // unique key to identify endpoint IP
+  LearnIPKeyNotify Key     = 1;
+  // MAC address associated with this IP
+  uint64           MACAddr = 2;
+  // number of seconds this entry is valid upto
+  uint32           TTL     = 3;
+}
+
+// endpoint MAC information used in notify learning mode
+message LearnMACEntryNotify {
+  // unique key to identify endpoint MAC
+  LearnMACKeyNotify         Key    = 1;
+  // encapsulation used by this endpoint
+  types.Encap               Encap  = 2;
+  // number of seconds this entry is valid upto
+  uint32                    TTL    = 3;
+  // list of IP addresses associated with this MAC
+  repeated LearnIPKeyNotify IPInfo = 4;
+}
+
+// generic endpoint IP information used in all learning modes
+message LearnIPEntry {
+  oneof ipentry {
+    LearnIPEntryAuto   EntryAuto   = 1;
+    LearnIPEntryNotify EntryNotify = 2;
+  }
+}
+
+// generic endpoint MAC information used in all learning modes
 message LearnMACEntry {
-  LearnMACKey Key            = 1;
-  bytes       VnicId         = 2;
-  EpState     State          = 3;
-  uint32      TTL            = 4;
-  repeated LearnIPKey IPInfo = 5;
+  oneof macentry {
+    LearnMACEntryAuto   EntryAuto   = 1;
+    LearnMACEntryNotify EntryNotify = 2;
+  }
 }
 
 enum LearnPktType {
