@@ -516,6 +516,16 @@
    "Desc": "System has detected a pcie link health warning"
   },
   {
+   "Name": "NPM_CONNECTION_DOWN",
+   "Severity": "critical",
+   "Desc": "DSC has lost connectivity to Policy Manager on the PSM. Further policy changes will not be applied to this DSC till connectivity is restored. Recommendation is to check connectivity between all PSM nodes and DSC management port."
+  },
+  {
+   "Name": "NPM_CONNECTION_RESTORED",
+   "Severity": "info",
+   "Desc": "Policy Manager - DSC connectivity restored."
+  },
+  {
    "Name": "SERVICE_PENDING",
    "Severity": "debug",
    "Desc": "Service pending"

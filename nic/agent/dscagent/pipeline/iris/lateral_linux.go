@@ -18,8 +18,9 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/nic/agent/dscagent/common/utils"
 	irisUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
-	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
+	pipelineUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -411,7 +412,7 @@ func resolveIPAddress(ctx context.Context, destIP, gwIP string) string {
 				return ""
 			}
 
-			mgmtIP := utils.GetMgmtIP(MgmtLink)
+			mgmtIP := pipelineUtils.GetMgmtIP(MgmtLink)
 			// Pick the first route sourced at mgmt IP.
 			// Dest IP in not in the local subnet. Use GW IP as the destIP for ARP'ing
 			for _, r := range routes {

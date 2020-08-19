@@ -313,6 +313,9 @@ var (
 	// ControllerWaitDelay is the duration during for which netagent waits to reconnect to the controllers
 	ControllerWaitDelay = time.Second * 30
 
+	// ControllerAlertCount is the number of ControllerWaitDelay s to wait to generate a critical event to PSM
+	ControllerAlertCount = 10
+
 	// NetIfUpdateDelay is the duration NetIfWorker waits before sending out interface udpates to Venice
 	NetIfUpdateDelay = time.Second * 10
 )

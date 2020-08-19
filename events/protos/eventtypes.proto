@@ -469,6 +469,13 @@ enum EventTypes {
     COLLECTOR_UNREACHABLE                  = 1102 [(category) = Network,
                                            (severity) 	      = WARN,
                                            (desc)     	      = "Collector not reachable from DSC"];
+    NPM_CONNECTION_DOWN                    = 1103 [(category) = System,
+                                           (severity)         = CRITICAL,
+                                           (desc)             = "DSC has lost connectivity to Policy Manager on the PSM. Further policy changes will not be applied to this DSC till connectivity is restored. Recommendation is to check connectivity between all PSM nodes and DSC management port."];
+    NPM_CONNECTION_RESTORED                = 1104 [(category) = System,
+                                           (severity)         = INFO,
+                                           (desc)             = "Policy Manager - DSC connectivity restored.",
+                                           (suppress_mm)      = true];
     // ------------------------- Control Plane events ------------------------- //
     BGP_SESSION_ESTABLISHED               = 1201 [(category) = Network,
                                            (severity)         = INFO,

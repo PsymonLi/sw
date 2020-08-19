@@ -741,6 +741,20 @@ func init() {
 		Desc:       "Collector not reachable from DSC",
 		SuppressMM: false}
 
+	eventTypes[NPM_CONNECTION_DOWN] = &EventTypeAttributes{
+		EType:      NPM_CONNECTION_DOWN.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC has lost connectivity to Policy Manager on the PSM. Further policy changes will not be applied to this DSC till connectivity is restored. Recommendation is to check connectivity between all PSM nodes and DSC management port.",
+		SuppressMM: false}
+
+	eventTypes[NPM_CONNECTION_RESTORED] = &EventTypeAttributes{
+		EType:      NPM_CONNECTION_RESTORED.String(),
+		Severity:   "info",
+		Category:   "system",
+		Desc:       "Policy Manager - DSC connectivity restored.",
+		SuppressMM: true}
+
 	eventTypes[BGP_SESSION_ESTABLISHED] = &EventTypeAttributes{
 		EType:      BGP_SESSION_ESTABLISHED.String(),
 		Severity:   "info",

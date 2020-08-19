@@ -23,6 +23,8 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/nic/agent/dscagent/common/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/httputils"
 	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
@@ -288,6 +290,7 @@ func (c *API) Start(kinds []string) error {
 // Caller must be holding the lock
 func (c *API) start(ctx context.Context) error {
 	defer c.Done()
+	var alertCount int
 	for {
 		select {
 		case <-ctx.Done():
@@ -319,10 +322,22 @@ func (c *API) start(ctx context.Context) error {
 			// Loop forever connect to all controllers NPM, TPM and TSM. Handle cascading closures to prevent leaks
 			c.closeConnections()
 			log.Infof("Controller API: %s", types.InfoControllerReconnecting)
+			if alertCount < types.ControllerAlertCount {
+				alertCount++
+				if alertCount == types.ControllerAlertCount {
+					// Generate critical event
+					utils.RaiseEvent(eventtypes.NPM_CONNECTION_DOWN, fmt.Sprintf("NPM at URL: %s is not reachable from DSC %s", c.npmURL, c.InfraAPI.GetConfig().DSCID), c.InfraAPI.GetDscName())
+				}
+			}
 			time.Sleep(types.ControllerWaitDelay)
 			continue
 		}
 
+		// Reset alert count on successfully connecting to Venice
+		if alertCount >= types.ControllerAlertCount {
+			utils.RaiseEvent(eventtypes.NPM_CONNECTION_RESTORED, fmt.Sprintf("NPM at URL: %s is reachable from DSC %s", c.npmURL, c.InfraAPI.GetConfig().DSCID), c.InfraAPI.GetDscName())
+		}
+		alertCount = 0
 		nimbusClient, err := nimbus.NewNimbusClient(c.InfraAPI.GetDscName(), c.npmURL, c.npmClient)
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrNimbusClient, "Controller API: %s", err))

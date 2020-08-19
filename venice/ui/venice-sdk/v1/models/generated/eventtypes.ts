@@ -119,6 +119,8 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'NAPLES_POST_DIAG_FAILURE_EVENT',
     'NAPLES_SERVICE_STOPPED',
     'NAPLES_WARN_PCIEHEALTH_EVENT',
+    'NPM_CONNECTION_DOWN',
+    'NPM_CONNECTION_RESTORED',
     'SERVICE_PENDING',
     'SERVICE_RUNNING',
     'SERVICE_STARTED',
@@ -634,6 +636,16 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "NAPLES_WARN_PCIEHEALTH_EVENT",
       "Severity": EventsEvent_severity.warn,
       "Desc": "System has detected a pcie link health warning",
+  },
+  'NPM_CONNECTION_DOWN' : {
+      "Name": "NPM_CONNECTION_DOWN",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC has lost connectivity to Policy Manager on the PSM. Further policy changes will not be applied to this DSC till connectivity is restored. Recommendation is to check connectivity between all PSM nodes and DSC management port.",
+  },
+  'NPM_CONNECTION_RESTORED' : {
+      "Name": "NPM_CONNECTION_RESTORED",
+      "Severity": EventsEvent_severity.info,
+      "Desc": "Policy Manager - DSC connectivity restored.",
   },
   'SERVICE_PENDING' : {
       "Name": "SERVICE_PENDING",
