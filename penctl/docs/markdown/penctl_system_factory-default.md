@@ -18,7 +18,8 @@ penctl system factory-default [flags]
 ### Options
 
 ```
-  -h, --help   help for factory-default
+      --force   proceed with the command
+  -h, --help    help for factory-default
 ```
 
 ### Options inherited from parent commands

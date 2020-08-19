@@ -24,7 +24,8 @@ Options
 
 ::
 
-  -h, --help   help for erase-config
+      --force   proceed with the command
+  -h, --help    help for erase-config
 
 Options inherited from parent commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

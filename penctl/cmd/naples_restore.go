@@ -28,13 +28,22 @@ var eraseConfigCmd = &cobra.Command{
 	RunE:  eraseConfigCmdHandler,
 }
 
+var force bool
+
 func init() {
 	sysCmd.AddCommand(factoryDefaultCmd)
 	sysCmd.AddCommand(eraseConfigCmd)
+
+	factoryDefaultCmd.Flags().BoolVarP(&force, "force", "", false, "proceed with the command")
+	eraseConfigCmd.Flags().BoolVarP(&force, "force", "", false, "proceed with the command")
 }
 
 func eraseConfigCmdHandler(cmd *cobra.Command, args []string) error {
-	if isUserSureToProceedWithAction("Are you sure to continue with erase-config?") {
+	force = false
+	if !cmd.Flags().Changed("force") {
+		force = true
+	}
+	if isUserSureToProceedWithAction("Are you sure to continue with erase-config?") || force {
 		v := &nmd.DistributedServiceCardCmdExecute{
 			Executable: "eraseConfig",
 			Opts:       strings.Join([]string{""}, ""),
@@ -45,7 +54,11 @@ func eraseConfigCmdHandler(cmd *cobra.Command, args []string) error {
 }
 
 func factoryDefaultCmdHandler(cmd *cobra.Command, args []string) error {
-	if isUserSureToProceedWithAction("Are you sure to continue with resetting to factory-default?") {
+	force = false
+	if !cmd.Flags().Changed("force") {
+		force = true
+	}
+	if isUserSureToProceedWithAction("Are you sure to continue with resetting to factory-default?") || force {
 		v := &nmd.DistributedServiceCardCmdExecute{
 			Executable: "factoryDefault",
 			Opts:       strings.Join([]string{""}, ""),
