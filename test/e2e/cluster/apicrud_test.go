@@ -987,7 +987,7 @@ var _ = Describe("api crud and bulkedit tests", func() {
 
 		for i := 0; i < numNetw; i++ {
 			netw.ObjectMeta.Name = netwPrefix + strconv.Itoa(i)
-			netw.Spec.VlanID = uint32(i)
+			netw.Spec.VlanID = uint32(i) + 230
 			netw.Spec.IPv4Subnet = "10.1." + strconv.Itoa(i) + ".0/24"
 			netw.Spec.IPv4Gateway = "10.1." + strconv.Itoa(i) + ".1"
 			_, err := grpcClient.NetworkV1().Network().Create(context.Background(), &netw)
