@@ -49,6 +49,7 @@
       "/sw/nic/vpp/tools/vppctl-sim.sh show pds device status",
       "/sw/nic/vpp/tools/vppctl-sim.sh show pds flow replication statistics",
       "mkdir -p /data/logs/ && rsync --progress -ah --exclude=*model*log* /sw/nic/*log* /data/logs/",
+      "mkdir -p /data/logs/dom_b && rsync --progress -ah --exclude=*model*log* /tmp/dom_b/*log* /data/logs/dom_b",
       "mkdir -p /data/core/ && cp /sw/nic/core* /data/core/"
     ],
   "cores": [
