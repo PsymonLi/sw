@@ -32,7 +32,7 @@ ifeq ($(ARCH), aarch64)
 all: dpdk
 else ifeq ($(ARCH), x86_64)
     export DPDK_SIM_BLD       := y
-    CONFIG_FILE=x86_64-default-linuxapp-gcc
+    CONFIG_FILE=x86_64-native-linuxapp-gcc
     CROSS_CMD=
     CFLAGS_CMD="-I${NUMAROOT}/include -I${DPDKROOT}/include -I${SDKDIR} -DDPDK_SIM -fPIC -O0 -g -Wno-error"
     LDFLAGS_CMD="-L${BLD_LIB_DIR} -L${NUMAROOT}/x86_64/lib -lnuma -L${BLD_OUT_DIR}/../lib -ldpdksim -lsdkpal -llogger"
@@ -47,14 +47,12 @@ endif
 
 dpdk:
 	@echo "Building dpdk"
-	cd ${PATCHROOT}; patch -p0 -i ${PATCHPATH}/sim_code_no_prefix_pendpdk.patch
 	make -C ${DPDKROOT} config T=${CONFIG_FILE} O=${OUT_DIR}
 	make -j8 -C ${DPDKROOT} ${CROSS_CMD} ${RTE_COMPILE} EXTRA_CFLAGS=${CFLAGS_CMD} EXTRA_LDFLAGS=${LDFLAGS_CMD} O=${OUT_DIR}
 	cd ${OUT_DIR}/lib/; ${CMD_GCC} -shared -o libdpdk.so -Wl,--whole-archive libdpdk.a ${SIM_LIB} -Wl,--no-whole-archive
 	cp ${OUT_DIR}/lib/libdpdk.so ${BLD_LIB_DIR}
 	mkdir -p ${DPDKROOT}/build/lib
 	cp ${OUT_DIR}/lib/libdpdk.so ${DPDKROOT}/build/lib/
-	cd ${PATCHROOT}; patch -p0 -R < ${PATCHPATH}/sim_code_no_prefix_pendpdk.patch
 
 .PHONY: printvars
 printvars:

@@ -738,7 +738,7 @@ static void
 signal_handler (int signum)
 {
     if (signum == SIGINT || signum == SIGTERM) {
-        PDS_TRACE_DEBUG("\nSIGNAL received..\n");
+        PDS_TRACE_DEBUG("\nSIGNAL {} received..\n", signum);
         program_prepare_exit();
     }
 }
@@ -1268,6 +1268,7 @@ bool
 app_test_exit(test_vparam_ref_t vparam)
 {
     if (fte_inited) {
+        PDS_TRACE_DEBUG("\nCalling fte_fini..\n");
         fte_ath::fte_fini();
     }
     if (pds_global_inited) {

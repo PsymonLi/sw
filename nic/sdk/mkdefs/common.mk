@@ -31,7 +31,7 @@ export SDK_THIRD_PARTY_VPP_LDPATH := \
        ${SDKDIR}/third-party/vpp-pkg/${ARCH}/lib
 
 export SDK_THIRD_PARTY_VPP_LIBS := \
-       :libvnet.so.19.01 :libvlib.so.19.01 :libvppinfra.so.19.01
+       :libvnet.so.19.08.1 :libvlib.so.19.08.1 :libvppinfra.so.19.08.1
 
 export SDK_THIRD_PARTY_OMAPI_LIBS := dhcpctl dns omapi
 

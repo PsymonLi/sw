@@ -1489,8 +1489,8 @@ _init_port (void)
         ret = rte_eth_dev_set_mtu(portid, JUMBO_FRAME_LEN);
         if (ret < 0) {
             rte_exit(EXIT_FAILURE,
-                     "Cannot configure device: err=%d, port=%d\n",
-                     ret, portid);
+                     "Cannot configure device MTU %d: err=%d, port=%d\n",
+                     JUMBO_FRAME_LEN, ret, portid);
         }
 #endif
 
@@ -1630,8 +1630,21 @@ fte_init (pds_cinit_params_t *init_params)
 }
 
 void
+fte_dpdk_dev_stop (void)
+{
+    uint16_t port_id;
+
+    RTE_ETH_FOREACH_DEV(port_id) {
+        rte_eth_dev_stop(port_id);
+        rte_eth_dev_close(port_id);
+    }
+}
+
+void
 fte_fini (void)
 {
+    PDS_TRACE_DEBUG("FTE Finishing...");
+
     if (fte_threads_started) {
         fte_threads_done = true;
         rte_eal_mp_wait_lcore();
@@ -1640,6 +1653,7 @@ fte_fini (void)
     /*
      * Anything else in fte_athena that needs explicit cleanup goes here.
      */
+    fte_dpdk_dev_stop();
     fte_conntrack_indexer_destroy();
     fte_session_indexer_destroy();
     fte_l2_flow_range_bmp_destroy();
