@@ -818,7 +818,7 @@ func CreateBucketClient(ctx context.Context,
 }
 
 func (idr *Indexer) updateLastProcessedkeys(lastProcessedKey string) {
-	idr.logger.Debugf("updating last processed object key to %s", lastProcessedKey)
+	idr.logger.Infof("updating last processed object key to %s", lastProcessedKey)
 	// Using the Indexer's Lock for now, it seems ok to use the same lock
 	// but fix if it turns out to be an issue
 	idr.Lock()

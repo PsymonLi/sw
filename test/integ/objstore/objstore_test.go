@@ -257,13 +257,13 @@ func (it *objstoreIntegSuite) TestObjStoreApis(c *C) {
 }
 
 // basic test to make sure all components come up
-func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
+func (it *objstoreIntegSuite) TestObjStoreApisAdmin(c *C) {
 	ctx := context.Background()
 	mc, err := minioclient.NewAdminClient(it.resolverClient, minioclient.WithCredentialsManager(it.credsManger))
 	AssertOk(c, err, fmt.Sprintf("objstore admin client failed"))
 	Assert(c, mc != nil, fmt.Sprintf("objstore admin client is nil"))
 
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 30)
 
 	// DataUsageInfo
 	AssertEventually(c, func() (bool, interface{}) {
@@ -275,7 +275,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore DataUsageInfo empty result")
 		}
 		return err == nil && info != "", nil
-	}, "objstore DataUsageInfo API failed", "500ms", "30s")
+	}, "objstore DataUsageInfo API failed", "500ms", "60s")
 
 	// IsCluserOnline
 	AssertEventually(c, func() (bool, interface{}) {
@@ -287,7 +287,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore admin IsClusterOnline false")
 		}
 		return err == nil && online, nil
-	}, "objstore IsClusterOnline API failed", "500ms", "30s")
+	}, "objstore IsClusterOnline API failed", "500ms", "60s")
 
 	// ServerInfo
 	AssertEventually(c, func() (bool, interface{}) {
@@ -299,7 +299,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore admin ServerInfo empty result")
 		}
 		return err == nil && info != "", nil
-	}, "objstore ServerInfo API failed", "500ms", "30s")
+	}, "objstore ServerInfo API failed", "500ms", "60s")
 }
 
 // basic test to make sure all components come up

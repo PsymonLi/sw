@@ -72,7 +72,7 @@ func helper(ctx context.Context,
 	// Batch any pending requests.
 	if len(reqs) > 0 {
 		// Send a bulk request
-		logger.Debugf("Writer: %d Calling Bulk Api len: %d requests",
+		logger.Infof("Writer: %d Calling Bulk Api len: %d requests",
 			id,
 			len(reqs))
 
@@ -97,7 +97,7 @@ func helper(ctx context.Context,
 						continue
 					}
 
-					logger.Debugf("Writer: %d Bulk request succeeded after (%d) failures", id, failedBulkCount)
+					logger.Infof("Writer: %d Bulk request succeeded after (%d) failures", id, failedBulkCount)
 					failedBulkCount = 0
 					break
 				}
