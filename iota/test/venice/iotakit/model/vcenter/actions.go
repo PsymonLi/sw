@@ -304,12 +304,15 @@ func (sm *VcenterSysModel) MoveWorkloads(spec common.MoveWorkloadsSpec) error {
 	}
 	for i, w := range spec.WorkloadCollection.Workloads {
 		dstNodeName := spec.DstHostCollection.Hosts[0].Name()
+		dstDC := spec.DstHostCollection.Hosts[0].DC.DCName
 		if len(spec.DstHostCollection.Hosts) > i {
 			dstNodeName = spec.DstHostCollection.Hosts[i].Name()
+			dstDC = spec.DstHostCollection.Hosts[i].DC.DCName
 		}
 		wMove.WorkloadMoves = append(wMove.WorkloadMoves, &iota.WorkloadMove{
 			WorkloadName: w.Name(),
-			SrcDcName:    orch.Orchestrators[0].DCs[0].Name,
+			SrcDcName:    w.Host().DC.DCName,
+			DstDcName:    dstDC,
 			DstNodeName:  dstNodeName,
 			SrcNodeName:  w.NodeName(),
 			AbortTime:    spec.Timeout,

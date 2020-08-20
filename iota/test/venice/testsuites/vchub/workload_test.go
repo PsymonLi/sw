@@ -319,6 +319,7 @@ var _ = Describe("Vc hub workload tests", func() {
 		})
 
 		It("Abort and restart vmotion of workloads", func() {
+			Skip("Skipping untill orchub issue is fixed")
 			workloads := ts.model.Workloads()
 			err := ts.model.TeardownWorkloads(workloads)
 			Expect(err == nil)

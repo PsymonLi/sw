@@ -244,7 +244,8 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 		currVlan     int
 		abortTime    int
 		err          error
-		dc           *VcenterDatacenter
+		sdc          *VcenterDatacenter
+		ddc          *VcenterDatacenter
 	}
 	dupCheck := make(map[string]bool)
 	moveRequests := []*moveRequest{}
@@ -289,7 +290,16 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 
 		dc, ok := n.dcMap[mvReq.SrcDcName]
 		if !ok {
-			msg := fmt.Sprintf("Src DC % not found   %v %v -> %v", mvReq.SrcDcName, mvReq.WorkloadName, mvReq.SrcNodeName, mvReq.DstNodeName)
+			msg := fmt.Sprintf("Src DC %v not found   %v %v -> %v", mvReq.SrcDcName, mvReq.WorkloadName, mvReq.SrcNodeName, mvReq.DstNodeName)
+			log.Error(msg)
+			req.ApiResponse.ErrorMsg = msg
+			req.ApiResponse.ApiStatus = iota.APIResponseType_API_BAD_REQUEST
+			return req, nil
+		}
+
+		ddc, ok := n.dcMap[mvReq.DstDcName]
+		if !ok {
+			msg := fmt.Sprintf("Dst DC %v not found   %v %v -> %v", mvReq.DstDcName, mvReq.WorkloadName, mvReq.SrcNodeName, mvReq.DstNodeName)
 			log.Error(msg)
 			req.ApiResponse.ErrorMsg = msg
 			req.ApiResponse.ApiStatus = iota.APIResponseType_API_BAD_REQUEST
@@ -297,7 +307,7 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 		}
 
 		moveRequests = append(moveRequests, &moveRequest{srcHost: mSrcNode.GetNodeInfo().IPAddress,
-			srcNodeName: mvReq.SrcNodeName, dstNodeName: mvReq.DstNodeName, dc: dc,
+			srcNodeName: mvReq.SrcNodeName, dstNodeName: mvReq.DstNodeName, sdc: dc, ddc: ddc,
 			vlanOverride: int(mvReq.VlanOverride), currVlan: int(mvReq.CurrentVlan), switchName: mvReq.SwitchName,
 			dstHost: mvDstNode.GetNodeInfo().IPAddress, workloadName: mvReq.WorkloadName,
 			abortTime: int(mvReq.AbortTime)})
@@ -315,8 +325,8 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 				var err error
 				var msg string
 				for i := 0; i < 3; i++ {
-					err = mvReq.dc.hdl.LiveMigrate(mvReq.workloadName,
-						mvReq.srcHost, mvReq.dstHost, mvReq.dc.clusterName, mvReq.abortTime)
+					err = mvReq.sdc.hdl.LiveMigrate(mvReq.workloadName, mvReq.ddc.hdl,
+						mvReq.srcHost, mvReq.dstHost, mvReq.sdc.clusterName, mvReq.abortTime)
 					if err != nil && mvReq.abortTime == 0 {
 						msg = fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v failed : %v",
 							mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())
@@ -335,7 +345,7 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 				if mvReq.abortTime == 0 {
 					// Not continuing with vlanOverride if req was to abort
 					if mvReq.vlanOverride != 0 {
-						err = mvReq.dc.hdl.SetVlanOverride(mvReq.switchName, mvReq.workloadName, mvReq.currVlan, mvReq.vlanOverride)
+						err = mvReq.ddc.hdl.SetVlanOverride(mvReq.switchName, mvReq.workloadName, mvReq.currVlan, mvReq.vlanOverride)
 						if err != nil {
 							msg := fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v vlan override set failedfailed:  %v",
 								mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())

@@ -96,6 +96,7 @@ func (n *VcenterNode) deployWorkloadTemplates() error {
 		for _, node := range dc.managedNodes {
 
 			node := node
+			dc := dc
 			pool.Go(func() error {
 				for _, image := range images {
 					imageDir, _ := imageRep.GetImageDir(image)
@@ -128,16 +129,16 @@ func (n *VcenterNode) initVcenter() error {
 
 	//Delete all the VMs associated to the DC/vcenter.
 	log.Infof("Initing up vcenter node %v %v", n.GetNodeInfo().IPAddress, n.info.License)
-	vc, err := vmware.NewVcenter(context.Background(), n.info.IPAddress, n.info.Username,
-		n.info.Password, n.info.License)
-	if err != nil {
-		log.Errorf("TOPO SVC | InitTestbed  | Clean Esx node, failed to get vcenter handle  %v", err.Error())
-		return err
-	}
-
-	n.vc = vc
 
 	for _, dc := range n.dcMap {
+
+		vc, err := vmware.NewVcenter(context.Background(), n.info.IPAddress, n.info.Username,
+			n.info.Password, n.info.License)
+		if err != nil {
+			log.Errorf("TOPO SVC | InitTestbed  | Clean Esx node, failed to get vcenter handle  %v", err.Error())
+			return err
+		}
+
 		//TODO , create based on current User -ID
 		dataCenter, err := vc.CreateDataCenter(dc.dcName)
 		if err != nil {
@@ -146,6 +147,7 @@ func (n *VcenterNode) initVcenter() error {
 		}
 
 		dc.hdl = dataCenter
+		dc.vc = vc
 		//Create cluster
 		cl, err := dataCenter.CreateCluster(dc.clusterName)
 		if err != nil {
@@ -243,7 +245,7 @@ func (n *VcenterNode) initVcenter() error {
 
 	}
 
-	err = n.deployWorkloadTemplates()
+	err := n.deployWorkloadTemplates()
 	if err != nil {
 		log.Errorf("TOPO SVC | InitTestbed  | Failed to deploy VM templates %v", err.Error())
 		return err
@@ -262,12 +264,14 @@ func (n *VcenterNode) initVcenter() error {
 func (n *VcenterNode) CheckHealth(ctx context.Context, health *iota.NodeHealth) (*iota.NodeHealth, error) {
 	health.HealthCode = iota.NodeHealth_HEALTH_OK
 
-	if !n.vc.Active() {
-		health.HealthCode = iota.NodeHealth_NODE_DOWN
-		msg := fmt.Sprintf("Vcenter node is down %v", n.Node.Name)
-		log.Info(msg)
-		health.NodeName = n.Node.Name
-		return health, errors.New(msg)
+	for _, dc := range n.dcMap {
+		if !dc.vc.Active() {
+			health.HealthCode = iota.NodeHealth_NODE_DOWN
+			msg := fmt.Sprintf("Vcenter node is down %v", n.Node.Name)
+			log.Info(msg)
+			health.NodeName = n.Node.Name
+			return health, errors.New(msg)
+		}
 	}
 
 	for _, mn := range n.managedNodes {
@@ -552,6 +556,9 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 //RemoveNetworks not supported for other nodes
 func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg) (*iota.NetworksMsg, error) {
 
+	req.ApiResponse = &iota.IotaAPIResponse{
+		ApiStatus: iota.APIResponseType_API_STATUS_OK,
+	}
 	datacenter, ok := n.dcMap[req.Dc]
 	if !ok {
 		req.ApiResponse.ErrorMsg = fmt.Sprintf("DC %v not found", req.Dc)
@@ -571,9 +578,8 @@ func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg)
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
 		return req, nil
 	}
-	managedNodes := n.GetManagedNodes()
 	for _, pg := range pgs {
-		for _, mn := range managedNodes {
+		for _, mn := range datacenter.managedNodes {
 			log.Infof("Remove vmks on PG %v on host %v", pg, mn.GetNodeInfo().Name)
 
 			err := dc.RemoveKernelNic(req.Cluster, mn.GetNodeInfo().IPAddress, pg)
@@ -593,10 +599,6 @@ func (n *VcenterNode) RemoveNetworks(ctx context.Context, req *iota.NetworksMsg)
 		}
 
 		return req, nil
-	}
-
-	req.ApiResponse = &iota.IotaAPIResponse{
-		ApiStatus: iota.APIResponseType_API_STATUS_OK,
 	}
 
 	return req, nil

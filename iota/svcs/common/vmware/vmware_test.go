@@ -171,188 +171,68 @@ func Test_vcenter_find_host(t *testing.T) {
 	//TestUtils.Assert(t, false, "Ds not created")
 
 	ctx, _ := context.WithCancel(context.Background())
-	vc, err := NewVcenter(ctx, "barun-vc.pensando.io", "administrator@pensando.io", "N0isystem$",
+	vc, err := NewVcenter(ctx, "barun-vc-7.pensando.io", "administrator@pensando.io", "N0isystem$",
 		"YN69K-6YK5J-78X8T-0M3RH-0T12H")
 
 	TestUtils.Assert(t, err == nil, "Connected to venter")
 	TestUtils.Assert(t, vc != nil, "Vencter context set")
 
-	dc, err := vc.SetupDataCenter("sudhiaithal-iota-dc")
+	dc, err := vc.SetupDataCenter("sudhiaithal-iota-dc-0")
 	TestUtils.Assert(t, err == nil, "successfuly setup dc")
-	dc, ok := vc.datacenters["sudhiaithal-iota-dc"]
+	dc, ok := vc.datacenters["sudhiaithal-iota-dc-0"]
 	TestUtils.Assert(t, ok, "sudhiaithal setup dc")
 
 	c, ok := dc.clusters["sudhiaithal-iota-cluster"]
 	TestUtils.Assert(t, ok, "successfuly setup cluster")
-	TestUtils.Assert(t, len(c.hosts) == 2, "successfuly setup cluster")
+	TestUtils.Assert(t, len(c.hosts) == 1, "successfuly setup cluster")
 
-	vm, err2 := dc.NewVM("node1-ep1")
-	TestUtils.Assert(t, err2 == nil, "VM FOUND")
-	TestUtils.Assert(t, vm != nil, "VM FOND")
+	dc1, err := vc.SetupDataCenter("sudhiaithal-iota-dc-1")
+	TestUtils.Assert(t, err == nil, "successfuly setup dc")
+	dc1, ok = vc.datacenters["sudhiaithal-iota-dc-1"]
+	TestUtils.Assert(t, ok, "sudhiaithal setup dc")
 
+	c, ok = dc1.clusters["sudhiaithal-iota-cluster"]
+	TestUtils.Assert(t, ok, "successfuly setup cluster")
+	TestUtils.Assert(t, len(c.hosts) == 1, "successfuly setup cluster")
+
+	/*
+			vmInfo, err := dc.DeployVM("sudhiaithal-iota-cluster", "10.8.155.242",
+			"build-114", 4, 4, []string{"VM Network"}, "/tmp/build-114")
+		fmt.Printf("Deploy VM error %v", err)
+		TestUtils.Assert(t, err == nil, "Deploy VM done") */
+
+	done := make(chan error, 2)
+	go func() {
+		_, err := dc.DeployVM("sudhiaithal-iota-cluster", "10.8.155.242",
+			"build-111-dc", 4, 4, []string{"VM Network", "iota-def-network", "iota-def-network", "iota-def-network"}, "/tmp/build-114")
+		fmt.Printf("0 Deploy VM error %v", err)
+		done <- err
+		//TestUtils.Assert(t, err == nil, "Deploy VM done")
+	}()
+
+	go func() {
+		_, err := dc1.DeployVM("sudhiaithal-iota-cluster", "10.8.102.57",
+			"build-111-dc1", 4, 4, []string{"VM Network", "iota-def-network", "iota-def-network", "iota-def-network"}, "/tmp/build-114")
+		fmt.Printf("1 Deploy VM error %v", err)
+	//	TestUtils.Assert(t, err == nil, "Deploy VM done")
+		done <- err
+		//TestUtils.Assert(t, err == nil, "Deploy VM done")
+	}()
+
+	var rerr error
+	for i := 0; i < 2; i++ {
+		err = <-done
+		if err != nil {
+			fmt.Printf("ERROR %v\n", err)
+			rerr = err
+		}
+	}
+	TestUtils.Assert(t, rerr == nil, "Deploy VM done")
 	//dvs, err := dc.findDvs("#Pen-DVS-ptprabu-iota-dc")
 	//TestUtils.Assert(t, err == nil, "successfuly found dvs")
 	//TestUtils.Assert(t, dvs != nil, "dvs nil")
-
-	vm, err2 = dc.NewVM("workload-host-1-w1")
-	TestUtils.Assert(t, err2 == nil, "VM FOUND")
-	//TestUtils.Assert(t, vm != nil, "VM FOND")
-
-	/*
-		pgName := "iota-vmotion-pg2"
-		vNWs := []NWSpec{
-			{Name: pgName},
-		}
-		vspec := VswitchSpec{Name: "vswitch0"}
-
-		err = dc.AddNetworks("ptprabu-iota-cluster", "tb68-host1.pensando.io", vNWs, vspec)
-		TestUtils.Assert(t, err == nil, "Added")
-
-		err = dc.AddKernelNic("ptprabu-iota-cluster", "tb68-host1.pensando.io", KernelNetworkSpec{
-			Portgroup:     pgName,
-			EnableVmotion: true})
-		fmt.Printf("ERror %v", err)
-		TestUtils.Assert(t, err == nil, "Added") */
-
-	nvm, err := dc.CloneVM("ptprabu-iota-cluster", "192.168.68.172", "node1-ep3", "temp-vm", 4, 4)
-	//fmt.Printf("Error %v", err.Error())
-	TestUtils.Assert(t, err == nil, "VM Clone failed")
-	TestUtils.Assert(t, nvm != nil, "VM FOND")
-
-	TestUtils.Assert(t, false, "Ds not created")
-
-	err2 = dc.ReconfigureVMNetwork(vm, "iota-def-network", "#Pen-DVS-sudhiaithal-iota-dc", "#Pen-PG-Network-Vlan-1", 1, true)
-	fmt.Printf("Error %v", err2)
-	TestUtils.Assert(t, err2 == nil, "Reconfig faild")
-
-	ip, err := vm.vm.WaitForIP(ctx, true)
-	fmt.Printf("VM IP %v", ip)
-
-	err2 = dc.ReconfigureVMNetwork(vm, "iota-def-network", "#Pen-DVS-sudhiaithal-iota-dc", "#Pen-PG-Network-Vlan-2", 1, true)
-	fmt.Printf("Error %v", err2)
-	TestUtils.Assert(t, err2 == nil, "Reconfig faild")
-
-	ip, err = vm.vm.WaitForIP(ctx, true)
-	fmt.Printf("VM IP %v", ip)
-
-	TestUtils.Assert(t, false, "Ds not created")
-
-	/*dvsSpec := DVSwitchSpec{
-	Name: "iota-dvs", Cluster: "sudhiaithal-iota-cluster",
-	MaxPorts: 10,
-	Pvlans: []DvsPvlanPair{DvsPvlanPair{Primary: 1024,
-		Secondary: 1024, Type: "promiscuous"}}} */
-
-	//err = dc.AddDvs(dvsSpec)
-	//TestUtils.Assert(t, err == nil, "dvs added")
-
-	/*
-		vm, err2 = dc.NewVM("node2-ep1")
-		TestUtils.Assert(t, err2 == nil, "VM FOUND")
-		TestUtils.Assert(t, vm != nil, "VM FOND")
-
-		macs, err3 := vm.ReadMacs()
-		for nw, mac := range macs {
-			fmt.Printf("NW : %v. mac %v\n", nw, mac)
-		}
-		TestUtils.Assert(t, err3 != nil, "VM FOUND") */
-
-	//dvs, err := dc.findDvs("#Pen-DVS-sudhiaithal-iota-dc")
-	//TestUtils.Assert(t, err == nil && dvs != nil, "dvs found")
-
-	//pgName, err := dc.FindDvsPortGroup("Pen-DVS-sudhiaithal-iota-dc", DvsPGMatchCriteria{Type: DvsPvlan, VlanID: int32(199)})
-	//fmt.Printf("Dvs port name %v %v", pgName, err)
-	//TestUtils.Assert(t, err == nil, "Connected to venter")
-
-	//err = dc.RelaxSecurityOnPg("#Pen-DVS-sudhiaithal-iota-dc", "#Pen-PG-Network-Vlan-2")
-	//fmt.Printf("Error %v\n", err)
-	//TestUtils.Assert(t, err == nil, "pvlan added")
-
-	/*
-		for i := int32(0); i < 100; i += 2 {
-			err = dc.AddPvlanPairsToDvs("iota-dvs", []DvsPvlanPair{DvsPvlanPair{Primary: 3003 + i,
-				Secondary: 3003 + i, Type: "promiscuous"}})
-			fmt.Printf("Error %v\n", err)
-			TestUtils.Assert(t, err == nil, "pvlan added")
-
-			err = dc.AddPvlanPairsToDvs("iota-dvs", []DvsPvlanPair{DvsPvlanPair{Primary: 3003 + i,
-				Secondary: 3003 + i + 1, Type: "isolated"}})
-			fmt.Printf("Error %v\n", err)
-			TestUtils.Assert(t, err == nil, "pvlan added")
-		} */
-
-	//pgName = constants.EsxDataNWPrefix + strconv.Itoa(spec.PrimaryVlan)
-	//Create the port group
-	/*err = dc.AddPortGroupToDvs("Pen-DVS-sudhiaithal-iota-dc",
-		[]DvsPortGroup{DvsPortGroup{Name: "my-pg",
-			VlanOverride: true,
-			Private:      true,
-			Ports:        32, Type: "earlyBinding",
-			Vlan: int32(800)}})
-	fmt.Printf("Error %v\n", err)
-	TestUtils.Assert(t, err == nil, "pvlan added")*/
-
-	/*
-		ctx, cancel := context.WithCancel(context.Background())
-		vc, err := NewVcenter(ctx, "barun-vc.pensando.io", "administrator@pensando.io", "N0isystem$",
-			"YN69K-6YK5J-78X8T-0M3RH-0T12H")
-
-		TestUtils.Assert(t, err == nil, "Connected to venter")
-		TestUtils.Assert(t, vc != nil, "Vencter context set")
-
-		dc, err := vc.SetupDataCenter("iota-dc")
-		TestUtils.Assert(t, err == nil, "successfuly setup dc")
-		dc, ok := vc.datacenters["iota-dc"]
-		TestUtils.Assert(t, ok, "successfuly setup dc")
-
-		TestUtils.Assert(t, len(dc.clusters) == 1, "successfuly setup dc")
-
-		c, ok := dc.clusters["iota-cluster"]
-		TestUtils.Assert(t, ok, "successfuly setup cluster")
-		TestUtils.Assert(t, len(c.hosts) == 1, "successfuly setup cluster")
-
-		cancel()
-
-		active, err := vc.Client().SessionManager.SessionIsActive(ctx)
-		TestUtils.Assert(t, active == false, "Connected to venter active")
-
-		ctx, cancel = context.WithCancel(context.Background())
-		err = vc.Reinit(ctx)
-		TestUtils.Assert(t, err == nil, "Reinit failed")
-		active, err = vc.Client().SessionManager.SessionIsActive(vc.Ctx())
-		TestUtils.Assert(t, active == true, "Connected to venter active")
-
-		err = dc.setUpFinder()
-		//TestUtils.Assert(t, err == nil, "Setup finder succes")
-
-		vhost, err := dc.findHost("iota-cluster", "tb60-host1.pensando.io")
-		fmt.Printf("Err %v", err)
-		TestUtils.Assert(t, err == nil, "Connected to venter")
-		TestUtils.Assert(t, vhost != nil, "Vencter context set")
-
-		//Create vmkitni
-
-		vNWs := []NWSpec{
-			{Name: "my-vmk2"},
-		}
-		vspec := VswitchSpec{Name: "vSwitch0"}
-
-		err = dc.AddNetworks("iota-cluster", "tb60-host1.pensando.io", vNWs, vspec)
-		TestUtils.Assert(t, err == nil, "Add network failed")
-
-		err = dc.AddKernelNic("iota-cluster", "tb60-host1.pensando.io", "my-vmk2", true)
-		fmt.Printf("Err %v", err)
-		TestUtils.Assert(t, err == nil, "Creted VMK")
-
-		err = dc.RemoveKernelNic("iota-cluster", "tb60-host1.pensando.io", "my-vmk2")
-		fmt.Printf("Err %v", err)
-		TestUtils.Assert(t, err == nil, "Removed VMK")
-
-		err = dc.RemoveNetworks("iota-cluster", "tb60-host1.pensando.io", vNWs)
-		TestUtils.Assert(t, err == nil, "Add network failed")
-
-	*/
 }
+
 func Test_vcenter_vmotion_vmk(t *testing.T) {
 
 	//	TestUtils.Assert(t, false, "Ds not created")

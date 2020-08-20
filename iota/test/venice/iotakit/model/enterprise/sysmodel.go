@@ -553,11 +553,6 @@ func (sm *SysModel) SetupDefaultCommon(ctx context.Context, scale, scaleData boo
 		sm.defaultSgPolicies = append(sm.defaultSgPolicies, objects.NewNetworkSecurityPolicyCollection(nPolicy, sm.ObjClient(), sm.Tb))
 	}
 
-	err := sm.AssociateHosts()
-	if err != nil {
-		return fmt.Errorf("Error associating hosts: %s", err)
-	}
-
 	for _, sw := range sm.Tb.DataSwitches {
 		_, err := sm.CreateSwitch(sw)
 		if err != nil {
@@ -568,7 +563,7 @@ func (sm *SysModel) SetupDefaultCommon(ctx context.Context, scale, scaleData boo
 	}
 
 	// create a default firewall profile
-	err = sm.updateDefaultFwprofile()
+	err := sm.updateDefaultFwprofile()
 	if err != nil {
 		log.Errorf("Error creating firewall profile: %v", err)
 		return err
@@ -604,6 +599,11 @@ func (sm *SysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData boo
 	err = sm.InitConfig(scale, scaleData)
 	if err != nil {
 		return err
+	}
+
+	err = sm.AssociateHosts()
+	if err != nil {
+		return fmt.Errorf("Error associating hosts: %s", err)
 	}
 
 	if err = sm.SetupDefaultCommon(ctx, scale, scaleData); err != nil {

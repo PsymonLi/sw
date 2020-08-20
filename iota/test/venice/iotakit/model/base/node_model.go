@@ -171,9 +171,9 @@ func (sm *SysModel) BringUpNewWorkloads(hc *objects.HostCollection, snc *objects
 					wc.SetError(err)
 					return wc
 				}
-				sw, err := sm.Tb.GetSwitch(hosts[i].DCName)
+				sw, err := sm.Tb.GetSwitch(hosts[i].DC.DCName)
 				if err != nil {
-					log.Errorf("Error finding switch for DC %v", hosts[i].DCName)
+					log.Errorf("Error finding switch for DC %v", hosts[i].DC.DCName)
 					wc.SetError(err)
 					return wc
 				}

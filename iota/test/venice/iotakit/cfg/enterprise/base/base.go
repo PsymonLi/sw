@@ -123,6 +123,7 @@ type CfgObjects struct {
 	Ipams      []*network.IPAMPolicy
 	Mirrors    []*monitoring.MirrorSession
 	Tenants    []*cluster.Tenant
+	Hosts      []*cluster.Host
 }
 
 //ConfigParams contoller
@@ -1190,5 +1191,16 @@ func (gs *EntBaseCfg) GetCfgObjects() CfgObjects {
 	objects.SgPolicies = gs.Cfg.ConfigItems.SGPolicies
 	objects.Mirrors = gs.Cfg.ConfigItems.Mirrors
 	objects.Workloads = gs.Cfg.ConfigItems.Workloads
+	objects.Hosts = gs.Cfg.ConfigItems.Hosts
 	return objects
+}
+
+//SetCfgObjects resets all generated objects
+func (gs *EntBaseCfg) SetCfgObjects(objects CfgObjects) {
+	gs.Cfg.ConfigItems.Networks = objects.Networks
+	gs.Cfg.ConfigItems.Apps = objects.Apps
+	gs.Cfg.ConfigItems.SGPolicies = objects.SgPolicies
+	gs.Cfg.ConfigItems.Mirrors = objects.Mirrors
+	gs.Cfg.ConfigItems.Workloads = objects.Workloads
+	gs.Cfg.ConfigItems.Hosts = objects.Hosts
 }

@@ -755,14 +755,19 @@ func (cl *CloudCfg) PushConfig() error {
 }
 
 //GetCfgObjects gets all generated objects
-func (gs *CloudCfg) GetCfgObjects() base.CfgObjects {
+func (cl *CloudCfg) GetCfgObjects() base.CfgObjects {
 
 	objects := base.CfgObjects{}
-	objects.Ipams = gs.Cfg.ConfigItems.IPAMPs
-	objects.Workloads = gs.Cfg.ConfigItems.TenantWorkloads
-	objects.Tenants = gs.Cfg.ConfigItems.Tenants
-	objects.SgPolicies = gs.Cfg.ConfigItems.SGPolicies
-	objects.Networks = gs.Cfg.ConfigItems.Subnets
+	objects.Ipams = cl.Cfg.ConfigItems.IPAMPs
+	objects.Workloads = cl.Cfg.ConfigItems.TenantWorkloads
+	objects.Tenants = cl.Cfg.ConfigItems.Tenants
+	objects.SgPolicies = cl.Cfg.ConfigItems.SGPolicies
+	objects.Networks = cl.Cfg.ConfigItems.Subnets
 
 	return objects
+}
+
+//SetCfgObjects sets all generated objects
+func (cl *CloudCfg) SetCfgObjects(base.CfgObjects) {
+
 }

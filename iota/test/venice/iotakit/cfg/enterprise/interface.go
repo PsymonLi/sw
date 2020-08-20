@@ -25,6 +25,7 @@ type CfgModel interface {
 	ObjClient() objClient.ObjClient
 	//Get all generated objects which may be modified before push
 	GetCfgObjects() base.CfgObjects
+	SetCfgObjects(base.CfgObjects)
 }
 
 //CfgType type

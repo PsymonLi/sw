@@ -248,6 +248,9 @@ func (entity *Entity) getNWMap(ovfDir string, networks []string) ([]types.OvfNet
 
 func (entity *Entity) getImportSpec(rp *object.ResourcePool, ds *Datastore, name string,
 	ovfDir string, networks []string) (*types.OvfCreateImportSpecResult, error) {
+
+	//entity.clientLock.Lock()
+	//defer entity.clientLock.Unlock()
 	ovfSrc, err := getOvfSrc(ovfDir)
 	if err != nil {
 		return nil, err
@@ -484,8 +487,8 @@ func (entity *Entity) VMExists(name string) bool {
 
 // BootVM botts up a new vm
 func (entity *Entity) BootVM(name string) (*VMInfo, error) {
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
+	//entity.getClientWithRLock()
+	//defer entity.releaseClientRLock()
 	vm, err := entity.Finder().VirtualMachine(entity.Ctx(), name)
 
 	if err != nil {
@@ -565,6 +568,13 @@ func (entity *Entity) cloneVMOnHost(host *object.HostSystem, name string, newNam
 
 	vm, err := entity.Finder().VirtualMachine(entity.Ctx(), name)
 	if err != nil {
+
+		vms, err := entity.Finder().VirtualMachineList(entity.Ctx(), "*")
+		if err == nil {
+			for _, vm := range vms {
+				fmt.Printf("VM %v\n", vm.Name())
+			}
+		}
 		log.Fatal(err)
 	}
 
@@ -628,7 +638,5 @@ func (entity *Entity) AddNetworks(specs []NWSpec, vsSpec VswitchSpec) ([]string,
 func (entity *Entity) DeployVM(clusterName string, hostname string,
 	name string, ncpus uint, memory uint, networks []string, ovfDir string) (*VMInfo, error) {
 
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
 	return nil, errors.New("Unimplemented method")
 }

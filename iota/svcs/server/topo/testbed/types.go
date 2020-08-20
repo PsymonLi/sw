@@ -56,6 +56,7 @@ type VcenterDatacenter struct {
 	distributedSwitch string
 	pvlanStart        uint32
 	pvlanEnd          uint32
+	vc                *vmware.Vcenter
 }
 
 // VcenterNode implements functions for Vcenter

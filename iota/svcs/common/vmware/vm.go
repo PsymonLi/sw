@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pkg/errors"
@@ -82,15 +83,131 @@ func (vs *vmotionSinker) Sink() chan<- progress.Report {
 	return vs.reportChan
 }
 
+func (vm *VM) getRelocationDeviceChangeSpec(dstDC *DataCenter) ([]types.BaseVirtualDeviceConfigSpec, error) {
+
+	changeSpecs := []types.BaseVirtualDeviceConfigSpec{}
+	getNwName := func(uuid, key string) (string, error) {
+		netList, err := vm.entity.Finder().NetworkList(vm.entity.Ctx(), "*")
+		if err != nil {
+			return "", errors.Wrap(err, "Failed Fetch networks")
+		}
+
+		for _, net := range netList {
+			nwRef, err := net.EthernetCardBackingInfo(vm.entity.Ctx())
+			if err != nil {
+				continue
+			}
+			switch nw := nwRef.(type) {
+			case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+				if nw.Port.SwitchUuid == uuid && nw.Port.PortgroupKey == key {
+					return net.GetInventoryPath(), nil
+				}
+			}
+
+		}
+		return "", errors.Wrap(err, "Failed Fetch networks")
+	}
+
+	getDstDvsPG := func(entity *Entity, dvsPG string) (*types.VirtualEthernetCardDistributedVirtualPortBackingInfo, error) {
+		netList, err := entity.Finder().NetworkList(entity.Ctx(), "*")
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed Fetch networks")
+		}
+
+		for _, net := range netList {
+			nwRef, err := net.EthernetCardBackingInfo(entity.Ctx())
+			if err != nil {
+				continue
+			}
+			switch nw := nwRef.(type) {
+			case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+				if path.Base(net.GetInventoryPath()) == dvsPG {
+					return nw, nil
+				}
+			}
+
+		}
+		return nil, errors.Wrap(err, "Failed Fetch networks")
+	}
+
+	devList, err := vm.vm.Device(vm.entity.Ctx())
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to device list of VM")
+	}
+
+	devices := devList.SelectByType((*types.VirtualEthernetCard)(nil))
+	for _, d := range devices {
+		veth := d.GetVirtualDevice()
+
+		switch a := veth.Backing.(type) {
+		case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+
+			nwName, _ := getNwName(a.Port.SwitchUuid, a.Port.PortgroupKey)
+			fmt.Printf("Connected to DVS PG %v %v %v\n", a.Port.SwitchUuid, a.Port.PortgroupKey, nwName)
+			nw, _ := getDstDvsPG(&dstDC.vc.Entity, path.Base(nwName))
+			fmt.Printf("New Connected to DVS PG %v %v %v\n", a.Port.SwitchUuid, a.Port.PortgroupKey, nw)
+
+			veth.Backing = &types.VirtualEthernetCardDistributedVirtualPortBackingInfo{
+				VirtualDeviceBackingInfo: types.VirtualDeviceBackingInfo{},
+				Port: types.DistributedVirtualSwitchPortConnection{
+					SwitchUuid:   nw.Port.SwitchUuid,
+					PortKey:      nw.Port.PortKey,
+					PortgroupKey: nw.Port.PortgroupKey,
+				},
+			}
+			changeSpecs = append(changeSpecs, &types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d})
+		case *types.VirtualEthernetCardNetworkBackingInfo:
+			fmt.Printf("Connected to PG %v\n", veth.Backing.(*types.VirtualEthernetCardNetworkBackingInfo).DeviceName)
+		}
+
+	}
+
+	return changeSpecs, nil
+}
+
+func (vm *VM) getRelocateSpec(dstDC *DataCenter, cluster, dstHostName string) (types.VirtualMachineRelocateSpec, error) {
+
+	var err error
+	config := types.VirtualMachineRelocateSpec{}
+
+	config.Datastore, err = dstDC.getDatastoreRefForHost(dstHostName)
+	if err != nil {
+		return config, err
+	}
+
+	dstHostRef, err := dstDC.findHost(cluster, dstHostName)
+	if err != nil {
+		return config, err
+	}
+	href := dstHostRef.Host.hs.Reference()
+	config.Host = &href
+
+	rp, err := dstHostRef.hs.ResourcePool(dstDC.vc.Ctx())
+	if err != nil {
+		return config, errors.Wrap(err, "Get resource pool failed")
+	}
+
+	ref := rp.Reference()
+	config.Pool = &ref
+
+	config.DeviceChange, err = vm.getRelocationDeviceChangeSpec(dstDC)
+
+	if err != nil {
+		return config, err
+	}
+
+	return config, nil
+}
+
 // Migrate VM to destination host
-func (vm *VM) Migrate(host *Host, dref *types.ManagedObjectReference, abortTime int) error {
+func (vm *VM) Migrate(dstDC *DataCenter, cluster, dstHostName string, abortTime int) error {
 
 	var err error
 	var task *object.Task
-	href := host.hs.Reference()
-	config := types.VirtualMachineRelocateSpec{
-		Datastore: dref,
-		Host:      &href,
+
+	config, err := vm.getRelocateSpec(dstDC, cluster, dstHostName)
+	if err != nil {
+		return errors.Wrapf(err, "Error building relocation spec")
 	}
 
 	if abortTime == 0 {

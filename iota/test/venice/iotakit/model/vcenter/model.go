@@ -46,7 +46,7 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 		port = fmt.Sprintf("%v", orchSimInstanceStartPort)
 		name := fmt.Sprintf("vcsim-%s-dc", port)
 		collection := objects.NewOrchestrator(sm.ObjClient(),
-			[]string{name},
+			[]testbed.DataCenter{testbed.DataCenter{DCName: name}},
 			name,
 			sm.vcenterSim.GetIotaNode().GetIpAddress(),
 			port,
@@ -57,7 +57,7 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 			port = fmt.Sprintf("%v", orchSimInstanceStartPort+i)
 			name := fmt.Sprintf("vcsim-%s-dc", port)
 			newCollection := objects.NewOrchestrator(sm.ObjClient(),
-				[]string{name},
+				[]testbed.DataCenter{testbed.DataCenter{DCName: name}},
 				name,
 				sm.vcenterSim.GetIotaNode().GetIpAddress(),
 				port,
@@ -69,15 +69,10 @@ func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCo
 		}
 		return collection, nil
 	}
-	dcs := sm.Tb.GetDCs()
-	dcnames := []string{}
-	for _, dc := range dcs {
-		dcnames = append(dcnames, dc.DCName)
-	}
 	for _, node := range sm.Tb.Nodes {
 		if node.Personality == iota.PersonalityType_PERSONALITY_VCENTER_NODE {
 			return objects.NewOrchestrator(sm.ObjClient(),
-				dcnames,
+				sm.Tb.GetDCs(),
 				node.NodeName,
 				node.NodeMgmtIP,
 				port,
@@ -247,6 +242,70 @@ func (sm *VcenterSysModel) setupInsertionMode() error {
 	return nil
 }
 
+func (sm *VcenterSysModel) setupDSCModes() error {
+
+	cfgClient := sm.ConfigClient()
+	dscInsertionProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "insertion.enforced",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: "VIRTUALIZED",
+			FeatureSet:       "FLOWAWARE_FIREWALL",
+		},
+	}
+	dscSmartProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "host.smart",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: "HOST",
+			FeatureSet:       "SMARTNIC",
+		},
+	}
+	cfgClient.CreateDscProfile(&dscInsertionProfile)
+	cfgClient.CreateDscProfile(&dscSmartProfile)
+	dscObjects, err := cfgClient.ListSmartNIC()
+
+	if err != nil {
+		return err
+	}
+
+	for _, dsc := range dscObjects {
+		found := false
+	L:
+		for _, h := range sm.NaplesHosts {
+			for _, hdsc := range h.VeniceHost.Spec.DSCs {
+				if dsc.Status.PrimaryMAC == hdsc.MACAddress {
+					if h.DC.Mode == testbed.Managed {
+						dsc.Spec.DSCProfile = "insertion.enforced"
+					} else {
+						dsc.Spec.DSCProfile = "host.smart"
+					}
+					found = true
+					break L
+				}
+			}
+		}
+		if !found {
+			msg := fmt.Sprintf("DSC %v not associated to any host", dsc.Status.PrimaryMAC)
+			return fmt.Errorf(msg)
+		}
+	}
+
+	for _, dsc := range dscObjects {
+		cfgClient.UpdateSmartNIC(dsc)
+	}
+
+	return nil
+}
+
 func (sm *VcenterSysModel) setupVmotionNetwork() error {
 
 	if sm.vcenterSim != nil {
@@ -258,8 +317,8 @@ func (sm *VcenterSysModel) setupVmotionNetwork() error {
 		return fmt.Errorf("Insufficient networks to enable vmotion")
 	}
 
+	vmotionNet := nc.Subnets()[0].Name
 	for _, dc := range sm.Tb.GetDCs() {
-		vmotionNet := nc.Subnets()[0].Name
 
 		log.Infof("Create vmk interface for vmotion using network %s on hosts %v", vmotionNet,
 			sm.Hosts().Names())
@@ -268,7 +327,7 @@ func (sm *VcenterSysModel) setupVmotionNetwork() error {
 			Switch:  "",
 			Cluster: dc.ClusterName,
 			DC:      dc.DCName,
-			Nodes:   sm.Hosts().Names(),
+			Nodes:   sm.Hosts().ByDC(dc.DCName).Names(),
 			NwType:  common.VmotionNetworkType,
 		}
 
@@ -277,6 +336,53 @@ func (sm *VcenterSysModel) setupVmotionNetwork() error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (sm *VcenterSysModel) associateWorkloads() error {
+
+	cfgObjects := sm.GetCfgObjects()
+
+	dscsMatched := func(dsc []cluster.DistributedServiceCardID, otherDSC []cluster.DistributedServiceCardID) bool {
+
+		for _, mac := range dsc {
+			matched := false
+			for _, otherMac := range otherDSC {
+				if otherMac.MACAddress == mac.MACAddress {
+					matched = true
+				}
+			}
+			if !matched {
+				return false
+			}
+		}
+
+		return true
+	}
+	vlanMap := make(map[uint32]*network.Network)
+	for _, nw := range cfgObjects.Networks {
+		vlanMap[nw.Spec.VlanID] = nw
+	}
+
+	for _, w := range cfgObjects.Workloads {
+	L:
+		for _, h := range sm.NaplesHosts {
+			for _, cHost := range cfgObjects.Hosts {
+				if w.Spec.HostName == cHost.Name && dscsMatched(cHost.Spec.DSCs, h.VeniceHost.Spec.DSCs) {
+					w.Spec.HostName = h.VeniceHost.Name
+
+					for j := range w.Spec.Interfaces {
+						nw, _ := vlanMap[w.Spec.Interfaces[j].ExternalVlan]
+						if w.Spec.Interfaces[j].Network != "" {
+							w.Spec.Interfaces[j].Network = getVcenterNetworkName(nw)
+						}
+					}
+					break L
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -290,7 +396,7 @@ func (sm *VcenterSysModel) associateDCs() error {
 		for _, dc := range dcs {
 			for _, mn := range dc.ManagedNodes {
 				if mn.Name == host.GetIotaNode().Name {
-					host.DCName = dc.DCName
+					host.DC = dc
 					notAssociated = true
 					break L
 				}
@@ -309,12 +415,7 @@ func (sm *VcenterSysModel) SetupDefaultConfig(ctx context.Context, scale, scaleD
 	sm.Scale = scale
 	sm.ScaleData = scaleData
 
-	err := sm.setupInsertionMode()
-	if err != nil {
-		return err
-	}
-
-	err = sm.InitConfig(scale, scaleData)
+	err := sm.InitConfig(scale, scaleData)
 	if err != nil {
 		return err
 	}
@@ -341,8 +442,17 @@ L:
 		return fmt.Errorf("Setting DCs failed %v", err.Error())
 	}
 
+	if err := sm.associateWorkloads(); err != nil {
+		return fmt.Errorf("Reassociating workloads failed %v", err.Error())
+	}
+
 	if err := sm.setupVmotionNetwork(); err != nil {
 		return fmt.Errorf("Setting up vmotion network %v", err.Error())
+	}
+
+	err = sm.setupDSCModes()
+	if err != nil {
+		return err
 	}
 
 	//objects.NewOrchestrator(
@@ -456,21 +566,14 @@ func (sm *VcenterSysModel) modifyConfig() error {
 		log.Errorf("Get orchestrator failed %v", err)
 		return err
 	}
-	//Modify netwrork object with scope
-	for _, nw := range cfgObjects.Networks {
-		nw.Spec.Orchestrators = []*network.OrchestratorInfo{}
-		for _, orch := range orch.Orchestrators {
-			nw.Spec.Orchestrators = append(nw.Spec.Orchestrators, &network.OrchestratorInfo{
-				Name:      orch.Name,
-				Namespace: orch.DCs[0].Name, //TODO
-			})
-		}
 
-		for i := range cfgObjects.Workloads {
-			for j := range cfgObjects.Workloads[i].Spec.Interfaces {
-				if cfgObjects.Workloads[i].Spec.Interfaces[j].ExternalVlan == nw.Spec.VlanID {
-					cfgObjects.Workloads[i].Spec.Interfaces[j].Network = getVcenterNetworkName(nw)
-				}
+	for _, orch := range orch.Orchestrators {
+		for _, dc := range orch.DCs {
+			for _, n := range cfgObjects.Networks {
+				n.Spec.Orchestrators = append(n.Spec.Orchestrators, &network.OrchestratorInfo{
+					Name:      orch.Name,
+					Namespace: dc.DCName,
+				})
 			}
 		}
 	}

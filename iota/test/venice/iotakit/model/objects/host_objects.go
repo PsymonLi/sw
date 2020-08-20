@@ -17,7 +17,7 @@ type Host struct {
 	Naples      *Naples
 	vlanBitmask *bitset.BitSet
 	maxVlans    uint32
-	DCName      string
+	DC          testbed.DataCenter
 }
 
 // HostCollection is collection of hosts
@@ -70,6 +70,26 @@ func (hc *HostCollection) Any(number int) *HostCollection {
 		ret.FakeHosts = append(ret.FakeHosts, host)
 		if len(ret.Hosts)+len(ret.FakeHosts) >= number {
 			break
+		}
+	}
+
+	return ret
+}
+
+// ByDC get hosts by DC
+func (hc *HostCollection) ByDC(dc string) *HostCollection {
+
+	ret := &HostCollection{}
+	for _, host := range hc.Hosts {
+		if host.DC.DCName == dc {
+			ret.Hosts = append(ret.Hosts, host)
+		}
+	}
+
+	for _, host := range hc.FakeHosts {
+		ret.FakeHosts = append(ret.FakeHosts, host)
+		if host.DC.DCName == dc {
+			ret.Hosts = append(ret.Hosts, host)
 		}
 	}
 

@@ -7,9 +7,16 @@ import (
 	"io/ioutil"
 	"os"
 
-	iota "github.com/pensando/sw/iota/protos/gogen"
+	Iota "github.com/pensando/sw/iota/protos/gogen"
 	"github.com/pensando/sw/venice/utils/log"
 	"gopkg.in/yaml.v2"
+)
+
+type DcMode int
+
+const (
+	Managed DcMode = iota
+	Monitored
 )
 
 //ManagedNode managed node
@@ -24,13 +31,14 @@ type DataCenter struct {
 	DCName       string
 	ClusterName  string
 	SwitchName   string
+	Mode         DcMode
 }
 
 // TopoNode contains info about a node in the topology
 type TopoNode struct {
 	NodeName     string               // node name specific to this topology
-	Type         iota.TestBedNodeType // node type
-	Personality  iota.PersonalityType // node topology
+	Type         Iota.TestBedNodeType // node type
+	Personality  Iota.PersonalityType // node topology
 	HostOS       string               // OS on the host
 	NumInstances int                  // Number of instances (used for sim for now)
 	//	MangedNodes  []string             //nodes managed by this node
@@ -53,7 +61,7 @@ const (
 )
 
 type WorkloadInfo struct {
-	WorkloadType  iota.WorkloadType // workload type
+	WorkloadType  Iota.WorkloadType // workload type
 	WorkloadImage string            // image name for the workload
 }
 
@@ -100,8 +108,9 @@ type TopoMeta struct {
 		Vcenter struct {
 			Instances  int `yaml:"instances"`
 			Datacenter struct {
-				Count  int `yaml:"count"`
-				Naples struct {
+				Count     int `yaml:"count"`
+				Monitored int `yaml:"monitored"`
+				Naples    struct {
 					MinInstances int `yaml:"min-instances"`
 					MaxInstances int `yaml:"max-instances"`
 				} `yaml:"naples"`
@@ -165,7 +174,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 		return nil, fmt.Errorf("Unknown model type %v", topoMeta.Model)
 	}
 
-	naplesHwPersonality := iota.PersonalityType_PERSONALITY_NAPLES
+	naplesHwPersonality := Iota.PersonalityType_PERSONALITY_NAPLES
 	for i := 0; i < topoMeta.Nodes.Vcenter.Instances; i++ {
 
 		if topoMeta.Nodes.Naples.Instances < topoMeta.Nodes.Vcenter.Datacenter.Count*topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances {
@@ -173,14 +182,14 @@ func ParseTopology(fileName string) (*Topology, error) {
 				topoMeta.Nodes.Naples.Instances, topoMeta.Nodes.Vcenter.Datacenter.Count*topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances)
 		}
 		node := TopoNode{NodeName: "vcenter-" + fmt.Sprintf("%v", i+1),
-			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_VCENTER,
-			Personality: iota.PersonalityType_PERSONALITY_VCENTER_NODE,
+			Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_VCENTER,
+			Personality: Iota.PersonalityType_PERSONALITY_VCENTER_NODE,
 			HostOS:      "vcenter",
 		}
 
 		id := 0
 		for j := 0; j < topoMeta.Nodes.Vcenter.Datacenter.Count; j++ {
-			dc := &DataCenter{}
+			dc := &DataCenter{Mode: Managed}
 			node.Datacenters = append(node.Datacenters, dc)
 			for k := 0; k < topoMeta.Nodes.Vcenter.Datacenter.Naples.MinInstances; k++ {
 				dc.ManagedNodes = append(dc.ManagedNodes,
@@ -203,7 +212,10 @@ func ParseTopology(fileName string) (*Topology, error) {
 				id++
 			}
 		}
-		naplesHwPersonality = iota.PersonalityType_PERSONALITY_NAPLES_DVS
+		for i := 0; i < topoMeta.Nodes.Vcenter.Datacenter.Monitored; i++ {
+			node.Datacenters[i].Mode = Monitored
+		}
+		naplesHwPersonality = Iota.PersonalityType_PERSONALITY_NAPLES_DVS
 		topo.Nodes = append(topo.Nodes, node)
 
 		//only 1 vcenter instance supported
@@ -213,8 +225,8 @@ func ParseTopology(fileName string) (*Topology, error) {
 	for i := 0; i < topoMeta.Nodes.K8sMaster.Instances; i++ {
 		topo.Nodes = append(topo.Nodes, TopoNode{
 			NodeName:    "k8s-master-" + fmt.Sprintf("%v", i+1),
-			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER,
-			Personality: iota.PersonalityType_PERSONALITY_K8S_MASTER,
+			Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER,
+			Personality: Iota.PersonalityType_PERSONALITY_K8S_MASTER,
 		})
 
 		// TODO: support more than 1 master
@@ -226,7 +238,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 		for i := 0; i < topoMeta.Nodes.Naples.Instances; i++ {
 			topo.Nodes = append(topo.Nodes, TopoNode{
 				NodeName:    "naples-" + fmt.Sprintf("%v", i+1),
-				Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_HW,
+				Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_HW,
 				Personality: naplesHwPersonality,
 				Optional:    (i + 1) > topoMeta.Nodes.Naples.MinInstances,
 			})
@@ -238,8 +250,8 @@ func ParseTopology(fileName string) (*Topology, error) {
 		for i := 0; i < topoMeta.Nodes.Venice.Instances; i++ {
 			topo.Nodes = append(topo.Nodes, TopoNode{
 				NodeName:    "venice-" + fmt.Sprintf("%v", i+1),
-				Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
-				Personality: iota.PersonalityType_PERSONALITY_VENICE,
+				Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
+				Personality: Iota.PersonalityType_PERSONALITY_VENICE,
 				Optional:    (i + 1) > topoMeta.Nodes.Venice.MinInstances,
 			})
 		}
@@ -252,8 +264,8 @@ func ParseTopology(fileName string) (*Topology, error) {
 			topo.Nodes = append(topo.Nodes, TopoNode{
 				NodeName:     "naples-sim-scale" + fmt.Sprintf("%v", i+1),
 				NumInstances: topoMeta.Nodes.NaplesSimScale.PerNodeInstances,
-				Type:         iota.TestBedNodeType_TESTBED_NODE_TYPE_MULTI_SIM,
-				Personality:  iota.PersonalityType_PERSONALITY_NAPLES_MULTI_SIM,
+				Type:         Iota.TestBedNodeType_TESTBED_NODE_TYPE_MULTI_SIM,
+				Personality:  Iota.PersonalityType_PERSONALITY_NAPLES_MULTI_SIM,
 				Optional:     (i + 1) > topoMeta.Nodes.NaplesSimScale.MinInstances,
 			})
 		}
@@ -264,8 +276,8 @@ func ParseTopology(fileName string) (*Topology, error) {
 		for i := 0; i < topoMeta.Nodes.NaplesSim.Instances; i++ {
 			topo.Nodes = append(topo.Nodes, TopoNode{
 				NodeName:    "naples-sim-" + fmt.Sprintf("%v", i+1),
-				Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
-				Personality: iota.PersonalityType_PERSONALITY_NAPLES_CONTROL_SIM,
+				Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
+				Personality: Iota.PersonalityType_PERSONALITY_NAPLES_CONTROL_SIM,
 			})
 		}
 		topo.NaplesSimImage = topoMeta.Nodes.NaplesSim.Image
@@ -274,30 +286,30 @@ func ParseTopology(fileName string) (*Topology, error) {
 	for i := 0; i < topoMeta.Nodes.ThirdParty.Instances; i++ {
 		topo.Nodes = append(topo.Nodes, TopoNode{
 			NodeName:    "third-party-" + fmt.Sprintf("%v", i+1),
-			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_THIRD_PARTY,
-			Personality: iota.PersonalityType_PERSONALITY_THIRD_PARTY_NIC,
+			Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_THIRD_PARTY,
+			Personality: Iota.PersonalityType_PERSONALITY_THIRD_PARTY_NIC,
 		})
 	}
 
 	for i := 0; i < topoMeta.Nodes.Command.Instances; i++ {
 		topo.Nodes = append(topo.Nodes, TopoNode{
 			NodeName:    "command-node-" + fmt.Sprintf("%v", i+1),
-			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
-			Personality: iota.PersonalityType_PERSONALITY_COMMAND_NODE,
+			Type:        Iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
+			Personality: Iota.PersonalityType_PERSONALITY_COMMAND_NODE,
 		})
 	}
 
 	if topoMeta.Workload.Esx.Image != "" {
 		topo.WkldInfo["esx"] = WorkloadInfo{
 			WorkloadImage: topoMeta.Workload.Esx.Image,
-			WorkloadType:  iota.WorkloadType_WORKLOAD_TYPE_VM,
+			WorkloadType:  Iota.WorkloadType_WORKLOAD_TYPE_VM,
 		}
 	}
 
 	if topoMeta.Workload.Linux.Image != "" {
 		topo.WkldInfo["linux"] = WorkloadInfo{
 			WorkloadImage: topoMeta.Workload.Linux.Image,
-			WorkloadType:  iota.WorkloadType_WORKLOAD_TYPE_CONTAINER,
+			WorkloadType:  Iota.WorkloadType_WORKLOAD_TYPE_CONTAINER,
 		}
 	}
 

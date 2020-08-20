@@ -170,6 +170,11 @@ func NewWorkload(host *Host, w *workload.Workload, wtype iota.WorkloadType, wima
 				return nil
 			}
 		}
+		nw := intf.Network
+		if host.DC.Mode != testbed.Managed {
+			//if not managed mode, let iota create a network based on vlan
+			nw = ""
+		}
 		iotaWorkload.Interfaces = append(iotaWorkload.Interfaces, &iota.Interface{
 			EncapVlan:       intf.MicroSegVlan,
 			MacAddress:      convertMac(intf.MACAddress),
@@ -178,7 +183,7 @@ func NewWorkload(host *Host, w *workload.Workload, wtype iota.WorkloadType, wima
 			InterfaceType:   iota.InterfaceType_INTERFACE_TYPE_VSS,
 			UplinkVlan:      intf.ExternalVlan,
 			SwitchName:      switchName,
-			NetworkName:     intf.Network,
+			NetworkName:     nw,
 		})
 	}
 

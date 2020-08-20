@@ -11,7 +11,8 @@ nodes:
     vcenter:
         instances: 1
         datacenter:
-          count: 1
+          count: 2
+          #monitored: 1
           naples: 
             min-instances: 1
             max-instances: 8

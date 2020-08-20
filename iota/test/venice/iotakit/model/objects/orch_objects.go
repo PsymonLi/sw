@@ -5,12 +5,9 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
-)
 
-type DC struct {
-	Name string
-	Mode string
-}
+	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
+)
 
 //Orchestrator Return orchestrator
 type Orchestrator struct {
@@ -19,7 +16,7 @@ type Orchestrator struct {
 	Username string
 	Password string
 	License  string
-	DCs      []DC
+	DCs      []testbed.DataCenter
 	orch     *orchestration.Orchestrator
 	client   objClient.ObjClient
 }
@@ -60,7 +57,7 @@ func createOrchestrator(name, ip, port, user, password string) *orchestration.Or
 }
 
 //NewOrchestrator create orchestrator.
-func NewOrchestrator(client objClient.ObjClient, dcnames []string, name, ip, port, user, password string) *OrchestratorCollection {
+func NewOrchestrator(client objClient.ObjClient, dcs []testbed.DataCenter, name, ip, port, user, password string) *OrchestratorCollection {
 
 	orch := createOrchestrator(name, ip, port, user, password)
 
@@ -73,8 +70,8 @@ func NewOrchestrator(client objClient.ObjClient, dcnames []string, name, ip, por
 		client:   client,
 	}
 
-	for _, dc := range dcnames {
-		orchObj.DCs = append(orchObj.DCs, DC{Name: dc})
+	for _, dc := range dcs {
+		orchObj.DCs = append(orchObj.DCs, dc)
 	}
 
 	return &OrchestratorCollection{CollectionCommon: CollectionCommon{Client: client}, Orchestrators: []*Orchestrator{orchObj}}
@@ -131,10 +128,25 @@ func (orchCol *OrchestratorCollection) Connected() (bool, error) {
 func (orch *Orchestrator) Commit() error {
 	//orch.client.
 
-	orch.orch.Spec.ManageNamespaces = []string{}
+	orch.orch.Spec.Namespaces = []*orchestration.NamespaceSpec{}
 	for _, dc := range orch.DCs {
-		orch.orch.Spec.ManageNamespaces = append(orch.orch.Spec.ManageNamespaces,
-			dc.Name)
+		if dc.Mode == testbed.Managed {
+			orch.orch.Spec.Namespaces = append(orch.orch.Spec.Namespaces,
+				&orchestration.NamespaceSpec{
+					Mode: "Managed",
+					Name: dc.DCName,
+					ManagedSpec: &orchestration.ManagedNamespaceSpec{
+						NumUplinks: 2,
+					},
+				})
+		} else {
+			orch.orch.Spec.Namespaces = append(orch.orch.Spec.Namespaces,
+				&orchestration.NamespaceSpec{
+					Mode:          "Monitored",
+					Name:          dc.DCName,
+					MonitoredSpec: &orchestration.MonitoredNamespaceSpec{},
+				})
+		}
 	}
 	return orch.client.CreateOrchestration(orch.orch)
 }

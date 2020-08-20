@@ -189,7 +189,7 @@ func (vc *Vcenter) SetupDataCenter(name string) (*DataCenter, error) {
 	}
 
 	vc.ConnCtx.finder.SetDatacenter(dc)
-	dcr := &DataCenter{ref: dc, vc: vc,
+	dcr := &DataCenter{ref: dc, vc: vc, name: name,
 		clusters: make(map[string]*Cluster)}
 
 	vc.datacenters[name] = dcr
@@ -417,8 +417,8 @@ func (cl *Cluster) DeleteHost(ip string) error {
 func (dc *DataCenter) Datastore(cluster, hostName string) (*Datastore, error) {
 	var err error
 
-	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
+	//	dc.getClientWithRLock()
+	//	defer dc.releaseClientRLock()
 	err = dc.setUpFinder()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error setup datacenter")
@@ -528,8 +528,8 @@ func (dc *DataCenter) setUpFinder() error {
 func (dc *DataCenter) DeployVM(clusterName string, hostname string,
 	name string, ncpus uint, memory uint, networks []string, ovfDir string) (*VMInfo, error) {
 
-	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
+	dc.getClientWithLock()
+	defer dc.releaseClientLock()
 	err := dc.setUpFinder()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error setting up datacenter")
@@ -1722,7 +1722,7 @@ func (dc *DataCenter) getDatastoreRefForHost(hostName string) (*types.ManagedObj
 }
 
 //LiveMigrate migrates live VM on data center
-func (dc *DataCenter) LiveMigrate(vmName, srcHostName, dstHostName, clusterName string, abortTime int) error {
+func (dc *DataCenter) LiveMigrate(vmName string, dstDC *DataCenter, srcHostName, dstHostName, clusterName string, abortTime int) error {
 
 	dc.getClientWithRLock()
 	err := dc.setUpFinder()
@@ -1737,10 +1737,44 @@ func (dc *DataCenter) LiveMigrate(vmName, srcHostName, dstHostName, clusterName 
 		return err
 	}
 
-	dstHostRef, err := dc.findHost(clusterName, dstHostName)
-	if err != nil {
-		dc.releaseClientRLock()
-		return err
+	/*	var dstHostRef *VHost
+		var dstHostDatastoreRef *types.ManagedObjectReference
+		var rpool *types.ManagedObjectReference */
+	if dstDC == nil || dstDC == dc || dstDC.name == dc.name {
+		dstDC = dc
+		/*
+			dstHostRef, err = dc.findHost(clusterName, dstHostName)
+			if err != nil {
+				dc.releaseClientRLock()
+				return err
+			}
+
+			dstHostDatastoreRef, err = dc.getDatastoreRefForHost(dstHostName)
+			if err != nil {
+				dc.releaseClientRLock()
+				return err
+			}*/
+	} else {
+		/*dstDC.setUpFinder()
+		dstHostRef, err = dstDC.findHost(clusterName, dstHostName)
+		if err != nil {
+			dc.releaseClientRLock()
+			return err
+		}
+		dstHostDatastoreRef, err = dstDC.getDatastoreRefForHost(dstHostName)
+		if err != nil {
+			dc.releaseClientRLock()
+			return err
+		}
+
+		rp, err := dstHostRef.hs.ResourcePool(dstDC.vc.Ctx())
+		if err != nil {
+			return errors.Wrap(err, "Get resource pool failed")
+		}
+
+		ref := rp.Reference()
+		rpool = &ref*/
+
 	}
 
 	vmInst, err := dc.findVM(srcHostRef.Host.hs, vmName)
@@ -1749,20 +1783,14 @@ func (dc *DataCenter) LiveMigrate(vmName, srcHostName, dstHostName, clusterName 
 		return err
 	}
 
-	dstHostDatastoreRef, err := dc.getDatastoreRefForHost(dstHostName)
-	if err != nil {
-		dc.releaseClientRLock()
-		return err
-	}
-
 	dc.releaseClientRLock()
-	return vmInst.Migrate(&dstHostRef.Host, dstHostDatastoreRef, abortTime)
+	return vmInst.Migrate(dstDC, clusterName, dstHostName, abortTime)
 }
 
 func (dc *DataCenter) BootVM(name string) (*VMInfo, error) {
 
-	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
+	//	dc.getClientWithRLock()
+	//	defer dc.releaseClientRLock()
 
 	return dc.vc.BootVM(name)
 }
