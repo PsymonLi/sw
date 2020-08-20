@@ -29,6 +29,7 @@ MODULE_ARLIBS	= \
 	bm_allocator \
 	catalog \
 	commonproto \
+	config \
 	core \
 	delphimessenger \
 	delphisdk \

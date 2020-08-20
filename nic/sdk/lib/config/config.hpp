@@ -26,6 +26,7 @@ namespace sdk {
 namespace lib {
 
 using boost::property_tree::ptree;
+using boost::optional;
 
 /// \brief Class definition to manage read, write operations to configuration
 ///        file
@@ -50,21 +51,48 @@ public:
 
     /// \brief      writes a key, value pair into JSON configuration file
     /// \param[in]  key     '.' qualified json key
-    /// \param[in]  data    key value string
+    /// \param[in]  data    key value
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t set(const std::string &key, const std::string &data);
+    template <typename T>
+    sdk_ret_t set(const std::string &key, const T &data);
 
-    /// \brief      returns value of the '.' qualified JSON key that is peresent
+    /// \brief      adds the given ptree as a child for the key
+    /// \param[in]  key '.' qualified json key
+    /// \param[in]  data ptree to be added
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t set_child(const std::string &key, ptree &data);
+
+    /// \brief      deletes the all the children of the key
+    /// \param[in]  key '.' qualified json key
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t erase(const std::string &key);
+
+    /// \brief      returns value of the '.' qualified JSON key that is present
     ///             in the associated configuration file
-    /// \return     key value if the key is present or empty string ("") if not
-    ///             present
-    std::string get(const std::string &key);
+    /// \param[in]  key '.' qualified json key
+    /// \return     key value
+    template <typename T>
+    T get(const std::string &key);
+
+    /// \brief      returns value of the '.' qualified JSON key that is present
+    ///             in the associated configuration file, else the default value is
+    ///             returned
+    /// \param[in]  key     '.' qualified json key
+    /// \param[in]  default_val default value to be returned if key not found
+    /// \return     key value
+    template <typename T>
+    T get(const std::string &key, T &default_val);
+
+    /// \brief      gets the child ptree indexed by given key
+    /// \param[in]  key '.' qualified json key
+    /// \return     child ptree reference or boost::null if not found
+    optional<ptree &> get_child_optional(const std::string &key);
 private:
     config(std::string config_file);
     ~config(void);
     sdk_ret_t get_ptree_(std::string &config_file);
     bool update_ptree_(void);
-private:
+
     // list to filter out duplicate config::create() requests on a given file
     // and shared the same context across threads.
     static std::list<config *> config_list_;
@@ -80,6 +108,7 @@ private:
 }    // namespace lib
 }    // namespace sdk
 
+#include "config_impl.hpp"
 /// @}
 
 #endif    //__SDK_CONFIG_HPP__

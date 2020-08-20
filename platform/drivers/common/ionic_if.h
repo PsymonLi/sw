@@ -2088,6 +2088,7 @@ enum ionic_fw_control_oper {
 	IONIC_FW_INSTALL_STATUS		= 4,
 	IONIC_FW_ACTIVATE_ASYNC		= 5,
 	IONIC_FW_ACTIVATE_STATUS	= 6,
+	IONIC_FW_UPDATE_CLEANUP		= 7,
 };
 
 /**

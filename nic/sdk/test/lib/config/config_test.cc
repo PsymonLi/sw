@@ -81,9 +81,10 @@ void
 check_data_set (config *cfg)
 {
     std::string key_val;
+    std::string default_val = "";
 
     for (auto const &it : g_data_set) {
-         key_val = cfg->get(it.first);
+         key_val = cfg->get<std::string>(it.first, default_val);
          ASSERT_EQ(key_val, it.second) << "Read key value not matching data";
     }
 }
@@ -114,7 +115,7 @@ void write_additional_keys (config *cfg)
     printf("Data being added on (key,value):\n");
     for (auto const &it : g_write_test_data) {
          printf("%s:%s:\n", it.first.c_str(), it.second.c_str());
-         ret = cfg->set(it.first, it.second);
+         ret = cfg->set<std::string>(it.first, it.second);
          ASSERT_EQ(ret, SDK_RET_OK) << "Failed to write key\n";
     }
 }
@@ -123,9 +124,10 @@ void
 check_additional_keys (config *cfg)
 {
     std::string key_val;
+    std::string default_val = "";
 
     for (auto const &it : g_write_test_data) {
-         key_val = cfg->get(it.first);
+         key_val = cfg->get<std::string>(it.first, default_val);
          ASSERT_EQ(key_val, it.second) << "Read key value not matching data";
     }
 }
@@ -176,6 +178,7 @@ TEST_F(config_lib_test, get_on_new_file)
     config *cfg;
     std::string test_file;
     std::string cmd, key_val;
+    std::string default_val = "";
 
     // make sure the .json file question is not present.
     test_file = exec_path_ + "/misc_test_file.json";
@@ -186,7 +189,7 @@ TEST_F(config_lib_test, get_on_new_file)
     system(cmd.c_str());
     cfg = config::create(test_file);
     ASSERT_NE(cfg, nullptr) << "Config object creation failed.";
-    key_val = cfg->get("abc");
+    key_val = cfg->get<std::string>("abc", default_val);
     ASSERT_EQ(key_val, "") << "Key val is not null on new file (no data) read";
     config::destroy(cfg);
 }

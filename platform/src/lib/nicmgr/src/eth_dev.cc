@@ -2868,7 +2868,9 @@ Eth::_CmdHiiReset(void *req, void *req_data, void *resp, void *resp_data)
                     spec->name);
         return (IONIC_RC_EPERM);
     }
-    hii->Reset();
+    if (hii->Reset() != SDK_RET_OK) {
+        return (IONIC_RC_ERROR);
+    }
     return (IONIC_RC_SUCCESS);
 }
 
@@ -3102,7 +3104,7 @@ Eth::PcieResetEventHandler(uint32_t rsttype)
     DevcmdRegsReset();
 
     // Cancel any fw update in progress
-    FwControl(spec->name, IONIC_FW_RESET);
+    FwControl(spec->name, IONIC_FW_UPDATE_CLEANUP);
 
     status = Reset();
     if (status != IONIC_RC_SUCCESS) {

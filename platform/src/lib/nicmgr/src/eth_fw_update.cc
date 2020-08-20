@@ -485,7 +485,7 @@ FwControl(string owner, int oper)
 {
     status_code_t status = IONIC_RC_SUCCESS;
 
-    if (curr_owner != owner) {
+    if (curr_owner != owner && curr_owner != FW_UPDATE_OWNER_NONE) {
             NIC_LOG_ERR("{}: Fw update in progress by {}, exiting", owner, curr_owner);
             return (IONIC_RC_EBUSY);
     }
@@ -493,7 +493,6 @@ FwControl(string owner, int oper)
     switch (oper) {
     case IONIC_FW_RESET:
         NIC_LOG_INFO("{}: IONIC_FW_RESET", owner);
-        FwUpdateReset(FW_UPDATE_OWNER_NONE);
         status = IONIC_RC_SUCCESS;
         break;
     case IONIC_FW_INSTALL:
@@ -532,6 +531,10 @@ FwControl(string owner, int oper)
             FwUpdateReset(FW_UPDATE_OWNER_NONE);
         }
         break;
+    case IONIC_FW_UPDATE_CLEANUP:
+        NIC_LOG_INFO("{}: IONIC_FW_UPDATE_CLEANUP", owner);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
+        status = IONIC_RC_SUCCESS;
     default:
         NIC_LOG_ERR("{}: Unknown operation {}", owner, oper);
         status = IONIC_RC_ENOSUPP;

@@ -6,6 +6,7 @@
 
 #include <map>
 
+#include "nic/sdk/lib/config/config.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 
 std::string hii_attr_to_str (int attr);
@@ -14,13 +15,14 @@ class HII
 {
 private:
     /* data */
+    sdk::lib::config *gbl_cfg;
     boost::property_tree::ptree cfg;
     bool uid_led_on;
     devapi *dev_api;
     uint32_t capabilities;
     void _InitConfig();
     void _InitCapabilities();
-    void _SetDefaultConfig();
+    sdk_ret_t _SetDefaultConfig();
     sdk_ret_t _Flush();
 
 public:
@@ -38,14 +40,16 @@ public:
 
     uint32_t GetCapabilities() { return this->capabilities; }
 
-    void Reset();
+    sdk_ret_t Reset();
 
     /* Default values */
     const bool DEFAULT_OOB_EN = false;
     const bool DEFAULT_UID_LED_STATE = false;
     const bool DEFAULT_VLAN_EN = false;
     const uint16_t DEFAULT_VLAN = 0;
-    const std::string HII_CFG_FILE = "/sysconfig/config0/hii_cfg.json";
+    const std::string HII_CFG_FILE = "/sysconfig/config0/system-config.json";
+    const std::string HII_CFG_KEY = "hii";
+
 };
 
 #endif  // __HII_HPP__
