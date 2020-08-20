@@ -274,7 +274,7 @@ bt_in_progress:
         nop         //BD Slot
 
         // DO NOT ring doorbell to re-evaluate scheduler on HW because of scheduler bug.
-#if !(defined (HAPS) || defined (HW))
+#if (!(defined (HAPS) || defined (HW)) || defined (ELBA))
         DOORBELL_NO_UPDATE(CAPRI_TXDMA_INTRINSIC_LIF, CAPRI_TXDMA_INTRINSIC_QTYPE, CAPRI_TXDMA_INTRINSIC_QID, r2, r3)
 #endif
         tblwr       d.ring_empty_sched_eval_done, 1

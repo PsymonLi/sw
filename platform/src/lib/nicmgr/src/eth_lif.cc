@@ -946,12 +946,16 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         // for all current active queues in datapath.
         // RQ qtype is 4. So find number of queues for qtypes 0-3 from eth lif spec to calculate base addr.
         // Also each row in scheduler table covers 8K queues (1KB), 1 bit per queue.
+#ifdef ELBA
+        // do nothing since the scheduler bug is not applicable to ELBA
+#else
         hal_lif_info_.tx_sched_bulk_eval_start_addr = pd->mp_->start_addr(MEM_REGION_TX_SCHEDULER_NAME) +
                                                       (hal_lif_info_.tx_sched_table_offset * 1024) +
                                                       ((spec->rxq_count + spec->txq_count + spec->adminq_count +
                                                         spec->rdma_aq_count + spec->rdma_sq_count) / 8);
         // Start BulkEval timer for 20ms.
         ev_timer_start(EV_A_ & sched_eval_timer);
+#endif
     }
 
     // Init the status block
