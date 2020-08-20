@@ -172,14 +172,7 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, ndsp *clust
 				log.Errorf("Failed to get DSC state for %v", dsc)
 				continue
 			}
-
-			for _, w := range dscState.workloadsMigratingIn {
-				w.stopMigration()
-			}
-
-			for _, w := range dscState.workloadsMigratingOut {
-				w.stopMigration()
-			}
+			sm.dscStopAllMigrations(dscState)
 		}
 	}
 

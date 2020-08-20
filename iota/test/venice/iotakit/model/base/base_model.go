@@ -31,6 +31,7 @@ import (
 	reporter "github.com/pensando/sw/iota/test/venice/iotakit/model/reporter"
 	modelUtils "github.com/pensando/sw/iota/test/venice/iotakit/model/utils"
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/shardworkers"
 	"github.com/willf/bitset"
@@ -958,6 +959,20 @@ func (sm *SysModel) modifyConfig() error {
 			return runErr
 		}
 	}
+	for _, pol := range cfgObjects.SgPolicies {
+		if pol.Tenant == globals.DefaultTenant {
+			//Add Default allow all
+			pol.Spec.Rules = append(pol.Spec.Rules, security.SGRule{
+				Action: "PERMIT",
+				ProtoPorts: []security.ProtoPort{security.ProtoPort{
+					Protocol: "any",
+				}},
+				ToIPAddresses:   []string{"any"},
+				FromIPAddresses: []string{"any"},
+			})
+		}
+	}
+
 	return nil
 }
 

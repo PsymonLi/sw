@@ -955,14 +955,14 @@ func (ws *WorkloadState) trackMigration(sourceDSCs, destDSCs []*DistributedServi
 	}
 
 	// Add the workloads to DSCs for tracking
-	sourceDSCs[0].workloadsMigratingOut[ws.Workload.Name] = ws
-	destDSCs[0].workloadsMigratingIn[ws.Workload.Name] = ws
+	sourceDSCs[0].workloadsMigratingOut.Store(ws.Workload.Name, ws)
+	destDSCs[0].workloadsMigratingIn.Store(ws.Workload.Name, ws)
 
 	defer func() {
 		ws.moveCtx = nil
 		ws.moveCancel = nil
-		delete(sourceDSCs[0].workloadsMigratingOut, ws.Workload.Name)
-		delete(destDSCs[0].workloadsMigratingIn, ws.Workload.Name)
+		sourceDSCs[0].workloadsMigratingOut.Delete(ws.Workload.Name)
+		destDSCs[0].workloadsMigratingIn.Delete(ws.Workload.Name)
 	}()
 
 	for {

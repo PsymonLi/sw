@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
@@ -34,8 +35,8 @@ type DistributedServiceCardState struct {
 	// ToRevisit: Should DSC be updated with correct profile, then we need
 	//  below code
 	//NodeVersion            cluster.DSCProfileVersion
-	workloadsMigratingIn  map[string]*WorkloadState
-	workloadsMigratingOut map[string]*WorkloadState
+	workloadsMigratingIn  *sync.Map
+	workloadsMigratingOut *sync.Map
 	smObjectTracker
 
 	SupportedMACs map[string]bool
@@ -124,8 +125,8 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 		DistributedServiceCard: smartNic,
 		stateMgr:               stateMgr,
 		recvHandle:             recvHandle,
-		workloadsMigratingIn:   make(map[string]*WorkloadState),
-		workloadsMigratingOut:  make(map[string]*WorkloadState),
+		workloadsMigratingIn:   new(sync.Map),
+		workloadsMigratingOut:  new(sync.Map),
 	}
 	hs.smObjectTracker.init(hs)
 	smartNic.HandlerCtx = hs
@@ -250,6 +251,22 @@ func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard,
 	}
 }
 
+func (sm *Statemgr) dscStopAllMigrations(dscState *DistributedServiceCardState) {
+
+	dscState.workloadsMigratingIn.Range(func(key interface{}, item interface{}) bool {
+		w := item.(*WorkloadState)
+		w.stopMigration()
+		return true
+	})
+
+	dscState.workloadsMigratingOut.Range(func(key interface{}, item interface{}) bool {
+		w := item.(*WorkloadState)
+		w.stopMigration()
+		return true
+	})
+
+}
+
 // OnDistributedServiceCardUpdate handles update event on smartnic
 func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedServiceCard, nsnic *cluster.DistributedServiceCard) error {
 	var copyDSC *cluster.DistributedServiceCard
@@ -268,13 +285,7 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 			sns.decommissioned = true
 			sm.deleteDsc(smartNic)
 			// Stop all migration from/to this DSC
-			for _, w := range sns.workloadsMigratingIn {
-				w.stopMigration()
-			}
-
-			for _, w := range sns.workloadsMigratingOut {
-				w.stopMigration()
-			}
+			sm.dscStopAllMigrations(sns)
 		}
 	} else {
 		if (nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String()) &&
