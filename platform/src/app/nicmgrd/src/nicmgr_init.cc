@@ -171,7 +171,7 @@ register_for_events (void)
 }
 
 #define SHM_NAME    "/dev/shm/nicmgr_meta"
-#define SHM_SIZE    (1 << 16)
+#define SHM_SIZE    (1 << 21)       // 2M
 static sdk::lib::shmstore*
 nicmgr_shmstore_init (void)
 {

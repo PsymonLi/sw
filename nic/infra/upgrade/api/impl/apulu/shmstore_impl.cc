@@ -51,7 +51,7 @@ upg_cfg_shmstore_size (std::string module_name)
         return (1 * 1024 * 1024);  // 1MB
 
     if (module_name == std::string("nicmgr"))
-        return (32 * 1024);        // 32K
+        return (2 * 1024 * 1024);        // 2M
 
     return -1;
 }
@@ -78,7 +78,7 @@ upg_oper_shmstore_size (std::string module_name)
         return (32 * 1024);     // 32K
 
     if (module_name == std::string("nicmgr"))
-        return (128 * 1024);    // 128K
+        return (2 * 1024 * 1024);    // 2M
 
     if (module_name == std::string("linkmgr"))
         return (32 * 1024);     // 32K
