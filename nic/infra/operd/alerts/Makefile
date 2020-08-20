@@ -4,4 +4,4 @@
 
 all:
 	mkdir -p ${BLD_GEN_DIR}/alerts
-	./alert_compiler.py ${BLD_GEN_DIR}/alerts common/*
+	./alert_compiler.py ${BLD_GEN_DIR}/alerts common/* cloud/*

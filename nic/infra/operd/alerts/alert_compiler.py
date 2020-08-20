@@ -6,7 +6,7 @@ import os
 import sys
 
 Categories = ['Cluster', 'Network', 'System', 'Rollout', 'Config', 'Resource',
-              'Orchestration']
+              'Orchestration', 'Learn']
 
 Severities = ['INFO', 'WARN', 'CRITICAL', 'DEBUG']
 

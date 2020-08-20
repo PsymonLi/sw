@@ -82,6 +82,8 @@ operd_alerts_type_from_proto (operd::EventType event_type)
         return operd::alerts::VNIC_SESSION_THRESHOLD_EXCEEDED;
     case operd::VNIC_SESSION_WITHIN_THRESHOLD:
         return operd::alerts::VNIC_SESSION_WITHIN_THRESHOLD;
+    case operd::LEARN_PKT:
+        return operd::alerts::LEARN_PKT;
     default:
         break;
     }
@@ -119,9 +121,14 @@ pen_oper_info_to_proto_info_response (pen_oper_info_type_t info_type,
         if (result == false) {
             return SDK_RET_INVALID_OP;
         }
-        fprintf(stdout, "Publishing alert %u %u %s %s\n", event->type(),
-                event->category(), event->description().c_str(),
-                event->message().c_str());
+        switch (event->type()) {
+        case operd::LEARN_PKT:
+            break;
+        default:
+            fprintf(stdout, "Publishing alert %u %u %s %s\n", event->type(),
+                    event->category(), event->description().c_str(),
+                    event->message().c_str());
+        }
         break;
     default:
         return SDK_RET_INVALID_ARG;

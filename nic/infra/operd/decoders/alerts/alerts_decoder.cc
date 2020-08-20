@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "nic/sdk/lib/operd/decoder.h"
+#include "nic/infra/operd/alerts/alert_type.hpp"
 #include "gen/alerts/alert_defs.h"
 #include "gen/proto/operd/events.pb.h"
 
@@ -63,6 +64,8 @@ operd_alerts_type_to_proto_event_type (operd_alerts_t alerts_type)
         return operd::VNIC_SESSION_THRESHOLD_EXCEEDED;
     case operd::alerts::VNIC_SESSION_WITHIN_THRESHOLD:
         return operd::VNIC_SESSION_WITHIN_THRESHOLD;
+    case operd::alerts::LEARN_PKT:
+        return operd::LEARN_PKT;
     default:
         break;
     }
@@ -102,7 +105,16 @@ operd_alerts_severity_to_proto_severity (const char *severity)
 static inline void
 operd_alerts_to_proto_event_info (operd::Event &event, const char *message)
 {
+    operd::EpLearnPkt *learninfo;
+    learn_operd_msg_t *learn_msg;
+
     switch (event.type()) {
+    case operd::LEARN_PKT:
+        learn_msg = (learn_operd_msg_t *)message;
+        learninfo = event.mutable_eplearnpktinfo();
+        learninfo->set_hostif(learn_msg->host_if.id, PDS_MAX_KEY_LEN);
+        learninfo->set_packet(learn_msg->pkt_data, learn_msg->pkt_len);
+        break;
     // TODO: deprecate message and set event type specific info
     default:
         event.set_message(message);
@@ -115,9 +127,10 @@ static size_t
 alerts_decoder (uint8_t encoder, const char *data, size_t data_length,
                 char *output, size_t output_size)
 {
+    operd_event_data_t *event_data = (operd_event_data_t *)data;
     size_t len;
-    int alert_id = *(int *)data;
-    const char *message = data + sizeof(int);
+    uint16_t alert_id = event_data->event_id;
+    const char *message = event_data->message;
     alert_t evt_info = operd::alerts::alerts[alert_id];
     operd::Event event;
     operd::EventType evt_type;

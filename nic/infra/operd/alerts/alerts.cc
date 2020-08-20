@@ -15,6 +15,7 @@
 #include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/operd.hpp"
 #include "nic/infra/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alert_type.hpp"
 
 namespace operd {
 namespace alerts {
@@ -36,18 +37,17 @@ alert_recorder::get(void) {
 void
 alert_recorder::alert(operd_alerts_t alert, const char *fmt, ...) {
     va_list ap;
-    char buffer[MAX_PRINTF_SIZE + sizeof(int)];
-    char *print_buffer = &buffer[sizeof(int)];
+    char buffer[MAX_PRINTF_SIZE + sizeof(uint16_t)];
+    operd_event_data_t *event_data = (operd_event_data_t *)buffer;
     int n;
 
-    assert(sizeof(alert) == sizeof(int));
-    
+    event_data->event_id = alert;
     va_start(ap, fmt);
-    n = vsnprintf(print_buffer, MAX_PRINTF_SIZE, fmt, ap);
-    memcpy(buffer, &alert, sizeof(int));
+    n = vsnprintf(event_data->message, MAX_PRINTF_SIZE, fmt, ap);
     va_end(ap);
 
-    this->region_->write(OPERD_DECODER_ALERTS, 1, buffer, n + 1 + sizeof(int));
+    this->region_->write(OPERD_DECODER_ALERTS, 1, buffer,
+                         n + 1 + sizeof(uint16_t));
 }
 
 }    // namespace alerts

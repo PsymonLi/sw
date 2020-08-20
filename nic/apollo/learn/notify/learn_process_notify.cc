@@ -14,9 +14,9 @@
 #include "nic/apollo/learn/utils.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
-#include "nic/apollo/learn/notify/ep_dedup.hpp"
-#include "nic/apollo/learn/learn_impl_base.hpp"
 #include "nic/apollo/learn/learn_internal.hpp"
+#include "nic/apollo/learn/notify/ep_dedup.hpp"
+#include "nic/apollo/learn/notify/learn_operd.hpp"
 
 namespace learn {
 
@@ -244,8 +244,11 @@ store (learn_ctxt_t *ctxt)
 sdk_ret_t
 notify (learn_ctxt_t *ctxt)
 {
-    // TODO: not generating operd notifications for now, since we are
-    // reworking on it
+    if (needs_action(ctxt->mac_learn_type) ||
+        needs_action(ctxt->ip_learn_type)) {
+        generate_learn_event(ctxt);
+    }
+
     return SDK_RET_OK;
 }
 

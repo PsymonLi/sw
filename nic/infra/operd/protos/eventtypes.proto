@@ -116,6 +116,9 @@ enum EventType {
                                                     (Description) = "Session count for vnic falls within the threshold"];
 
   // ----------------------------- Learn events ---------------------------- //
+  LEARN_PKT                                = 3001  [(Category)    = LEARN,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "Packet received resulting in new endpoint learning or updates to known endpoint"];
 
   // ----------------------------- Rollout events -------------------------- //
 
