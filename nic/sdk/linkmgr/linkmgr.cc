@@ -1351,7 +1351,9 @@ port_update (void *pd_p, port_args_t *args)
 
     // toggle_neg_mode overrides auto_neg_enable
     // check auto_neg_enable only if toggle_neg_mode is false
-    if (args->toggle_neg_mode == false) {
+    // auto-neg is not supported on mgmt port, ignore
+    if ((args->toggle_neg_mode == false) &&
+        (port_p->port_type() != port_type_t::PORT_TYPE_MGMT)) {
         if (args->auto_neg_enable != port_p->auto_neg_enable()) {
             SDK_TRACE_DEBUG("AN updated, new %d, old %d",
                             args->auto_neg_enable, port_p->auto_neg_enable());
@@ -1369,7 +1371,9 @@ port_update (void *pd_p, port_args_t *args)
     //     configured = true;
     // }
 
-    if (args->auto_neg_cfg != port_p->auto_neg_cfg()) {
+    // auto-neg is not supported on mgmt port, ignore
+    if ((args->auto_neg_cfg != port_p->auto_neg_cfg()) &&
+        (port_p->port_type() != port_type_t::PORT_TYPE_MGMT)) {
         SDK_TRACE_DEBUG("AN cfg updated, new %d, old %d",
                         args->auto_neg_cfg, port_p->auto_neg_cfg());
         port_p->set_auto_neg_cfg(args->auto_neg_cfg);
