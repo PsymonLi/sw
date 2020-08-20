@@ -508,5 +508,47 @@ e2e-targets:
        vars:
           BmOs: windows
 
+ # 1 capri and 1 elba with ubuntu OS
+ 1capri1elba-ubuntu:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-17
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: server-d
+           - type: hpe
+           - type: server-elba
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+ # 2 elba with ubuntu OS
+ 2elba-ubuntu:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-17
+       count: 2
+       resources:
+         servers:
+           - type: server-elba
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
