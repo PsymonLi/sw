@@ -26,6 +26,7 @@ namespace hal {
 
 static thread_local void *t_stats_timer;
 static thread_local void *t_delphi_pub_timer;
+static thread_local void *t_xcvr_dom_timer;
 
 static void
 hal_update_drop_stats (SystemResponse *rsp) {
@@ -304,7 +305,7 @@ delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     hal_ret_t ret;
     sdk_ret_t sret = SDK_RET_OK;
 
-    // update port stats and send xcvr dom event
+    // update port stats
     ret = linkmgr::port_periodic_update();
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Error in updating port metrics/dom, ret {}", ret);
@@ -355,6 +356,16 @@ hal_global_stats_init (void)
     delphi::objects::MirrorMetrics::CreateTable();
 }
 
+//------------------------------------------------------------------------------
+// callback invoked by the HAL periodic thread for transceiver dom publish
+//------------------------------------------------------------------------------
+static void
+xcvr_dom_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
+{
+    // send xcvr dom event
+    linkmgr::port_xcvr_dom_update();
+}
+
 static void
 stats_timer_start (void *timer, uint32_t timer_id, void *ctxt)
 {
@@ -380,6 +391,16 @@ stats_timer_start (void *timer, uint32_t timer_id, void *ctxt)
     HAL_TRACE_DEBUG("Started periodic stats delphi pub timer with {} ms interval",
                     HAL_STATS_DELPHI_PUBLISH_INTVL);
 
+    t_xcvr_dom_timer = sdk::lib::timer_schedule(HAL_TIMER_ID_XCVR_DOM_PUBLISH,
+                                                HAL_XCVR_DOM_PUBLISH_INTVL,
+                                                (void *)0,    // ctxt
+                                                xcvr_dom_timer_cb, true);
+    if (!t_xcvr_dom_timer) {
+        HAL_TRACE_ERR("Failed to start periodic transceiver dom timer");
+        return;
+    }
+    HAL_TRACE_DEBUG("Started periodic transceiver dom timer with {} ms interval",
+                    HAL_XCVR_DOM_PUBLISH_INTVL);
     hal_global_stats_init();
 }
 

@@ -45,8 +45,7 @@ populate_asic_temperature (system_temperature_t *temperature, uint64_t *arr)
 /// \param[in]  xcvrtemp port temperature info
 /// \param[out] arr array to be populated
 static inline void
-populate_port_temperature (sdk::platform::qsfp_temperature_t *xcvrtemp,
-                           uint64_t *arr)
+populate_port_temperature (xcvr_temperature_t *xcvrtemp, uint64_t *arr)
 {
     arr[port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_PORT] =
         xcvrtemp->temperature;
@@ -59,7 +58,7 @@ populate_port_temperature (sdk::platform::qsfp_temperature_t *xcvrtemp,
 /// \brief     update metrics for port temperature
 /// \param[in]  xcvrtemp port temperature info
 static inline void
-port_temperature_metrics_update (sdk::platform::qsfp_temperature_t *xcvrtemp)
+port_temperature_metrics_update (xcvr_temperature_t *xcvrtemp)
 {
     uint64_t port_temp_metrics[
         port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_MAX] = { 0 };
@@ -97,7 +96,7 @@ asic_temperature_metrics_update (system_temperature_t *temperature)
 /// \param[in] hbm_event events for hbm temperature threshold
 static inline void
 temperature_event_cb (system_temperature_t *temperature,
-                      sdk::platform::qsfp_temperature_t *xcvrtemp,
+                      xcvr_temperature_t *xcvrtemp,
                       sysmon_hbm_threshold_event_t hbm_event)
 {
     PDS_HMON_TRACE_VERBOSE("Die temperature is %dC, local temperature is "

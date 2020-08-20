@@ -17,7 +17,7 @@ void cattrip_event_cb(void);
 void liveness_event_cb(void);
 void power_event_cb(system_power_t *power);
 void temp_event_cb(system_temperature_t *temperature,
-                   sdk::platform::qsfp_temperature_t *xcvrtemp,
+                   xcvr_temperature_t *xcvrtemp,
                    sysmon_hbm_threshold_event_t hbm_event);
 void memory_event_cb(system_memory_t *system_memoty);
 void pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason);

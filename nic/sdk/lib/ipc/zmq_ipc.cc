@@ -249,16 +249,14 @@ zmq_ipc_endpoint::send_msg(ipc_msg_type_t type, uint32_t recipient,
         fflush(stderr);
         assert(rc != -1);
     }
-    SDK_TRACE_DEBUG("0x%lx: Sent message: type: %u, sender: %u, recipient: %u, "
-                    "msg_code: %u, serial: %u, cookie: 0x%p, pointer: %d, "
-                    "real_length: %zu, crc32: %u, tag: %u",
-                    pthread_self(),
-                    preamble.type, preamble.sender, preamble.recipient,
-                    preamble.msg_code, preamble.serial, preamble.cookie,
-                    preamble.is_pointer, preamble.real_length, preamble.crc,
-                    preamble.tag);
-
-
+    SDK_TRACE_VERBOSE("0x%lx: Sent message: type: %u, sender: %u, recipient: %u, "
+                      "msg_code: %u, serial: %u, cookie: 0x%p, pointer: %d, "
+                      "real_length: %zu, crc32: %u, tag: %u",
+                      pthread_self(),
+                      preamble.type, preamble.sender, preamble.recipient,
+                      preamble.msg_code, preamble.serial, preamble.cookie,
+                      preamble.is_pointer, preamble.real_length, preamble.crc,
+                      preamble.tag);
     do {
         if (send_pointer) {
             rc = zmq_send(this->zsocket_, &data, sizeof(data), 0);
@@ -291,14 +289,14 @@ zmq_ipc_endpoint::recv_msg(zmq_ipc_user_msg_ptr msg) {
     } while (rc == -1 && errno == EINTR);
     assert(rc == sizeof(*preamble));
 
-    SDK_TRACE_DEBUG("0x%lx: Received message: type: %u, sender: %u, recipient: %u, "
-                    "msg_code: %u, serial: %u, cookie: 0x%p, pointer: %d, "
-                    "real_length: %zu, crc32: %u, tag: %u",
-                    pthread_self(),
-                    preamble->type, preamble->sender, preamble->recipient,
-                    preamble->msg_code, preamble->serial, preamble->cookie,
-                    preamble->is_pointer, preamble->real_length, preamble->crc,
-                    preamble->tag);
+    SDK_TRACE_VERBOSE("0x%lx: Received message: type: %u, sender: %u, recipient: %u, "
+                      "msg_code: %u, serial: %u, cookie: 0x%p, pointer: %d, "
+                      "real_length: %zu, crc32: %u, tag: %u",
+                      pthread_self(),
+                      preamble->type, preamble->sender, preamble->recipient,
+                      preamble->msg_code, preamble->serial, preamble->cookie,
+                      preamble->is_pointer, preamble->real_length, preamble->crc,
+                      preamble->tag);
     assert(preamble->recipient == this->id_);
 
     do {

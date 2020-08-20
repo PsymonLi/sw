@@ -38,6 +38,7 @@ hal_ret_t port_periodic_update(void);
 hal_ret_t mac_stats_update(void);
 sdk_ret_t port_quiesce_all(linkmgr_async_response_cb_t response_cb,
                            void *response_ctxt);
+hal_ret_t port_xcvr_dom_update(void);
 
 }    // namespace linkmgr
 

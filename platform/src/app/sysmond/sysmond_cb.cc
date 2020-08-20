@@ -40,7 +40,7 @@ power_event_cb (system_power_t *power)
 
 void
 temp_event_cb (system_temperature_t *temperature,
-               sdk::platform::qsfp_temperature_t *xcvrtemp,
+               xcvr_temperature_t *xcvrtemp,
                sysmon_hbm_threshold_event_t hbm_event)
 {
     delphi_temp_event_cb(temperature, xcvrtemp);

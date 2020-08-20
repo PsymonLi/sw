@@ -53,6 +53,9 @@ sysmon_sdk_logger (std::shared_ptr<spdlog::logger> logger,
     case sdk::types::trace_info:
         TRACE_INFO(logger, "{}", logbuf);
         break;
+    case sdk::types::trace_debug:
+        TRACE_DEBUG(logger, "{}", logbuf);
+        break;
     default:
         break;
     }

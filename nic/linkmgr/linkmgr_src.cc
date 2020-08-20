@@ -1457,15 +1457,12 @@ port_periodic_update_helper (port_args_t *port_args,
                              void        *ctxt,
                              hal_ret_t   hal_ret)
 {
-    port_t *pi_p   = NULL;
+    port_t *pi_p;
     delphi::objects::MacMetricsPtr mac_metrics_old;
-    int phy_port;
-    xcvr_event_info_t xcvr_event_info = { 0 };
 
     if (hal_ret != HAL_RET_OK) {
         return;
     }
-
     pi_p = find_port_by_id(port_args->port_num);
     if (pi_p == NULL) {
         return;
@@ -1480,21 +1477,41 @@ port_periodic_update_helper (port_args_t *port_args,
     } else {
         port_uplink_metrics_update (pi_p->port_num, port_args, mac_metrics_old);
     }
-
     if (mac_metrics_old != nullptr) {
         // release memory
         delphi::objects::MacMetrics::Release(mac_metrics_old);
     }
+}
 
-    HAL_TRACE_VERBOSE("sending DOM info for ports");
+static void
+port_xcvr_dom_update_helper (port_args_t *port_args,
+                             void        *ctxt,
+                             hal_ret_t   hal_ret)
+{
+    port_t *pi_p;
+    int phy_port;
+    xcvr_event_info_t xcvr_event_info = { 0 };
+
+    if (hal_ret != HAL_RET_OK) {
+        return;
+    }
+    pi_p = find_port_by_id(port_args->port_num);
+    if (pi_p == NULL) {
+        return;
+    }
+
     // send xcvr dom event
-    phy_port = sdk::lib::catalog::logical_port_to_phy_port(pi_p->port_num);
     if (port_args->port_type != port_type_t::PORT_TYPE_MGMT) {
+        phy_port = sdk::lib::catalog::logical_port_to_phy_port(pi_p->port_num);
         // update the front panel port number with ifindex
         xcvr_event_info.ifindex = sdk::lib::catalog::logical_port_to_ifindex(
                                       pi_p->port_num);
         // populate the event info
         sdk::platform::xcvr_get(phy_port - 1, &xcvr_event_info);
+        HAL_TRACE_VERBOSE("sending DOM info for ifindex {:#x}, "
+                          "logical port {}, phy_port {} state {}",
+                          xcvr_event_info.ifindex, pi_p->port_num, phy_port,
+                          xcvr_event_info.state);
         if (xcvr_event_info.state == xcvr_state_t::XCVR_SPROM_READ) {
             // read dom info
             sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.sprom);
@@ -1514,6 +1531,12 @@ hal_ret_t
 mac_stats_update (void)
 {
     return port_get_all(NULL, NULL);
+}
+
+hal_ret_t
+port_xcvr_dom_update (void)
+{
+    return port_get_all(port_xcvr_dom_update_helper, NULL);
 }
 
 static void

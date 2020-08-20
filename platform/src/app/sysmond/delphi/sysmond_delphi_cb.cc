@@ -74,7 +74,7 @@ delphi_power_event_cb (system_power_t *power)
 
 void
 delphi_temp_event_cb (system_temperature_t *temperature,
-                      sdk::platform::qsfp_temperature_t *xcvrtemp)
+                      xcvr_temperature_t *xcvrtemp)
 {
     uint64_t key = 0;
 

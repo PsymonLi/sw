@@ -12,6 +12,11 @@ namespace platform {
 #define SFP_OFFSET_MAX_BR                    66
 #define SFP_OFFSET_MAX_BR_UNITS              250
 
+// SFP module offsets in 0xA2 page
+#define SFP_MODULE_TEMP_HIGH_ALARM           0x0
+#define SFP_MODULE_TEMP_HIGH_WARNING         0x4
+#define SFP_MODULE_TEMPERATURE               0x60   ///< byte 96
+
 typedef enum sfp_bitrate_e {
     SFP_BITRATE_10G,
     SFP_BITRATE_25G
@@ -270,6 +275,47 @@ sfp_read_dom (int port, uint8_t *data)
     if (ret == sdk::lib::PAL_RET_NOK) {
         return SDK_RET_ERR;
     }
+    return SDK_RET_OK;
+}
+
+/// \brief      parses the sfp dom info
+/// \param[in]  sprom sfp dom info (256 bytes of 0xA2 page)
+/// \param[out] xcvr_temp pointer to transceiver temperature info
+/// \return     SDK_RET_OK on success, failure status code on error
+sdk_ret_t
+parse_sfp_temperature (uint8_t *sprom, xcvr_temperature_t *xcvr_temp)
+{
+    int temperature;
+    int warning_temperature;
+    int alarm_temperature;
+
+    temperature = sprom[SFP_MODULE_TEMPERATURE];
+    if (!XCVR_TEMP_VALID(temperature)) {
+        temperature = INVALID_TEMP;
+    }
+
+    warning_temperature = sprom[SFP_MODULE_TEMP_HIGH_WARNING];
+    if (!XCVR_TEMP_VALID(warning_temperature)) {
+        warning_temperature = INVALID_TEMP;
+    }
+
+    alarm_temperature = sprom[SFP_MODULE_TEMP_HIGH_ALARM];
+    if (!XCVR_TEMP_VALID(alarm_temperature)) {
+        alarm_temperature = INVALID_TEMP;
+    }
+
+    // If the alarm/warning temperature is invalid,
+    // dont report the actual temperature as well
+    if (alarm_temperature == INVALID_TEMP ||
+        warning_temperature == INVALID_TEMP ){
+        temperature = INVALID_TEMP;
+        warning_temperature = INVALID_TEMP;
+        alarm_temperature = INVALID_TEMP;
+    }
+    xcvr_temp->temperature = temperature;
+    xcvr_temp->warning_temperature = warning_temperature;
+    xcvr_temp->alarm_temperature = alarm_temperature;
+
     return SDK_RET_OK;
 }
 

@@ -19,6 +19,9 @@
 static system_led_t g_current_status = {SYSMON_LED_EVENT_UKNOWN_STATE, LED_COLOR_NONE};
 system_led_t g_hii_prev_status = {SYSMON_LED_EVENT_UKNOWN_STATE, LED_COLOR_NONE};
 
+// global sysmon state
+sysmon_state_t g_sysmon_state;
+
 void
 system_led (system_led_t led)
 {

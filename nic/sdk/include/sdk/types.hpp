@@ -384,6 +384,13 @@ typedef struct sdk_event_s {
     };
 } sdk_event_t;
 
+/// \brief transceiver temperature info
+typedef struct xcvr_temperature_s {
+    uint32_t temperature;
+    uint32_t warning_temperature;
+    uint32_t alarm_temperature;
+} xcvr_temperature_t;
+
 }    // namespace types
 }    // namespace sdk
 
@@ -412,6 +419,7 @@ using sdk::types::lif_state_t;
 using sdk::types::pkt_type_t;
 using sdk::types::monitor_type_t;
 using sdk::types::module_version_t;
+using sdk::types::xcvr_temperature_t;
 
 #endif    // __SDK_TYPES_HPP__
 

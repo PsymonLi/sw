@@ -29,6 +29,10 @@ typedef struct sysmond_db_s {
     uint32_t frequency;
 } sysmond_db_t;
 
+typedef struct sysmon_state_s {
+    xcvr_temperature_t xcvr_temp[MAX_FP_PORTS];
+} sysmon_state_t;
+
 #define UPTIME_FILENAME "/obfl/uptime.log"
 #define MONFUNC(fnc) \
 static monfunc_t monfunc_t_##fnc \
@@ -55,4 +59,6 @@ void memory_threshold_cfg_init(void);
 
 extern sysmon_cfg_t g_sysmon_cfg;
 extern system_led_t g_hii_prev_status;
+extern sysmon_state_t g_sysmon_state;
+
 #endif /*__SYSMOND_H__*/
