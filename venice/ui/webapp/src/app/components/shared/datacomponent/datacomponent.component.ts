@@ -8,7 +8,7 @@ import { TableUtility } from '@app/components/shared/tableviewedit/tableutility'
 import { Output, EventEmitter, ViewChild, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { StagingService } from '@app/services/generated/staging.service';
-import { StagingCommitAction, StagingBuffer, IBulkeditBulkEditItem, IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
+import { StagingCommitAction, StagingBuffer, IBulkeditBulkEditItem, IStagingBulkEditAction, StagingBufferStatus_validation_result } from '@sdk/v1/models/generated/staging';
 import { switchMap, buffer } from 'rxjs/operators';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseComponent } from '@app/components/base/base.component';
@@ -16,6 +16,11 @@ import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { PentableComponent } from '../pentable/pentable.component';
 import { PenServerTableComponent } from '../pentable/penservertable.component';
 import { LazyLoadEvent } from 'primeng/primeng';
+
+export interface VerifyGetBufferResult {
+  pass: boolean;
+  error: string;
+}
 
 export abstract class DataComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
@@ -235,16 +240,40 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
  * In case, there are multiple bulkedi operations in one component
  * stagingBulkEditAction can tell the differences of bulkedit operations
  *
+ * getbufferResponse.body.status may contain "validation-result" error.  It looks like
+ * {"validation-result":"failed","errors":[{"uri":"/configs/network/v1/tenant/default/networks/e2eNetwork30000","method":"","error":["Result:  Message: [Result: Failed pre conditions Message: [Error validating Gateway address: IPV4 Gateway: 10.1.0.1 is not in subnet: 11.1.0.0/16] Code: 412 Ref: Tenant:\"default\" Namespace:\"default\" Kind:\"Network\" Name:\"e2eNetwork30000\" ] Code: 500 Ref: <nil>"]}]}
+ *
+ * For debugging, set a debug point at "const body = ... " to tweak data
  */
-  verifybulkEditBufferContent(stagingBulkEditAction: IStagingBulkEditAction, bulkeditResponse: any, getbufferResponse: any): boolean {
-    try {
-      return (stagingBulkEditAction.spec.items.length === getbufferResponse.body.status.items.length && getbufferResponse.body.status.items.length === bulkeditResponse.body.status.items.length);
-    } catch (error) {
-      console.error(this.getClassName() + ' .verifybulkEditBufferContent() ' + error);
-      return false;
-    }
+verifybulkEditBufferContent(stagingBulkEditAction: IStagingBulkEditAction, bulkeditResponse: any, getbufferResponse: any): VerifyGetBufferResult {
+  const result: VerifyGetBufferResult = {
+    pass: true,
+    error: null
+  };
 
+  try {
+    if (stagingBulkEditAction.spec.items.length === getbufferResponse.body.status.items.length && getbufferResponse.body.status.items.length === bulkeditResponse.body.status.items.length) {
+      const body = getbufferResponse.body as StagingBuffer;
+       if (body.status['validation-result'] === StagingBufferStatus_validation_result.failed) {
+         result.pass = false;
+         result.error =  body.status.errors.map( error => error.uri).join('\n');
+        return result;
+       } else {
+         return result;
+       }
+    } else {
+      result.pass = false;
+      result.error = 'BulkEditAction items length not matched.';
+      return result;
+    }
+  } catch (error) {
+    console.error(this.getClassName() + ' .verifybulkEditBufferContent() ' + error);
+    result.pass = false;
+    result.error =  JSON.stringify(error);
+    return result;
   }
+
+}
 
   /**
    * This API builds an IStagingBulkEditAction
@@ -389,13 +418,16 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
           switchMap((bulkeditResponse) => {
             return this.stagingService.GetBuffer(buffername).pipe(
               switchMap(getbufferResponse => {
-                if (this.verifybulkEditBufferContent(stagingBulkEditAction, bulkeditResponse, getbufferResponse)) {
+                const verifyGetBufferResult: VerifyGetBufferResult = this.verifybulkEditBufferContent(stagingBulkEditAction, bulkeditResponse, getbufferResponse);
+                if (verifyGetBufferResult.pass) {
                   return this.commitStagingBuffer(buffername); //  commit buffer
                 } else {
                   console.error(this.getClassName() + ' bulkEditHelper() verifybulkEditBufferContent() failed ', stagingBulkEditAction, bulkeditResponse, getbufferResponse);
-                  const error = new Error('Failed to verify commit buffer content');
-                  this.onBulkEditFailure(error, veniceObjects, stagingBulkEditAction, successMsg, failureMsg + ' ' + error.toString());
-                  this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {});
+                  const errMsg = 'Failed to verify commit buffer content.\n' + verifyGetBufferResult.error;
+                  // Make an error object and throw error. We need to add 'statusCode' and 'body' property to error object to satisfy controller-service error handling.
+                  const error = new Error(errMsg);
+                  error['statusCode'] = getbufferResponse.statusCode;
+                  error['body'] = { message: errMsg};
                   throw error;
                 }
               })
