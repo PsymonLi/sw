@@ -1577,7 +1577,12 @@ EthLif::TxQIdentify(void *req, void *req_data, void *resp, void *resp_data)
     ident->desc_sz = sizeof(struct ionic_txq_desc);
     ident->comp_sz = sizeof(struct ionic_txq_comp);
 
-    if (cmd->ver == 1) {
+    if (IsLifTypeMnic()) {
+        ident->version = 0;
+        ident->sg_desc_sz = sizeof(struct ionic_txq_sg_desc);
+        ident->max_sg_elems = IONIC_TX_MAX_SG_ELEMS;
+        ident->sg_desc_stride = IONIC_TX_SG_DESC_STRIDE;
+    } else if (cmd->ver == 1) {
         ident->version = 1;
         ident->sg_desc_sz = sizeof(struct ionic_txq_sg_desc_v1);
         ident->max_sg_elems = IONIC_TX_MAX_SG_ELEMS_V1;
@@ -2158,7 +2163,7 @@ EthLif::NotifyQInit(void *req, void *req_data, void *resp, void *resp_data)
     else
         host_ring_base = cmd->ring_base;
     qstate.host_ring_base =
-        roundup(host_ring_base + (sizeof(union ionic_notifyq_comp) << cmd->ring_size), 4096);
+        roundup(host_ring_base + (sizeof(struct ionic_notifyq_cmd) << cmd->ring_size), 4096);
     qstate.host_ring_size = cmd->ring_size;
     if (cmd->flags & IONIC_QINIT_F_IRQ)
         qstate.host_intr_assert_index = res->intr_base + cmd->intr_index;
@@ -3910,6 +3915,19 @@ EthLif::IsLifTypeCpu()
     switch (hal_lif_info_.type) {
     case sdk::platform::lif_type_t::LIF_TYPE_MNIC_CPU:
     case sdk::platform::lif_type_t::LIF_TYPE_LEARN:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool
+EthLif::IsLifTypeMnic()
+{
+    switch (hal_lif_info_.type) {
+    case sdk::platform::lif_type_t::LIF_TYPE_MNIC_OOB_MGMT:
+    case sdk::platform::lif_type_t::LIF_TYPE_MNIC_INTERNAL_MGMT:
+    case sdk::platform::lif_type_t::LIF_TYPE_MNIC_INBAND_MGMT:
         return true;
     default:
         return false;
