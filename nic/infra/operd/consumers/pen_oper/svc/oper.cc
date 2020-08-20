@@ -28,13 +28,13 @@ handle_event_request (const operd::OperInfoSpec *proto_req,
 {
     sdk_ret_t ret;
     operd::EventFilter event_filter;
-    operd::alerts::operd_alerts_t event_type;
+    operd::event::operd_event_type_t event_type;
 
     if (proto_req->has_eventfilter()) {
         // interested only in specific events
         event_filter = proto_req->eventfilter();
         for (int i = 0; i < event_filter.types_size(); i++) {
-            event_type = operd_alerts_type_from_proto(event_filter.types(i));
+            event_type = operd_event_type_from_proto(event_filter.types(i));
             ret = handle_request(PENOPER_INFO_TYPE_EVENT, event_type,
                                 ctxt, subscribe);
             if (unlikely(ret != SDK_RET_OK)) {
@@ -43,8 +43,8 @@ handle_event_request (const operd::OperInfoSpec *proto_req,
         }
     } else {
         // interested in all events
-        for (uint32_t event_type = operd::alerts::OPERD_EVENT_TYPE_MIN;
-             event_type < operd::alerts::OPERD_EVENT_TYPE_MAX; event_type++) {
+        for (uint32_t event_type = operd::event::OPERD_EVENT_TYPE_MIN;
+             event_type < operd::event::OPERD_EVENT_TYPE_MAX; event_type++) {
             ret = handle_request(PENOPER_INFO_TYPE_EVENT, event_type,
                                  ctxt, subscribe);
             if (unlikely(ret != SDK_RET_OK)) {

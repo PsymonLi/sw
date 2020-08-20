@@ -44,7 +44,7 @@ func convertToVeniceEvent(nEvt *operdapi.Event) *evtsapi.Event {
 		return nil
 	}
 	eTypeAttrs := eventtypes.GetEventTypeAttrs(eventtypes.EventType(evtType))
-	vAlert := &evtsapi.Event{
+	vEvent := &evtsapi.Event{
 		TypeMeta: api.TypeMeta{Kind: "Event"},
 		ObjectMeta: api.ObjectMeta{
 			Name: uuid,
@@ -71,7 +71,7 @@ func convertToVeniceEvent(nEvt *operdapi.Event) *evtsapi.Event {
 		},
 	}
 
-	return vAlert
+	return vEvent
 }
 
 func queryEvents(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
@@ -123,13 +123,13 @@ func queryEvents(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient
 		event := resp.GetEventInfo()
 		processEvent(event)
 		// convert to venice event format
-		vAlert := convertToVeniceEvent(event)
-		if vAlert == nil {
+		vEvent := convertToVeniceEvent(event)
+		if vEvent == nil {
 			log.Errorf("Failed to convert event %+v", event)
 			continue
 		}
 		// send to dispatcher
-		if err := evtsDispatcher.Action(*vAlert); err != nil {
+		if err := evtsDispatcher.Action(*vEvent); err != nil {
 			log.Error(errors.Wrapf(types.ErrEventsFwd,
 				"Error dispatching event {%+v}, err: %v", event, err))
 		} else {

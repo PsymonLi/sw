@@ -82,7 +82,7 @@
 /sw/nic/metaswitch/stubs/pds_ms_stubs_init.hpp
 /sw/nic/metaswitch/stubs/test/pdsmock
 /sw/nic/mkdefs
-/sw/nic/infra/operd/alerts
+/sw/nic/infra/operd/event
 /sw/nic/infra/operd/metrics/cloud
 /sw/nic/p4/adminq
 /sw/nic/p4/common

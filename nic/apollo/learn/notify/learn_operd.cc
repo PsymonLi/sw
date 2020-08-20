@@ -11,8 +11,8 @@
 #include "nic/sdk/include/sdk/mem.hpp"
 #include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/logger.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
-#include "nic/infra/operd/alerts/alert_type.hpp"
+#include "nic/infra/operd/event/event.hpp"
+#include "nic/infra/operd/event/event_type.hpp"
 #include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
@@ -42,7 +42,7 @@ get_operd_msgbuf (void)
 static inline void
 learn_operd_write_data (operd_event_data_t *buffer, size_t buffer_len)
 {
-    learn_db()->operd_region()->write(OPERD_DECODER_ALERTS, sdk::operd::INFO,
+    learn_db()->operd_region()->write(OPERD_DECODER_EVENT, sdk::operd::INFO,
                                       buffer, buffer_len);
     return;
 }
@@ -72,7 +72,7 @@ generate_learn_event (learn_ctxt_t *ctxt)
     uint16_t buffer_len;
 
     buffer = get_operd_msgbuf();
-    buffer->event_id = operd::alerts::LEARN_PKT;
+    buffer->event_id = operd::event::LEARN_PKT;
     buffer_len = fill_pktinfo(ctxt, (learn_operd_msg_t *)buffer->message);
     buffer_len += sizeof(operd_event_data_t);
     learn_operd_write_data(buffer, buffer_len);

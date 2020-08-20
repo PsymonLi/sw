@@ -7,7 +7,7 @@
 
 #include <vnet/ip/ip.h>
 #include <nic/vpp/infra/utils.h>
-#include <nic/vpp/infra/operd/alerts.h>
+#include <nic/vpp/infra/operd/event.h>
 #include <nic/apollo/packet/apulu/p4_cpu_hdr.h>
 #include <nic/vpp/impl/apulu/p4_cpu_hdr_utils.h>
 #include <nic/apollo/p4/include/apulu_defines.h>
@@ -121,7 +121,7 @@ pds_vnic_active_sessions_decrement (uint16_t vnic_id) {
         // session count >= threshold level and < max session limit
         // reset session exhausted flag
         vnic->ses_alert_limit_exceeded = 0;
-        operd_alert_vnic_session_within_limit(vnic->obj_key,
+        operd_event_vnic_session_within_limit(vnic->obj_key,
                                               vnic->active_ses_count,
                                               vnic->max_sessions);
     }

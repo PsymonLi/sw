@@ -24,7 +24,7 @@
             "type": "library",
             "location": "libpen_oper.so"
         },
-        "input": ["alerts"]
+        "input": ["event"]
     },
     {
         "output": {

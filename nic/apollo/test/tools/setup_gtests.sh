@@ -21,8 +21,7 @@ function finish () {
     ${PDSPKG_TOPDIR}/tools/print-cores.sh
     echo "===== Collecting logs ====="
     ${PDSPKG_TOPDIR}/apollo/test/tools/savelogs.sh
-    sudo rm -f /tmp/*.db /tmp/pen_* /dev/shm/pds_* /dev/shm/ipc_*
-    sudo rm -f /dev/shm/metrics_*
+    sudo rm -f /tmp/*.db /tmp/pen_* /dev/shm/*
     if [ $PIPELINE == 'apulu' ]; then
         if [ -z "$IPC_MOCK_MODE" ]; then
             sudo pkill -9 vpp

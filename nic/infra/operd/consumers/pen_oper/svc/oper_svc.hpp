@@ -11,7 +11,7 @@
 #ifndef __PEN_OPER_SVC_OPER_SVC_HPP__
 #define __PEN_OPER_SVC_OPER_SVC_HPP__
 
-#include "gen/alerts/alert_defs.h"
+#include "gen/event/event_defs.h"
 #include "gen/proto/operd/oper.grpc.pb.h"
 
 static inline pen_oper_info_type_t
@@ -38,56 +38,56 @@ pen_oper_info_type_to_proto (pen_oper_info_type_t info_type)
     return operd::OPER_INFO_TYPE_NONE;
 }
 
-static inline operd::alerts::operd_alerts_t
-operd_alerts_type_from_proto (operd::EventType event_type)
+static inline operd::event::operd_event_type_t
+operd_event_type_from_proto (operd::EventType event_type)
 {
     switch (event_type) {
     case operd::BGP_SESSION_ESTABLISHED:
-        return operd::alerts::BGP_SESSION_ESTABLISHED;
+        return operd::event::BGP_SESSION_ESTABLISHED;
     case operd::BGP_SESSION_DOWN:
-        return operd::alerts::BGP_SESSION_DOWN;
+        return operd::event::BGP_SESSION_DOWN;
     case operd::DSC_SERVICE_STARTED:
-        return operd::alerts::DSC_SERVICE_STARTED;
+        return operd::event::DSC_SERVICE_STARTED;
     case operd::DSC_SERVICE_STOPPED:
-        return operd::alerts::DSC_SERVICE_STOPPED;
+        return operd::event::DSC_SERVICE_STOPPED;
     case operd::SYSTEM_COLDBOOT:
-        return operd::alerts::SYSTEM_COLDBOOT;
+        return operd::event::SYSTEM_COLDBOOT;
     case operd::LINK_UP:
-        return operd::alerts::LINK_UP;
+        return operd::event::LINK_UP;
     case operd::LINK_DOWN:
-        return operd::alerts::LINK_DOWN;
+        return operd::event::LINK_DOWN;
     case operd::DSC_MEM_TEMP_ABOVE_THRESHOLD:
-        return operd::alerts::DSC_MEM_TEMP_ABOVE_THRESHOLD;
+        return operd::event::DSC_MEM_TEMP_ABOVE_THRESHOLD;
     case operd::DSC_MEM_TEMP_BELOW_THRESHOLD:
-        return operd::alerts::DSC_MEM_TEMP_BELOW_THRESHOLD;
+        return operd::event::DSC_MEM_TEMP_BELOW_THRESHOLD;
     case operd::DSC_CATTRIP_INTERRUPT:
-        return operd::alerts::DSC_CATTRIP_INTERRUPT;
+        return operd::event::DSC_CATTRIP_INTERRUPT;
     case operd::DSC_PANIC_EVENT:
-        return operd::alerts::DSC_PANIC_EVENT;
+        return operd::event::DSC_PANIC_EVENT;
     case operd::DSC_POST_DIAG_FAILURE_EVENT:
-        return operd::alerts::DSC_POST_DIAG_FAILURE_EVENT;
+        return operd::event::DSC_POST_DIAG_FAILURE_EVENT;
     case operd::DSC_INFO_PCIEHEALTH_EVENT:
-        return operd::alerts::DSC_INFO_PCIEHEALTH_EVENT;
+        return operd::event::DSC_INFO_PCIEHEALTH_EVENT;
     case operd::DSC_WARN_PCIEHEALTH_EVENT:
-        return operd::alerts::DSC_WARN_PCIEHEALTH_EVENT;
+        return operd::event::DSC_WARN_PCIEHEALTH_EVENT;
     case operd::DSC_ERR_PCIEHEALTH_EVENT:
-        return operd::alerts::DSC_ERR_PCIEHEALTH_EVENT;
+        return operd::event::DSC_ERR_PCIEHEALTH_EVENT;
     case operd::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD:
-        return operd::alerts::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD;
+        return operd::event::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD;
     case operd::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD:
-        return operd::alerts::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD;
+        return operd::event::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD;
     case operd::VNIC_SESSION_LIMIT_EXCEEDED:
-        return operd::alerts::VNIC_SESSION_LIMIT_EXCEEDED;
+        return operd::event::VNIC_SESSION_LIMIT_EXCEEDED;
     case operd::VNIC_SESSION_THRESHOLD_EXCEEDED:
-        return operd::alerts::VNIC_SESSION_THRESHOLD_EXCEEDED;
+        return operd::event::VNIC_SESSION_THRESHOLD_EXCEEDED;
     case operd::VNIC_SESSION_WITHIN_THRESHOLD:
-        return operd::alerts::VNIC_SESSION_WITHIN_THRESHOLD;
+        return operd::event::VNIC_SESSION_WITHIN_THRESHOLD;
     case operd::LEARN_PKT:
-        return operd::alerts::LEARN_PKT;
+        return operd::event::LEARN_PKT;
     default:
         break;
     }
-    return operd::alerts::OPERD_EVENT_TYPE_NONE;
+    return operd::event::OPERD_EVENT_TYPE_NONE;
 }
 
 static inline uint32_t
@@ -98,7 +98,7 @@ operd_info_id_from_proto (OperInfoResponse *resp)
     switch (resp->oper_info_case()) {
     case operd::OperInfoResponse::kEventInfo:
         event = resp->eventinfo();
-        return operd_alerts_type_from_proto(event.type());
+        return operd_event_type_from_proto(event.type());
     default:
         break;
     }
@@ -125,7 +125,7 @@ pen_oper_info_to_proto_info_response (pen_oper_info_type_t info_type,
         case operd::LEARN_PKT:
             break;
         default:
-            fprintf(stdout, "Publishing alert %u %u %s %s\n", event->type(),
+            fprintf(stdout, "Publishing event %u %u %s %s\n", event->type(),
                     event->category(), event->description().c_str(),
                     event->message().c_str());
         }

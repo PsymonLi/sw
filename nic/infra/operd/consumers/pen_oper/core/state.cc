@@ -5,7 +5,7 @@
 
 #include "nic/sdk/include/sdk/mem.hpp"
 #include "nic/infra/operd/consumers/pen_oper/core/state.hpp"
-#include "gen/alerts/alert_defs.h"
+#include "gen/event/event_defs.h"
 
 namespace core {
 
@@ -31,7 +31,7 @@ pen_oper_state::init(void) {
 pen_oper_state::pen_oper_state() {
     client_mgr_[PENOPER_INFO_TYPE_NONE] = NULL;
     client_mgr_[PENOPER_INFO_TYPE_EVENT] =
-        eventmgr::factory(operd::alerts::OPERD_EVENT_TYPE_MAX);
+        eventmgr::factory(operd::event::OPERD_EVENT_TYPE_MAX);
     client_mgr_[PENOPER_INFO_TYPE_MAX] = NULL;
 }
 

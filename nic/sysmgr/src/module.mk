@@ -11,8 +11,8 @@ ALL_CC_FILES    = $(wildcard ${MODULE_SRC_DIR}/*.cpp \
 	                     ${MODULE_SRC_DIR}/iris/*.cpp)
 ALL_TEST_FILES  = $(wildcard ${MODULE_SRC_DIR}/*_test.cpp)
 else
-MODULE_SOLIBS   = pal logger operd operd_alerts penipc penipc_ev upgrade_ev \
-	          utils
+MODULE_SOLIBS   = pal logger operd operd_event penipc penipc_ev upgrade_ev \
+	              utils
 MODULE_LDLIBS   = rt ev pthread z dl
 MODULE_ARLIBS   =
 ALL_CC_FILES    = $(wildcard ${MODULE_SRC_DIR}/*.cpp \

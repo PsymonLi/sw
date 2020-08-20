@@ -10,7 +10,7 @@ MODULE_SOLIBS   = pal pdsframework pdscore pdsapi_athena pdsapi_athena_impl \
                   sdkp4 sdkp4utils sdk_asicrw_if sdk${ASIC} \
                   sdkplatformutils sdkxcvrdriver sdkasicpd \
                   bm_allocator sdklinkmgr sdklinkmgrcsr operd \
-                  operd_alerts
+                  operd_event
 MODULE_SRCS     = $(wildcard ${MODULE_SRC_DIR}/*.cc) \
                   $(wildcard ${TOPDIR}/nic/apollo/agent/svc/port.cc) \
                   $(wildcard ${TOPDIR}/nic/apollo/agent/svc/device.cc) \

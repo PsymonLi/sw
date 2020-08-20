@@ -18,7 +18,7 @@
 #include <vnet/vxlan/vxlan_packet.h>
 #include <nic/vpp/impl/nat.h>
 #include <nic/vpp/impl/pds_table.h>
-#include <nic/vpp/infra/operd/alerts.h>
+#include <nic/vpp/infra/operd/event.h>
 #include "p4_cpu_hdr_utils.h"
 #include "impl_db.h"
 #include "vnic.h"
@@ -1052,7 +1052,7 @@ pds_vnic_active_sessions_check (pds_impl_db_vnic_entry_t *vnic)
                       vnic->active_ses_count >= vnic->max_sessions)) {
         if (vnic->ses_alert_limit_exceeded == 0) {
             // hit max limit, raise limit reached event
-            operd_alert_vnic_session_limit_exhaustion(vnic->obj_key,
+            operd_event_vnic_session_limit_exhaustion(vnic->obj_key,
                                                       vnic->active_ses_count,
                                                       vnic->max_sessions);
             vnic->ses_alert_limit_exceeded = 1;
@@ -1069,7 +1069,7 @@ pds_vnic_active_sessions_increment (pds_impl_db_vnic_entry_t *vnic)
                       vnic->active_ses_count >= vnic->max_sessions)) {
         if (vnic->ses_alert_limit_exceeded == 0) {
             // hit max limit, raise limit reached event
-            operd_alert_vnic_session_limit_exhaustion(vnic->obj_key,
+            operd_event_vnic_session_limit_exhaustion(vnic->obj_key,
                                                       vnic->active_ses_count,
                                                       vnic->max_sessions);
             vnic->ses_alert_limit_exceeded = 1;
@@ -1082,7 +1082,7 @@ pds_vnic_active_sessions_increment (pds_impl_db_vnic_entry_t *vnic)
                       (vnic->active_ses_count >= vnic->ses_alert_max_threshold)))
     {
         // hit threshold, raise limit approach event
-        operd_alert_vnic_session_limit_approach(vnic->obj_key,
+        operd_event_vnic_session_limit_approach(vnic->obj_key,
                                                 vnic->active_ses_count,
                                                 vnic->max_sessions);
         vnic->ses_alert_threshold_exceeded = 1;

@@ -12,7 +12,7 @@
 #define SHARED_DATA_TYPE SMS_SHARED_LOCAL
 
 #include "nic/infra/core/trace.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/event/event.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
@@ -169,10 +169,9 @@ NBB_VOID sms_rcv_amb_trap(AMB_TRAP *v_amb_trap NBB_CCXT_T NBB_CXT)
                        ipaddr2str(&remote_ip));
       if (!rr_mode) {
         // Raise an event
-        operd::alerts::operd_alerts_t alert;
-        alert = operd::alerts::BGP_SESSION_ESTABLISHED;
-        operd::alerts::alert_recorder::get()->alert(alert, "Peer %s",
-                                                      ipaddr2str(&remote_ip));
+        operd::event::event_recorder::get()->event(
+            operd::event::BGP_SESSION_ESTABLISHED, "Peer %s",
+            ipaddr2str(&remote_ip));
       }
       break;
 
@@ -199,10 +198,9 @@ NBB_VOID sms_rcv_amb_trap(AMB_TRAP *v_amb_trap NBB_CCXT_T NBB_CXT)
                            ms_bgp_conn_fsm_state_str(trap_data->fsm_state));
           if (!rr_mode) {
             // Raise an event
-            operd::alerts::operd_alerts_t alert;
-            alert = operd::alerts::BGP_SESSION_DOWN;
-            operd::alerts::alert_recorder::get()->alert(alert,"Peer %s",
-                                                        ipaddr2str(&remote_ip));
+            operd::event::event_recorder::get()->event(
+                operd::event::BGP_SESSION_DOWN, "Peer %s",
+                ipaddr2str(&remote_ip));
           }
       }
       break;

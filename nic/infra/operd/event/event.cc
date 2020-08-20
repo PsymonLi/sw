@@ -14,41 +14,41 @@
 #include <string>
 #include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/operd.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
-#include "nic/infra/operd/alerts/alert_type.hpp"
+#include "nic/infra/operd/event/event.hpp"
+#include "nic/infra/operd/event/event_type.hpp"
 
 namespace operd {
-namespace alerts {
+namespace event {
 
 const int MAX_PRINTF_SIZE = 1024;
 
-alert_recorder_ptr alert_recorder::instance_ = nullptr;
+event_recorder_ptr event_recorder::instance_ = nullptr;
 
-alert_recorder_ptr
-alert_recorder::get(void) {
+event_recorder_ptr
+event_recorder::get(void) {
     if (instance_ == nullptr) {
-        instance_ = std::make_shared<alert_recorder>();
-        instance_->region_ = std::make_shared<sdk::operd::region>("alerts");
+        instance_ = std::make_shared<event_recorder>();
+        instance_->region_ = std::make_shared<sdk::operd::region>("event");
     }
 
     return instance_;
 }
 
 void
-alert_recorder::alert(operd_alerts_t alert, const char *fmt, ...) {
+event_recorder::event(operd_event_type_t event_type, const char *fmt, ...) {
     va_list ap;
     char buffer[MAX_PRINTF_SIZE + sizeof(uint16_t)];
     operd_event_data_t *event_data = (operd_event_data_t *)buffer;
     int n;
 
-    event_data->event_id = alert;
+    event_data->event_id = event_type;
     va_start(ap, fmt);
     n = vsnprintf(event_data->message, MAX_PRINTF_SIZE, fmt, ap);
     va_end(ap);
 
-    this->region_->write(OPERD_DECODER_ALERTS, 1, buffer,
+    this->region_->write(OPERD_DECODER_EVENT, 1, buffer,
                          n + 1 + sizeof(uint16_t));
 }
 
-}    // namespace alerts
+}    // namespace event
 }    // namespace operd

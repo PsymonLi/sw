@@ -8,7 +8,7 @@ extern "C" {
 
 typedef enum  {
     OPERD_DECODER_PLAIN_TEXT = 0,
-    OPERD_DECODER_ALERTS     = 1,
+    OPERD_DECODER_EVENT      = 1,
     OPERD_DECODER_VPP        = 51,
     OPERD_DECODER_MAX        = 255,
 } operd_decoders;
@@ -23,4 +23,4 @@ typedef void (*decoder_lib_init_fn)(register_decoder_fn callback);
 
 }
 
-#endif
+#endif    // __SDK_OPERD_DECODER_H__

@@ -115,7 +115,7 @@ static inline pen_oper_info_type_t
 pen_oper_get_info_type (sdk::operd::log_ptr entry)
 {
     switch (entry->encoder()) {
-    case OPERD_DECODER_ALERTS:
+    case OPERD_DECODER_EVENT:
         return PENOPER_INFO_TYPE_EVENT;
     default:
         // pen-oper plugin is not interested in other info types yet

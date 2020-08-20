@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/platform/sensor/sensor.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/event/event.hpp"
 
 namespace api {
 #include <sys/time.h>
@@ -106,13 +106,13 @@ temperature_event_cb (system_temperature_t *temperature,
                            temperature->localtemp, temperature->hbmtemp);
     switch (hbm_event) {
     case sysmon_hbm_threshold_event_t::SYSMON_HBM_TEMP_ABOVE_THRESHOLD:
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_MEM_TEMP_ABOVE_THRESHOLD,
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_MEM_TEMP_ABOVE_THRESHOLD,
             "Memory temperature above threshold");
         break;
     case sysmon_hbm_threshold_event_t::SYSMON_HBM_TEMP_BELOW_THRESHOLD:
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_MEM_TEMP_BELOW_THRESHOLD,
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_MEM_TEMP_BELOW_THRESHOLD,
             "Memory temperature below threshold");
         break;
     default:
@@ -155,8 +155,8 @@ interrupt_event_cb (const intr_reg_t *reg, const intr_field_t *field)
 void
 cattrip_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(
-        operd::alerts::DSC_CATTRIP_INTERRUPT, "DSC temperature crossed the "
+    operd::event::event_recorder::get()->event(
+        operd::event::DSC_CATTRIP_INTERRUPT, "DSC temperature crossed the "
         "fatal threshold and will reset");
 }
 
@@ -171,7 +171,7 @@ memory_event_cb (system_memory_t *system_memory)
 void
 panic_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(operd::alerts::DSC_PANIC_EVENT,
+    operd::event::event_recorder::get()->event(operd::event::DSC_PANIC_EVENT,
                                                 "Panic occurred on DSC "
                                                 "on the previous boot");
 }
@@ -179,8 +179,8 @@ panic_event_cb (void)
 void
 postdiag_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(
-        operd::alerts::DSC_POST_DIAG_FAILURE_EVENT,
+    operd::event::event_recorder::get()->event(
+        operd::event::DSC_POST_DIAG_FAILURE_EVENT,
         "DSC post diag failed in this boot");
 }
 
@@ -210,14 +210,14 @@ void
 pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason)
 {
     if (sev == SYSMON_PCIEHEALTH_INFO) {
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_INFO_PCIEHEALTH_EVENT, reason);
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_INFO_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_WARN){
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_WARN_PCIEHEALTH_EVENT, reason);
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_WARN_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_ERROR){
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_ERR_PCIEHEALTH_EVENT, reason);
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_ERR_PCIEHEALTH_EVENT, reason);
     }
 }
 
@@ -231,14 +231,14 @@ filesystem_threshold_event_cb (sysmon_filesystem_threshold_event_t event,
         snprintf(event_log, sizeof(event_log),
                  "%s is above filesystem usage threshold of %u percent", path,
                  threshold_percent);
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD, event_log);
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD, event_log);
     } else if (event == SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD) {
         snprintf(event_log, sizeof(event_log),
                  "%s is below filesystem usage threshold of %u percent", path,
                  threshold_percent);
-        operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD, event_log);
+        operd::event::event_recorder::get()->event(
+            operd::event::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD, event_log);
     }
 }
 

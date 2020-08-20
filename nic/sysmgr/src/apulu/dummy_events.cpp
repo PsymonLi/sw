@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "../events_api.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/event/event.hpp"
 
 class DummyLogger : public SysmgrEvents {
 public:
@@ -12,7 +12,7 @@ public:
     void ServiceStoppedEvent(std::string name) override;
     DummyLogger();
 private:
-    operd::alerts::alert_recorder_ptr g_alerts;
+    operd::event::event_recorder_ptr g_event;
 
 };
 typedef std::shared_ptr<DummyLogger> DummyLoggerPtr;
@@ -24,25 +24,26 @@ init_events (std::shared_ptr<spdlog::logger> logger)
 }
 
 DummyLogger::DummyLogger() {
-    g_alerts = operd::alerts::alert_recorder::get();
+    g_event = operd::event::event_recorder::get();
 }
 
 void
 DummyLogger::SystemBooted(void) {
     printf("ooops\n");
     fflush(stdout);
-    g_alerts->alert(operd::alerts::SYSTEM_COLDBOOT, "System booted");
+    g_event->event(operd::event::SYSTEM_COLDBOOT, "System booted");
 }
 
 void
 DummyLogger::ServiceStartedEvent(std::string svc) {
     printf("ooops\n");
     fflush(stdout);
-    g_alerts->alert(operd::alerts::DSC_SERVICE_STARTED, "Service: %s", svc.c_str());
+    g_event->event(operd::event::DSC_SERVICE_STARTED, "Service: %s",
+                   svc.c_str());
 }
 
 void
 DummyLogger::ServiceStoppedEvent(std::string svc) {
-    g_alerts->alert(operd::alerts::DSC_SERVICE_STOPPED, "Service: %s",
-                    svc.c_str());
+    g_event->event(operd::event::DSC_SERVICE_STOPPED, "Service: %s",
+                   svc.c_str());
 }

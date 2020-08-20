@@ -12,19 +12,19 @@ Severities = ['INFO', 'WARN', 'CRITICAL', 'DEBUG']
 
 class Top():
     def __init__(self):
-        self.alerts_ = []
+        self.event_ = []
         self.names_ = {}
 
-    def add_alert(self, alert):
-        self.alerts_.append(alert)
-        if alert.name_ in self.names_:
-            raise Exception('Duplicate name: %s' % (alert.name_))
-        self.names_[alert.name_] = True
+    def add_event(self, event):
+        self.event_.append(event)
+        if event.name_ in self.names_:
+            raise Exception('Duplicate name: %s' % (event.name_))
+        self.names_[event.name_] = True
 
     def generate_implementation(self, f):
-        def __add_empty_alert(fileHandle, alertName):
+        def __add_empty_event(fileHandle, eventName):
             fileHandle.write('\t{\n')
-            fileHandle.write(f'\t\tname: "{alertName}",\n')
+            fileHandle.write(f'\t\tname: "{eventName}",\n')
             fileHandle.write('\t\tcategory: "NONE",\n')
             fileHandle.write('\t\tseverity: "DEBUG",\n')
             fileHandle.write('\t\tdescription: "Invalid event",\n')
@@ -33,50 +33,50 @@ class Top():
             return
 
         f.write('#include <cstdlib>\n')
-        f.write('#include "alert_defs.h"\n')
+        f.write('#include "event_defs.h"\n')
         f.write('\n')
         f.write('namespace operd {\n')
-        f.write('namespace alerts {\n')
+        f.write('namespace event {\n')
         f.write('\n')
         # +2 to include OPERD_EVENT_TYPE_NONE and OPERD_EVENT_TYPE_MAX
-        f.write('const alert_t alerts[%d] = {\n' % (len(self.alerts_)+2))
-        __add_empty_alert(f, "OPERD_EVENT_TYPE_NONE")
-        for alert in self.alerts_:
+        f.write('const operd_event_t event[%d] = {\n' % (len(self.event_)+2))
+        __add_empty_event(f, "OPERD_EVENT_TYPE_NONE")
+        for event in self.event_:
             f.write('\t{\n')
-            f.write('\t\tname: "%s",\n' % (alert.name_))
-            f.write('\t\tcategory: "%s",\n' % (alert.category_))
-            f.write('\t\tseverity: "%s",\n' % (alert.severity_))
-            f.write('\t\tdescription: "%s",\n' % (alert.description_))
+            f.write('\t\tname: "%s",\n' % (event.name_))
+            f.write('\t\tcategory: "%s",\n' % (event.category_))
+            f.write('\t\tseverity: "%s",\n' % (event.severity_))
+            f.write('\t\tdescription: "%s",\n' % (event.description_))
             f.write('\t\tmessage: NULL\n')
             f.write('\t},\n')
-        __add_empty_alert(f, "OPERD_EVENT_TYPE_MAX")
+        __add_empty_event(f, "OPERD_EVENT_TYPE_MAX")
         f.write('};\n')
         f.write('\n')
         f.write('}\n')
         f.write('}\n')
         
     def generate_header(self, f):
-        f.write('#ifndef __OPERD_ALERT_DEFS_H__\n')
-        f.write('#define __OPERD_ALERT_DEFS_H__\n')
+        f.write('#ifndef __OPERD_EVENT_DEFS_H__\n')
+        f.write('#define __OPERD_EVENT_DEFS_H__\n')
         f.write('\n')
-        f.write('#include "nic/infra/operd/alerts/alert_type.hpp"\n')
+        f.write('#include "nic/infra/operd/event/event_type.hpp"\n')
         f.write('\n')
         f.write('namespace operd {\n')
-        f.write('namespace alerts {\n')
+        f.write('namespace event {\n')
         f.write('\n')
-        f.write('typedef enum operd_alerts_ {\n')
+        f.write('typedef enum operd_event_type_ {\n')
         f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_NONE", 0))
         f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_MIN", 1))
-        numAlerts = len(self.alerts_)
+        numAlerts = len(self.event_)
         # first event to use OPERD_EVENT_TYPE_MIN
-        f.write('\t%s = %s,\n' % (self.alerts_[0].name_, "OPERD_EVENT_TYPE_MIN"))
+        f.write('\t%s = %s,\n' % (self.event_[0].name_, "OPERD_EVENT_TYPE_MIN"))
         for i in range(1, numAlerts):
-            alert = self.alerts_[i]
-            f.write('\t%s = %d,\n' % (alert.name_, i+1))
+            event = self.event_[i]
+            f.write('\t%s = %d,\n' % (event.name_, i+1))
         f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_MAX", numAlerts+1))
-        f.write('} operd_alerts_t;\n')
+        f.write('} operd_event_type_t;\n')
         f.write('\n')
-        f.write('extern const alert_t alerts[%d];' % (numAlerts+2))
+        f.write('extern const operd_event_t event[%d];' % (numAlerts+2))
         f.write('\n')
         f.write('}\n')
         f.write('}\n')
@@ -99,9 +99,9 @@ class Alert():
         self.description_ = description
         
 def parse(f, top):
-    alerts = json.load(f)
-    for alert in alerts:
-        top.add_alert(Alert(**alert))
+    event = json.load(f)
+    for event in event:
+        top.add_event(Alert(**event))
         
 def main():
     top = Top()
@@ -109,9 +109,9 @@ def main():
     for filename in sys.argv[2:]:
         with open(filename) as f:
             parse(f, top)
-    with open(os.path.join(outdir, 'alert_defs.h'), 'w+') as f:
+    with open(os.path.join(outdir, 'event_defs.h'), 'w+') as f:
         top.generate_header(f)
-    with open(os.path.join(outdir, 'alert_defs.cc'), 'w+') as f:
+    with open(os.path.join(outdir, 'event_defs.cc'), 'w+') as f:
         top.generate_implementation(f)
 
 if __name__ == '__main__':

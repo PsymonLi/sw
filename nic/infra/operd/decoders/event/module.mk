@@ -1,12 +1,11 @@
 # {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 
 include ${MKDEFS}/pre.mk
-MODULE_TARGET   = libalerts_operd_con.lib
+MODULE_TARGET   = libevent_operd_dec.lib
 MODULE_PIPELINE = apulu
-MODULE_SOLIBS   = operdproto
+MODULE_SOLIBS   = operdproto operd_event operd_event_defs
 MODULE_LDLIBS   = ${NIC_THIRDPARTY_GOOGLE_LDLIBS} rt pthread
 MODULE_ARLIBS   =
-MODULE_CFLAGS   = -Werror
 MODULE_INCS     = /usr/local/include \
                   ${TOPDIR}/nic/hal/third-party/google/include \
                   ${TOPDIR}/hal/third-party/grpc/include \

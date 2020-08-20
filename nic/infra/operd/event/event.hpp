@@ -8,31 +8,31 @@
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __OPERD_ALERTS_HPP__
-#define __OPERD_ALERTS_HPP__
+#ifndef __OPERD_EVENT_HPP__
+#define __OPERD_EVENT_HPP__
 
 #include <stdarg.h>
 #include <memory>
 #include <string>
 #include "nic/sdk/lib/operd/operd.hpp"
 #include "nic/sdk/lib/operd/region.hpp"
-#include "gen/alerts/alert_defs.h"
+#include "gen/event/event_defs.h"
 
 namespace operd {
-namespace alerts {
+namespace event {
 
-class alert_recorder {
+class event_recorder {
 public:
-    static std::shared_ptr<alert_recorder> get(void);
-    void alert(operd_alerts_t alert, const char *fmt, ...)
+    static std::shared_ptr<event_recorder> get(void);
+    void event(operd_event_type_t event, const char *fmt, ...)
         __attribute__ ((format (printf, 3, 4)));
 private:
-    static std::shared_ptr<alert_recorder> instance_;
+    static std::shared_ptr<event_recorder> instance_;
     sdk::operd::region_ptr region_;
 };
-typedef std::shared_ptr<alert_recorder> alert_recorder_ptr;
+typedef std::shared_ptr<event_recorder> event_recorder_ptr;
 
-}    // namespace alerts
+}    // namespace event
 }    // namespace operd
 
-#endif    // __OPERD_ALERTS_HPP__
+#endif    // __OPERD_EVENT_HPP__

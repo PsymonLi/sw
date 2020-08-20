@@ -13,7 +13,7 @@ import apollo.config.utils as utils
 import apollo.config.objects.base as base
 import apollo.config.topo as topo
 
-from apollo.oper.alerts import client as AlertsClient
+from apollo.oper.event import client as OperEventClient
 
 import apollo.test.utils.pdsctl as pdsctl
 
@@ -89,17 +89,17 @@ class PortObject(base.ConfigObjectBase):
         return True
 
     def VerifyLinkAlert(self, spec=None):
-        alertsObj = AlertsClient.Objects(self.Node)
+        eventObj = OperEventClient.Objects(self.Node)
         try:
-            alert = next(alertsObj.GetAlerts())
+            alert = next(eventObj.GetEvents())
         except:
-            logger.error(f"Got no alerts from {self.Node} for {self}")
+            logger.error(f"Got no event from {self.Node} for {self}")
             return True if utils.IsDryRun() else False
         return self.__validate_link_alert(alert)
 
     def SetupTestcaseConfig(self, obj):
         obj.root = self
-        obj.alert = AlertsClient.Objects(self.Node)
+        obj.alert = OperEventClient.Objects(self.Node)
         return
 
 class PortObjectClient():

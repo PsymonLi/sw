@@ -18,8 +18,8 @@ using namespace std;
 // max flow logs per second supported
 static constexpr uint32_t g_max_rate = 10000;
 
-static inline
-void print_usage (char* name)
+static void inline
+print_usage (char* name)
 {
     cerr << "Usage: " << name << endl
          << "\t -r rate per second [default: 100]\n"
@@ -30,7 +30,8 @@ void print_usage (char* name)
          << endl;
 }
 
-int main (int argc, char** argv)
+int
+main (int argc, char** argv)
 {
     int opt;
     uint32_t rate = 100;

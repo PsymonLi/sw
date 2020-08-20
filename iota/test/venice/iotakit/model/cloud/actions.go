@@ -499,8 +499,8 @@ func (sm *SysModel) LinkDownEventsSince(since time.Time, npc *objects.NaplesColl
 // StartEventsGenOnNaples generates SYSTEM_COLDBOOT events from the Naples events generation test app.
 // TODO: Generate all possible events
 func (sm *SysModel) StartEventsGenOnNaples(npc *objects.NaplesCollection, rate, count string) error {
-	genNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib/:/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/nic/conf/operd-regions.json /nic/bin/alerts_gen -t 5 -r %s -n %s", rate, count)
-	genFakeNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/naples/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/naples/nic/lib/:/naples/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/alerts_gen -t 5 -r %s -n %s", rate, count)
+	genNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib/:/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/nic/conf/operd-regions.json /nic/bin/event_gen -t 5 -r %s -n %s", rate, count)
+	genFakeNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/naples/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/naples/nic/lib/:/naples/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/event_gen -t 5 -r %s -n %s", rate, count)
 
 	for _, naples := range npc.Nodes {
 		naplesName := naples.NodeName()

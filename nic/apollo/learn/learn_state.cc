@@ -174,7 +174,7 @@ learn_state::init_oper_mode(pds_learn_mode_t mode) {
 
     case PDS_LEARN_MODE_NOTIFY:
         PDS_TRACE_INFO("Enabling learning in notify mode");
-        operd_region_ = std::make_shared<sdk::operd::region>("alerts");
+        operd_region_ = std::make_shared<sdk::operd::region>("event");
         if (operd_region_ == nullptr) {
             return SDK_RET_ERR;
         }

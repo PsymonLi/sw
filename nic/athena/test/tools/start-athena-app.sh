@@ -26,7 +26,7 @@ function remove_ipc_files () {
 }
 
 function remove_shm_files () {
-    rm -f /dev/shm/pds_* /dev/shm/ipc_* /dev/shm/metrics_* /dev/shm/alerts
+    rm -f /dev/shm/pds_* /dev/shm/ipc_* /dev/shm/metrics_* /dev/shm/event
     rm -f /dev/shm/nicmgr_shm /dev/shm/sysmgr /dev/shm/upgradelog
 }
 

@@ -9,7 +9,7 @@ from apollo.config.agent.api import ObjectTypes as APIObjTypes
 import apollo.config.agent.api as agentapi
 import infra.common.parser as parser
 
-from apollo.oper.alerts import client as AlertsClient
+from apollo.oper.event import client as OperEventClient
 from apollo.oper.oper import client as OperClient
 from apollo.config.objects.batch import client as BatchClient
 from apollo.config.objects.device import client as DeviceClient
@@ -139,7 +139,7 @@ class NodeObject(base.ConfigObjectBase):
         SecurityProfileClient.GenerateObjects(node, topospec)
         VpcClient.GenerateObjects(node, topospec)
         OperClient.GenerateObjects(node)
-        AlertsClient.GenerateObjects(node)
+        OperEventClient.GenerateObjects(node)
         if utils.IsDol() and not utils.IsNetAgentMode():
             UpgradeClient.GenerateObjects(node)
 
@@ -174,7 +174,7 @@ class NodeObject(base.ConfigObjectBase):
 
         if not utils.IsDol() and utils.IsNetAgentMode():
             SubnetClient.UpdateHostInterfaces(node)
-        AlertsClient.CreateObjects(node)
+        OperEventClient.CreateObjects(node)
         # RmappingClient.OperateObjects(node, 'Create')
         return True
 

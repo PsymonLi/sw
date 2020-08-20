@@ -49,7 +49,7 @@ nic/build/$ARCH/$PIPELINE/lib/libp4pd_$PIPELINE.so                /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libp4pd_$PIPELINE_rxdma.so          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libp4pd_$PIPELINE_txdma.so          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdk$ASIC_csrint.so               /nic/lib/
-nic/build/$ARCH/$PIPELINE/lib/libsdk_asicrw_if.so            /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libsdk_asicrw_if.so                 /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liblist.so                          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libevent_thread.so                  /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkeventmgr.so                   /nic/lib/
@@ -129,9 +129,8 @@ nic/build/$ARCH/$PIPELINE/lib/libdpdk_device.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdslearn.so                      /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liboperd.so                         /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpenmetrics.so                    /nic/lib/
-nic/build/$ARCH/$PIPELINE/lib/libalerts_operd_con.so              /nic/lib/
-nic/build/$ARCH/$PIPELINE/lib/liboperd_alerts.so                  /nic/lib/
-nic/build/$ARCH/$PIPELINE/lib/liboperd_alert_defs.so              /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/liboperd_event.so                   /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/liboperd_event_defs.so              /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdsupg_nicmgr_stubs.so           /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libupgrade_core.so                  /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libupgrade_ev.so                    /nic/lib/

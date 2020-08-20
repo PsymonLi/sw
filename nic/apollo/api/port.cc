@@ -15,7 +15,7 @@
 #include "nic/infra/core/trace.hpp"
 #include "nic/infra/core/core.hpp"
 #include "nic/infra/core/event.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/event/event.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/if.hpp"
@@ -118,12 +118,12 @@ port_event_cb (port_event_info_t *port_event_info)
     port_event_lif_handle(port_event_info);
 
     // Raise an event
-    operd::alerts::operd_alerts_t alert = operd::alerts::LINK_DOWN;
+    operd::event::operd_event_type_t link_event = operd::event::LINK_DOWN;
     if (port_event_info->event == port_event_t::PORT_EVENT_LINK_UP) {
-        alert = operd::alerts::LINK_UP;
+        link_event = operd::event::LINK_UP;
     }
-    operd::alerts::alert_recorder::get()->alert(
-        alert, "Port %s, key %s",
+    operd::event::event_recorder::get()->event(
+        link_event, "Port %s, key %s",
         eth_ifindex_to_str(event.port.ifindex).c_str(),
         pds_event.port_info.spec.key.str());
 }
