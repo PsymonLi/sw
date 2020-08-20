@@ -330,7 +330,6 @@ linkmgr_ctrl_timers_init (void)
 void
 linkmgr_event_thread_init (void *ctxt)
 {
-
     pal_wr_lock(SBUSLOCK);
 
     // TODO move back to serdes_fn_init
@@ -338,7 +337,10 @@ linkmgr_event_thread_init (void *ctxt)
 
     serdes_sbm_set_sbus_clock_divider(sbm_clk_div());
 
-    serdes_fns()->serdes_firmware_upload();
+    // download serdes fw only if port state is not restored from memory
+    if (g_linkmgr_state->port_restore_state() == false) {
+        serdes_fns()->serdes_firmware_upload();
+    }
 
     pal_wr_unlock(SBUSLOCK);
 

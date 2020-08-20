@@ -1342,41 +1342,41 @@ serdes_aacs_start_hw(int port)
 int
 serdes_firmware_upload_hw (void)
 {
-    uint32_t    sbus_addr, err  = 0;
-    int         asic_num        = 0;
-    int         exp_build_id    = g_linkmgr_cfg.catalog->serdes_build_id();
-    int         exp_rev_id      = g_linkmgr_cfg.catalog->serdes_rev_id();
-    uint32_t    prt_cnt         = num_asic_ports(asic_num);
-    std::string cfg_file        = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" + g_linkmgr_cfg.catalog->serdes_fw_file();
+    uint32_t sbus_addr;
+    int ret = 0;
+    int asic_num = 0;
+    int exp_build_id = g_linkmgr_cfg.catalog->serdes_build_id();
+    int exp_rev_id = g_linkmgr_cfg.catalog->serdes_rev_id();
+    uint32_t num_asicports = num_asic_ports(asic_num);
+    std::string cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" +
+                           g_linkmgr_cfg.catalog->serdes_fw_file();
 
-    for (uint32_t asic_port = 0; asic_port < prt_cnt; ++asic_port) {
-        sbus_addr = g_linkmgr_cfg.catalog->sbus_addr_asic_port(asic_num, asic_port);
+    for (uint32_t asic_port = 0; asic_port < num_asicports; ++asic_port) {
+        sbus_addr =
+            g_linkmgr_cfg.catalog->sbus_addr_asic_port(asic_num, asic_port);
         if (sbus_addr == 0) {
             continue;
         }
-
         if (serdes_spico_upload_hw(sbus_addr, cfg_file.c_str())) {
-            err = 1;
+            ret = -1;
         }
-
         int build_id = serdes_get_build_id_hw(sbus_addr);
         int rev_id   = serdes_get_rev_hw(sbus_addr);
 
-        if( (build_id != exp_build_id || rev_id != exp_rev_id) ) {
+        if((build_id != exp_build_id) || (rev_id != exp_rev_id)) {
             SDK_TRACE_DEBUG("Incorrect build_id/rev_id. sbus_addr 0x%x,"
                             " build_id 0x%x , exp_build_id 0x%x,"
                             " rev_id 0x%x, exp_rev_id 0x%x",
                             sbus_addr, build_id, exp_build_id, rev_id, exp_rev_id);
-            err = 1;
+            ret = -1;
         }
-
         serdes_spico_status_hw(sbus_addr);
-        SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
-                        sbus_addr, serdes_spico_crc_hw(sbus_addr));
+        SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d", sbus_addr,
+                        serdes_spico_crc_hw(sbus_addr));
     }
-
-    return ( (err)? -1 : 0 ) ;
+    return ret;
 }
+
 serdes_fn_t *
 serdes_fns (void)
 {
