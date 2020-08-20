@@ -86,15 +86,32 @@ class _Testbed:
             self.pingHosts()
         return
 
+    def sshHostCheck(self, ip, username, password):
+        sshPass = "sshpass -p {0} ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ".format(password)
+        sshHost = "{0}@{1}".format(username, ip)
+        cmd = "{0} {1} \"date\"".format(sshPass, sshHost)
+        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+
     def pingHosts(self):
+        try: username = getattr(self.__tbspec['Provision'], "Username", "vm")
+        except: username = "vm"
+        try: password = getattr(self.__tbspec['Provision'], "Password", "vm")
+        except: password = "vm"
         for instance in self.__tbspec.Instances:
             ip = getattr(instance, "NodeMgmtIP", None)
             if ip:
                 try:
-                    Logger.info("pinging host {0}".format(ip))
+                    Logger.info("pinging host {0}....".format(ip))
                     subprocess.check_output(["ping","-c","3","-i","0.5",ip],stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError as e:
                     Logger.warn("failed to ping host {0}. output was: {1}".format(ip,e.output))
+                    #raise exception to offline testbed
+                Logger.info("ping to host {0} ok. checking ssh....".format(ip))
+                try:
+                    self.sshHostCheck(ip, username, password)
+                    Logger.info("ssh to host {0} ok".format(ip))
+                except:
+                    Logger.warn("failed to ssh to host {0}. output was: {1}".format(ip, traceback.format_exc()))
                     #raise exception to offline testbed
 
     def GetInstances(self):
@@ -406,6 +423,24 @@ class _Testbed:
                         Logger.warn("failed to find firmware {0}".format(fw["image"]))
                         Logger.warn("###############################################")
 
+    def __checkNodeInitLogs(self, logfile):
+        checkList = [
+            "segmentation fault",
+        ]
+        Logger.debug("checking logfile {0} for errors".format(logfile))
+        for check in checkList:
+            try:
+                subprocess.check_call("grep \"{0}\" {1}".format(check, logfile), shell=True, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 1: 
+                    pass #nothing found to ok
+                elif e.returncode == 2:
+                    Logger.warn("failed to find logfile {0}".format(logfile))
+                else: 
+                    Logger.warn("failed to grep logfile {0}. error was: {1}".format(logfile, traceback.format_exc()))
+            else:
+                Logger.warn("found string {0} in logfile {1}".format(check, logfile))
+
     def __recover_testbed(self, manifest_file, **kwargs):
         if GlobalOptions.dryrun or GlobalOptions.skip_setup:
             return
@@ -550,8 +585,12 @@ class _Testbed:
                     Logger.error("Firmware upgrade failed : " + err.decode())
                     if proc_hdl.returncode == 124:
                         Logger.error("TIMEOUT RUNNING BOOTNAPLES.PY. Verify host recovered from reboot/upgrade")
+                        result = 124
                 else:
                     Logger.debug('Firmware upgrade finished at time: {0}'.format(time.asctime()))
+                if len(logfiles[idx])>1:
+                    self.__checkNodeInitLogs(logfiles[idx])
+
         except KeyboardInterrupt:
             result=2
             err="SIGINT detected. terminating boot_naples_v2 scripts"

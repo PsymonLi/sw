@@ -239,13 +239,14 @@ class EntityManagement:
 
     def SSHPassInit(self):
         self.ssh_host = "%s@%s" % (self.username, self.ipaddr)
-        self.scp_pfx = "sshpass -p %s scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
-        self.ssh_pfx = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
+        self.scp_pfx = "sshpass -p %s timeout 300 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
+        self.ssh_pfx = "sshpass -p %s timeout 300 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
 
     def TimeSyncNaples(self):
         print("time sync for naples {0}".format(self.ipaddr))
         s = time.mktime(time.gmtime())
-        self.SendlineExpect("date --date='{0}'".format(s), "#", timeout=30)
+        self.SendLineExpect("", "#", timeout=10)
+        self.SendlineExpect("date --date='{0}'".format(s), "#", timeout=10)
 
     def IsUpgradeComplete(self):
         return self.upgrade_complete
@@ -954,6 +955,14 @@ class HostManagement(EntityManagement):
     def GetPrimaryIntNicMgmtIp(self):
         return GlobalOptions.mnic_ip
 
+    def CheckNaplesInterfaces(self):
+        try:
+            print("*"*30 + "\nchecking naples interfaces\n" + "*"*30)
+            print(self.SendlineExpect("/nic/bin/halctl  show port  --yaml", "#", timeout=30))
+            print("*"*30 + "\nchecking naples interfaces\n" + "*"*30)
+        except:
+            print("failed to check naples interfaces. error was: {0}".format(traceback.format_exc()))
+
     @_exceptionWrapper(_errCodes.HOST_INIT_FAILED, "Host Init Failed")
     def Init(self, driver_pkg = None, cleanup = True, gold_fw = False):
         self.WaitForSsh()
@@ -1259,6 +1268,7 @@ class EsxHostManagement(HostManagement):
                 install_success = True
                 break
             print("Installed failed , trying again..")
+            self.CheckNaplesInterfaces()
             time.sleep(5)
 
         if not install_success:
