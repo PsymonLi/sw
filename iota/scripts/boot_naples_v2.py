@@ -288,7 +288,9 @@ class EntityManagement:
         print("Waiting for host ssh..")
         self.host.WaitForSsh()
         print("Logging into naples..")
-        self.NaplesWait()
+        for naples_inst in self.naples:
+            naples_inst.NaplesWait()
+            naples_inst.Close()
 
     def __syncLine(self, hdl):
         for i in range(3):
@@ -885,7 +887,7 @@ class NaplesManagement(EntityManagement):
             pass
         if self.__get_capri_prompt():
             self.hdl.sendline("boot goldfw")
-            self.hdl.expect_exact("capri-gold login", timeout = i180)
+            self.hdl.expect_exact("capri-gold login", timeout = 180)
 
             # Do an ipmi reset again as in some cases, Server might reset twice if old image was bad.
             #  HPE server reboots again probably because of bad init sequence or something and it forces naples to goes back
@@ -1702,10 +1704,7 @@ class PenOrchestrator:
             #Do and IP reset to make sure naples and Host are in sync
 
             self.__ipmi_reboot_allowed=True
-            self.IpmiReset() # Do IpmiReset once
-            for naples_inst in self.__naples:
-                naples_inst.NaplesWait()
-                naples_inst.Close()
+            self.__host.IpmiResetAndWait() # Do IpmiReset once
 
             #Naples would have rebooted to, login again.
             for naples_inst in self.__naples:
@@ -1833,9 +1832,7 @@ class PenOrchestrator:
         #Do and IP reset to make sure naples and Host are in sync
 
         self.__ipmi_reboot_allowed=True
-        self.IpmiReset() # Do IpmiReset once
-        for naples_inst in self.__naples:
-            naples_inst.NaplesWait()
+        self.__host.IpmiResetAndWait() # Do IpmiReset once
 
         #Naples would have rebooted to, login again.
         for naples_inst in self.__naples:
@@ -1876,11 +1873,6 @@ class PenOrchestrator:
                     self.__testbed.NodeCimcIP, self.__testbed.NodeCimcUsername, 
                     self.__testbed.NodeCimcPassword)
             subprocess.check_call(cmd, shell=True)
-            print("sleeping 120 seconds after IpmiReset")
-            time.sleep(120)
-            print("finished 120 second sleep")
-            print("Waiting for host ssh..")
-            self.__host.WaitForSsh()
         else:
             print("Skipping IPMI Reset")
 
