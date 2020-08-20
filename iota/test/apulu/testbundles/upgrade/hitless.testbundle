@@ -14,4 +14,4 @@ testcases:
             selection : [ any ]  # upgrade all or any
         args        :
             sleep             : 300
-            naples_upgr_pkg   : "naples_fw.tar"
+            naples_upgr_pkg   : "naples_fw_issu.tar"

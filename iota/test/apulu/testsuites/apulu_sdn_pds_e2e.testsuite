@@ -27,7 +27,7 @@ setup:
         - step : config.add_routes
         - step : utils.naples_upgrade.install
           args :
-             naples_upgr_pkgs : ["naples_fw.tar"]
+             naples_upgr_pkgs : ["naples_fw.tar", "naples_fw_issu.tar"]
 
 common:
     verifs:

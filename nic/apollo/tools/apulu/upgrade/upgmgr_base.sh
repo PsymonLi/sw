@@ -156,7 +156,7 @@ function copy_img_to_alt_partition() {
     else
         img="mainfwa"
     fi
-    $tool -i $img -p /update/naples_fw.tar
+    $tool -i $img -p $FW_PATH
     return $?
 }
 

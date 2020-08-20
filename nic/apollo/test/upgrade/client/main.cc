@@ -29,10 +29,11 @@ send_upg_grpc (void)
     pds::UpgradeSpec        *spec = req.mutable_request();
 
     spec->set_requesttype(pds::UpgradeRequestType::UPGRADE_REQUEST_START);
-    spec->set_packagename("naples_fw.tar"); // unused in simulation
     if (g_upg_mode_.empty() || g_upg_mode_ == "graceful") {
+        spec->set_packagename("naples_fw.tar"); // unused in simulation
         spec->set_mode(pds::UpgradeMode::UPGRADE_MODE_GRACEFUL);
     } else {
+        spec->set_packagename("naples_fw_issu.tar"); // unused in simulation
         spec->set_mode(pds::UpgradeMode::UPGRADE_MODE_HITLESS);
     }
 
