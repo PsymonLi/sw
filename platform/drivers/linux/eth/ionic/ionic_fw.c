@@ -4,6 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/errno.h>
+#include <linux/firmware.h>
 
 #include "ionic.h"
 #include "ionic_dev.h"
@@ -68,42 +69,56 @@ ionic_dev_cmd_firmware_activate_status(struct ionic_dev *idev)
 	ionic_dev_cmd_go(idev, &cmd);
 }
 
-int
-ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_sz)
+int ionic_firmware_update(struct ionic_lif *lif, const char *fw_name)
 {
 	struct ionic_dev *idev = &lif->ionic->idev;
 	struct net_device *netdev = lif->netdev;
 	struct ionic *ionic = lif->ionic;
 	union ionic_dev_cmd_comp comp;
 	u32 buf_sz, copy_sz, offset;
+	const struct firmware *fw;
+	struct devlink *dl;
 	int err = 0;
 	u8 fw_slot;
+
+	netdev_info(netdev, "Installing firmware %s\n", fw_name);
+
+	dl = priv_to_devlink(ionic);
+	devlink_flash_update_begin_notify(dl);
+	devlink_flash_update_status_notify(dl, "Preparing to flash", NULL, 0, 0);
+
+	err = request_firmware(&fw, fw_name, ionic->dev);
+	if (err)
+		goto err_out;
 
 	buf_sz = sizeof(idev->dev_cmd_regs->data);
 
 	netdev_info(netdev,
-		"downloading firmware - size %d part_sz %d nparts %d\n",
-		fw_sz, buf_sz, DIV_ROUND_UP(fw_sz, buf_sz));
+		"downloading firmware - size %d part_sz %d nparts %lu\n",
+		(int)fw->size, buf_sz, DIV_ROUND_UP(fw->size, buf_sz));
 
+	devlink_flash_update_status_notify(dl, "Downloading", NULL, 0, fw->size);
 	offset = 0;
-	while (offset < fw_sz) {
-		copy_sz = min(buf_sz, fw_sz - offset);
+	while (offset < fw->size) {
+		copy_sz = min_t(unsigned int, buf_sz, fw->size - offset);
 		mutex_lock(&ionic->dev_cmd_lock);
-		memcpy_toio(&idev->dev_cmd_regs->data, fw_data + offset, copy_sz);
+		memcpy_toio(&idev->dev_cmd_regs->data, fw->data + offset, copy_sz);
 		ionic_dev_cmd_firmware_download(idev,
 			offsetof(union ionic_dev_cmd_regs, data), offset, copy_sz);
 		err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
 		mutex_unlock(&ionic->dev_cmd_lock);
 		if (err) {
 			netdev_err(netdev,
-				"download failed offset 0x%x addr 0x%lx len 0x%x\n",
-				offset, offsetof(union ionic_dev_cmd_regs, data), copy_sz);
+				   "download failed offset 0x%x addr 0x%lx len 0x%x\n",
+				   offset, offsetof(union ionic_dev_cmd_regs, data),
+				   copy_sz);
 			goto err_out;
 		}
 		offset += copy_sz;
 	}
 
 	netdev_info(netdev, "installing firmware\n");
+	devlink_flash_update_status_notify(dl, "Installing", NULL, 0, fw->size);
 
 	mutex_lock(&ionic->dev_cmd_lock);
 	ionic_dev_cmd_firmware_install(idev);
@@ -128,7 +143,8 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 		goto err_out;
 	}
 
-	netdev_info(netdev, "activating firmware - slot %d\n", fw_slot);
+	netdev_info(netdev, "activating firmware\n");
+	devlink_flash_update_status_notify(dl, "Activating", NULL, 0, fw->size);
 
 	mutex_lock(&ionic->dev_cmd_lock);
 	ionic_dev_cmd_firmware_activate(idev, fw_slot);
@@ -148,6 +164,12 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 		goto err_out;
 	}
 
+	netdev_info(netdev, "Firmware update completed\n");
+
 err_out:
+	if (err)
+		devlink_flash_update_status_notify(dl, "Flash failed", NULL, 0, fw->size);
+	release_firmware(fw);
+	devlink_flash_update_end_notify(dl);
 	return err;
 }

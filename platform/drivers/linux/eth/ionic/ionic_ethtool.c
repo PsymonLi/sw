@@ -2,7 +2,6 @@
 /* Copyright(c) 2017 - 2019 Pensando Systems, Inc */
 
 #include <linux/module.h>
-#include <linux/firmware.h>
 #include <linux/netdevice.h>
 
 /* Normally we would #include <linux/sfp.h> here, but some of the
@@ -1075,32 +1074,15 @@ static int ionic_nway_reset(struct net_device *netdev)
 	return err;
 }
 
-static int
-ionic_flash_device(struct net_device *netdev, struct ethtool_flash *eflash)
+static int ionic_flash_device(struct net_device *netdev,
+			      struct ethtool_flash *eflash)
 {
 	struct ionic_lif *lif = netdev_priv(netdev);
-	const struct firmware *fw;
-	int err = 0;
 
-	netdev_info(netdev, "Installing firmware %s\n", eflash->data);
-	err = request_firmware(&fw, eflash->data, lif->ionic->dev);
-	if (err) {
-		netdev_err(netdev, "Failed to load firmware %s err %d\n",
-					eflash->data, err);
-		goto err_out;
-	}
+	if (eflash->region)
+		return -EOPNOTSUPP;
 
-	err = ionic_firmware_update(lif, fw->data, fw->size);
-	if (err) {
-		netdev_err(netdev, "Failed to update firmware\n");
-		goto err_out;
-	}
-
-	netdev_info(netdev, "Firmware update completed\n");
-
-err_out:
-	release_firmware(fw);
-	return err;
+	return ionic_firmware_update(lif, eflash->data);
 }
 
 static const struct ethtool_ops ionic_ethtool_ops = {

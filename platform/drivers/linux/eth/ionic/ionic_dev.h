@@ -332,7 +332,7 @@ u8 ionic_dev_cmd_status(struct ionic_dev *idev);
 bool ionic_dev_cmd_done(struct ionic_dev *idev);
 void ionic_dev_cmd_comp(struct ionic_dev *idev, union ionic_dev_cmd_comp *comp);
 
-int ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_sz);
+int ionic_firmware_update(struct ionic_lif *lif, const char *fw_name);
 
 void ionic_dev_cmd_identify(struct ionic_dev *idev, u8 ver);
 void ionic_dev_cmd_init(struct ionic_dev *idev);

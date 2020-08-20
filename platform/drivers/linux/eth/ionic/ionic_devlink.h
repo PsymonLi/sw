@@ -23,4 +23,10 @@ void ionic_devlink_unregister(struct ionic *ionic);
 #define ionic_devlink_unregister(x)
 #endif
 
+#if !IS_ENABLED(CONFIG_NET_DEVLINK)
+#define devlink_flash_update_begin_notify(d)
+#define devlink_flash_update_end_notify(d)
+#define devlink_flash_update_status_notify(d, s, c, n, t)
+#endif /* CONFIG_NET_DEVLINK */
+
 #endif /* _IONIC_DEVLINK_H_ */
