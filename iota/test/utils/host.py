@@ -121,6 +121,22 @@ def GetVlanID(node, interface):
         vlan_id="0"
     return int(vlan_id)
 
+def GetHostUptime(node):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    cmd = "cat /proc/uptime |  awk '{print $1}'"
+    api.Trigger_AddHostCommand(req, node, cmd)
+    resp = api.Trigger(req)
+    if resp is None:
+        api.Logger.error("Failed to get uptime from node %s, command not executed" % (node))
+        return None
+
+    cmd = resp.commands[0]
+    api.PrintCommandResults(cmd)
+    if cmd.exit_code != 0:
+        api.Logger.error("Failed to get uptime from node %s" % (node))
+        return None
+    return float(cmd.stdout.strip())
+
 def GetMcastMACAddress(node, interface):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     if api.GetNodeOs(node) == "linux":

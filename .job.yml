@@ -241,6 +241,8 @@ jobs:
     labels: ["CI-Sanity-Build", "CI-Sanity-Windows"]
   iota/test/standalone/sanity/apulu:
     labels: ["CI-Sanity-Build", "CI-Sanity-Apulu"]
+  iota/test/standalone/sanity/idrac:
+    labels: ["CI-Sanity-Build", "CI-Sanity-iDRAC"]
   nic/apollo/test/precheckin/apulu/base:
     labels: ["CI-Precheckin-ApuluBase"]
   nic/apollo/test/sanity/apulu/customer-docker:

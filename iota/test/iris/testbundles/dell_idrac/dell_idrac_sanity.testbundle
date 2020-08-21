@@ -1,0 +1,93 @@
+meta:
+    name    : dell_idrac_sanity
+    os      : [ linux, freebsd, esx, windows ]
+    nics    : [ pensando ]
+    targetcount : 11
+
+testcases:
+    -   name    : check_nic_info
+        testcase: testcases.dell_idrac.check_nic_info
+        ignore: False
+
+    -   name    : check_nic_ports
+        testcase: testcases.dell_idrac.check_nic_ports
+        ignore: False
+
+    -   name    : check_nic_ethernet_interfaces
+        testcase: testcases.dell_idrac.check_nic_ethernet_interfaces
+        ignore: False
+
+    -   name    : check_mctp_counters
+        testcase: testcases.dell_idrac.check_mctp_counters
+        ignore: False
+
+    # -   name    : check_nic_partition
+    #     testcase: testcases.dell_idrac.check_nic_partition
+    #     ignore: True
+
+    -   name    : check_oprom_presence
+        testcase: testcases.dell_idrac.check_oprom_presence
+        ignore: True
+
+    -   name    : server_reset_with_forcerestart
+        testcase: testcases.dell_idrac.server_reset
+        enable  : True
+        iterators :
+            type    : nested
+            count   : [3]
+            restart_time: [10]
+            reboot_types : [ForceRestart]
+        args    :
+            timeout : 3600
+
+    -   name    : server_reset_with_forceoff
+        testcase: testcases.dell_idrac.server_reset
+        enable  : True
+        iterators :
+            type    : nested
+            count   : [3]
+            restart_time: [10]
+            reboot_types : [ForceOff]
+        args    :
+            timeout : 3600
+
+    -   name    : server_reset_with_gracefulshutdown
+        testcase: testcases.dell_idrac.server_reset
+        enable  : True
+        iterators :
+            type    : nested
+            count   : [3]
+            restart_time: [20]
+            reboot_types : [GracefulShutdown]
+        args    :
+            timeout : 3600
+
+    -   name    : server_reset_with_pushpowerbutton
+        testcase: testcases.dell_idrac.server_reset
+        enable  : True
+        iterators :
+            type    : nested
+            count   : [3]
+            restart_time: [10]
+            reboot_types : [PushPowerButton]
+        args    :
+            timeout : 3600
+
+    -   name    : apc_reset
+        testcase: testcases.dell_idrac.apc_reset
+        enable  : True
+        ignore: True
+        iterators :
+            type    : nested
+            count   : [1]
+        args    :
+            timeout : 3600
+
+    -   name    : switch_port_flap
+        testcase: testcases.dell_idrac.switch_port_flap
+        enable  : True
+        iterators :
+            type    : nested
+            count   : [5]
+        args    :
+            timeout : 3600
