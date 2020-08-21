@@ -57,7 +57,6 @@ typedef struct ftldev_pstate_v1_s {
     ftldev_pstate_v1_s(const ftl_devspec_t *dev_spec = nullptr) {
         version_magic = 1;
         base_lif_id_ = 0;
-        lif_fully_inited_ = false;
         strncpy0(name, FTL_DEV_NAME, sizeof(name));
         if (dev_spec) {
             lif_count = dev_spec->lif_count;
@@ -85,7 +84,6 @@ typedef struct ftldev_pstate_v1_s {
     uint64_t            version_magic;
     char                name[FTL_DEV_IFNAMSIZ];
     uint32_t            base_lif_id_;
-    bool                lif_fully_inited_;
     uint32_t            lif_count;
     uint32_t            session_hw_scanners;
     uint32_t            session_burst_size;
@@ -105,14 +103,6 @@ typedef struct ftldev_pstate_v1_s {
         uint32_t base_id;
         SDK_ATOMIC_LOAD_UINT32(&base_lif_id_, &base_id);
         return base_id;
-    }
-    void lif_fully_inited_set(bool yesno)
-    {
-        SDK_ATOMIC_STORE_BOOL(&lif_fully_inited_, yesno);
-    }
-    bool lif_fully_inited(void)
-    {
-        return SDK_ATOMIC_LOAD_BOOL(&lif_fully_inited_);
     }
 
 } __PACK__ ftldev_pstate_v1_t;
@@ -161,23 +151,6 @@ public:
     devapi *DevApiGet(void) { return dev_api; }
     uint32_t NumLifsGet(void) { return lif_vec.size(); }
     FtlLif *LifFind(uint32_t lif_index);
-
-    void shm_base_lif_id_set(uint32_t base_lif_id)
-    {
-        dev_pstate->base_lif_id_set(base_lif_id);
-    }
-    uint32_t shm_base_lif_id(void)
-    {
-        return dev_pstate->base_lif_id();
-    }
-    void shm_lif_fully_inited_set(bool yesno)
-    {
-        dev_pstate->lif_fully_inited_set(yesno);
-    }
-    bool shm_lif_fully_inited(void)
-    {
-        return dev_pstate->lif_fully_inited();
-    }
 
     static struct ftl_devspec *
     ParseConfig(boost::property_tree::ptree::value_type node);

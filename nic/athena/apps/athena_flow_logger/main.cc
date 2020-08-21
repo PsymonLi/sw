@@ -18,6 +18,7 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/athena/agent/trace.hpp"
 #include "nic/athena/api/include/pds_init.h"
+#include "nic/athena/api/include/pds_flow_age.h"
 #include "fte_athena_flow_log.hpp"
 
 namespace core {
@@ -205,6 +206,12 @@ main (int argc, char **argv)
         exit(1);
     }
 
+    // In this mode, flow aging init is only for getting access to MPU timestamp
+    ret = pds_flow_age_init(&init_params);
+    if (ret != PDS_RET_OK) {
+        printf("pds_flow_age_init failed with ret %u\n", ret);
+        exit(1);
+    }
     flow_logger::fte_athena_spawn_flow_log_thread(timer_val, logdir);
 
     while(1) {

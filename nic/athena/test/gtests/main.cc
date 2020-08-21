@@ -41,6 +41,7 @@
 #include "nic/athena/api/include/pds_flow_session_rewrite.h"
 #include "nic/athena/api/include/pds_dnat.h"
 #include "nic/athena/api/include/pds_conntrack.h"
+#include "nic/athena/api/include/pds_flow_age.h"
 #include "athena_gtest.hpp"
 #include <boost/crc.hpp>
 
@@ -2056,6 +2057,12 @@ main (int argc, char **argv)
     ret = pds_global_init(&init_params);
     if (ret != PDS_RET_OK) {
         fprintf(stderr, "PDS global init failed with ret %u\n", ret);
+        exit(1);
+    }
+
+    ret = pds_flow_age_init(&init_params);
+    if (ret != PDS_RET_OK) {
+        fprintf(stderr, "pds_flow_age_init failed with ret %u\n", ret);
         exit(1);
     }
 

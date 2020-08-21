@@ -43,7 +43,6 @@ pds_global_init (pds_cinit_params_t *params)
     sdk_ret_t           ret;
     pds_init_params_t   params_cpp;
     asic_init_type_t    asic_init_type = ASIC_INIT_TYPE_HARD;
-    bool                is_flow_age_pid;
 
     if (params == NULL) {
         PDS_TRACE_ERR("params arg is null");
@@ -74,56 +73,29 @@ pds_global_init (pds_cinit_params_t *params)
         return (pds_ret_t)ret;
     }
 
-    is_flow_age_pid = (params->flow_age_pid == getpid());
+#ifdef __aarch64__
     if (asic::asic_is_soft_init()) {
-        if (is_flow_age_pid) {
-
-            // In hard-init mode, nicmgr thread would have been launched
-            // from pds_init() above. Otherwise, if the current soft process
-            // is designated for flow aging, nicmgr thread needs to be
-            // spawned here to create the FTL device.
-            ftl_dev_impl::ftl_dev_create_thread_spawn();
+#endif
+        ret = pds_flow_cache_create(params);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Flow cache init failed with ret %u\n", ret);
+            return (pds_ret_t)ret;
         }
-        PDS_TRACE_DEBUG("PDS soft init done\n");
-    }
-
-    ret = pds_flow_cache_create(params);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Flow cache init failed with ret %u\n", ret);
-        return (pds_ret_t)ret;
-    }
 #ifndef P4_14
-    ret = pds_l2_flow_cache_create();
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("L2 Flow cache init failed with ret %u\n", ret);
-        return (pds_ret_t)ret;
+        ret = pds_l2_flow_cache_create();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("L2 Flow cache init failed with ret %u\n", ret);
+            return (pds_ret_t)ret;
+        }
+#endif
+        ret = pds_dnat_map_create();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("DNAT map init failed with ret %u\n", ret);
+            return (pds_ret_t)ret;
+        }
+#ifdef __aarch64__
     }
 #endif
-    ret = pds_dnat_map_create();
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("DNAT map init failed with ret %u\n", ret);
-        return (pds_ret_t)ret;
-    }
-
-    // In hard init mode, pds_flow_age_init() will drive the FTL lif
-    // initialization but will stop short of starting the scanners.
-    // The process designated for aging will continue that
-    // initialization the rest of the way.
-    if (is_flow_age_pid || asic::asic_is_hard_init()) {
-        if (asic::asic_is_soft_init()) {
-            ftl_dev_impl::ftl_dev_create_thread_wait_ready();
-        }
-        ret = (sdk_ret_t)pds_flow_age_init(params);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Flow aging init failed with ret %u\n", ret);
-        }
-    }
-
-    ret = ftl_dev_impl::mpu_timestamp_global_init();
-    if (ret != SDK_RET_OK) {
-        return (pds_ret_t)ret;
-    }
-
     return (pds_ret_t)ret;
 }
 

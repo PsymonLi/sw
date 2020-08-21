@@ -1072,27 +1072,6 @@ main (int argc, char **argv)
     }
     pds_global_inited = true;
 
-    //Check if mfg mode NACLs need to be programmed 
-    if (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_NO_DPDK && is_mfg_mode()) {
-        params.vlans[0] = MFG_MODE_VLAN_A;
-        params.vlans[1] = MFG_MODE_VLAN_B;
-        
-        if (!vlans.empty()) {
-            for(int idx = 0; idx < std::min((int)vlans.size(), PDS_MFG_TEST_NUM_VLANS); ++idx) {
-                params.vlans[idx] = vlans[idx]; 
-            }
-        } 
-        
-        ret = pds_mfg_mode_setup(&params); 
-        if(ret != PDS_RET_OK) {
-            fprintf(stderr, "Failed to program mfg mode NACLs, ret %u", ret); 
-            success = false;
-            goto done;
-        }
-       
-        printf("Programmed mfg mode NACLs\n");
-    }
-
     if (!sdk::asic::asic_is_soft_init()) {
         printf("PDS hard init\n");
         ret = pds_agent_init();
@@ -1119,6 +1098,40 @@ main (int argc, char **argv)
     disable_int_mnic_csum_offload();
 
     if (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_NO_DPDK) {
+
+        // In this mode, flow aging init is only for MPU timestamp purposes.
+        ret = pds_flow_age_init(&init_params);
+        if (ret != PDS_RET_OK) {
+            printf("pds_flow_age_init failed with ret %u\n", ret);
+            success = false;
+            goto done;
+        }
+
+        // Check if mfg mode NACLs need to be programmed.
+        // Note: pds_mfg_mode_setup() depends on CPU mnic i/fs having been
+        // created/initialized and that, in turn, depends on HAL Up having
+        // been issued to nicmgr. The above call pds_flow_age_init() serves
+        // as a checkpoint for ensuring HAL Up has completed.
+        if (is_mfg_mode()) {
+            params.vlans[0] = MFG_MODE_VLAN_A;
+            params.vlans[1] = MFG_MODE_VLAN_B;
+
+            if (!vlans.empty()) {
+                for(int idx = 0; idx < std::min((int)vlans.size(), PDS_MFG_TEST_NUM_VLANS); ++idx) {
+                    params.vlans[idx] = vlans[idx]; 
+                }
+            } 
+
+            ret = pds_mfg_mode_setup(&params); 
+            if(ret != PDS_RET_OK) {
+                fprintf(stderr, "Failed to program mfg mode NACLs, ret %u", ret); 
+                success = false;
+                goto done;
+            }
+
+            printf("Programmed mfg mode NACLs\n");
+        }
+
         printf("mode: ATHENA_APP_MODE_NO_DPDK. Wait forever...\n");
         program_sleep();
         goto done;
@@ -1137,6 +1150,21 @@ main (int argc, char **argv)
 
         fte_ath::fte_init(&init_params);
         fte_inited = true;
+        PDS_TRACE_DEBUG("After fte_init\n");
+
+        ret = pds_flow_age_init(&init_params);
+        if (ret != PDS_RET_OK) {
+            printf("pds_flow_age_init failed with ret %u\n", ret);
+            success = false;
+            goto done;
+        }
+        ret = (pds_ret_t)fte_ath::fte_flows_init();
+        if (ret != PDS_RET_OK) {
+            printf("fte_flows_init failed with ret %u\n", ret);
+            success = false;
+            goto done;
+        }
+        fte_ath::fte_pollers_client_init(&init_params);
     }
 
     printf("Initialization done ...\n");

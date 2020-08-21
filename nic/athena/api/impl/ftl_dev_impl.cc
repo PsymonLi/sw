@@ -263,15 +263,10 @@ pollers_qcount_get(uint32_t *ret_qcount)
 pds_ret_t
 pollers_flush(void)
 {
-    pds_ret_t       ret = PDS_RET_OK;
-
-    if (!lif_init_done()) {
-        return PDS_RET_RETRY;
-    }
     if (pollers()) {
-        ret = pollers()->flush();
+        return pollers()->flush();
     }
-    return ret;
+    return PDS_RET_OK;
 }
 
 pds_ret_t
@@ -280,16 +275,12 @@ pollers_dequeue_burst(uint32_t qid,
                       uint32_t slot_data_buf_sz,
                       uint32_t *burst_count)
 {
-    pds_ret_t       ret = PDS_RET_NOOP;
-
-    if (!lif_init_done()) {
-        return PDS_RET_RETRY;
-    }
     if (pollers()) {
-        ret = pollers()->dequeue_burst(qid, slot_data_buf,
-                                       slot_data_buf_sz, burst_count);
+        return pollers()->dequeue_burst(qid, slot_data_buf,
+                                        slot_data_buf_sz, burst_count);
     }
-    return ret;
+    *burst_count = 0;
+    return PDS_RET_OK;
 }
 
 /*
@@ -328,11 +319,16 @@ accel_timeouts_get(pds_flow_age_accel_timeouts_t *age_tmo)
 pds_ret_t
 accel_aging_control(bool enable_sense)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().accel_aging_ctl.opcode = FTL_DEVCMD_OPCODE_ACCEL_AGING_CONTROL;
-    devcmd.req().accel_aging_ctl.enable_sense = enable_sense;
-    return devcmd.submit();
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().accel_aging_ctl.opcode = FTL_DEVCMD_OPCODE_ACCEL_AGING_CONTROL;
+        devcmd.req().accel_aging_ctl.enable_sense = enable_sense;
+        ret = devcmd.submit();
+    }
+    return ret;
 }
 
 pds_ret_t
@@ -401,32 +397,32 @@ mpu_timestamp(void)
     return ftl_lif ? ftl_lif->mpu_timestamp() : 0;
 }
 
-sdk_ret_t
+pds_ret_t
 mpu_timestamp_global_init (void)
 {
     uint64_t hbm_paddr = 0;
 
     if (!platform_is_hw(api::g_pds_state.platform_type())) {
         PDS_TRACE_DEBUG("%s: Skiping for non hw platforms ", __FUNCTION__);
-        return SDK_RET_OK;
+        return PDS_RET_OK;
     }
     hbm_paddr = api::g_pds_state.mempartition()->start_addr(
                                    FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE);
     if (hbm_paddr == INVALID_MEM_ADDRESS) {
         PDS_TRACE_ERR("failed to obtain HBM paddr for %s",
                           FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE);
-        return SDK_RET_NO_RESOURCE;
+        return PDS_RET_NO_RESOURCE;
     }
     g_mpu_timestamp_va =  (uint64_t *)
                   sdk::lib::pal_mem_map(hbm_paddr, 64);
     if (!g_mpu_timestamp_va) {
         PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " ",
                       hbm_paddr);
-        return SDK_RET_ERR;
+        return PDS_RET_ERR;
     }
     PDS_TRACE_DEBUG("pa is  0x%" PRIx64 " va is %p ",
                       hbm_paddr, g_mpu_timestamp_va);
-    return SDK_RET_OK;
+    return PDS_RET_OK;
 }
 
 uint64_t
@@ -456,9 +452,6 @@ dev_identify(void)
     ftl_lif = ftl_dev->LifFind(0);
     SDK_ASSERT_TRACE_RETURN(ftl_lif, PDS_RET_ERR,
                             "LIF at index 0 not found");
-    if (sdk::asic::asic_is_hard_init()) {
-        ftl_dev->shm_base_lif_id_set(ftl_lif->LifIdGet());
-    }
     return ret;
 }
 
@@ -491,68 +484,76 @@ lif_init(pds_cinit_params_t *params)
         SDK_ASSERT_TRACE_RETURN(ret == PDS_RET_OK, ret,
                                 "failed LIF reset");
         /*
-         * Allocate poller/scanners before initializing them
-         * (in order to provide proper devcmd locking)
+         * Make MPU timestamp available to all processes.
          */
-        ret = pollers_alloc(FTL_QTYPE_POLLER);
+        ret = mpu_timestamp_ctl_alloc(FTL_QTYPE_MPU_TIMESTAMP);
         if (ret == PDS_RET_OK) {
-            ret = scanners_alloc(FTL_QTYPE_SCANNER_SESSION);
-        }
-        if (ret == PDS_RET_OK) {
-            ret = scanners_alloc(FTL_QTYPE_SCANNER_CONNTRACK);
-        }
-        if (ret == PDS_RET_OK) {
-            ret = mpu_timestamp_ctl_alloc(FTL_QTYPE_MPU_TIMESTAMP);
+            devcmd_t devcmd_ts(ftl_lif, scanners_lock_one, scanners_unlock_one,
+                               mpu_timestamp_ctl());
+            devcmd_ts.owner_pre_lock();
+            ret = mpu_timestamp_ctl()->init(&devcmd_ts);
+
+            if (platform_is_hw(platform_type)   &&
+                sdk::asic::asic_is_hard_init()  &&
+                (ret == PDS_RET_OK)) {
+
+                ret = mpu_timestamp_ctl()->start(&devcmd_ts);
+            }
+            devcmd_ts.owner_pre_unlock();
         }
 
         /*
-         * Pre-lock and share the same devcmd block across all queue inits.
+         * Proceed with the rest of aging LIF initializations only if
+         * process is configured for flow aging.
          */
-        if (ret == PDS_RET_OK) {
-            devcmd_t devcmd_qinit(ftl_lif, queues_lock_all, queues_unlock_all);
+        if ((ret == PDS_RET_OK) && (params->flow_age_pid == getpid())) {
 
-            devcmd_qinit.owner_pre_lock();
-            if (pollers() && (ret == PDS_RET_OK)) {
-                ret = pollers()->init(&devcmd_qinit);
+            /*
+             * Allocate poller/scanners before initializing them
+             * (in order to provide proper devcmd locking)
+             */
+            ret = pollers_alloc(FTL_QTYPE_POLLER);
+            if (ret == PDS_RET_OK) {
+                ret = scanners_alloc(FTL_QTYPE_SCANNER_SESSION);
             }
-            if (session_scanners() && (ret == PDS_RET_OK)) {
-                ret = session_scanners()->init(&devcmd_qinit);
-            }
-            if (conntrack_scanners() && (ret == PDS_RET_OK)) {
-                ret = conntrack_scanners()->init(&devcmd_qinit);
-            }
-            if (mpu_timestamp_ctl() && (ret == PDS_RET_OK)) {
-                ret = mpu_timestamp_ctl()->init(&devcmd_qinit);
-            }
-
-            if (sdk::asic::asic_is_hard_init() && (ret == PDS_RET_OK)) {
-                ftl_dev->shm_lif_fully_inited_set(true);
+            if (ret == PDS_RET_OK) {
+                ret = scanners_alloc(FTL_QTYPE_SCANNER_CONNTRACK);
             }
 
             /*
-             * Scanners are always started by default in the designated
-             * process unless we're in SIM mode, in which case, a test
-             * program will start them.
+             * Pre-lock and share the same devcmd block across all queue inits.
              */
-            if (platform_is_hw(platform_type) &&
-                (params->flow_age_pid == getpid())) {
+            if (ret == PDS_RET_OK) {
+                devcmd_t devcmd_qinit(ftl_lif, queues_lock_all, queues_unlock_all);
+
+                devcmd_qinit.owner_pre_lock();
+                if (pollers() && (ret == PDS_RET_OK)) {
+                    ret = pollers()->init(&devcmd_qinit);
+                }
                 if (session_scanners() && (ret == PDS_RET_OK)) {
-                    ret = session_scanners()->start(&devcmd_qinit);
+                    ret = session_scanners()->init(&devcmd_qinit);
                 }
                 if (conntrack_scanners() && (ret == PDS_RET_OK)) {
-                    ret = conntrack_scanners()->start(&devcmd_qinit);
+                    ret = conntrack_scanners()->init(&devcmd_qinit);
                 }
-            }
-            if (platform_is_hw(platform_type) &&
-                    sdk::asic::asic_is_hard_init()) {
-                if (mpu_timestamp_ctl() && (ret == PDS_RET_OK)) {
-                    ret = mpu_timestamp_ctl()->start(&devcmd_qinit);
-                }
-            }
 
-            devcmd_qinit.owner_pre_unlock();
+                /*
+                 * Scanners are always started by default in the designated
+                 * process unless we're in SIM mode, in which case, a test
+                 * program will start them.
+                 */
+                if (platform_is_hw(platform_type)) {
+                    if (session_scanners() && (ret == PDS_RET_OK)) {
+                        ret = session_scanners()->start(&devcmd_qinit);
+                    }
+                    if (conntrack_scanners() && (ret == PDS_RET_OK)) {
+                        ret = conntrack_scanners()->start(&devcmd_qinit);
+                    }
+                }
+                devcmd_qinit.owner_pre_unlock();
+            }
+            rte_atomic16_set(&lif_init_completed, 1);
         }
-        rte_atomic16_set(&lif_init_completed, 1);
     }
     return ret;
 }
@@ -560,67 +561,97 @@ lif_init(pds_cinit_params_t *params)
 static pds_ret_t
 attr_age_tmo_set(const pds_flow_age_timeouts_t *attr_age_tmo)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
-    devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
-    devcmd.req().lif_setattr.age_tmo = *attr_age_tmo;
-    return devcmd.submit();
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
+        devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
+        devcmd.req().lif_setattr.age_tmo = *attr_age_tmo;
+        ret = devcmd.submit();
+    }
+    return ret;
 }
 
 static pds_ret_t
 attr_age_tmo_get(pds_flow_age_timeouts_t *attr_age_tmo)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
-    devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
-    return devcmd.submit(nullptr, (void *)attr_age_tmo);
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
+        devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
+        ret = devcmd.submit(nullptr, (void *)attr_age_tmo);
+    }
+    return ret;
 }
 
 static pds_ret_t
 attr_age_accel_tmo_set(const pds_flow_age_accel_timeouts_t *attr_age_tmo)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
-    devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
-    devcmd.req().lif_setattr.age_accel_tmo = *attr_age_tmo;
-    return devcmd.submit();
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
+        devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
+        devcmd.req().lif_setattr.age_accel_tmo = *attr_age_tmo;
+        ret = devcmd.submit();
+    }
+    return ret;
 }
 
 static pds_ret_t
 attr_age_accel_tmo_get(pds_flow_age_accel_timeouts_t *attr_age_tmo)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
-    devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
-    return devcmd.submit(nullptr, (void *)attr_age_tmo);
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
+        devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
+        ret = devcmd.submit(nullptr, (void *)attr_age_tmo);
+    }
+    return ret;
 }
 
 static pds_ret_t
 force_expired_ts_set(enum lif_attr attr,
                      bool force_expired_ts)
 {
-    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
-    devcmd.req().lif_setattr.attr = attr;
-    devcmd.req().lif_setattr.force_expired_ts = force_expired_ts;
-    return devcmd.submit();
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+        devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
+        devcmd.req().lif_setattr.attr = attr;
+        devcmd.req().lif_setattr.force_expired_ts = force_expired_ts;
+        ret = devcmd.submit();
+    }
+    return ret;
 }
 
 static pds_ret_t
 metrics_get(enum ftl_qtype qtype,
             lif_attr_metrics_t *metrics)
 {
-    devcmd_t        devcmd(ftl_lif);
+    pds_ret_t   ret = PDS_RET_RETRY;
 
-    devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
-    devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_METRICS;
-    devcmd.req().lif_getattr.qtype = qtype;
-    return devcmd.submit(nullptr, metrics);
+    if (lif_init_done()) {
+        devcmd_t    devcmd(ftl_lif);
+
+        devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
+        devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_METRICS;
+        devcmd.req().lif_getattr.qtype = qtype;
+        ret = devcmd.submit(nullptr, metrics);
+    }
+    return ret;
 }
 
 static pds_ret_t

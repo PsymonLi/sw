@@ -161,6 +161,7 @@ void
 DeviceManager::SoftInit(devicemgr_cfg_t *cfg) {
     PlatformInit(cfg);
     HalLifIDReserve();
+    pd->update();
 #ifdef ATHENA
     SoftAddDevice(FTL);
 #endif

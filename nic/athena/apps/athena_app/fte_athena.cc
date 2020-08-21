@@ -123,6 +123,7 @@ static uint16_t nsegs = ( RTE_ETHER_MAX_LEN + RTE_MBUF_DEFAULT_DATAROOM - 1) / R
 
 typedef std::vector<uint32_t> pollers_qid_vec_t;
 static pollers_qid_vec_t pollers_qid_conf[FTE_MAX_CORES];
+static rte_atomic16_t pollers_qid_conf_inited = RTE_ATOMIC16_INIT(0);
 static rte_atomic32_t pollers_lcore_idx = RTE_ATOMIC32_INIT(-1);
 
 struct timeval stime[MAX_ETHPORTS];
@@ -148,6 +149,7 @@ struct lcore_conf {
         uint16_t n_rx_queue;
         struct lcore_rx_queue rx_queue_list[MAX_RX_QUEUE_PER_LCORE];
         uint16_t n_tx_port;
+        uint16_t pollers_lcore_idx;
         uint16_t tx_port_id[MAX_ETHPORTS];
         uint16_t tx_queue_id[MAX_ETHPORTS];
         struct mbuf_table tx_mbufs[MAX_ETHPORTS];
@@ -285,9 +287,29 @@ _process (struct rte_mbuf *m, struct lcore_conf *qconf,
     return;
 }
 
+static inline pollers_qid_vec_t *
+_pollers_qid_vec_get(uint32_t lcore_id)
+{
+    uint32_t lcore_idx = lcore_conf[lcore_id].pollers_lcore_idx;
+    return (lcore_idx < FTE_MAX_CORES) ? &pollers_qid_conf[lcore_idx] : nullptr;
+}
+
+void
+_pollers_client_poll(uint32_t lcore_id)
+{
+    if (rte_atomic16_read(&pollers_qid_conf_inited)) {
+        pollers_qid_vec_t *qid_vec = _pollers_qid_vec_get(lcore_id);
+        if (qid_vec && !ftl_pollers_client::user_will_poll()) {
+            for (size_t q = 0; q < qid_vec->size(); q++) {
+                pds_flow_age_sw_pollers_poll(qid_vec->at(q), 0, nullptr);
+            }
+        }
+    }
+}
+
 // main processing loop
 static void
-fte_rx_loop (pollers_qid_vec_t *qid_vec)
+fte_rx_loop (void)
 {
     struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
     unsigned lcore_id;
@@ -319,11 +341,7 @@ fte_rx_loop (pollers_qid_vec_t *qid_vec)
     }
 
     while (!fte_threads_done) {
-        if (qid_vec && !ftl_pollers_client::user_will_poll()) {
-            for (size_t q = 0; q < qid_vec->size(); q++) {
-                pds_flow_age_sw_pollers_poll(qid_vec->at(q), 0, nullptr);
-            }
-        }
+        _pollers_client_poll(lcore_id);
         cur_tsc = rte_rdtsc();
 
         /*
@@ -392,7 +410,6 @@ fte_rx_loop (pollers_qid_vec_t *qid_vec)
 static int
 fte_launch_one_lcore (__attribute__((unused)) void *dummy)
 {
-    pollers_qid_vec_t *qid_vec;
     uint32_t lcore_id;
     int lcore_idx;
 
@@ -403,47 +420,50 @@ fte_launch_one_lcore (__attribute__((unused)) void *dummy)
     }
 
     lcore_idx = rte_atomic32_add_return(&pollers_lcore_idx, 1);
-    qid_vec = lcore_idx < FTE_MAX_CORES ?
-              &pollers_qid_conf[lcore_idx] : nullptr;
-    PDS_TRACE_DEBUG("Launching fte_rx_loop on core_id %u(#%d) with %d "
-                    "poller queues", lcore_id, lcore_idx,
-                    qid_vec ? (int)qid_vec->size() : 0);
-    fte_rx_loop(qid_vec);
+    lcore_conf[lcore_id].pollers_lcore_idx = lcore_idx;
+
+    fte_rx_loop();
     return 0;
 }
 
-static void
-_init_pollers_client (void)
+void
+fte_pollers_client_init (pds_cinit_params_t *init_params)
 {
     uint32_t lcore_count;
     uint32_t total_qcount;
     uint32_t per_lcore_qcount;
     uint32_t qid;
 
-    lcore_count = std::min(rte_lcore_count(), (uint32_t)FTE_MAX_CORES);
-    if (lcore_count && (fte_call_master_type == SKIP_MASTER)) {
-        lcore_count--;
-    }
-    total_qcount = ftl_pollers_client::qcount_get();
-    PDS_TRACE_DEBUG("lcore_count: %u pollers_qcount: %u",
-                    lcore_count, total_qcount);
-    if (lcore_count) {
-        per_lcore_qcount = std::max(total_qcount / lcore_count, (uint32_t)1);
-        qid = 0;
-        for (uint32_t lc = 0; lc < lcore_count; lc++) {
-
-            /*
-             * Last lcore gets all the remaining queues.
-             */
-            if (lc == (lcore_count - 1)) {
-                per_lcore_qcount = total_qcount - qid;
+    if (init_params->flow_age_pid == getpid()) {
+        if (rte_atomic16_test_and_set(&pollers_qid_conf_inited)) {
+            lcore_count = std::min(rte_lcore_count(), (uint32_t)FTE_MAX_CORES);
+            if (lcore_count && (fte_call_master_type == SKIP_MASTER)) {
+                lcore_count--;
             }
-            for (uint32_t q = 0; q < per_lcore_qcount; q++) {
-                if (qid >= total_qcount) {
-                    break;
+            total_qcount = ftl_pollers_client::qcount_get();
+            PDS_TRACE_DEBUG("lcore_count: %u pollers_qcount: %u",
+                            lcore_count, total_qcount);
+            if (lcore_count) {
+                per_lcore_qcount = std::max(total_qcount / lcore_count, (uint32_t)1);
+                qid = 0;
+                for (uint32_t lc = 0; lc < lcore_count; lc++) {
+
+                    /*
+                     * Last lcore gets all the remaining queues.
+                     */
+                    if (lc == (lcore_count - 1)) {
+                        per_lcore_qcount = total_qcount - qid;
+                    }
+                    for (uint32_t q = 0; q < per_lcore_qcount; q++) {
+                        if (qid >= total_qcount) {
+                            break;
+                        }
+                        pollers_qid_conf[lc].push_back(qid);
+                        qid++;
+                    }
+                    PDS_TRACE_DEBUG("lcore_idx %u will poll %d poller queues",
+                                    lc, (int)pollers_qid_conf[lc].size());
                 }
-                pollers_qid_conf[lc].push_back(qid);
-                qid++;
             }
         }
     }
@@ -1600,13 +1620,9 @@ fte_main (pds_cinit_params_t *init_params)
     // init FTL
     if (g_athena_app_mode == ATHENA_APP_MODE_CPP ||
         g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT) {
-        if ((sdk_ret = fte_flows_init()) != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("FTE flow init failed: ret=%d ", sdk_ret);
+        if ((sdk_ret = fte_flows_helper_init()) != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("FTE flow help init failed: ret=%d ", sdk_ret);
         }
-    }
-
-    if (init_params->flow_age_pid == getpid()) {
-        _init_pollers_client();
     }
 
     ret = 0;

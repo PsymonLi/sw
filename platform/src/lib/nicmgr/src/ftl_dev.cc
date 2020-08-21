@@ -63,6 +63,7 @@ FtlDev::FtlDev(devapi *dapi,
     ftl_lif_res_t       lif_res;
     sdk_ret_t           ret = SDK_RET_OK;
     DeviceManager *devmgr = DeviceManager::GetInstance();
+    bool is_soft_init = false;
 
     /*
      * Allocate LIFs if necessary
@@ -81,7 +82,10 @@ FtlDev::FtlDev(devapi *dapi,
             NIC_LOG_ERR("{}: Failed to allocate lifs. ret: {}", DevNameGet(), ret);
             throw;
         }
+        dev_pstate->base_lif_id_set(lif_base);
         dtor_lif_free = true;
+    } else {
+        is_soft_init = true;
     }
 
     NIC_LOG_DEBUG("{}: lif_base {} lif_count {}",
@@ -91,7 +95,7 @@ FtlDev::FtlDev(devapi *dapi,
      */
     lif_res.lif_id = lif_base;
     lif_res.index = 0;
-    auto lif = new FtlLif(*this, lif_res, EV_DEFAULT);
+    auto lif = new FtlLif(*this, lif_res, is_soft_init, EV_DEFAULT);
     if (!lif) {
         NIC_LOG_ERR("{}: failed to create FtlLif {}",
                     DevNameGet(), lif_res.lif_id);
@@ -121,7 +125,7 @@ FtlDev::SoftFtlDev(devapi *dapi,
     }
 
     ts.time_expiry_set(FTL_DEV_LIF_CREATE_TIME_US);
-    while (!dev_pstate->lif_fully_inited()) {
+    while (!dev_pstate->base_lif_id()) {
         if (ts.time_expiry_check()) {
             NIC_LOG_ERR("Failed to locate lifs for {}", FTL_DEV_NAME);
             throw;
@@ -130,8 +134,9 @@ FtlDev::SoftFtlDev(devapi *dapi,
         /*
          * Inside nicmgr init thread so it's ok to sleep
          */
-        usleep(100000);
+        usleep(1000);
     }
+    NIC_LOG_DEBUG("FTL lif created...");
 
     lif_base = dev_pstate->base_lif_id();
     if (!lif_base) {

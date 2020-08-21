@@ -8,16 +8,43 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/asic/asic.hpp"
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "ftl_dev_impl.hpp"
 #include "ftl_pollers_client.hpp"
 
 extern "C" {
 
+static rte_atomic16_t       flow_age_inited = RTE_ATOMIC16_INIT(0);
+
 pds_ret_t
 pds_flow_age_init(pds_cinit_params_t *params)
 {
-    return ftl_pollers_client::init(params);
+    pds_ret_t   ret = PDS_RET_OK;
+
+    if (rte_atomic16_test_and_set(&flow_age_inited)) {
+        if (sdk::asic::asic_is_soft_init()) {
+            if (params->flow_age_pid == getpid()) {
+
+                /* In hard-init mode, nicmgr thread would have been launched
+                 * from pds_init(). Otherwise, launch that thread here to create
+                 * the FTL device.
+                 */
+                ftl_dev_impl::ftl_dev_create_thread_spawn();
+                ftl_dev_impl::ftl_dev_create_thread_wait_ready();
+            }
+        }
+
+        if (sdk::asic::asic_is_hard_init() || 
+            (params->flow_age_pid == getpid())) {
+
+            ret = ftl_pollers_client::init(params);
+        }
+        if (ret == PDS_RET_OK) {
+            ret = ftl_dev_impl::mpu_timestamp_global_init();
+        }
+    }
+    return ret;
 }
 
 void

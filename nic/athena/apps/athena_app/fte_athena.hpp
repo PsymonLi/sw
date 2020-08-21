@@ -56,6 +56,7 @@ struct geneve_hdr {
 } __attribute__((__packed__));
 
 void fte_init(pds_cinit_params_t *init_params);
+void fte_pollers_client_init(pds_cinit_params_t *init_params);
 void fte_fini(void);
 void fte_dpdk_dev_stop(void);
 sdk_ret_t fte_conntrack_indexer_init(void);
@@ -68,6 +69,7 @@ bool fte_is_session_index_allocated (uint32_t sess_id);
 
 sdk_ret_t fte_flow_prog(struct rte_mbuf *m, uint16_t portid);
 void fte_thread_init(unsigned int core_id);
+sdk_ret_t fte_flows_helper_init(void);
 sdk_ret_t fte_flows_init(void);
 pds_ret_t fte_flows_aging_expiry_fn(uint32_t expiry_id,
                                     pds_flow_age_expiry_type_t expiry_type,

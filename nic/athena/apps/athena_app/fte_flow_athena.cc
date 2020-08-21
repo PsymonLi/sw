@@ -341,10 +341,14 @@ fte_l2_flow_range_bmp_destroy (void)
         }
 
         flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
-        rte_bitmap_free(flow_range->h2s_bmp);
-        rte_free((void *)flow_range->h2s_bmp);
-        rte_bitmap_free(flow_range->s2h_bmp);
-        rte_free((void *)flow_range->s2h_bmp);
+        if (flow_range->h2s_bmp) {
+            rte_bitmap_free(flow_range->h2s_bmp);
+            rte_free((void *)flow_range->h2s_bmp);
+        }
+        if (flow_range->s2h_bmp) {
+            rte_bitmap_free(flow_range->s2h_bmp);
+            rte_free((void *)flow_range->s2h_bmp);
+        }
     }
 
     return;
@@ -2291,24 +2295,8 @@ fte_setup_flow (void)
     for (i = 0; i < g_num_policies; i++) {
         vnic_id = g_vnic_id_list[i];
         policy = &(g_flow_cache_policy[vnic_id]);
-        // Setup VNIC Mappings
-        ret = fte_vlan_to_vnic_map(policy->vlan_id, vnic_id,
-                                   policy->vnic_type);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_vlan_to_vnic_map failed. "
-                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
-            return ret;
-        }
 
-        // Setup VNIC Mappings
-        ret = fte_mpls_label_to_vnic_map(policy->src_slot_id, vnic_id,
-                                         policy->vnic_type);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_mpls_label_to_vnic_map failed. "
-                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
-            return ret;
-        }
-
+        // Create and initialize bmps
         if (policy->vnic_type == VNIC_L2) {
             h2s_bmp_size = ((policy->l2_flows_range.h2s_mac_hi -
                             policy->l2_flows_range.h2s_mac_lo) + 1);
@@ -2352,6 +2340,29 @@ fte_setup_flow (void)
                 return SDK_RET_ERR;
             }
             rte_spinlock_init(&(policy->l2_flows_range.s2h_bmp_slock));
+        }
+
+        // Skip the rest of policy installs after upgrade
+        if (fte_upg()) {
+            continue;
+        }
+
+        // Setup VNIC Mappings
+        ret = fte_vlan_to_vnic_map(policy->vlan_id, vnic_id,
+                                   policy->vnic_type);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_vlan_to_vnic_map failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
+            return ret;
+        }
+
+        // Setup VNIC Mappings
+        ret = fte_mpls_label_to_vnic_map(policy->src_slot_id, vnic_id,
+                                         policy->vnic_type);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_mpls_label_to_vnic_map failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
+            return ret;
         }
 
         if (policy->nat_enabled) {
@@ -2436,11 +2447,13 @@ fte_setup_flow (void)
         }
     }
 
-    ret = fte_setup_v4_flows_json();
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_setup_v4_flows_json failed. "
-                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
-        return ret;
+    if (!fte_upg()) {
+        ret = fte_setup_v4_flows_json();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_setup_v4_flows_json failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
+            return ret;
+        }
     }
 
     return ret;
@@ -2493,7 +2506,7 @@ fte_flows_aging_expiry_fn(uint32_t expiry_id,
 }
 
 sdk_ret_t
-fte_flows_init ()
+fte_flows_helper_init ()
 {
     sdk_ret_t sdk_ret = SDK_RET_OK;
 
@@ -2510,6 +2523,14 @@ fte_flows_init ()
                         "ret: %s \n", SDK_RET_ENTRIES_str(sdk_ret));
         return sdk_ret;
     }
+
+    return sdk_ret;
+}
+
+sdk_ret_t
+fte_flows_init ()
+{
+    sdk_ret_t sdk_ret = SDK_RET_OK;
 
     /*
      * Override the default aging callback so session indices can be managed

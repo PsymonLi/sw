@@ -10,6 +10,8 @@
 #define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#define FTL_LIF_NAME                        "ftl_lif"
+
 /*
  * Local doorbell address formation
  */
@@ -211,16 +213,16 @@ typedef struct {
     uint16_t                lif_index;
     uint16_t                pid;
     uint32_t                index;
+    uint64_t                poller_qstate_addr;
     uint64_t                scan_addr_base;
     uint32_t                scan_id_base;
     uint32_t                scan_range_sz;
     uint32_t                scan_burst_sz;
-    uint32_t                scan_resched_time;
-    uint32_t                poller_lif;
-    uint32_t                poller_qid;
+    uint32_t                scan_resched_ticks;
     uint8_t                 poller_qdepth_shft;
-    uint8_t                 poller_qtype;
     uint8_t                 cos_override;
+    uint8_t                 resched_uses_slow_timer;
+    uint8_t                 pc_offset;
 } scanner_init_single_cmd_t;
 
 /**
@@ -236,18 +238,6 @@ typedef struct {
 } poller_init_single_cmd_t;
 
 /*
- * std::exchange() is available only in C++14 so
- * we use the cppreference implementation here.
- */
-template<class T, class U = T>
-T obj_xchg(T& obj, U&& new_value)
-{
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-
-/*
  * Memory access wrapper
  */
 class mem_access_t {
@@ -256,26 +246,23 @@ public:
         lif(lif),
         paddr(0),
         vaddr(nullptr),
-        total_sz(0)
+        total_sz(0),
+        mmap_taken(false)
     {
     }
 
-    /*
-     * Move constructor
-     */
-    mem_access_t(mem_access_t &&m) noexcept :
-        lif(m.lif),
-        paddr(m.paddr),
-        vaddr(obj_xchg(m.vaddr, nullptr)),
-        total_sz(m.total_sz)
+    ~mem_access_t()
     {
+        clear();
     }
 
-    ~mem_access_t();
-
-    void reset(int64_t paddr,
+    void clear(void);
+    void reset(uint64_t paddr,
                uint32_t total_sz,
                bool mmap_requested = true);
+    void set(uint64_t new_paddr,
+             volatile uint8_t *new_vaddr,
+             uint32_t new_sz);
     void small_read(uint32_t offset,
                     uint8_t *buf,
                     uint32_t read_sz) const;
@@ -298,6 +285,52 @@ private:
     FtlLif&                 lif;
     int64_t                 paddr;
     volatile uint8_t        *vaddr;
+    uint32_t                total_sz;
+    bool                    mmap_taken;
+};
+
+class mem_access_vec_t {
+public:
+    mem_access_vec_t(FtlLif& lif) :
+        lif(lif),
+        mem_access_vec(lif),
+        elem_count_(0),
+        elem_sz_(0),
+        total_sz(0)
+    {
+    }
+
+    ~mem_access_vec_t()
+    {
+        clear();
+    }
+
+    void reset(uint64_t paddr_base,
+               uint32_t elem_count,
+               uint32_t elem_sz);
+    bool empty(void)
+    {
+        return total_sz == 0;
+    }
+
+    void clear(void)
+    {
+        mem_access_vec.clear();
+        total_sz = 0;
+    }
+
+    void get(uint32_t elem_id,
+             mem_access_t *access);
+    uint64_t pa(void)
+    {
+        return mem_access_vec.pa();
+    }
+
+private:
+    FtlLif&                 lif;
+    mem_access_t            mem_access_vec;
+    uint32_t                elem_count_;
+    uint32_t                elem_sz_;
     uint32_t                total_sz;
 };
 
@@ -357,24 +390,26 @@ public:
     uint32_t qcount_actual(void) { return qcount_actual_; }
     uint32_t quiesce_qid(void) { return quiesce_qid_; }
     bool queue_empty(uint32_t qid);
-    int64_t qid_qstate_addr(uint32_t qid);
-    const mem_access_t *qid_qstate_access(uint32_t qid,
-                                          bool log_error = true);
-    const mem_access_t *qid_wring_access(uint32_t qid);
 
+    void qstate_access_init(uint32_t elem_sz);
+    void wring_access_init(uint64_t paddr_base,
+                           uint32_t elem_count,
+                           uint32_t elem_sz);
+    uint64_t qstate_access_pa(void) { return qstate_access.pa();  }
+    uint64_t wring_access_pa(void) { return wring_access.pa();  }
     bool empty_qstate_access(void) { return qstate_access.empty(); }
     bool empty_wring_access(void) { return wring_access.empty(); }
+    ftl_status_code_t pgm_pc_offset_get(const char *pc_jump_label,
+                                        uint8_t *pc_offset);
 
 private:
     ftl_status_code_t scanner_init_single(const scanner_init_single_cmd_t *cmd);
     ftl_status_code_t poller_init_single(const poller_init_single_cmd_t *cmd);
-    ftl_status_code_t pgm_pc_offset_get(const char *pc_jump_label,
-                                        uint8_t *pc_offset);
 
     FtlLif&                 lif;
     enum ftl_qtype          qtype_;
-    std::vector<mem_access_t> qstate_access;
-    std::vector<mem_access_t> wring_access;
+    mem_access_vec_t        qstate_access;
+    mem_access_vec_t        wring_access;
     db_access_t             db_pndx_inc;
     db_access_t             db_sched_clr;
     uint64_t                wrings_base_addr;
@@ -427,6 +462,7 @@ public:
     ftl_lif_fsm_ctx_t() :
         state(FTL_LIF_ST_INITIAL),
         enter_state(FTL_LIF_ST_INITIAL),
+        initing(0),
         reset(0),
         reset_destroy(0),
         scanners_stopping(0)
@@ -436,7 +472,8 @@ public:
     ftl_lif_state_t         state;
     ftl_lif_state_t         enter_state;
     ftl_timestamp_t         ts;
-    uint32_t                reset               : 1,
+    uint32_t                initing             : 1,
+                            reset               : 1,
                             reset_destroy       : 1,
                             scanners_stopping   : 1;
 };
@@ -449,6 +486,35 @@ typedef struct {
     uint32_t                index;
 } ftl_lif_res_t;
 
+typedef struct ftllif_pstate_s {
+    ftllif_pstate_s () {
+        memset(queue_info, 0, sizeof(queue_info));
+        memset(qstate_addr, 0, sizeof(qstate_addr));
+        qstate_mem_address = 0;
+        qstate_mem_size = 0;
+        scanner_pc_offset = 0;
+        mpu_timestamp_pc_offset = 0;
+        qstate_created_ = false;
+    }
+    lif_queue_info_t queue_info[NUM_QUEUE_TYPES];
+    uint64_t qstate_addr[NUM_QUEUE_TYPES];
+    uint64_t qstate_mem_address;
+    uint64_t qstate_mem_size;
+    uint8_t  scanner_pc_offset;
+    uint8_t  mpu_timestamp_pc_offset;
+    bool     qstate_created_;
+
+    void qstate_created_set(bool yesno)
+    {
+        SDK_ATOMIC_STORE_BOOL(&qstate_created_, yesno);
+    }
+
+    bool qstate_created(void)
+    {
+        return SDK_ATOMIC_LOAD_BOOL(&qstate_created_);
+    }
+} __PACK__ ftllif_pstate_t;
+
 /**
  * Ftl LIF
  */
@@ -456,6 +522,7 @@ class FtlLif {
 public:
     FtlLif(FtlDev& ftl_dev,
            ftl_lif_res_t& lif_res,
+           bool is_soft_init,
            EV_P);
     ~FtlLif();
 
@@ -473,6 +540,10 @@ public:
     uint64_t mpu_timestamp(void) { return mpu_timestamp_access.curr_timestamp(); }
     bool queue_empty(enum ftl_qtype qtype,
                      uint32_t qid);
+    void qstate_created_set(bool yesno)
+    {
+        lif_pstate->qstate_created_set(yesno);
+    }
 
     lif_info_t                  hal_lif_info_;
 
@@ -511,6 +582,7 @@ private:
     uint8_t                     cosA, cosB, ctl_cosA, ctl_cosB;
 
     // Other states
+    ftllif_pstate_t             *lif_pstate;
     ftl_lif_fsm_ctx_t           fsm_ctx;
     age_tmo_cb_t                normal_age_tmo_cb;
     age_tmo_cb_t                accel_age_tmo_cb;

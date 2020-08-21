@@ -71,7 +71,7 @@ pds_ret_t session_table_depth_get(uint32_t *ret_table_depth);
 pds_ret_t conntrack_table_depth_get(uint32_t *ret_table_depth);
 uint64_t  mpu_timestamp(void);
 uint64_t  mpu_timestamp_v2(void);
-sdk_ret_t mpu_timestamp_global_init (void);
+pds_ret_t mpu_timestamp_global_init (void);
 
 bool lif_init_done(void);
 
