@@ -68,7 +68,6 @@ type API struct {
 	policyWatcher  *policy.Watcher
 	evtsRPCServer  *rpcserver.RPCServer
 	agentRPCServer *rpckit.RPCServer
-	netifWorker    sync.Mutex // Lock to serialize access to NpmClient.ClientConn
 }
 
 // RestServer implements REST APIs
@@ -698,8 +697,6 @@ func (c *API) WatchFwlogPolicies() {
 
 // closeConnections close connections
 func (c *API) closeConnections() {
-	c.netifWorker.Lock()
-	defer c.netifWorker.Unlock()
 	if c.npmClient != nil {
 		if err := c.npmClient.Close(); err != nil {
 			log.Error(errors.Wrapf(types.ErrNPMWatcherClose, "Controller API: %s", err))
@@ -720,9 +717,9 @@ func (c *API) Stop() error {
 	c.cancelWatcher()
 	c.cancelWatcher = nil
 
-	c.closeConnections()
 	// Wait for nimbus client to drain all active watchers
 	c.Wait()
+	c.closeConnections()
 
 	c.WatchCtx = nil
 	c.nimbusClient = nil
@@ -766,19 +763,10 @@ func (c *API) netIfWorker(ctx context.Context) {
 				intfs[0].Status.DSCID = c.InfraAPI.GetConfig().DSCID
 				intfs[0].Status.DSC = c.InfraAPI.GetDscName()
 				log.Infof("CREATE interface: [%+v]", intfs[0])
-				// We can race with Stop's closeConnections. Take a lock to make sure we drain the interface
-				// updates without sending any message to NPM.
-				c.netifWorker.Lock()
-				if c.npmClient != nil && c.npmClient.ClientConn != nil {
-					if resp, err := ifClient.CreateInterface(ctx, &intfs[0]); err != nil {
-						log.Errorf("create interface [%v] failed (%s)", resp, err)
-						c.InfraAPI.UpdateIfChannel(evt)
-					}
-				} else {
-					log.Errorf("NPM connection closed for updating %v. Retrying...", evt.Intf.GetKey())
+				if resp, err := ifClient.CreateInterface(ctx, &intfs[0]); err != nil {
+					log.Errorf("create interface [%v] failed (%s)", resp, err)
 					c.InfraAPI.UpdateIfChannel(evt)
 				}
-				c.netifWorker.Unlock()
 			}
 		}
 	}
