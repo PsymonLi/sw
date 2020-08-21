@@ -17,6 +17,7 @@
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
 #include "platform/drivers/xcvr.hpp"
+#include "include/sdk/asic/elba/elb_mx_common_api.h"
 
 using sdk::types::port_speed_t;
 
@@ -303,133 +304,167 @@ mac_temac_stats_rd (uint32_t port_num, uint32_t size)
     size = 1;
 
     mac_temac_regrd_words_haps(chip, port_num, 0x200, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("Received Bytes Counter:                       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "Received Bytes Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x208, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("Transmitted Bytes Counter:                    %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "Transmitted Bytes Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x210, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("Underside Frames Counter:                     %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "Undersize Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x218, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("Fragment Frames Counter:                      %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "Fragment Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x220, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 64-Byte Frames Counter:                    %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX 64-Byte Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x228, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 65-127-Byte Frames Counter:                %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX 65-127-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x230, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 128-255-Byte Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX 128-255-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x238, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 256-511-Byte Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX 256-511-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x240, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 512-1023-Byte Frames Counter:              %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX 512-1023-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x248, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX 1024-Max Frames Size Frames Counter:       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d",
+                            "RX 1024-Max Frames Size Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x250, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Oversize Frames Counter:                   %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Oversize Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x258, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 64-Byte Frames Counter:                    %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX 64-Byte Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x260, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 65-127-Byte Frames Counter:                %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX 65-127-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x268, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 128-255-Byte Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX 128-255-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x270, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 256-511-Byte Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX 256-511-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x278, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 512-1023-Byte Frames Counter:              %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX 512-1023-Byte Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x280, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX 1024-Max Frames Size Frames Counter:       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d",
+                            "TX 1024-Max Frames Size Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x288, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Oversize Frames Counter:                   %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Oversize Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x290, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good Frames Counter:                       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x298, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Frame Check Sequence Errors Counter:       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d",
+                            "RX Frame Check Sequence Errors Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2a0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good Broadcast Frames Counter:             %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good Broadcast Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2a8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good Multicast Frames Counter:             %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good Multicast Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2b0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good Control Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good Control Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2b8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Length/Type Out of Range Errrors Counter:  %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d",
+                            "RX Length/Type Out of Range Errors Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2c0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good VLAN Tagged Frames Counter:           %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good VLAN Tagged Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2c8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Good Pause Frames Counter:                 %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Good Pause Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2d0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Bad Opcode Frames Counter:                 %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Bad Opcode Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2d8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good Frames Counter:                       %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2e0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good Broadcast Frames Counter:             %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good Broadcast Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2e8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good Multicast Frames Counter:             %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good Multicast Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2f0, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Underrun Errors Counter:                   %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Underrun Errors Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x2f8, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good Control Frames Counter:               %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good Control Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x300, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good VLAN Tagged Frames Counter:           %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good VLAN Tagged Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x308, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Good Pause Frames Counter:                 %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Good Pause Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x310, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Single Collision Frames Counter:           %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Single Collision Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x318, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Multiple Collision Frames Counter:         %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d",
+                            "TX Multiple Collision Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x320, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Deferred Frames Counter:                   %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Deferred Frames Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x328, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Late Collision Counter:                    %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Late Collision Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x330, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Excess Collision Counter:                  %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Excess Collision Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x338, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX Excess Deferral Counter:                   %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX Excess Deferral Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x340, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX Alignment Errors Counter:                  %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX Alignment Errors Counter:",
+                            data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x348, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("RX PFC Frames Counter:                        %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "RX PFC Frames Counter:", data[i]);
 
     mac_temac_regrd_words_haps(chip, port_num, 0x350, size, data);
-    SDK_LINKMGR_TRACE_DEBUG("TX PFC Frames Counter:                        %d", data[i]);
+    SDK_LINKMGR_TRACE_DEBUG("%-45s %d", "TX PFC Frames Counter:", data[i]);
 
     return 0;
 }
@@ -441,22 +476,35 @@ mac_temac_stats_rd (uint32_t port_num, uint32_t size)
 static uint32_t
 mac_get_ch_from_port(uint32_t port_num)
 {
-    return port_num;  // For elba, port.cc set port_num = mac_ch (see port::port_mac_port_num_calc)
+    // For elba, port.cc set port_num = mac_ch
+    // (see port::port_mac_port_num_calc)
+    return port_num;
 }
 
 static uint32_t
 mac_get_tm_port_from_mac_ch(uint32_t mac_ch)
 {
-    // when 4 ports are enabled in mx, channels assigment is {0, 4, 2, 6} for port 0~3
-    if (mac_ch == 0) return 0;
-    else if (mac_ch == 4) return 1;
-    else if (mac_ch == 2) return 2;
-    else if (mac_ch == 6) return 3;
-    // when 5 ports are enabled in mx, channels assigment is {0, 4, 5, 6, 7} for port 0~4
-    else if (mac_ch == 5) return 2;
-    else if (mac_ch == 7) return 4;
-
-    SDK_LINKMGR_TRACE_DEBUG("ERROR: mac_get_tm_port_from_mac_ch unsupported mac_ch=%d", mac_ch);
+    switch (mac_ch) {
+    // when 4 ports are enabled in mx, channels assigment is
+    // {0, 4, 2, 6} for port 0~3
+    case 0:
+        return 0;
+    case 4:
+        return 1;
+    case 2:
+        return 2;
+    case 6:
+        return 3;
+    // when 5 ports are enabled in mx, channels assigment is
+    // {0, 4, 5, 6, 7} for port 0~4
+    case 5:
+        return 2;
+    case 7:
+        return 4;
+    default:
+        SDK_LINKMGR_TRACE_DEBUG("ERROR: mac_get_tm_port_from_mac_ch "
+                                "unsupported mac_ch=%d", mac_ch);
+    }
     return 0;
 }
 
@@ -474,7 +522,7 @@ mac_cfg_fec_hw (mac_info_t *mac_info)
     uint32_t     mac_ch        = mac_info->mac_ch;
     uint32_t     num_lanes     = mac_info->num_lanes;
     uint32_t     fec           = mac_info->fec;
-    port_speed_t      port_speed = (port_speed_t) mac_info->speed;
+    port_speed_t    port_speed = (port_speed_t) mac_info->speed;
     int          ch_speed      = 0;
 
     switch (port_speed) {
@@ -532,38 +580,50 @@ mac_cfg_hw (mac_info_t *mac_info)
     switch (port_speed) {
     case port_speed_t::PORT_SPEED_10G:
         mx_api_speed = 10;
-        for (int i = 0; i < 4; i++) port_speed_arr[i] = 10;
-        for (int i = 0; i < 4; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 4; i++) {
+            port_speed_arr[i] = 10;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     case port_speed_t::PORT_SPEED_25G:
         mx_api_speed = 25;
-        for (int i = 0; i < 4; i++) port_speed_arr[i] = 25;
-        for (int i = 0; i < 4; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 4; i++) {
+            port_speed_arr[i] = 25;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     case port_speed_t::PORT_SPEED_40G:
         mx_api_speed = 40;
-        for (int i = 0; i < 4; i++) port_speed_arr[i] = 40;
-        for (int i = 0; i < 4; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 4; i++) {
+            port_speed_arr[i] = 40;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     case port_speed_t::PORT_SPEED_50G:
         mx_api_speed = 50;
-        for (int i = 0; i < 4; i++) port_speed_arr[i] = 50;
-        for (int i = 0; i < 4; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 4; i++) {
+            port_speed_arr[i] = 50;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     case port_speed_t::PORT_SPEED_100G:
         mx_api_speed = 100;
-        for (int i = 0; i < 4; i++) port_speed_arr[i] = 100;
-        for (int i = 0; i < 4; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 4; i++) {
+            port_speed_arr[i] = 100;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     case port_speed_t::PORT_SPEED_200G:
         mx_api_speed = 200;
-        for (int i = 0; i < 2; i++) port_speed_arr[i] = 200;
-        for (int i = 0; i < 2; i++) port_vec_arr[i] = 1;
+        for (int i = 0; i < 2; i++) {
+            port_speed_arr[i] = 200;
+            port_vec_arr[i] = 1;
+        }
         break;
 
     default:
@@ -571,16 +631,20 @@ mac_cfg_hw (mac_info_t *mac_info)
     }
 
     if (mac_global_init(inst_id) == 0 || mac_info->force_global_init == true) {
-      // Set TDM slot cfg. Potentially, json file can provide slot_port and slot_ch directly.
-      if (elb_mx_slot_gen(inst_id, port_vec_arr, port_ch_map_arr, port_speed_arr, slot_port_arr, slot_ch_arr) < 0) return -1;
+      // Set TDM slot cfg. Potentially, json file can provide slot_port and
+      // slot_ch directly.
+      if (elb_mx_slot_gen(inst_id, port_vec_arr, port_ch_map_arr,
+                          port_speed_arr, slot_port_arr, slot_ch_arr) < 0) {
+          return -1;
+      }
       elb_mx_set_slot(chip_id, inst_id, slot_port_arr, slot_ch_arr);
     }
 
     mx_init[inst_id] = mx_init[inst_id] | mac_ch_en;
 
     // Only master lane
-    SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, tm_port: %d, mx_init: 0x%x",
-                    inst_id, mac_ch, tm_port, mx_init[inst_id]);
+    SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, tm_port: %d, mx_init: "
+                            "0x%x", inst_id, mac_ch, tm_port, mx_init[inst_id]);
 
     // set MAC serdes loopback if enabled
     elb_mx_pcs_lpbk_set(chip_id, inst_id, mac_ch, num_lanes, loopback);
@@ -596,19 +660,22 @@ mac_cfg_hw (mac_info_t *mac_info)
     }
 
     // MTU/Jabber
-    elb_mx_set_mtu_jabber(chip_id, inst_id, mac_ch, mac_info->mtu, 4+mac_info->mtu);
+    elb_mx_set_mtu_jabber(chip_id, inst_id, mac_ch, mac_info->mtu,
+                          4 + mac_info->mtu);
 
     // By default enable the RX len error check
     elb_mx_disable_eth_len_err(chip_id, inst_id, mac_ch, 0);
 
-    // Set Tx IFG to 12 (call this function to resolve conflict between ifglen and tx_ipg)
+    // Set Tx IFG to 12 (call this function to resolve conflict between 
+    // ifglen and tx_ipg)
     elb_mx_set_ifglen(chip_id, inst_id, mac_ch, 12);
 
     elb_mx_set_tx_padding(chip_id, inst_id, mac_ch, mac_info->tx_pad_enable);
 
     // No more rx padding disable in elba.
     // By disabling rx padding in capri, it may cause rx overflow in pb.
-    //cap_mx_set_rx_padding(chip_id, inst_id, mac_ch, mac_info->rx_pad_enable);  // TODO: why sw disable capri rx padding?
+    // TODO: why sw disable capri rx padding?
+    // cap_mx_set_rx_padding(chip_id, inst_id, mac_ch, mac_info->rx_pad_enable);
 
     elb_mx_set_vlan_check(chip_id, inst_id, mac_ch,
                           3 /* num of tags to check */,
@@ -637,16 +704,15 @@ mac_cfg_hw (mac_info_t *mac_info)
     }
 
     if ((mx_api_speed == 25 || mx_api_speed == 10) && (fec == 0)) {
-       elb_mx_enable_false_linkup_detection(chip_id , inst_id, mac_ch, (9800/8));
+       elb_mx_enable_false_linkup_detection(chip_id , inst_id, mac_ch, 9800/8);
     }
-
 
     return 0;
 }
 
 static int
-mac_enable_hw (uint32_t port_num, uint32_t speed,
-                    uint32_t num_lanes, bool enable)
+mac_enable_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+               bool enable)
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
@@ -663,8 +729,8 @@ mac_enable_hw (uint32_t port_num, uint32_t speed,
 }
 
 static int
-mac_soft_reset_hw (uint32_t port_num, uint32_t speed,
-                        uint32_t num_lanes, bool reset)
+mac_soft_reset_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                   bool reset)
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
@@ -704,8 +770,8 @@ mac_intr_clear_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes)
 }
 
 static int
-mac_intr_enable_hw (uint32_t port_num, uint32_t speed,
-                         uint32_t num_lanes, bool enable)
+mac_intr_enable_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                    bool enable)
 {
     int chip_id = 0;
     int inst_id = 0;
@@ -762,8 +828,7 @@ mac_flush_set_hw (uint32_t port_num, bool enable)
 }
 
 static int
-mac_stats_get_hw (uint32_t mac_inst, uint32_t mac_ch,
-                  uint64_t *stats_data)
+mac_stats_get_hw (uint32_t mac_inst, uint32_t mac_ch, uint64_t *stats_data)
 {
     elb_mx_mac_stat(0 /*chip_id*/, mac_inst, mac_ch, stats_data);
     return 0;
@@ -788,8 +853,7 @@ mac_deinit_hw (uint32_t mac_inst, uint32_t mac_ch)
 }
 
 static int
-mac_send_remote_faults_hw (uint32_t mac_inst, uint32_t mac_ch,
-                           bool send)
+mac_send_remote_faults_hw (uint32_t mac_inst, uint32_t mac_ch, bool send)
 {
     elb_mx_send_remote_faults(0, mac_inst, mac_ch, send);
     return 0;
@@ -803,19 +867,21 @@ mac_tx_drain_hw (uint32_t mac_inst, uint32_t mac_ch, bool drain)
 }
 
 static int
-mac_an_start_hw (uint32_t mac_ch, uint32_t user_cap, bool fec_ability, uint32_t fec_request)
+mac_an_start_hw (uint32_t mac_ch, uint32_t user_cap, bool fec_ability,
+                 uint32_t fec_request)
 {
    int user_fec = 0;
    int user_pause = 0;
    int ignore_nonce = 1;
+
    if (fec_ability) {
-      user_fec = user_fec | elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_FEC_10G_ABI;
+      user_fec |= elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_FEC_10G_ABI;
    }
    if ((fec_request & AN_FEC_REQ_25GB_RSFEC) == 1) {
-      user_fec = user_fec | elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_RSFEC_25G_REQ;
+      user_fec |= elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_RSFEC_25G_REQ;
    }
    if ((fec_request & AN_FEC_REQ_25GB_FCFEC) == 1) {
-      user_fec = user_fec | elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_FCFEC_25G_REQ;
+      user_fec |= elb_mx_an_fec_capability_t::ELB_MX_AN_FEC_FCFEC_25G_REQ;
    }
    elb_mx_an_init(0, 0, mac_ch, user_cap, user_fec, user_pause, ignore_nonce);
    return 0;
@@ -916,14 +982,16 @@ mac_mgmt_cfg_hw (mac_info_t *mac_info)
         // global mode
         elb_bx_set_glbl_mode(chip_id, bx_inst, bx[inst_id].glbl_mode);
 
-        // MAC Rx Configuration: bit4: Promiscuous Mode (1: disable MAC address check)
+        // MAC Rx Configuration: bit4: Promiscuous Mode
+        // (1: disable MAC address check)
         elb_bx_apb_write(chip_id, bx_inst, 0x2102, 0x10);
 
         // FIFO Control 1: 16'b0_000010_01000_0100;
         elb_bx_apb_write(chip_id, bx_inst, 0x3f01, 0x484);
 
         // channel mode
-        elb_bx_apb_write(chip_id, bx_inst, 0x4010, bx[inst_id].ch_mode[start_lane]);
+        elb_bx_apb_write(chip_id, bx_inst, 0x4010,
+                         bx[inst_id].ch_mode[start_lane]);
 
         // mtu
         elb_bx_set_mtu(chip_id, bx_inst, mac_info->mtu, mac_info->mtu + 1);
@@ -933,15 +1001,15 @@ mac_mgmt_cfg_hw (mac_info_t *mac_info)
 
         bx_init[inst_id] |= mac_ch_en;
         SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, bx_init: 0x%x",
-                        inst_id, start_lane, bx_init[inst_id]);
+                                inst_id, start_lane, bx_init[inst_id]);
     }
 
     return 0;
 }
 
 static int
-mac_mgmt_enable_hw (uint32_t port_num, uint32_t speed,
-                    uint32_t num_lanes, bool enable)
+mac_mgmt_enable_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                    bool enable)
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
@@ -963,8 +1031,8 @@ mac_mgmt_enable_hw (uint32_t port_num, uint32_t speed,
 }
 
 static int
-mac_mgmt_soft_reset_hw (uint32_t port_num, uint32_t speed,
-                        uint32_t num_lanes, bool reset)
+mac_mgmt_soft_reset_hw (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                        bool reset)
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
@@ -1013,8 +1081,7 @@ mac_mgmt_flush_set_hw (uint32_t port_num, bool enable)
 }
 
 static int
-mac_mgmt_stats_get_hw (uint32_t mac_inst, uint32_t mac_ch,
-                       uint64_t *stats_data)
+mac_mgmt_stats_get_hw (uint32_t mac_inst, uint32_t mac_ch, uint64_t *stats_data)
 {
     int bx_inst = 1;
     elb_bx_mac_stat(0 /*chip_id*/, bx_inst, mac_ch, 0, stats_data);
@@ -1102,15 +1169,15 @@ mac_cfg_fec_default (mac_info_t *mac_info)
 }
 
 static int
-mac_enable_default (uint32_t port_num, uint32_t speed,
-                    uint32_t num_lanes, bool enable)
+mac_enable_default (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                    bool enable)
 {
     return 0;
 }
 
 static int
-mac_soft_reset_default (uint32_t port_num, uint32_t speed,
-                        uint32_t num_lanes, bool reset)
+mac_soft_reset_default (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                        bool reset)
 {
     return 0;
 }
@@ -1128,8 +1195,8 @@ mac_intr_clear_default (uint32_t port_num, uint32_t speed, uint32_t num_lanes)
 }
 
 static int
-mac_intr_enable_default (uint32_t port_num, uint32_t speed,
-                         uint32_t num_lanes, bool enable)
+mac_intr_enable_default (uint32_t port_num, uint32_t speed, uint32_t num_lanes,
+                         bool enable)
 {
     return 0;
 }
@@ -1159,8 +1226,7 @@ mac_flush_set_default (uint32_t port_num, bool enable)
 }
 
 static int
-mac_stats_get_default (uint32_t mac_inst, uint32_t mac_ch,
-                       uint64_t *stats_data)
+mac_stats_get_default (uint32_t mac_inst, uint32_t mac_ch, uint64_t *stats_data)
 {
     return 0;
 }
@@ -1192,7 +1258,8 @@ mac_tx_drain_default (uint32_t mac_inst, uint32_t mac_ch, bool drain)
 }
 
 static int
-mac_an_start_default (uint32_t mac_ch, uint32_t user_cap, bool fec_ability, uint32_t fec_request)
+mac_an_start_default (uint32_t mac_ch, uint32_t user_cap, bool fec_ability,
+                      uint32_t fec_request)
 {
     return 0;
 }
@@ -1224,10 +1291,10 @@ mac_an_rsfec_enable_read_default (uint32_t mac_ch)
 mac_fn_t *
 mac_fns (port_type_t port_type)
 {
-        if (port_type == port_type_t::PORT_TYPE_MGMT) {
-                    return &mac_mgmt_fns_;
-                        }
-            return &mac_fns_;
+    if (port_type == port_type_t::PORT_TYPE_MGMT) {
+        return &mac_mgmt_fns_;
+    }
+    return &mac_fns_;
 }
 
 sdk_ret_t

@@ -1,4 +1,12 @@
-// {C} Copyright 2017 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// serdes configuration method definitions for Capri
+///
+//----------------------------------------------------------------------------
 
 #include "linkmgr.hpp"
 #include "linkmgr_rw.hpp"
@@ -7,6 +15,7 @@
 #include "linkmgr_internal.hpp"
 #include "third-party/avago/capri/include/aapl/aapl.h"
 #include "platform/pal/include/pal.h"
+#include "include/sdk/asic/capri/cap_mx_api.h"
 
 namespace sdk {
 namespace linkmgr {
@@ -99,11 +108,8 @@ serdes_spico_reset_default (uint32_t sbus_addr)
 }
 
 int
-serdes_eye_check_default(uint32_t sbus_addr, uint32_t *values)
+serdes_eye_check_default(uint32_t sbus_addr)
 {
-    for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); ++i) {
-        values[i] = 0x7f; // some valid value
-    }
     return 0;
 }
 
@@ -134,6 +140,9 @@ serdes_pcal_continuous_start_default(uint32_t sbus_addr)
 int
 serdes_dfe_status_default(uint32_t sbus_addr)
 {
+    if (sbus_addr == 0) {
+        return -1;
+    }
     return 1;
 }
 
@@ -673,12 +682,18 @@ serdes_pcal_continuous_start_hw(uint32_t sbus_addr)
 int
 serdes_dfe_status_hw(uint32_t sbus_addr)
 {
+    if (sbus_addr == 0) {
+        return -1;
+    }
     return avago_serdes_dfe_wait_timeout(aapl, sbus_addr, 0);
 }
 
-int serdes_eye_check_hw (uint32_t sbus_addr, uint32_t *values)
+int serdes_eye_check_hw (uint32_t sbus_addr)
 {
     Avago_serdes_dfe_state_t *dfe = avago_serdes_dfe_state_construct(aapl);
+    uint32_t                 values[2 * MAX_SERDES_EYE_HEIGHTS] = { 0 };
+    uint32_t                 min=0xFFFF;;
+    uint32_t                 max=0x0;
 
     avago_serdes_get_dfe_state_ext(
                         aapl, sbus_addr, dfe, AVAGO_DFE_MODE_DATALEV);
@@ -694,6 +709,29 @@ int serdes_eye_check_hw (uint32_t sbus_addr, uint32_t *values)
     }
 
     avago_serdes_dfe_state_destruct(aapl, dfe);
+
+    SDK_LINKMGR_TRACE_DEBUG("Eye values: %3x %3x %3x %3x %3x %3x %3x %3x",
+                            values[0], values[1], values[2], values[3],
+                            values[4], values[5], values[6], values[7]);
+
+    for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); ++i) {
+        if (values[i] == 0 || values[i] == 1 ||
+            values[i] == 2 || values[i] >= 0xff) {
+            return -1;
+        }
+        if (values[i] < min) {
+            min = values[i];
+        }
+        if (values[i] > max) {
+            max = values[i];
+        }
+    }
+    // ICAL can complete with invalid signal (remote peer trying AN).
+    // DFE eye values shouldn't be very far apart for a good signal.
+    // Do the below validation to make sure values are valid
+    if ((max - min) > min) {
+        return -1;
+    }
     return 0;
 }
 

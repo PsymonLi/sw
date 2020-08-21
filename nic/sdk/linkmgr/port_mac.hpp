@@ -5,11 +5,6 @@
 
 #include "include/sdk/base.hpp"
 #include "linkmgr.hpp"
-#ifdef ELBA
-#include "include/sdk/asic/elba/elb_mx_common_api.h"
-#else
-#include "include/sdk/asic/capri/cap_mx_api.h"
-#endif
 
 namespace sdk {
 namespace linkmgr {

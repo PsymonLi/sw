@@ -62,7 +62,7 @@ typedef struct serdes_fn_s_ {
 
     int (*serdes_an_fec_enable_read)   (uint32_t sbus_addr);
     int (*serdes_an_rsfec_enable_read) (uint32_t sbus_addr);
-    int (*serdes_eye_check)        (uint32_t sbus_addr, uint32_t *values);
+    int (*serdes_eye_check)        (uint32_t sbus_addr);
     int (*serdes_firmware_upload)  (void);
 
 } serdes_fn_t;

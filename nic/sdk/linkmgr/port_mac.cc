@@ -15,6 +15,7 @@
 #include "linkmgr_rw.hpp"
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
+#include "include/sdk/asic/capri/cap_mx_api.h"
 
 using sdk::types::port_speed_t;
 

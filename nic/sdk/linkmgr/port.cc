@@ -548,15 +548,6 @@ port::port_serdes_dfe_complete(void)
 
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
-        if (sbus_addr == 0) {
-        // TODO-ELBA-LINKMGR skip for elba bringup
-#ifdef ELBA
-            return true;
-#else
-            // invalid config. fail dfe complete
-            return false;
-#endif
-        }
         if (serdes_fns()->serdes_dfe_status(sbus_addr) != 1) {
             return false;
         }
@@ -942,42 +933,9 @@ port::port_serdes_eye_get(void) {
 bool
 port::port_serdes_eye_check(void) {
     uint32_t lane;
-    uint32_t min;
-    uint32_t max;
-    uint32_t values[2 * MAX_SERDES_EYE_HEIGHTS];
 
-    // TODO-ELBA-LINKMGR skip for elba bringup
-#ifdef ELBA
-    return true;
-#endif
     for (lane = 0; lane < num_lanes_; ++lane) {
-        min = 0xFFFF;
-        max = 0x0;
-        memset(values, 0, sizeof(uint32_t) * 2 * MAX_SERDES_EYE_HEIGHTS);
-
-        if (serdes_fns()->serdes_eye_check(port_sbus_addr(lane), values) != 0) {
-            return false;
-        }
-        SDK_LINKMGR_TRACE_DEBUG("port: %u, %3x %3x %3x %3x %3x %3x %3x %3x",
-                                port_num(),
-                                values[0], values[1], values[2], values[3],
-                                values[4], values[5], values[6], values[7]);
-        for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); ++i) {
-            if (values[i] == 0 || values[i] == 1 ||
-                values[i] == 2 || values[i] >= 0xff) {
-                return false;
-            }
-            if (values[i] < min) {
-                min = values[i];
-            }
-            if (values[i] > max) {
-                max = values[i];
-            }
-        }
-        // ICAL can complete with invalid signal (remote peer trying AN).
-        // DFE eye values shouldn't be very far apart for a good signal.
-        // Do the below validation to make sure values are valid
-        if ((max - min) > min) {
+        if (serdes_fns()->serdes_eye_check(port_sbus_addr(lane)) != 0) {
             return false;
         }
     }

@@ -8,7 +8,6 @@
 ///
 //----------------------------------------------------------------------------
 
-
 #include "linkmgr.hpp"
 #include "linkmgr_rw.hpp"
 #include "port_serdes.hpp"
@@ -108,11 +107,8 @@ serdes_spico_reset_default (uint32_t sbus_addr)
 }
 
 int
-serdes_eye_check_default(uint32_t sbus_addr, uint32_t *values)
+serdes_eye_check_default(uint32_t sbus_addr)
 {
-    for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); ++i) {
-        values[i] = 0x7f; // some valid value
-    }
     return 0;
 }
 
@@ -200,8 +196,8 @@ serdes_aacs_start_default(int port)
     return;
 }
 
-int serdes_set_tx_eq_default (uint32_t sbus_addr, uint32_t amp,
-                              uint32_t pre,       uint32_t post)
+int serdes_set_tx_eq_default (uint32_t sbus_addr, uint32_t amp, uint32_t pre,
+                              uint32_t post)
 {
     return 0;
 }
@@ -338,9 +334,8 @@ sbus_access (uint32_t sbus_addr,
         status = 1;
         break;
 
-
     case 0x1:   // sbus write
-        if(ring_number == 3) {
+        if (ring_number == 3) {
             // Elba has 4 rings. MX/BX are on ring 3.
             elb_aod_sbus_write(chip_id, sbus_id, reg_addr, *sbus_data);
         } else {
@@ -350,28 +345,27 @@ sbus_access (uint32_t sbus_addr,
         break;
 
     case 0x2:   // sbus read
-        if(ring_number == 3) {
-          // Elba has 4 rings. MX/BX are on ring 3.
-          *sbus_data = elb_aod_sbus_read(chip_id, sbus_id, reg_addr);
+        if (ring_number == 3) {
+            // Elba has 4 rings. MX/BX are on ring 3.
+            *sbus_data = elb_aod_sbus_read(chip_id, sbus_id, reg_addr);
         } else {
-          *sbus_data = elb_sbus_read(chip_id, ring_number, sbus_id, reg_addr);
+            *sbus_data = elb_sbus_read(chip_id, ring_number, sbus_id, reg_addr);
         }
 
         status = 1;
         break;
 
     default:
-        SDK_LINKMGR_TRACE_DEBUG("Invalid cmd."
-                " sbus_addr 0x%x, reg_addr: 0x%x, cmd: 0x%x, sbus_data: 0x%x,"
-                " ring: 0x%x, sbus_id: 0x%x",
-                sbus_addr, reg_addr, command, *sbus_data, ring_number, sbus_id);
+        SDK_LINKMGR_TRACE_DEBUG("Invalid cmd. sbus_addr 0x%x, reg_addr: 0x%x,"
+                                " cmd: 0x%x, sbus_data: 0x%x, ring: 0x%x, "
+                                "sbus_id: 0x%x", sbus_addr, reg_addr, command,
+                                *sbus_data, ring_number, sbus_id);
 
         status = 0;
         break;
     }
 
     pal_wr_unlock(SBUSLOCK);
-
     return status;
 }
 
@@ -488,10 +482,12 @@ serdes_bh_get_pll_map (uint32_t sbus_addr)
 }
 
 int
-serdes_bh_core_init_hw (uint32_t sbus_addr, uint32_t pll0_div, uint32_t pll1_div, uint32_t pll_map)
+serdes_bh_core_init_hw (uint32_t sbus_addr, uint32_t pll0_div,
+                        uint32_t pll1_div, uint32_t pll_map)
 {
     // blackhawk_serdes_core_init
-    Avago_blackhawk_core_config_t * cc = avago_blackhawk_core_config_construct(aapl);
+    Avago_blackhawk_core_config_t *cc =
+        avago_blackhawk_core_config_construct(aapl);
 
     cc->processor_reset = 1;
     cc->sbus_reset      = 1;
@@ -503,8 +499,10 @@ serdes_bh_core_init_hw (uint32_t sbus_addr, uint32_t pll0_div, uint32_t pll1_div
     cc->pll0_option  = AVAGO_BLACKHAWK_PLL_REFCLK; // == 0, Use REFCLK clock; default
     cc->pll1_option  = AVAGO_BLACKHAWK_PLL_REFCLK;
     cc->pll_map      = pll_map;
-    cc->pll0_frac_divider = (pll0_div==170)? BCM_SERDES_PLL_DIV_170 : (pll0_div==165)? BCM_SERDES_PLL_DIV_165 : BCM_SERDES_PLL_DIV_132;
-    cc->pll1_frac_divider = (pll1_div==170)? BCM_SERDES_PLL_DIV_170 : (pll1_div==165)? BCM_SERDES_PLL_DIV_165 : BCM_SERDES_PLL_DIV_132;
+    cc->pll0_frac_divider = (pll0_div==170) ? BCM_SERDES_PLL_DIV_170 :
+        (pll0_div==165) ? BCM_SERDES_PLL_DIV_165 : BCM_SERDES_PLL_DIV_132;
+    cc->pll1_frac_divider = (pll1_div==170) ? BCM_SERDES_PLL_DIV_170 :
+        (pll1_div==165) ? BCM_SERDES_PLL_DIV_165 : BCM_SERDES_PLL_DIV_132;
 
     cc->pll0_en_ext_cml_refclk_in  = 0;
     cc->pll0_en_ext_cml_refclk_out = 0;
@@ -513,10 +511,12 @@ serdes_bh_core_init_hw (uint32_t sbus_addr, uint32_t pll0_div, uint32_t pll1_div
     cc->pll1_en_ext_cml_refclk_out = 0;
     cc->pll1_en_ext_cmos_refclk_in = 0;
 
-    SDK_LINKMGR_TRACE_DEBUG("blackhawk_serdes_core_init Starting sbus: 0x%x, ", sbus_addr);
+    SDK_LINKMGR_TRACE_DEBUG("blackhawk_serdes_core_init Starting sbus: 0x%x",
+                            sbus_addr);
     int rc = blackhawk_serdes_core_init(aapl, sbus_addr, cc);
     if (rc < 0) {
-        SDK_LINKMGR_TRACE_ERR("blackhawk_serdes_core_init failed for sbus: 0x%x", sbus_addr);
+        SDK_LINKMGR_TRACE_ERR("blackhawk_serdes_core_init failed for sbus: "
+                              "0x%x", sbus_addr);
     }
 
     avago_blackhawk_core_config_destruct(aapl, cc);
@@ -524,25 +524,28 @@ serdes_bh_core_init_hw (uint32_t sbus_addr, uint32_t pll0_div, uint32_t pll1_div
 }
 
 int
-serdes_bh_txrx_init (uint32_t sbus_addr,
-                     uint32_t is_rx,
-                     uint32_t prbs,
-                     uint32_t int_lpbk,
-                     uint32_t lnk_training,
+serdes_bh_txrx_init (uint32_t sbus_addr, uint32_t is_rx, uint32_t prbs,
+                     uint32_t int_lpbk, uint32_t lnk_training,
                      serdes_info_t *serdes_info)
 {
-    string ss = (is_rx==0)? "blackhawk_serdes_lane_tx_init" : "blackhawk_serdes_lane_rx_init";
-    Avago_serdes_init_config_t * sc = avago_serdes_init_config_construct(aapl);
+    int rc;
+    string ss = (is_rx==0) ? "blackhawk_serdes_lane_tx_init" :
+        "blackhawk_serdes_lane_rx_init";
+    Avago_serdes_init_config_t *sc = avago_serdes_init_config_construct(aapl);
 
     sc->init_tx = (is_rx==0)? 1 : 0;
     sc->init_rx = (is_rx==1)? 1 : 0;
 
     // Avago_serdes_init_mode_t
     sc->init_mode  = (prbs == 1) ?
-        ( (int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_PRBS31_ILB : Avago_serdes_init_mode_t::AVAGO_PRBS31_ELB ) :
-        ( (int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ILB : Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ELB ) ;
+        ((int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_PRBS31_ILB :
+         Avago_serdes_init_mode_t::AVAGO_PRBS31_ELB) :
+        ((int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ILB :
+         Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ELB) ;
 
-    sc->tx_encoding = ((serdes_info->pam4_mode==1) || (serdes_info->pam4_mode==5))? Avago_serdes_line_encoding_t::AVAGO_SERDES_PAM4 :
+    sc->tx_encoding = ((serdes_info->pam4_mode == 1) ||
+                       (serdes_info->pam4_mode == 5)) ?
+        Avago_serdes_line_encoding_t::AVAGO_SERDES_PAM4 :
         Avago_serdes_line_encoding_t::AVAGO_SERDES_NRZ;
     sc->rx_encoding = sc->tx_encoding;
 
@@ -552,21 +555,22 @@ serdes_bh_txrx_init (uint32_t sbus_addr,
     sc->rx_divider = serdes_info->sbus_divider;
     sc->tx_divider = sc->rx_divider;
 
-    //sc->tx_phase_cal =
-    //sc->refclk_sync_master = ;
-    //sc->refclk1 = ;
+    // sc->tx_phase_cal =
+    // sc->refclk_sync_master = ;
+    // sc->refclk1 = ;
 
-    //uint  /**< Rx rate selector. Only valid for PON SerDes */
+    // Rx rate selector. Only valid for PON SerDes
     sc->rate_sel = 0; //has to be zero email from Aaron 5/6/2020
-    /**< 0 = Quarter rate, 1 = Full rate, 2 = Eighth rate, 3 = Half rate */
+    // 0 = Quarter rate, 1 = Full rate, 2 = Eighth rate, 3 = Half rate
 
-    //Avago_serdes_datapath_t  => polarity_invert;gray_enable;precode_enable;swizzle_enable;
-    //sc->rx_datapath = ;
+    // Avago_serdes_datapath_t  =>
+    // polarity_invert;gray_enable;precode_enable;swizzle_enable;
+    // sc->rx_datapath = ;
 
-    //int  /**< Deep_post setting, only valid for CM4 */
-    //sc->deep_post_en = ; ???
+    // Deep_post setting, only valid for CM4
+    // sc->deep_post_en = ; ???
 
-    //Avago_serdes_tx_eq_t  => pre;atten;post;....etc
+    // Avago_serdes_tx_eq_t  => pre;atten;post;....etc
     Avago_serdes_tx_eq_t tx_eq;
     tx_eq.atten    = serdes_info->amp;
     tx_eq.post     = serdes_info->post;
@@ -576,75 +580,81 @@ serdes_bh_txrx_init (uint32_t sbus_addr,
     tx_eq.post3    = serdes_info->post3;
     tx_eq.num_taps = 6;
     sc->tx_eq = tx_eq;
-    uint32_t rx_term = (int_lpbk)? 2 : serdes_info->rx_term;  //for internal loopback rx_term==float
+    // for internal loopback rx_term==float
+    uint32_t rx_term = (int_lpbk)? 2 : serdes_info->rx_term;
 
-    if(0) { //dont touch term for now, default is good enough
+    if (0) { //dont touch term for now, default is good enough
         serdes_set_rx_term_hw(sbus_addr, rx_term);
     }
 
-    //Bcm_serdes_osr_mode_t  => we use OSR1/OSR2P5/OSR20P625
-    sc->tx_osr = (serdes_info->osr==0)? Bcm_serdes_osr_mode_t::BCM_SERDES_OSX1 :
-        (serdes_info->osr==3)? Bcm_serdes_osr_mode_t::BCM_SERDES_OSX2P5 :  Bcm_serdes_osr_mode_t::BCM_SERDES_OSX20P625;
+    // Bcm_serdes_osr_mode_t  => we use OSR1/OSR2P5/OSR20P625
+    sc->tx_osr = (serdes_info->osr == 0) ? 
+        Bcm_serdes_osr_mode_t::BCM_SERDES_OSX1 :
+        (serdes_info->osr == 3) ? Bcm_serdes_osr_mode_t::BCM_SERDES_OSX2P5 :
+        Bcm_serdes_osr_mode_t::BCM_SERDES_OSX20P625;
     sc->rx_osr = sc->tx_osr;
 
     sc->auto_polarity = 1;
     sc->link_train = (lnk_training==0)? 0 : 1;
-    //sc->restart_training = ;
+    // sc->restart_training = ;
 
-    //int  /**< Blackhawk Only - Indicates which PLL is used for the RX (0 or 1) 0xf means leave previous selection */
-    //sc->rx_pll = ;
-    //sc->tx_pll = ;
+    // Blackhawk Only - Indicates which PLL is used for the RX (0 or 1)
+    // 0xf means leave previous selection */
+    // sc->rx_pll = ;
+    // sc->tx_pll = ;
 
-    //int  /**< Blackhawk Only - 0 indicates Analog Loopback, 1 indicates Digital Loopback */
+    // Blackhawk Only - 0 indicates Analog Loopback,
+    // 1 indicates Digital Loopback */
     sc->loopback_type =
         (sc->rx_osr==Bcm_serdes_osr_mode_t::BCM_SERDES_OSX1)? 0 :
-        (sc->rx_osr==Bcm_serdes_osr_mode_t::BCM_SERDES_OSX2)? 0 : 1; //Digital for fractional osr
+        (sc->rx_osr==Bcm_serdes_osr_mode_t::BCM_SERDES_OSX2)? 0 : 1;
 
+    // Blackhawk Only - 00: PCB traces, 01: Copper Cables, 10(2): Optics
+    if (int_lpbk != 0) {
+        sc->media_type = 0;     // pcb
+    } else if (serdes_info->cable_type == cable_type_t::CABLE_TYPE_FIBER) {
+        sc->media_type = 2;     // Fiber
+    } else {
+        sc->media_type = 1;     // default copper
+    }
 
-    //int  /**< Blackhawk Only - 00: PCB traces, 01: Copper Cables, 10(2): Optics */
-    sc->media_type =
-        (int_lpbk !=0 ) ?                                            0 : // pcb
-        (serdes_info->cable_type == cable_type_t::CABLE_TYPE_NONE)?  1 : // default copper
-        (serdes_info->cable_type == cable_type_t::CABLE_TYPE_CU)?    1 : // copper
-        (serdes_info->cable_type == cable_type_t::CABLE_TYPE_FIBER)? 2 : // Fiber
-        1;                                                               // default copper
-
-    //int  /**< Blackhawk Only - 1 Indicates that the dfe is on */
+    // Blackhawk Only - 1 Indicates that the dfe is on */
     sc->dfe_on = 1;
 
-    //int  /**< Blackhawk Only - 1 Indicates that the scrambler is disabled */
-    //sc->scrambling_dis = 1; //Elba has scrambling in the PCS.
+    // Blackhawk Only - 1 Indicates that the scrambler is disabled */
+    // sc->scrambling_dis = 1; //Elba has scrambling in the PCS.
 
-    //int  /**< Blackhawk Only - 1 Indicates that the dfe is in low power mode */
+    // Blackhawk Only - 1 Indicates that the dfe is in low power mode */
     sc->dfe_lp_mode = 0;
 
-    //int  /**< Blackhawk Only - 1 Indicates that the pam mode (ER or NR) will be forced */
-    //sc->force_mode = 0;
+    // Blackhawk Only - 1 Indicates that the pam mode (ER or NR) will be forced */
+    // sc->force_mode = 0;
 
-    //enum srds_prbs_polynomial_enum  /**< Blackhawk Only - prbs_mode used during init */
-    //sc->prbs_mode = srds_prbs_polynomial_enum::PRBS_58;
+    // Blackhawk Only - prbs_mode used during init */
+    // sc->prbs_mode = srds_prbs_polynomial_enum::PRBS_58;
 
-    //BOOL  /**< Blackhawk Only - remap linktrn prbs config for duo  Lane 0,1 -> 2,3 */
+    // Blackhawk Only - remap linktrn prbs config for duo  Lane 0,1 -> 2,3 */
     sc->linktrn_prbs_remap = 0;
 
-    //int  /**< 1 disables hystereis is prbs checker */
-    //sc->hysteresis_mode = ; ???
+    // disables hystereis is prbs checker */
+    // sc->hysteresis_mode = ; ???
 
-    //int  /**< used to pass temp debug options to Blackhawk lane_init */
-    //sc->debug = ;
+    // used to pass temp debug options to Blackhawk lane_init */
+    // sc->debug = ;
 
-    SDK_LINKMGR_TRACE_DEBUG("%s Starting sbus: 0x%x, tx_encoding:0x%x osr:0x%x ",
-                            ss.c_str(), sbus_addr, sc->tx_encoding, sc->tx_osr);
-    int rc;
-    if(is_rx) {
+    SDK_LINKMGR_TRACE_DEBUG("%s Starting sbus: 0x%x, tx_encoding:0x%x "
+                            "osr:0x%x ", ss.c_str(), sbus_addr,
+                            sc->tx_encoding, sc->tx_osr);
+    if (is_rx) {
         rc = blackhawk_serdes_lane_rx_init(aapl, sbus_addr, sc);
     } else {
         rc = blackhawk_serdes_lane_tx_init(aapl, sbus_addr, sc);
     }
 
     avago_serdes_init_config_destruct(aapl, sc);
-    if(rc != 0) {
-        SDK_LINKMGR_TRACE_ERR("%s : Failed. " "sbus_addr:0x%x", ss.c_str(),  sbus_addr);
+    if (rc != 0) {
+        SDK_LINKMGR_TRACE_ERR("%s : Failed. " "sbus_addr:0x%x", ss.c_str(),
+                              sbus_addr);
     }
 
     return rc;
@@ -657,15 +667,10 @@ serdes_spico_int_hw (uint32_t sbus_addr, int int_code, int int_data)
 }
 
 Aapl_t*
-serdes_global_init_hw(uint32_t     jtag_id,
-                      int          num_sbus_rings,
-                      bool         aacs_server_en,
-                      bool         aacs_connect,
-                      int          port,
-                      std::string& ip)
+serdes_global_init_hw(uint32_t jtag_id, int num_sbus_rings, bool aacs_server_en,
+                      bool aacs_connect, int port, std::string& ip)
 {
     Aapl_comm_method_t comm_method = AVAGO_SBUS;
-
     // TODO read from catalog
     int      num_chips      = 1;
 
@@ -701,7 +706,7 @@ serdes_global_init_hw(uint32_t     jtag_id,
     // Make a connection to the device
     aapl_connect(aapl, ip.c_str(), port);
 
-    if(aapl->return_code < 0) {
+    if (aapl->return_code < 0) {
         aapl_destruct(aapl);
         return NULL;
     }
@@ -718,11 +723,12 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
     uint8_t  tx_invert = serdes_info->tx_pol;
     uint8_t  rx_invert = serdes_info->rx_pol;
 
-    SDK_LINKMGR_TRACE_DEBUG("serdes_basic_cfg_hw : sbus_addr: %x, divider: %u, width: %u, "
-                            "tx_invert: %u, rx_invert:%u", sbus_addr, divider, width, tx_invert, rx_invert);
+    SDK_LINKMGR_TRACE_DEBUG("serdes_basic_cfg_hw : sbus_addr: %x, divider: %u, "
+                            "width: %u, tx_invert: %u, rx_invert:%u",
+                            sbus_addr, divider, width, tx_invert, rx_invert);
 
     int bh_lane = serdes_get_bh_lane (sbus_addr);
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         Avago_serdes_init_config_t *cfg = avago_serdes_init_config_construct(aapl);
         if (NULL == cfg) {
             SDK_LINKMGR_TRACE_ERR("Failed to construct avago config");
@@ -755,7 +761,7 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
         avago_serdes_init(aapl, sbus_addr, cfg);
 
-        if(aapl->return_code) {
+        if (aapl->return_code) {
             SDK_LINKMGR_TRACE_ERR("Failed to initialize SerDes\n");
             ret = -1;
         }
@@ -772,10 +778,12 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
         uint32_t bh_sbus_addr = sbus_addr & 0xfff0ffff; //remove  bh_lane, ie sbus_addr[19:16]=0
         uint32_t pll_map =  blackhawk_get_pll_map(aapl, bh_sbus_addr);
         uint32_t my_pll  =  serdes_find_pll_num(serdes_info);
-        if ( ((pll_map>>bh_lane) & 0x1) != my_pll )  {
+
+        if (((pll_map>>bh_lane) & 0x1) != my_pll)  {
             pll_map = (pll_map & ~(1<<bh_lane) ) | (my_pll<<bh_lane);
             int r = blackhawk_set_pll_map(aapl, bh_sbus_addr, pll_map);
-            if(r!=0) {
+
+            if (r != 0) {
                 SDK_LINKMGR_TRACE_ERR("Failed. blackhawk_set_pll_map pll_map:"
                                       "0x%x sbus_addr:0x%x\n",
                                       pll_map, bh_sbus_addr);
@@ -791,7 +799,9 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
         is_rx=1;
         int rr = serdes_bh_txrx_init(sbus_addr, is_rx, prbs, int_lpbk,
                                      lnk_training, serdes_info);
-        if(rr != 0) ret = -1;
+        if (rr != 0) {
+            ret = -1;
+        }
     }
 
     return ret;
@@ -817,7 +827,7 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
 {
     int bh_lane = serdes_get_bh_lane(sbus_addr);
 
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         int64_t data[4] = {0};
 
         avago_serdes_get_rx_data(aapl, sbus_addr, data);
@@ -864,11 +874,11 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
         //signal ok seems to be unreliable on bh, checking with brcm
         //we can used pmd_rx_lock as a criteria instead.
         int  r = blackhawk_serdes_get_pmd_rx_lock(aapl, sbus_addr);
-        if( r == -1 ) {
+        if (r == -1) {
             SDK_LINKMGR_TRACE_ERR("Signal loss, cmd failed, on sbus: 0x%x, ",
                                   sbus_addr);
             return false;
-        } else if( r == 1 ) {
+        } else if (r == 1) {
             return true;
         } else {
             SDK_LINKMGR_TRACE_ERR("Signal not detected on sbus: 0x%x, ",
@@ -881,7 +891,7 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
         int clr_before_chk = 1;
         int ret = avago_serdes_get_signal_ok(aapl, sbus_addr, clr_before_chk);
 
-        if(ret == 0) {
+        if (ret == 0) {
             SDK_LINKMGR_TRACE_ERR("Signal loss detected on sbus: 0x%x, ",
                                   sbus_addr);
             return SDK_RET_ERR;
@@ -926,7 +936,7 @@ int
 serdes_spico_reset_hw (uint32_t sbus_addr)
 {
     int bh_lane = serdes_get_bh_lane(sbus_addr);
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         int rc = avago_spico_reset (aapl, sbus_addr);
 
         if (rc < 0) {
@@ -968,7 +978,7 @@ serdes_bh_fw_upload_init (uint32_t sbus_addr, const char* filename)
 
     //default pll0:170, pll1:165, all lanes maped to pll1.
     int rr = serdes_bh_core_init_hw (bh_sbus_addr, 170, 165, 0xffff);
-    if(rr != 0) {
+    if (rr != 0) {
         rc = -1;
         SDK_LINKMGR_TRACE_ERR("serdes_bh_core_init_hw upload failed for "
                               "sbus_addr 0x%x", bh_sbus_addr);
@@ -1034,8 +1044,6 @@ serdes_pre_ical_start_hw (uint32_t sbus_addr)
     return 0;
 }
 #endif
-
-
 int
 serdes_restart_adaptive_tune (uint32_t sbus_addr)
 {
@@ -1053,7 +1061,7 @@ serdes_ical_start_hw (uint32_t sbus_addr, port_speed_t serdes_speed)
 {
     int bh_lane = serdes_get_bh_lane(sbus_addr);
 
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         Avago_serdes_dfe_tune_t dfe;
 
         avago_serdes_tune_init(aapl, &dfe);
@@ -1079,7 +1087,7 @@ int
 serdes_pcal_start_hw(uint32_t sbus_addr)
 {
     int bh_lane = serdes_get_bh_lane(sbus_addr);
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         Avago_serdes_dfe_tune_t dfe;
 
         avago_serdes_tune_init(aapl, &dfe);
@@ -1118,24 +1126,10 @@ serdes_dfe_status_hw(uint32_t sbus_addr)
     //return avago_serdes_dfe_wait_timeout(aapl, sbus_addr, 0);
 }
 
-int serdes_eye_check_hw (uint32_t sbus_addr, uint32_t *values)
+int serdes_eye_check_hw (uint32_t sbus_addr)
 {
-    Avago_serdes_dfe_state_t *dfe = avago_serdes_dfe_state_construct(aapl);
-
-    avago_serdes_get_dfe_state_ext(
-                        aapl, sbus_addr, dfe, AVAGO_DFE_MODE_DATALEV);
-    for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); i+=2) {
-        values[i/2] = (dfe->dataLEV[i+1] - dfe->dataLEV[i]) & 0xfff;
-    }
-
-    avago_serdes_get_dfe_state_ext(
-                        aapl, sbus_addr, dfe, AVAGO_DFE_MODE_TESTLEV);
-    for (int i = 0; i < (2*MAX_SERDES_EYE_HEIGHTS); i+=2) {
-        values[MAX_SERDES_EYE_HEIGHTS + i/2] =
-                        (dfe->testLEV[i+1] - dfe->testLEV[i]) & 0xfff;
-    }
-
-    avago_serdes_dfe_state_destruct(aapl, dfe);
+    // No eye check for Elba
+    // blackhawk signal detect/signal lock is good enough
     return 0;
 }
 
@@ -1271,7 +1265,6 @@ serdes_set_tx_eq_hw (uint32_t sbus_addr, uint32_t amp,
     return avago_serdes_set_tx_eq(aapl, sbus_addr, &tx_eq);
 }
 
-
 uint32_t
 serdes_get_errors_hw (uint32_t sbus_addr, bool clear)
 {
@@ -1285,7 +1278,7 @@ serdes_an_init_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
     int  ret      = 0;
     int bh_lane = serdes_get_bh_lane (sbus_addr);
 
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         bool     int_ret  = false;
         int      int_code = 0x0;
         int      int_data = 0x0;
@@ -1339,7 +1332,7 @@ serdes_an_init_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
                                     "ret: %d", sbus_addr, ret);
         }
 
-        if(aapl->return_code) {
+        if (aapl->return_code) {
             SDK_LINKMGR_TRACE_ERR("Failed to initialize SerDes. sbus_addr: %d",
                                   sbus_addr);
             ret = -1;
@@ -1361,9 +1354,7 @@ serdes_an_init_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
 cleanup:
         avago_serdes_init_config_destruct(aapl, cfg);
-
     } else {
-
         //bh 1G lane init
         //	ln_width   : 40
         //	ln_pam4    : NRZ
@@ -1548,7 +1539,7 @@ serdes_an_hcd_rxterm_cfg_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr,
         int r1 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
         is_rx = 1;
         int r2 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
-        if( (r1 != 0 ) || (r2 != 0) ) {
+        if ((r1 != 0 ) || (r2 != 0)) {
             SDK_LINKMGR_TRACE_ERR(" hcd init : serdes_bh_txrx_init failed "
                                   "lane_offset:%0d sbus_addr:0x%x an_hcd: %d,"
                                   " an_hcd_str: %s",
@@ -1612,7 +1603,7 @@ serdes_prbs_start_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
     avago_serdes_init(aapl, sbus_addr, cfg);
 
-    if(aapl->return_code) {
+    if (aapl->return_code) {
         SDK_LINKMGR_TRACE_ERR("Failed to initialize SerDes\n");
         ret = -1;
         goto cleanup;
@@ -1629,7 +1620,7 @@ serdes_invert_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 {
     int      ret     = 0;
     int bh_lane = serdes_get_bh_lane (sbus_addr);
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         uint8_t  tx_invert = serdes_info->tx_pol;
         uint8_t  rx_invert = serdes_info->rx_pol;
 
@@ -1641,7 +1632,8 @@ serdes_invert_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
         avago_serdes_set_rx_invert(aapl, sbus_addr, rx_invert);
         return 0;
     } else {
-        //SDK_LINKMGR_TRACE_DEBUG("Bypassing serdes_invert_cfg_hw for bh. sbus_addr: 0x%x", sbus_addr);
+        // SDK_LINKMGR_TRACE_DEBUG("Bypassing serdes_invert_cfg_hw for bh. "
+        // sbus_addr: 0x%x", sbus_addr);
     }
     return ret;
 }
@@ -1649,10 +1641,10 @@ serdes_invert_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 int
 serdes_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 {
-    int      ret     = 0;
+    int ret     = 0;
     int bh_lane = serdes_get_bh_lane (sbus_addr);
 
-    if(bh_lane == -1) {
+    if (bh_lane == -1) {
         uint32_t divider = serdes_info->sbus_divider;
         uint32_t width   = serdes_info->width;
         uint32_t tx_slip = serdes_info->tx_slip_value;
@@ -1685,7 +1677,8 @@ serdes_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
         return ret;
     } else {
-        //SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing, sbus_addr : %x ", sbus_addr);
+        // SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing, sbus_addr : "
+        // "%x ", sbus_addr);
         return ret;
     }
     return ret;
@@ -1710,9 +1703,9 @@ serdes_firmware_upload_hw (void)
     int exp_rev_id2   = g_linkmgr_cfg.catalog->serdes_rev_id2();
     uint32_t prt_cnt  = num_asic_ports(asic_num);
     std::string cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" +
-                           g_linkmgr_cfg.catalog->serdes_fw_file();
+        g_linkmgr_cfg.catalog->serdes_fw_file();
     std::string cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" +
-                            g_linkmgr_cfg.catalog->serdes_fw2_file();
+        g_linkmgr_cfg.catalog->serdes_fw2_file();
     int bh_lane, ret;
 
     for (uint32_t asic_port = 0; asic_port < prt_cnt; ++asic_port) {
@@ -1735,8 +1728,8 @@ serdes_firmware_upload_hw (void)
         int build_id = serdes_get_build_id_hw(sbus_addr);
         int rev_id   = serdes_get_rev_hw(sbus_addr);
 
-        if(bh_lane == -1) {
-            if( (build_id != exp_build_id || rev_id != exp_rev_id) ) {
+        if (bh_lane == -1) {
+            if (build_id != exp_build_id || rev_id != exp_rev_id) {
                 SDK_TRACE_DEBUG("Incorrect build_id/rev_id. sbus_addr 0x%x,"
                                 " build_id 0x%x , exp_build_id 0x%x,"
                                 " rev_id 0x%x, exp_rev_id 0x%x",
@@ -1745,7 +1738,7 @@ serdes_firmware_upload_hw (void)
                 err = 1;
             }
         } else {
-            if( (build_id != exp_build_id2 || rev_id != exp_rev_id2) ) {
+            if (build_id != exp_build_id2 || rev_id != exp_rev_id2) {
                 SDK_TRACE_DEBUG("Incorrect build_id/rev_id. sbus_addr 0x%x,"
                                 " build_id 0x%x , exp_build_id 0x%x,"
                                 " rev_id 0x%x, exp_rev_id 0x%x",
@@ -1758,8 +1751,7 @@ serdes_firmware_upload_hw (void)
         serdes_spico_status_hw(sbus_addr);
 
         SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
-                        sbus_addr,
-                        serdes_spico_crc_hw(sbus_addr));
+                        sbus_addr, serdes_spico_crc_hw(sbus_addr));
     }
 
     return ( (err)? -1 : 0 ) ;
@@ -1795,7 +1787,7 @@ port_serdes_fn_init(platform_type_t platform_type,
     serdes_fn->serdes_pcal_start    = &serdes_pcal_start_default;
     serdes_fn->serdes_an_pcal_start = &serdes_pcal_start_default;
     serdes_fn->serdes_pcal_continuous_start =
-                            &serdes_pcal_continuous_start_default;
+        &serdes_pcal_continuous_start_default;
     serdes_fn->serdes_dfe_status    = &serdes_dfe_status_default;
     serdes_fn->serdes_rx_lpbk       = &serdes_rx_lpbk_default;
     serdes_fn->serdes_spico_upload  = &serdes_spico_upload_default;
@@ -1822,9 +1814,9 @@ port_serdes_fn_init(platform_type_t platform_type,
     serdes_fn->serdes_firmware_upload = &serdes_firmware_upload_default;
 
     serdes_fn->serdes_an_fec_enable_read   =
-                                      &serdes_an_fec_enable_read_default;
+        &serdes_an_fec_enable_read_default;
     serdes_fn->serdes_an_rsfec_enable_read =
-                                      &serdes_an_rsfec_enable_read_default;
+        &serdes_an_rsfec_enable_read_default;
 
     switch (platform_type) {
     case platform_type_t::PLATFORM_TYPE_HW:
@@ -1845,7 +1837,7 @@ port_serdes_fn_init(platform_type_t platform_type,
         serdes_fn->serdes_an_pcal_start = &serdes_pcal_start_hw;
 
         serdes_fn->serdes_pcal_continuous_start =
-                                &serdes_pcal_continuous_start_hw;
+            &serdes_pcal_continuous_start_hw;
         serdes_fn->serdes_dfe_status    = &serdes_dfe_status_hw;
         serdes_fn->serdes_rx_lpbk       = &serdes_rx_lpbk_hw;
         serdes_fn->serdes_spico_upload  = &serdes_spico_upload_hw;
@@ -1869,9 +1861,9 @@ port_serdes_fn_init(platform_type_t platform_type,
         serdes_fn->serdes_an_core_status = &serdes_an_core_status_hw;
         serdes_fn->serdes_firmware_upload = &serdes_firmware_upload_hw;
         serdes_fn->serdes_an_fec_enable_read   =
-                                          &serdes_an_fec_enable_read_hw;
+            &serdes_an_fec_enable_read_hw;
         serdes_fn->serdes_an_rsfec_enable_read =
-                                          &serdes_an_rsfec_enable_read_hw;
+            &serdes_an_rsfec_enable_read_hw;
         // serdes global init
         aapl = serdes_global_init_hw(jtag_id, num_sbus_rings,
                                      aacs_server_en, aacs_connect, port, ip);
