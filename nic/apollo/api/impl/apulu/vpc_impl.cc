@@ -390,6 +390,14 @@ vpc_impl::activate_delete_(pds_epoch_t epoch, vpc_entry *vpc) {
     PDS_TRACE_DEBUG("Activating vpc %s delete, type %u, fabric encap (%u, %u)",
                     vpc->key().str(), vpc->type(), vpc->fabric_encap().type,
                     vpc->fabric_encap().val.vnid);
+
+    // this object was restored from persistent storage but subsequent
+    // create never happened
+    if (vpc->in_restore_list()) {
+        PDS_TRACE_DEBUG("Deleting restored vpc %s", vpc->key().str());
+        return SDK_RET_OK;
+    }
+
     if (vni_hdl_.valid()) {
         // fill the key
         vni_key.vxlan_1_vni = vpc->fabric_encap().val.vnid;

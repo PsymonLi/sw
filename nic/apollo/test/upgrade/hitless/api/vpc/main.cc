@@ -118,6 +118,36 @@ TEST_F(vpc_upg_test, vpc_upg_workflow_u1_neg_1) {
     workflow_u1_neg_1<vpc_feeder>(feeder1, feeder2);
 }
 
+/// \brief VPC WF_U_3
+/// \ref WF_U_3
+TEST_F(vpc_upg_test, vpc_upg_workflow_u3) {
+    vpc_feeder feeder1, feeder2;
+    uint32_t start_key, num_obj, obj_in_set;
+
+    start_key = 1;
+    num_obj = 10;
+    obj_in_set = 5;
+
+    // setup vpc
+    feeder1.init(int2pdsobjkey(start_key), PDS_VPC_TYPE_UNDERLAY, "10.0.0.0/16",
+                 num_obj);
+    feeder1.set_stash(true);
+    // backup
+    workflow_u1_s1<vpc_feeder>(feeder1);
+
+    // restore
+    workflow_u1_s2<vpc_feeder>(feeder1);
+
+    // setup one feeder to delete few stashed nh groups
+    // note: change of "obj_in_set" needs corresponding change in workflow
+    feeder2.init(int2pdsobjkey(start_key), PDS_VPC_TYPE_UNDERLAY, "10.0.0.0/16",
+                 obj_in_set);
+    // recalibrate feeder to replay rest of stashed objs
+    feeder1.init(int2pdsobjkey(start_key + obj_in_set), PDS_VPC_TYPE_UNDERLAY,
+                 "10.0.0.0/16", obj_in_set);
+    workflow_u3<vpc_feeder>(feeder1, feeder2);
+}
+
 /// @}
 
 }    // namespace api

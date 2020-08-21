@@ -165,6 +165,44 @@ TEST_F(nh_group_upg_test, nh_group_upg_workflow_u1_neg_1) {
     nh_group_upg_teardown();
 }
 
+/// \brief Nexthop group WF_U_3
+/// \ref WF_U_3
+TEST_F(nh_group_upg_test, nh_group_upg_workflow_u3) {
+    nexthop_group_feeder feeder1, feeder2;
+    uint32_t start_key, num_obj, obj_in_set;
+
+    start_key = 1;
+    num_obj = 10;
+    obj_in_set = 5;
+
+    // setup precursor
+    nh_group_upg_setup();
+    // setup nh group
+    feeder1.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                 int2pdsobjkey(start_key), num_obj, 1);
+    // backup
+    workflow_u1_s1<nexthop_group_feeder>(feeder1);
+
+    // tearup precursor
+    nh_group_upg_teardown();
+    // restore
+    workflow_u1_s2<nexthop_group_feeder>(feeder1);
+
+    // setup precursor again
+    nh_group_upg_setup();
+    // setup one feeder to delete few stashed nh groups
+    // note: change of "obj_in_set" needs corresponding change in workflow
+    feeder2.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                 int2pdsobjkey(start_key), obj_in_set);
+    // recalibrate feeder to replay rest of stashed objs
+    feeder1.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                 int2pdsobjkey(start_key + obj_in_set), obj_in_set);
+    workflow_u3<nexthop_group_feeder>(feeder1, feeder2);
+
+    // tearup precursor
+    nh_group_upg_teardown();
+}
+
 /// @}
 
 }    // namespace api

@@ -222,6 +222,55 @@ TEST_F(mapping_upg_test, local_mapping_workflow_u1_neg_1) {
     mapping_upg_teardown();
 }
 
+/// \brief Local mapping WF_U_3
+/// \ref WF_U_3
+TEST_F(mapping_upg_test, local_mapping_workflow_u3) {
+    local_mapping_feeder feeder1, feeder2;
+    uint32_t num_obj, obj_in_set;
+
+    num_obj = 10;
+    obj_in_set = 5;
+
+    // setup precursor
+    mapping_upg_setup();
+    // setup local mapping
+    feeder1.init(k_vpc_key, k_subnet_key, "10.0.0.2/8",
+                 0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                 pdsobjkey2int(k_subnet_key) + 512,
+                 int2pdsobjkey(1), true, "12.0.0.0/16",
+                 1, num_obj,  PDS_MAPPING_TYPE_L3,
+                 PDS_MAX_TAGS_PER_MAPPING, true);
+    // backup
+    workflow_u1_s1<local_mapping_feeder>(feeder1);
+
+    // tearup precursor
+    mapping_upg_teardown();
+    // restore
+    workflow_u1_s2<local_mapping_feeder>(feeder1);
+
+    // setup precursor again
+    mapping_upg_setup();
+    // setup one feeder to delete few stashed nh groups
+    // note: change of "obj_in_set" needs corresponding change in workflow
+    feeder2.init(k_vpc_key, k_subnet_key, "10.0.0.2/8",
+                 0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                 pdsobjkey2int(k_subnet_key) + 512,
+                 int2pdsobjkey(1), true, "12.0.0.0/16",
+                 1, obj_in_set, PDS_MAPPING_TYPE_L3,
+                 PDS_MAX_TAGS_PER_MAPPING);
+    // recalibrate feeder to replay rest of stashed objs
+    feeder1.init(k_vpc_key, k_subnet_key, "10.0.0.7/8",
+                 0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                 pdsobjkey2int(k_subnet_key) + 512,
+                 int2pdsobjkey(1), true, "12.0.0.5/16",
+                 1, num_obj - obj_in_set, PDS_MAPPING_TYPE_L3,
+                 PDS_MAX_TAGS_PER_MAPPING);
+    workflow_u3<local_mapping_feeder>(feeder1, feeder2);
+
+    // tearup precursor
+    mapping_upg_teardown();
+}
+
 /// @}
 
 }    // namespace api

@@ -152,7 +152,7 @@ TEST_F(vnic_upg_test, vnic_upg_workflow_u1_neg_1) {
     uint32_t start_key = 1;
     uint32_t   num_obj = 10;
 
-   // setup precursor
+    // setup precursor
     vnic_upg_setup();
     // setup vnic
     feeder1.init(int2pdsobjkey(start_key), int2pdsobjkey(start_key), num_obj,
@@ -181,6 +181,49 @@ TEST_F(vnic_upg_test, vnic_upg_workflow_u1_neg_1) {
                  int2pdsobjkey(20000));
     workflow_u1_neg_1<vnic_feeder>(feeder1, feeder2);
 
+    // tearup precursor
+    vnic_upg_teardown();
+}
+
+/// \brief VNIC WF_U_3
+/// \ref WF_U_3
+TEST_F(vnic_upg_test, vnic_upg_workflow_u3) {
+    vnic_feeder feeder1, feeder2;
+    uint32_t start_key, num_obj, obj_in_set;
+
+    start_key = 1;
+    num_obj = 10;
+    obj_in_set = 5;
+    // setup precursor
+    vnic_upg_setup();
+    // setup vnic
+    feeder1.init(int2pdsobjkey(start_key), int2pdsobjkey(start_key), num_obj,
+                 k_feeder_mac, PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                 true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                 int2pdsobjkey(20000), 1);
+    // backup
+    workflow_u1_s1<vnic_feeder>(feeder1);
+
+    // tearup precursor
+    vnic_upg_teardown();
+    // restore
+    workflow_u1_s2<vnic_feeder>(feeder1);
+    // setup precursor again
+    vnic_upg_setup();
+
+    // setup one feeder to delete few stashed nh groups
+    // note: change of "obj_in_set" needs corresponding change in workflow
+    feeder2.init(int2pdsobjkey(start_key), int2pdsobjkey(start_key), obj_in_set,
+                 k_feeder_mac, PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                 true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                 int2pdsobjkey(20000));
+    // recalibrate feeder to replay rest of stashed objs
+    feeder1.init(int2pdsobjkey(start_key + obj_in_set), int2pdsobjkey(start_key),
+                 obj_in_set, k_feeder_mac + obj_in_set,
+                 PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                 true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                 int2pdsobjkey(20000));
+    workflow_u3<vnic_feeder>(feeder1, feeder2);
     // tearup precursor
     vnic_upg_teardown();
 }

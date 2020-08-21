@@ -1793,6 +1793,13 @@ mapping_impl::activate_delete_(pds_epoch_t epoch, mapping_entry *mapping) {
         }
     } else {
         PDS_TRACE_DEBUG("Deleting local mapping %s", mapping->key2str().c_str());
+        // this object was restored from persistent storage but subsequent
+        // create never happened
+        if (mapping->in_restore_list()) {
+            PDS_TRACE_DEBUG("Deleting restored local mapping %s",
+                            mapping->key2str().c_str());
+            return SDK_RET_OK;
+        }
         ret = deactivate_ip_local_mapping_entry_(mapping->skey().vpc,
                                                  &mapping->skey().ip_addr);
         if (ret != SDK_RET_OK) {

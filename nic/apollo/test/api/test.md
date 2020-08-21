@@ -105,3 +105,10 @@ of the system
    Restore
    Workflow U1_N1
    [ Create Set1] - [ Delete Set2 ] - Read
+
+## Workflow U3
+   Workflow U1_S1
+   [ Create Set1 ] - Backup - [ Delete Set1] - Read
+   Workflow U1_S2
+   Restore
+   [ Create Set1 ] - [ Delete Set2 ] - Read

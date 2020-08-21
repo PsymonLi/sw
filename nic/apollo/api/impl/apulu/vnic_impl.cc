@@ -1318,6 +1318,13 @@ vnic_impl::activate_delete_(pds_epoch_t epoch, vnic_entry *vnic) {
     local_mapping_swkey_t local_mapping_key;
     local_mapping_appdata_t local_mapping_data;
 
+    // this object was restored from persistent storage but subsequent
+    // create never happened
+    if (vnic->in_restore_list()) {
+        PDS_TRACE_DEBUG("Deleting restored vnic %s", vnic->key2str().c_str());
+        return SDK_RET_OK;
+    }
+
     if (lif_vlan_hdl_.valid()) {
         // invalidate the entry in LIF_VLAN table
         vnic_encap = vnic->vnic_encap();

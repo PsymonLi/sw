@@ -858,6 +858,37 @@ inline void workflow_u1_neg_1(feeder_T& feeder1, feeder_T& feeder2)
     WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_N1 batch1 - read set1 failed");
 }
 
+/// \brief WF_U_3
+/// [ Create Set1 ] - [ Delete Set2 ] - Read
+template <typename feeder_T>
+inline void workflow_u3(feeder_T& feeder1, feeder_T& feeder2)
+{
+    sdk_ret_t ret;
+
+    // trigger
+    pds_batch_ctxt_t bctxt = batch_start();
+    ret = many_create<feeder_T>(bctxt, feeder1);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U3 batch1 - create set1 failed");
+    ret = many_delete<feeder_T>(bctxt, feeder2);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U3 batch1 - delete set2 failed");
+    // delete first 5 elements in vector. keys are stashed in order
+    feeder1.vec.erase(feeder1.vec.begin(), feeder1.vec.begin() + 5);
+    batch_commit(bctxt);
+
+
+    ret = many_read_cmp<feeder_T>(feeder1);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U3 batch1 - read set1 failed");
+
+    // cleanup
+    bctxt = batch_start();
+    ret = many_delete<feeder_T>(bctxt, feeder1);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U3 - delete set1 failed");
+    batch_commit(bctxt);
+
+    ret = many_read<feeder_T>(feeder1, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U3 cleanup - read set1 failed");
+}
+
 /// @}
 
 }    // end namespace api
