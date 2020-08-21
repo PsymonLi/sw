@@ -104,18 +104,25 @@ func handleRouteTableGet(cmd *cobra.Command, client pds.RouteSvcClient) {
 			fmt.Println("---")
 		}
 	} else if cmd != nil && cmd.Flags().Changed("summary") {
-		printRouteTableSummary(len(respMsg.Response))
+		routesCount := 0
+		for _, resp := range respMsg.Response {
+			routesCount += len(resp.GetSpec().Routes)
+		}
+		printRouteTableSummary(len(respMsg.Response), routesCount)
 	} else {
+		routesCount := 0
 		printRouteTableHeader()
 		for _, resp := range respMsg.Response {
 			printRouteTable(resp)
+			routesCount += len(resp.GetSpec().Routes)
 		}
-		printRouteTableSummary(len(respMsg.Response))
+		printRouteTableSummary(len(respMsg.Response), routesCount)
 	}
 }
 
-func printRouteTableSummary(count int) {
-	fmt.Printf("\nNo. of route tables : %d\n\n", count)
+func printRouteTableSummary(count int, routesCount int) {
+	fmt.Printf("\nNo. of route tables : %d\n", count)
+	fmt.Printf("Total no. of routes : %d\n\n", routesCount)
 }
 
 func printRouteTableHeader() {

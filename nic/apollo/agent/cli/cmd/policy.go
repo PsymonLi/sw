@@ -159,13 +159,19 @@ func securityPolicyShowCmdHandler(cmd *cobra.Command, args []string) {
 			fmt.Println("---")
 		}
 	} else if cmd != nil && cmd.Flags().Changed("summary") {
-		printPolicySummary(len(respMsg.Response))
+		rulesCount := 0
+		for _, resp := range respMsg.Response {
+			rulesCount += len(resp.GetSpec().Rules)
+		}
+		printPolicySummary(len(respMsg.Response), rulesCount)
 	} else {
+		rulesCount := 0
 		printPolicyLegend()
 		for _, resp := range respMsg.Response {
 			printPolicy(resp)
+			rulesCount += len(resp.GetSpec().Rules)
 		}
-		printPolicySummary(len(respMsg.Response))
+		printPolicySummary(len(respMsg.Response), rulesCount)
 	}
 }
 
@@ -173,8 +179,9 @@ func printPolicyLegend() {
 	fmt.Printf("ICMP T/C : ICMP Type/Code\n\n")
 }
 
-func printPolicySummary(count int) {
-	fmt.Printf("\nNo. of security policies : %d\n\n", count)
+func printPolicySummary(policyCount int, rulesCount int) {
+	fmt.Printf("\nNo. of security policies : %d\n", policyCount)
+	fmt.Printf("Total no. of rules : %d\n\n", rulesCount)
 }
 
 func printPolicyRuleHeader() {
