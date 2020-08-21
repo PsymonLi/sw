@@ -125,12 +125,12 @@ get_doc()
 get_pencli()
 get_bulletin_xml()
 
-if GlobalOptions.drop_version == "67":
-    get_penutil_vib()
-    get_penutil_bundle()
 if GlobalOptions.drop_version == "70":
     get_penutil_vib()
     get_penutil_component()
+else:
+    get_penutil_vib()
+    get_penutil_bundle()
 
 del_untar_dir()
 

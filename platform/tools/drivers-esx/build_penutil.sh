@@ -14,7 +14,8 @@ then
     rm -rf .build
 elif [ $1 -eq 65 ]
 then
-    echo "Currently, we can't build penutil for ESXi 6.5"
+    cd platform/penutil/ && cp Makefile_ESXI_65 Makefile && make
+    rm -rf .build
 else
     cd platform/penutil/ && cp Makefile_ESXI_70 Makefile && make
     rm -rf .build

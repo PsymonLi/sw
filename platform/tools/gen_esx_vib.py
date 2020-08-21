@@ -31,8 +31,8 @@ if GlobalOptions.vib_version == '67':
     GlobalOptions.esx_bld_vm = "esxi-67-builder.pensando.io"
 elif GlobalOptions.vib_version == '65':
     vib_ver_str = "-65"
-    ddk_str = "nativeddk-6.*"
-    GlobalOptions.esx_bld_vm = "esx-6.5-vib.pensando.io"
+    ddk_str = "nativeddk-6.5.0-4598673"
+    GlobalOptions.esx_bld_vm = "esxi-65-builder.pensando.io"
 elif GlobalOptions.vib_version == '70':
     vib_ver_str = "-70"
     ddk_str = "nativeddk-7.0.0-15843807"
