@@ -71,7 +71,7 @@ func (m *memClient) PutObjectOfSize(ctx context.Context, objectName string, read
 
 // PutObjectExplicit uploads an object to object store under the given bucket name (i.e. serviceName)
 func (m *memClient) PutObjectExplicit(ctx context.Context,
-	serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error) {
+	serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string, contentType string) (int64, error) {
 	return 0, errors.New("unimplemented")
 }
 
@@ -93,6 +93,13 @@ func (m *memClient) GetObject(ctx context.Context, objectName string) (io.ReadCl
 		// return &o.buf, nil
 	}
 	return nil, nil
+}
+
+// GetObjectExplicit gets the object from object store
+// It will override the default service name given at time of initializing the client with the given
+// service name.
+func (m *memClient) GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error) {
+	return nil, errors.New("unimplemented")
 }
 
 // GetStreamObjectAtOffset reads an object uploaded by PutStreamObject()
@@ -124,6 +131,12 @@ func (m *memClient) ListObjects(prefix string) ([]string, error) {
 		ret = append(ret, k)
 	}
 	return ret, nil
+}
+
+// ListObjectsExplicit will override the default service name given at time of initializing the client with the given
+// service name.
+func (m *memClient) ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error) {
+	return nil, errors.New("unimplemented")
 }
 
 // RemoveObjects removes all objects with the given prefix
@@ -167,6 +180,25 @@ func (m *memClient) RemoveObjectsWithContext(ctx context.Context, bucketName str
 // SetServiceLifecycleWithContext set the lifecycle on an existing srevice with a context to control cancellations and timeouts.
 func (m *memClient) SetServiceLifecycleWithContext(ctx context.Context, serviceName string, lc objstore.Lifecycle) error {
 	return errors.New("unimplemented")
+}
+
+// FPutObject - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+func (m *memClient) FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+	metaData map[string]string, contentType string) (int64, error) {
+	return 0, errors.New("unimplemented")
+}
+
+// SelectObjectContentExplicit selects content from the object stored in object store
+func (m *memClient) SelectObjectContentExplicit(ctx context.Context,
+	serviceName string, objectName string, sqlExpression string,
+	inputSerializationType objstore.InputSerializationType,
+	outputSerializationType objstore.OutputSerializationType) (io.ReadCloser, error) {
+	return nil, errors.New("unimplemented")
+}
+
+// ListBuckets lists all the buckets existing in vos
+func (m *memClient) ListBuckets(ctx context.Context) ([]string, error) {
+	return nil, errors.New("unimplemented")
 }
 
 // NewMemObjstore returns a new MemObjstore object

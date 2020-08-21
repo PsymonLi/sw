@@ -19,6 +19,22 @@ const (
 		`<Expiration><Days>%d</Days></Expiration></Rule></LifecycleConfiguration>`
 )
 
+// InputSerializationType represents the file format stored in object store
+type InputSerializationType uint8
+
+const (
+	// CSVGZIP represents .csv.gzip type
+	CSVGZIP InputSerializationType = iota
+)
+
+// OutputSerializationType represents the format in which data is returned from object store
+type OutputSerializationType uint8
+
+const (
+	// CSV represents .csv type
+	CSV OutputSerializationType = iota
+)
+
 // Client is the object store handle
 type Client struct {
 	bucketName string
@@ -73,6 +89,19 @@ func NewClient(url, accessID, secretKey string, tlsConfig *tls.Config, bucketNam
 	}
 
 	return c, nil
+}
+
+// ListBuckets lists all the buckets existing in vos
+func (c *Client) ListBuckets(ctx context.Context) ([]string, error) {
+	bucketInfos, err := c.client.ListBucketsWithContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list buckets err: %s", err)
+	}
+	result := make([]string, len(bucketInfos))
+	for i, bi := range bucketInfos {
+		result[i] = bi.Name
+	}
+	return result, nil
 }
 
 // PutObjectRateLimiter uploads an object to object store
@@ -167,7 +196,7 @@ func (c *Client) PutObjectOfSize(ctx context.Context, objectName string, reader 
 // PutObjectExplicit uploads an object to object store under the given bucket name (i.e. serviceName)
 // metadata shouldn't be used for storing large data
 func (c *Client) PutObjectExplicit(ctx context.Context,
-	serviceName string, objectName string, reader io.Reader, size int64, userMeta map[string]string) (int64, error) {
+	serviceName string, objectName string, reader io.Reader, size int64, userMeta map[string]string, contentType string) (int64, error) {
 	// check bucket
 	s, err := c.client.BucketExists(serviceName)
 	if err != nil {
@@ -191,8 +220,41 @@ func (c *Client) PutObjectExplicit(ctx context.Context,
 		}
 	}
 
-	n, err := c.client.PutObjectWithContext(ctx, serviceName, objectName, reader, size, minio.PutObjectOptions{UserMetadata: metaData})
+	n, err := c.client.PutObjectWithContext(ctx,
+		serviceName, objectName, reader,
+		size, minio.PutObjectOptions{UserMetadata: metaData, ContentType: contentType})
 	return n, err
+}
+
+// FPutObjectExplicit - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+func (c *Client) FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+	userMeta map[string]string, contentType string) (int64, error) {
+	// check bucket
+	s, err := c.client.BucketExists(serviceName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get bucket details, err:%s", err)
+	}
+
+	if !s {
+		if err := c.client.MakeBucket(serviceName, c.location); err != nil {
+			return 0, err
+		}
+	}
+
+	// update the metadata
+	metaData := map[string]string{}
+	for k, v := range userMeta {
+		// store system meta as is
+		if strings.HasPrefix(strings.ToLower(k), amzPrefix) {
+			metaData[k] = v
+		} else {
+			metaData[amzMetaPrefix+k] = v
+		}
+	}
+
+	return c.client.FPutObjectWithContext(ctx,
+		serviceName, objectName, filePath,
+		minio.PutObjectOptions{UserMetadata: metaData, ContentType: contentType})
 }
 
 // GetObject gets the object from object store, caller should close() after readall()
@@ -203,6 +265,22 @@ func (c *Client) GetObject(ctx context.Context, objectName string) (io.ReadClose
 	}
 
 	objReader, err := c.client.GetObjectWithContext(ctx, c.bucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get object, err:%s", err)
+	}
+	return objReader, nil
+}
+
+// GetObjectExplicit gets the object from object store
+// It will override the default service name given at time of initializing the client with the given
+// service name.
+func (c *Client) GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error) {
+	_, err := c.client.StatObject(serviceName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("stat object, err:%s", err)
+	}
+
+	objReader, err := c.client.GetObjectWithContext(ctx, serviceName, objectName, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("get object, err:%s", err)
 	}
@@ -240,6 +318,21 @@ func (c *Client) ListObjects(prefix string) ([]string, error) {
 	defer close(doneCh)
 
 	objChan := c.client.ListObjects(c.bucketName, prefix, true, doneCh)
+	for objInfo := range objChan {
+		objList = append(objList, objInfo.Key)
+	}
+
+	return objList, nil
+}
+
+// ListObjectsExplicit will override the default service name given at time of initializing the client with the given
+// service name.
+func (c *Client) ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error) {
+	objList := []string{}
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	objChan := c.client.ListObjects(serviceName, prefix, recursive, doneCh)
 	for objInfo := range objChan {
 		objList = append(objList, objInfo.Key)
 	}
@@ -294,4 +387,36 @@ func (c *Client) SetServiceLifecycleWithContext(ctx context.Context, serviceName
 	}
 	lc := fmt.Sprintf(lifecycleConfig, prefix, status, days)
 	return c.client.SetBucketLifecycleWithContext(ctx, serviceName, lc)
+}
+
+// SelectObjectContentExplicit selects object content
+func (c *Client) SelectObjectContentExplicit(ctx context.Context,
+	serviceName string, objectName string, sqlExpression string,
+	inputSerializationType InputSerializationType,
+	outputSerializationType OutputSerializationType) (io.ReadCloser, error) {
+	compressionType := minio.SelectCompressionNONE
+	if inputSerializationType == CSVGZIP {
+		compressionType = minio.SelectCompressionGZIP
+	}
+
+	opts := minio.SelectObjectOptions{
+		Expression:     sqlExpression,
+		ExpressionType: minio.QueryExpressionTypeSQL,
+		InputSerialization: minio.SelectObjectInputSerialization{
+			CompressionType: compressionType,
+			CSV: &minio.CSVInputOptions{
+				FileHeaderInfo:  minio.CSVFileHeaderInfoUse,
+				RecordDelimiter: "\n",
+				FieldDelimiter:  ",",
+			},
+		},
+		OutputSerialization: minio.SelectObjectOutputSerialization{
+			CSV: &minio.CSVOutputOptions{
+				RecordDelimiter: "\n",
+				FieldDelimiter:  ",",
+			},
+		},
+	}
+
+	return c.client.SelectObjectContent(ctx, serviceName, objectName, opts)
 }

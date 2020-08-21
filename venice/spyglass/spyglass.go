@@ -9,8 +9,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -18,9 +23,14 @@ import (
 	"github.com/pensando/sw/venice/spyglass/cache"
 	"github.com/pensando/sw/venice/spyglass/finder"
 	"github.com/pensando/sw/venice/spyglass/indexer"
+	"github.com/pensando/sw/venice/spyglass/searchvos"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/resolver"
+)
+
+const (
+	cpuDivisionFactor = 6
 )
 
 func main() {
@@ -57,6 +67,9 @@ func main() {
 	logger := log.SetConfig(logConfig)
 	defer logger.Close()
 
+	// Set GOMAXPROCS
+	updateGoMaxProcs()
+
 	// Create events recorder
 	evtsRecorder, err := recorder.NewRecorder(&recorder.Config{
 		Component: globals.Spyglass}, logger)
@@ -74,6 +87,8 @@ func main() {
 
 	// Create new policy cache
 	cache := cache.NewCache(logger)
+
+	vosFinder := searchvos.NewSearchFwLogsOverVos(ctx, rslr, logger)
 
 	// Create the finder and associated search endpoint
 	fdr, err := finder.NewFinder(ctx,
@@ -117,7 +132,8 @@ func main() {
 		rslr,
 		cache,
 		logger,
-		indexer.WithDisableAPIServerWatcher())
+		indexer.WithDisableAPIServerWatcher(),
+		indexer.WithSearchVosHandler(vosFinder))
 	if err != nil || idxerFwlogs == nil {
 		log.Fatalf("Failed to create fwlogs indexer, err: %v", err)
 	}
@@ -142,11 +158,67 @@ func main() {
 	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
 	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
 	router.Methods("GET", "POST").Subrouter().Handle("/debug/config", indexer.HandleDebugConfig(idxerFwlogs))
+	router.Methods("GET").Subrouter().Handle("/debug/fwlogs/query", searchvos.HandleDebugFwlogsQuery(ctx, vosFinder, logger))
+
+outer:
+	for {
+		select {
+		case <-time.After(time.Second):
+			if idxerFwlogs.GetVosClient() != nil && idxerFwlogs.GetElasticClient() != nil {
+				router.Methods("GET").Subrouter().Handle("/debug/fwlogs/recreateindex",
+					searchvos.HandleDebugFwlogsRecreateIndex(ctx, idxerFwlogs.GetVosClient(), idxerFwlogs.GetElasticClient(), vosFinder, logger))
+				router.Methods("GET").Subrouter().Handle("/debug/fwlogs/downloadindex",
+					searchvos.HandleDebugFwlogsDownloadIndex(ctx, idxerFwlogs.GetVosClient(), vosFinder, logger))
+				break outer
+			}
+		}
+	}
 
 	go http.ListenAndServe(fmt.Sprintf("127.0.0.1:%s", globals.SpyglassRESTPort), router)
 
 	log.Infof("%s is running", globals.Spyglass)
 
+	// set Garbage collection ratio and periodically free OS memory
+	debug.SetGCPercent(40)
+	go periodicFreeMemory()
+
 	// wait forever
 	<-waitCh
+}
+
+// periodicFreeMemory forces garbage collection every minute and frees OS memory
+func periodicFreeMemory() {
+	for {
+		select {
+		case <-time.After(time.Second * 30):
+			// force GC and free OS memory
+			debug.FreeOSMemory()
+		}
+	}
+}
+
+// Set GoMaxProcs setting for Spyglass
+func updateGoMaxProcs() {
+	cdf := cpuDivisionFactor
+	cpuDivisionFactorEnv, ok := os.LookupEnv("CPU_DIVISION_FACTOR")
+	if ok {
+		log.Infof("cpuDivisionFactorEnv %s", cpuDivisionFactorEnv)
+		temp, err := strconv.Atoi(cpuDivisionFactorEnv)
+		if err != nil {
+			log.Infof("error while parsing cpuDivisionFactorEnv %s, %+v", cpuDivisionFactorEnv, err)
+		}
+		if temp > 0 && temp <= 10 {
+			cdf = temp
+		}
+	}
+	numCPU := runtime.NumCPU()
+	log.Infof("NumCPUs seen by this container %d", numCPU)
+	if numCPU <= cdf {
+		oldValue := runtime.GOMAXPROCS(1)
+		log.Infof("GOMAXPROCS old value %d", oldValue)
+	} else {
+		oldValue := runtime.GOMAXPROCS(numCPU / cdf)
+		log.Infof("GOMAXPROCS old value %d", oldValue)
+	}
+	log.Infof("GOMAXPROCS new value %d", runtime.GOMAXPROCS(-1))
 }

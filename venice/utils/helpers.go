@@ -18,12 +18,18 @@ type Evaluator func(ctx context.Context) (interface{}, error)
 // is met with the specified retry interval
 // Evaluator is also called with context that expires after the retryInterval..
 func ExecuteWithRetry(eval Evaluator, retryInterval time.Duration, maxRetries int) (interface{}, error) {
+	return ExecuteWithRetryV2(eval, retryInterval, retryInterval, maxRetries)
+}
+
+// ExecuteWithRetryV2 is similar to ExecuteWithRetry, but with an extra context timeout duration parameter.
+// ExecuteWithRetry uses retryInterval as both wait-time between retries and context time out.
+func ExecuteWithRetryV2(eval Evaluator, retryInterval time.Duration, ctxTimeout time.Duration, maxRetries int) (interface{}, error) {
 
 	var result interface{}
 	var err error
 	retryCount := 0
 
-	ctx, cancel := context.WithTimeout(context.Background(), retryInterval)
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	result, err = eval(ctx)
 	cancel()
 	if err == nil {
@@ -37,7 +43,7 @@ retryloop:
 		select {
 		case <-ticker.C:
 			retryCount++
-			ctx, cancel = context.WithTimeout(context.Background(), retryInterval)
+			ctx, cancel = context.WithTimeout(context.Background(), ctxTimeout)
 			result, err = eval(ctx)
 			if err == nil {
 				cancel()

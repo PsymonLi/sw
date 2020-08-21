@@ -1,0 +1,82 @@
+syntax = "proto3";
+package protos;
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+// FlowRec represents a flow 
+message FlowRec {
+    uint32 sourcevrf = 1;
+    uint32 destvrf = 2;
+    string sip = 3;
+    string dip = 4;
+    uint32 sport = 5;
+    uint32 dport = 6;
+    uint64 ruleid = 7;
+    uint64 sessionid = 8;
+    string flowaction = 9;
+    string direction = 10;
+    uint32 action = 11;
+    int64 ts = 12;
+    string protocol = 13;
+    uint32 icmpid = 14;
+    uint32 icmptype = 15;
+    uint32 icmpcode = 16;
+    uint64 iflowbytes = 17;
+    uint64 rflowbytes = 18;
+    string appid = 19;
+    string alg = 20;
+    string id = 21;
+}
+
+// Flows represents a slice of flow records
+message Flows {
+    repeated FlowRec flows = 1;
+}
+
+// FlowIdSlice represents a slice of flow ids that point to flows in Flows slice
+message FlowIdSlice {
+    repeated uint32 flowids = 1;
+}
+
+// FlowIdMap represents a map of csvfile to flow ids
+message FlowIdMap {
+    // key = CSv file name
+    // Value = ids of the flows within the csv file
+    map<string, FlowIdSlice> flowids = 1;
+}
+
+// FilePtr represents pointer to the chunk in a file where the FlowIdSlice is stored
+message FilePtr {
+    int64 offset = 1;
+    int64 size = 2;
+}
+
+// FlowPtr represents pointer to the chunk in the file where the flows are stored
+message FlowPtr {
+    int64 offset = 1;
+    int64 size = 2;
+    // FlowIdMap flowids = 3;
+}
+
+message FlowPtrMap {
+    int64 previousOffset = 1;
+    repeated FlowPtr flowptrs = 2;
+}
+
+// DestMapFlowPtr represents the a substructure used in indexing SrcDest flows
+// Its used in RawLogsShard structure
+message DestMapFlowPtr {
+    map<uint32, FlowPtrMap> destMapTemp = 1 [(gogoproto.nullable) = false];
+    map<uint32, FilePtr> destMap = 2 [(gogoproto.nullable) = false];
+}
+
+// RawLogsShard represents a sharded index of raw logs
+message RawLogsShard {
+    int64 startts  = 1;
+    int64 endts  = 2;
+    uint32 id = 3;
+    string datafilename = 4;
+    map<string, uint32> ipid = 5;
+    map<uint32, FlowPtrMap> destidxsTemp = 6 [(gogoproto.nullable) = false];
+    map<uint32, FilePtr> destidxs = 7 [(gogoproto.nullable) = false];
+    map<uint32, DestMapFlowPtr> srcdestidxs = 8 [(gogoproto.nullable) = false];
+}

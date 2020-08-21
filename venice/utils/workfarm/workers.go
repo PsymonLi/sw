@@ -2,8 +2,6 @@ package workfarm
 
 import (
 	"context"
-
-	"github.com/pensando/sw/venice/utils/log"
 )
 
 // Workers represents a worker pool
@@ -19,12 +17,6 @@ func (w *Workers) PostWorkItem(wi func()) {
 }
 
 func doWork(ctx context.Context, workItems <-chan func()) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Errorf("recovered in objstore's worker routine %s", r)
-		}
-	}()
-
 	for {
 		select {
 		case <-ctx.Done():

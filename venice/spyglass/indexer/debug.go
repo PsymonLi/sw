@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"sync/atomic"
 
+	"github.com/pensando/sw/venice/spyglass/searchvos"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
 const (
 	disableFwlogIndexingKey    = "disableFwlogIndex"
 	flowlogsRateLimitConfigKey = "flowlogsRLConfig"
+	shardRawLogsKey            = "shardRawLogs"
 )
 
 // HandleDebugConfig handles GET and POST for debug config
@@ -27,6 +29,13 @@ func HandleDebugConfig(idrInt Interface) http.HandlerFunc {
 				config[disableFwlogIndexingKey] = true
 			case disableFwlogIndexing:
 				config[disableFwlogIndexingKey] = false
+			}
+
+			switch idr.fwlogsMetaIndexer.GetShardRawLogs() {
+			case searchvos.EnableShardRawLogs:
+				config[shardRawLogsKey] = true
+			case searchvos.DisableShardRawLogs:
+				config[shardRawLogsKey] = false
 			}
 
 			getFlowlogsRatelimitConfig(idr, config)
@@ -66,6 +75,20 @@ func HandleDebugConfig(idrInt Interface) http.HandlerFunc {
 					}
 				default:
 					http.Error(w, "incorrect value for key 'disableFwlogIndex'", http.StatusBadRequest)
+				}
+			}
+
+			if v, ok := config[shardRawLogsKey]; ok {
+				switch v.(type) {
+				case bool:
+					temp := v.(bool)
+					if temp {
+						idr.fwlogsMetaIndexer.UpdateShardRawLogs(searchvos.EnableShardRawLogs)
+					} else {
+						idr.fwlogsMetaIndexer.UpdateShardRawLogs(searchvos.DisableShardRawLogs)
+					}
+				default:
+					http.Error(w, "incorrect value for key 'shardRawLogs'", http.StatusBadRequest)
 				}
 			}
 

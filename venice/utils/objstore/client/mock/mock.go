@@ -37,6 +37,19 @@ func (m *MockobjStoreBackend) EXPECT() *MockobjStoreBackendMockRecorder {
 	return m.recorder
 }
 
+// ListBuckets mocks base method
+func (m *MockobjStoreBackend) ListBuckets(ctx context.Context) ([]string, error) {
+	ret := m.ctrl.Call(m, "ListBuckets", ctx)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListBuckets indicates an expected call of ListBuckets
+func (mr *MockobjStoreBackendMockRecorder) ListBuckets(ctx interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockobjStoreBackend)(nil).ListBuckets), ctx)
+}
+
 // PutObject mocks base method
 func (m *MockobjStoreBackend) PutObject(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string) (int64, error) {
 	ret := m.ctrl.Call(m, "PutObject", ctx, objectName, reader, userMeta)
@@ -77,16 +90,16 @@ func (mr *MockobjStoreBackendMockRecorder) PutObjectOfSize(ctx, objectName, read
 }
 
 // PutObjectExplicit mocks base method
-func (m *MockobjStoreBackend) PutObjectExplicit(ctx context.Context, serviceName, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error) {
-	ret := m.ctrl.Call(m, "PutObjectExplicit", ctx, serviceName, objectName, reader, size, metaData)
+func (m *MockobjStoreBackend) PutObjectExplicit(ctx context.Context, serviceName, objectName string, reader io.Reader, size int64, metaData map[string]string, contentType string) (int64, error) {
+	ret := m.ctrl.Call(m, "PutObjectExplicit", ctx, serviceName, objectName, reader, size, metaData, contentType)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PutObjectExplicit indicates an expected call of PutObjectExplicit
-func (mr *MockobjStoreBackendMockRecorder) PutObjectExplicit(ctx, serviceName, objectName, reader, size, metaData interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObjectExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).PutObjectExplicit), ctx, serviceName, objectName, reader, size, metaData)
+func (mr *MockobjStoreBackendMockRecorder) PutObjectExplicit(ctx, serviceName, objectName, reader, size, metaData, contentType interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObjectExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).PutObjectExplicit), ctx, serviceName, objectName, reader, size, metaData, contentType)
 }
 
 // GetObject mocks base method
@@ -100,6 +113,19 @@ func (m *MockobjStoreBackend) GetObject(ctx context.Context, objectName string) 
 // GetObject indicates an expected call of GetObject
 func (mr *MockobjStoreBackendMockRecorder) GetObject(ctx, objectName interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObject", reflect.TypeOf((*MockobjStoreBackend)(nil).GetObject), ctx, objectName)
+}
+
+// GetObjectExplicit mocks base method
+func (m *MockobjStoreBackend) GetObjectExplicit(ctx context.Context, serviceName, objectName string) (io.ReadCloser, error) {
+	ret := m.ctrl.Call(m, "GetObjectExplicit", ctx, serviceName, objectName)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectExplicit indicates an expected call of GetObjectExplicit
+func (mr *MockobjStoreBackendMockRecorder) GetObjectExplicit(ctx, serviceName, objectName interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).GetObjectExplicit), ctx, serviceName, objectName)
 }
 
 // StatObject mocks base method
@@ -126,6 +152,19 @@ func (m *MockobjStoreBackend) ListObjects(prefix string) ([]string, error) {
 // ListObjects indicates an expected call of ListObjects
 func (mr *MockobjStoreBackendMockRecorder) ListObjects(prefix interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjects", reflect.TypeOf((*MockobjStoreBackend)(nil).ListObjects), prefix)
+}
+
+// ListObjectsExplicit mocks base method
+func (m *MockobjStoreBackend) ListObjectsExplicit(serviceName, prefix string, recursive bool) ([]string, error) {
+	ret := m.ctrl.Call(m, "ListObjectsExplicit", serviceName, prefix, recursive)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListObjectsExplicit indicates an expected call of ListObjectsExplicit
+func (mr *MockobjStoreBackendMockRecorder) ListObjectsExplicit(serviceName, prefix, recursive interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).ListObjectsExplicit), serviceName, prefix, recursive)
 }
 
 // RemoveObjects mocks base method
@@ -174,4 +213,30 @@ func (m *MockobjStoreBackend) SetServiceLifecycleWithContext(ctx context.Context
 // SetServiceLifecycleWithContext indicates an expected call of SetServiceLifecycleWithContext
 func (mr *MockobjStoreBackendMockRecorder) SetServiceLifecycleWithContext(ctx, serviceName, enabled, prefix, days interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetServiceLifecycleWithContext", reflect.TypeOf((*MockobjStoreBackend)(nil).SetServiceLifecycleWithContext), ctx, serviceName, enabled, prefix, days)
+}
+
+// SelectObjectContentExplicit mocks base method
+func (m *MockobjStoreBackend) SelectObjectContentExplicit(ctx context.Context, serviceName, objectName, sqlExpression string, inputSerializationType client.InputSerializationType, outputSerializationType client.OutputSerializationType) (io.ReadCloser, error) {
+	ret := m.ctrl.Call(m, "SelectObjectContentExplicit", ctx, serviceName, objectName, sqlExpression, inputSerializationType, outputSerializationType)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectObjectContentExplicit indicates an expected call of SelectObjectContentExplicit
+func (mr *MockobjStoreBackendMockRecorder) SelectObjectContentExplicit(ctx, serviceName, objectName, sqlExpression, inputSerializationType, outputSerializationType interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectObjectContentExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).SelectObjectContentExplicit), ctx, serviceName, objectName, sqlExpression, inputSerializationType, outputSerializationType)
+}
+
+// FPutObjectExplicit mocks base method
+func (m *MockobjStoreBackend) FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string, metaData map[string]string, contentType string) (int64, error) {
+	ret := m.ctrl.Call(m, "FPutObjectExplicit", ctx, serviceName, objectName, filePath, metaData, contentType)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FPutObjectExplicit indicates an expected call of FPutObjectExplicit
+func (mr *MockobjStoreBackendMockRecorder) FPutObjectExplicit(ctx, serviceName, objectName, filePath, metaData, contentType interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FPutObjectExplicit", reflect.TypeOf((*MockobjStoreBackend)(nil).FPutObjectExplicit), ctx, serviceName, objectName, filePath, metaData, contentType)
 }

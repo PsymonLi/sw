@@ -172,6 +172,7 @@ func (i *instance) createBucket(bucket string, addWatcher bool) error {
 			return errors.Wrap(err, fmt.Sprintf("MakeBucket operation[%s]", bucket))
 		}
 	}
+
 	if addWatcher {
 		if _, ok := i.watcherMap[bucket]; !ok {
 			watcher := &storeWatcher{bucket: bucket, client: i.client, watchPrefixes: i.pfxWatcher}
@@ -184,6 +185,20 @@ func (i *instance) createBucket(bucket string, addWatcher bool) error {
 				i.Unlock()
 				i.wg.Done()
 			})
+
+			if strings.Contains(bucket, globals.FwlogsBucketName) {
+				bucket := "meta-" + bucket
+				watcher = &storeWatcher{bucket: bucket, client: i.client, watchPrefixes: i.pfxWatcher}
+				i.watcherMap[bucket] = watcher
+				i.wg.Add(1)
+				go watcher.Watch(i.ctx, func() {
+					i.Lock()
+					bucket := bucket
+					delete(i.watcherMap, bucket)
+					i.Unlock()
+					i.wg.Done()
+				})
+			}
 		}
 	}
 

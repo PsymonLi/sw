@@ -18,6 +18,7 @@ import (
 	"github.com/pensando/sw/api/generated/fwlog"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/spyglass/searchvos"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/elastic"
 	"github.com/pensando/sw/venice/utils/events/recorder"
@@ -56,10 +57,6 @@ type FwLogObjectV1 struct {
 }
 
 func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout int, processWorkers *workers, pushWorkers *workers) error {
-	if atomic.LoadInt32(&idr.indexFwlogs) == disableFwlogIndexing {
-		return nil
-	}
-
 	shouldRaiseCriticalEvent := func(tenantName string) bool {
 		idr.eventCheckerLock.Lock()
 		defer idr.eventCheckerLock.Unlock()
@@ -103,6 +100,14 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 			return
 		}
 
+		objStats, err := idr.vosFwLogsHTTPClient.StatObject(key)
+		if err != nil {
+			idr.logger.Errorf("Writer %d, Object %s, StatObject error %s",
+				id, key, err.Error())
+			return
+		}
+		meta := objStats.MetaData
+
 		// We are not indexing meta files yet
 		if strings.Contains(ometa.GetTenant(), "meta") || strings.Contains(ometa.GetNamespace(), "meta") {
 			return
@@ -112,19 +117,23 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 		kind := req.object.(runtime.Object).GetObjectKind()
 		uuid := getUUIDForFwlogObject(kind, ometa.GetTenant(), ometa.GetNamespace(), key)
 		idr.logger.Debugf("Writer %d, processing object: <%s %s %v %v>", id, kind, key, uuid, req.evType)
-		objStats, err := idr.vosFwLogsHTTPClient.StatObject(key)
-		if err != nil {
-			idr.logger.Errorf("Writer %d, Object %s, StatObject error %s",
-				id, key, err.Error())
-			return
-		}
 
-		meta := objStats.MetaData
 		logcount, err := strconv.Atoi(meta["Logcount"])
 		if err != nil {
 			idr.logger.Errorf("Writer %d, object %s, logcount err %s", id, key, err.Error())
 			return
 		}
+
+		bucketName := ometa.GetTenant() + "." + ometa.GetNamespace()
+		data, err := idr.getFwlogsObjectFromVos(id, bucketName, key)
+		if err != nil {
+			idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
+			return
+		}
+
+		idr.logsChannel <- searchvos.MetaLogs{DscID: meta["Nodeid"],
+			StartTs: meta["Startts"], EndTs: meta["Endts"],
+			Tenant: ometa.GetTenant(), Key: key, Logs: data}
 
 		var fwlogsMetaReq *elastic.BulkRequest
 		if meta["Metaversion"] == "v1" {
@@ -133,6 +142,12 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 				idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
 				return
 			}
+		}
+
+		if atomic.LoadInt32(&idr.indexFwlogs) == disableFwlogIndexing {
+			// If log indexing is disabled just update the objectmeta index
+			idr.updateFwlogObjectMetaIndex(id, key, fwlogsMetaReq, pushWorkers)
+			return
 		}
 
 		// Verify rate
@@ -167,42 +182,6 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 			return
 		}
 
-		// Getting the object, unzipping it and reading the data should happen in a loop
-		// until no errors are found. Example: Connection to VOS goes down.
-		// Create bulk requests for raw fwlogs and directly feed them into elastic
-		waitIntvl := time.Second * 20
-		maxRetries := 15
-		output, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			objReader, err := idr.vosFwLogsHTTPClient.GetObject(idr.ctx, key)
-			if err != nil {
-				idr.logger.Errorf("Writer %d, object %s, error in getting object err %s", id, key, err.Error())
-				return nil, err
-			}
-			defer objReader.Close()
-
-			zipReader, err := gzip.NewReader(objReader)
-			if err != nil {
-				idr.logger.Errorf("Writer %d, object %s, error in unzipping object err %s", id, key, err.Error())
-				return nil, err
-			}
-
-			rd := csv.NewReader(zipReader)
-			data, err := rd.ReadAll()
-			if err != nil {
-				idr.logger.Errorf("Writer %d, object %s, error in reading object err %s", id, key, err.Error())
-				return nil, err
-			}
-
-			return data, err
-		}, waitIntvl, maxRetries)
-
-		if err != nil {
-			idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
-			return
-		}
-
-		data := output.([][]string)
-
 		if meta["Csvversion"] == "v1" {
 			output, err := idr.parseFwLogsCsvV1(id, key, data, uuid, nodeUUID, meta)
 			if err != nil {
@@ -226,7 +205,11 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 							id,
 							len(fwlogs))
 
-						idr.updateLastProcessedkeys(key)
+						// Do not call updateLastProcessedkeys from here because its getting called as part of
+						// metaIndexer. Meta Indexer is slower as compared to elastic indexer because meta indexer
+						// persists every 10 minutes, as a result its possible that elastic may reindex some data
+						// which was already indexed before crash, but thats ok because elastic has unique ID
+						// for every document.
 
 						helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl, fwlogs, pushWorkers)
 					}
@@ -407,6 +390,39 @@ func (idr *Indexer) parseTime(id int, key string, timeFormat string, ts string, 
 			id, key, propertyName, ts, err.Error())
 	}
 	return parsedTime, nil
+}
+
+func (idr *Indexer) getFwlogsObjectFromVos(id int, bucketName string, key string) ([][]string, error) {
+	// Getting the object, unzipping it and reading the data should happen in a loop
+	// until no errors are found. Example: Connection to VOS goes down.
+	// Create bulk requests for raw fwlogs and directly feed them into elastic
+	waitIntvl := time.Second * 20
+	maxRetries := 15
+	output, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+		objReader, err := idr.vosFwLogsHTTPClient.GetObjectExplicit(idr.ctx, bucketName, key)
+		if err != nil {
+			idr.logger.Errorf("Writer %d, object %s, error in getting object err %s", id, key, err.Error())
+			return nil, err
+		}
+		defer objReader.Close()
+
+		zipReader, err := gzip.NewReader(objReader)
+		if err != nil {
+			idr.logger.Errorf("Writer %d, object %s, error in unzipping object err %s", id, key, err.Error())
+			return nil, err
+		}
+
+		rd := csv.NewReader(zipReader)
+		data, err := rd.ReadAll()
+		if err != nil {
+			idr.logger.Errorf("Writer %d, object %s, error in reading object err %s", id, key, err.Error())
+			return nil, err
+		}
+
+		return data, err
+	}, waitIntvl, maxRetries)
+
+	return output.([][]string), err
 }
 
 func getUUIDForFwlogObject(kind, tenant, namespace, key string) string {

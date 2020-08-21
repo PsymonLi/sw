@@ -365,6 +365,10 @@ func transmitLogs(ctx context.Context,
 		}
 		getCSVObjectBuffer(logs, &objBuffer, fls.zip)
 		getCSVIndexBuffer(index, &indexBuffer, fls.zip)
+		contentType := "text/csv"
+		if fls.zip {
+			contentType = "application/gzip"
+		}
 
 		// Object meta
 		meta := map[string]string{}
@@ -379,6 +383,17 @@ func transmitLogs(ctx context.Context,
 			meta["nodeid"] = configuredID
 		}
 		populateMetaWithTrends(meta, trends)
+
+		// Index meta
+		imeta := map[string]string{}
+		imeta["startts"] = fStartTs
+		imeta["endts"] = fEndTs
+		if configuredID != "" {
+			meta["nodeid"] = configuredID
+		}
+		imeta["csvversion"] = fwLogCSVVersion
+		imeta["metaversion"] = fwLogMetaVersion
+		imeta["creation-Time"] = time.Now().Format(time.RFC3339Nano)
 
 		// Send the file on to the channel for testing
 		if fls.testChannel != nil {
@@ -413,21 +428,21 @@ func transmitLogs(ctx context.Context,
 		r := bytes.NewReader(objBuffer.Bytes())
 		putObjectHelper(ctx, c, bucketName,
 			objNameBuffer.String(), r, len(objBuffer.Bytes()),
-			meta, meta["logcount"], configuredID, fls.nodeUUID, nic, true,
+			meta, meta["logcount"], contentType, configuredID, fls.nodeUUID, nic, true,
 			tenantName, fls.shouldRaiseEvent)
 
 		// The index's object name is same as the data object name
 		ir := bytes.NewReader(indexBuffer.Bytes())
 		putObjectHelper(ctx, c, indexBucketName,
 			objNameBuffer.String(), ir, len(indexBuffer.Bytes()),
-			map[string]string{}, "", configuredID, fls.nodeUUID, nic, false,
+			imeta, "", contentType, configuredID, fls.nodeUUID, nic, false,
 			tenantName, fls.shouldRaiseEvent)
 	}
 }
 
 func putObjectHelper(ctx context.Context,
 	c objstore.Client, bucketName string, objectName string, reader io.Reader,
-	size int, metaData map[string]string, logcount string, nodeID, nodeUUID string,
+	size int, metaData map[string]string, logcount string, contentType, nodeID, nodeUUID string,
 	nic *cluster.DistributedServiceCard, dolog bool, tenantName string,
 	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 	tries := 0
@@ -443,7 +458,7 @@ func putObjectHelper(ctx context.Context,
 	rateLimitedEventRaised := false
 
 	_, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-		a, err := c.PutObjectExplicit(ctx, bucketName, objectName, reader, int64(size), metaData)
+		a, err := c.PutObjectExplicit(ctx, bucketName, objectName, reader, int64(size), metaData, contentType)
 		if err != nil {
 			tries++
 			log.Errorf("temporary, could not put object (%s)", err)

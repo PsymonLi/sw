@@ -66,10 +66,14 @@ func (s *storeImpl) List(bucket, kind string, opts api.ListWatchOptions) ([]runt
 			return s.handleListFwLogsDuringGrpcInit(bucket, opts)
 		}
 		log.Infof("fwlogs lastProcessedKeys are empty, skip listing")
+		fmt.Println("fwlogs lastProcessedKeys are empty, skip listing")
 		return ret, nil
 	}
 
 	doneCh := make(chan struct{})
+	if bucketName == fwlogsBucketName {
+		fmt.Println("Vos List ListObjectsV2 start", time.Now())
+	}
 	objCh := s.BaseBackendClient.ListObjectsV2(bucket, "", true, doneCh)
 	for mobj := range objCh {
 		// List does not seem to be returing with UserMeta populated. Workaround by doing a stat.
@@ -96,6 +100,9 @@ func (s *storeImpl) List(bucket, kind string, opts api.ListWatchOptions) ([]runt
 		ret = append(ret, lobj)
 	}
 	close(doneCh)
+	if bucketName == fwlogsBucketName {
+		fmt.Println("Vos List ListObjectsV2 end", time.Now(), len(ret))
+	}
 	return ret, nil
 }
 
@@ -174,7 +181,7 @@ ESTAB:
 		if count != 0 {
 			time.Sleep(500 * time.Millisecond)
 		}
-		log.Infof("Starting listener for bucket [%v] count: %d", w.bucket, count)
+		log.Debugf("Starting listener for bucket [%v] count: %d", w.bucket, count)
 		count++
 		for {
 			select {
@@ -184,7 +191,7 @@ ESTAB:
 			case ev, ok := <-evCh:
 				if !ok || ev.Err != nil {
 					// there has been an error, reestablish the connection.
-					log.Errorf("listener for bucket [%v] was closed (%s)", w.bucket, ev.Err)
+					log.Debugf("listener for bucket [%v] was closed (%s)", w.bucket, ev.Err)
 					close(doneCh)
 					continue ESTAB
 				}
@@ -254,6 +261,8 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 	}
 	log.Infof("started list over fwlogs bucket, time %s, received last processed keys %+v",
 		time.Now().String(), lastProcessedKeys)
+	fmt.Println("started list over fwlogs bucket, time, time UTC, received last processed keys",
+		time.Now().String(), time.Now().UTC().String(), lastProcessedKeys)
 
 	output := make(chan []runtime.Object, 1000)
 	ctxNew, cancelFunc := context.WithCancel(context.Background())
@@ -316,7 +325,7 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 				lastProcessedKeyMaxAge, tNow, objectStartTs, dscID, lastProcessedKey)
 
 			for {
-				if tThat.Equal(tNow) || tThat.After(tNow) {
+				if tThat.After(tNow) {
 					break
 				}
 				y, m, d := tThat.Date()
@@ -387,6 +396,8 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 	}
 
 	log.Infof("finished list over fwlogs bucket, time %s, len(results) %d",
+		time.Now().String(), len(results))
+	fmt.Println("finished list over fwlogs bucket, time, len(results)",
 		time.Now().String(), len(results))
 	return results, nil
 }

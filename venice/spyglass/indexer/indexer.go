@@ -18,6 +18,7 @@ import (
 	apiservice "github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/spyglass/cache"
+	"github.com/pensando/sw/venice/spyglass/searchvos"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/elastic"
@@ -65,6 +66,7 @@ const (
 	enableFwlogIndexing           = int32(1)
 	disableFwlogIndexing          = int32(0)
 	vosDiskMonitorCleanupInterval = 10 * time.Minute
+	metaIndexerPersistDuration    = 10 * time.Minute
 )
 
 // Option fills the optional params for Indexer
@@ -193,6 +195,21 @@ type Indexer struct {
 
 	// disk monitor cleanup interval used by vosdiskmonitor
 	vosDiskMonitorCleanupInterval time.Duration
+
+	// Meta indexer used for custom indexing of flow logs
+	fwlogsMetaIndexer          *searchvos.MetaIndexer
+	metaIndexerPersistDuration time.Duration
+
+	// logsChannel is used for message passing between the routine that receives notification from Vos
+	// and the routine that indexes flow logs
+	logsChannel chan searchvos.MetaLogs
+
+	// Enable/disable custom indexing of raw logs
+	// Its an int for doing atomic operation on it.
+	shardRawLogs int32
+
+	// searches raw logs and csv logs indexed by fwlogsMetaIndexer
+	searchVosHandler *searchvos.SearchFwLogsOverVos
 }
 
 // WithElasticClient passes a custom client for Elastic
@@ -235,6 +252,20 @@ func WithCredentialsManager(credentialsManager minio.CredentialsManager) Option 
 func WithDiskMonitorCleanupInterval(t time.Duration) Option {
 	return func(idr *Indexer) {
 		idr.vosDiskMonitorCleanupInterval = t
+	}
+}
+
+// WithSearchVosHandler sets handler for searching flows logs over Vos
+func WithSearchVosHandler(searchVosHandler *searchvos.SearchFwLogsOverVos) Option {
+	return func(idr *Indexer) {
+		idr.searchVosHandler = searchVosHandler
+	}
+}
+
+// WithMetaIndexerPersistDuration sets periodic persist duration for custom indexer
+func WithMetaIndexerPersistDuration(duration time.Duration) Option {
+	return func(idr *Indexer) {
+		idr.metaIndexerPersistDuration = duration
 	}
 }
 
@@ -282,6 +313,9 @@ func NewIndexer(ctx context.Context,
 		lastFwlogsDroppedWarnEventRaisedTime:     map[string]time.Time{},
 		eventCheckerLock:                         sync.Mutex{},
 		vosDiskMonitorCleanupInterval:            vosDiskMonitorCleanupInterval,
+		logsChannel:                              make(chan searchvos.MetaLogs, 1000),
+		shardRawLogs:                             searchvos.EnableShardRawLogs,
+		metaIndexerPersistDuration:               metaIndexerPersistDuration,
 	}
 
 	for _, opt := range opts {
@@ -303,6 +337,16 @@ func NewIndexer(ctx context.Context,
 
 	logger.Infof("Created new indexer: {%+v}", &indexer)
 	return &indexer, nil
+}
+
+// GetElasticClient returns the elastic client
+func (idr *Indexer) GetElasticClient() elastic.ESClient {
+	return idr.elasticClient
+}
+
+// GetVosClient returns the vos client
+func (idr *Indexer) GetVosClient() objstore.Client {
+	return idr.vosFwLogsHTTPClient
 }
 
 func (idr *Indexer) createClients() error {
@@ -389,6 +433,11 @@ func (idr *Indexer) createClients() error {
 		}
 
 		idr.vosInternalClient = result.(*rpckit.RPCClient)
+
+		idr.fwlogsMetaIndexer = searchvos.NewMetaIndexer(idr.ctx,
+			idr.logger, idr.shardRawLogs, nil,
+			nil, searchvos.WithPersistDuration(idr.metaIndexerPersistDuration))
+		idr.searchVosHandler.SetMetaIndexer(idr.fwlogsMetaIndexer)
 	}
 
 	return nil
@@ -468,6 +517,9 @@ func (idr *Indexer) Start() error {
 		if err := idr.persistLastProcessedkeys(); err != nil {
 			return err
 		}
+
+		// start the fwlogs meta indexer
+		idr.fwlogsMetaIndexer.Start(idr.logsChannel, idr.vosFwLogsHTTPClient, idr.updateLastProcessedkeys)
 	}
 
 	// Block on the done channel
@@ -887,7 +939,7 @@ func (idr *Indexer) persistLastProcessedkeys() error {
 	}, apiSrvWaitIntvl, maxAPISrvRetries)
 
 	if err != nil {
-		idr.logger.Errorf("Failed to create objstore client for %s", fwlogsSystemMetaBucketName)
+		idr.logger.Errorf("Failed to create objstore client for %s", fwlogsSystemMetaBucketName, idr.credentialsManager)
 		return err
 	}
 

@@ -90,4 +90,6 @@ type ESClient interface {
 // Scroller provides io.Reader interface to scrolling in Elastic. This is not thread safe.
 type Scroller interface {
 	io.Reader
+	Search() (*es.SearchResult, error)
+	Sort(field string, ascending bool) Scroller
 }

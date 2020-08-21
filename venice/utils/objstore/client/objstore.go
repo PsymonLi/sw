@@ -40,7 +40,26 @@ const (
 
 var objsLog = vlog.WithContext("pkg", "objstore")
 
+// InputSerializationType represents the file format stored in object store
+type InputSerializationType uint8
+
+const (
+	// CSVGZIP represents .csv.gzip type
+	CSVGZIP InputSerializationType = iota
+)
+
+// OutputSerializationType represents the format in which data is returned from object store
+type OutputSerializationType uint8
+
+const (
+	// CSV represents .csv type
+	CSV OutputSerializationType = iota
+)
+
 type objStoreBackend interface {
+	// ListBuckets lists all the buckets existing in vos
+	ListBuckets(ctx context.Context) ([]string, error)
+
 	// PutObject uploads object into the object store
 	PutObject(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string) (int64, error)
 
@@ -53,16 +72,27 @@ type objStoreBackend interface {
 	// PutObjectExplicit will override the default service name given at time of initializing the client with the given
 	// service name.
 	// In terms of MinIO, the given serviceName will become the MinIO's bucket name
-	PutObjectExplicit(ctx context.Context, serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error)
+	PutObjectExplicit(ctx context.Context,
+		serviceName string, objectName string, reader io.Reader,
+		size int64, metaData map[string]string, contentType string) (int64, error)
 
 	// GetObject gets the object from object store
 	GetObject(ctx context.Context, objectName string) (io.ReadCloser, error)
+
+	// GetObjectExplicit gets the object from object store
+	// It will override the default service name given at time of initializing the client with the given
+	// service name.
+	GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error)
 
 	// StatObject returns object information
 	StatObject(objectName string) (*minio.ObjectStats, error)
 
 	// ListObjects returns object names with the prefix
 	ListObjects(prefix string) ([]string, error)
+
+	// ListObjectsExplicit will override the default service name given at time of initializing the client with the given
+	// service name.
+	ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error)
 
 	// RemoveObjects removes objects with the prefix
 	RemoveObjects(prefix string) error
@@ -77,6 +107,16 @@ type objStoreBackend interface {
 
 	// SetServiceLifecycleWithContext set the lifecycle on an existing srevice with a context to control cancellations and timeouts.
 	SetServiceLifecycleWithContext(ctx context.Context, serviceName string, enabled bool, prefix string, days int) error
+
+	// SelectObjectContentExplicit selects content from the object stored in object store.
+	SelectObjectContentExplicit(ctx context.Context,
+		serviceName string, objectName string, sqlExpression string,
+		inputSerializationType minio.InputSerializationType,
+		outputSerializationType minio.OutputSerializationType) (io.ReadCloser, error)
+
+	// FPutObject - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+	FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+		metaData map[string]string, contentType string) (int64, error)
 }
 
 // object store back-end details
@@ -184,18 +224,24 @@ func (c *client) initCredentialManager(clientName string) error {
 }
 
 // connect() resolves object store name to URL and connects
-func (c *client) connect() error {
-	// resolve name
-	addr, err := c.getObjStoreAddr()
-	if err != nil {
-		return err
-	}
+func (c *client) connect(urls ...string) error {
+	var addr []string
+	var err error
+	if len(urls) != 0 {
+		addr = urls
+	} else {
+		// resolve name
+		addr, err = c.getObjStoreAddr()
+		if err != nil {
+			return err
+		}
 
-	// Fisher-Yates shuffle
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(addr), func(i, j int) {
-		addr[i], addr[j] = addr[j], addr[i]
-	})
+		// Fisher-Yates shuffle
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(addr), func(i, j int) {
+			addr[i], addr[j] = addr[j], addr[i]
+		})
+	}
 
 	objsLog.Infof("{%s} urls %+v ", globals.VosMinio, addr)
 
@@ -234,6 +280,38 @@ func getAPIClient(resolver resolver.Interface, clientName string) (apiclient.Ser
 		return nil, err
 	}
 	return apiClient, err
+}
+
+// NewPinnedClient creates a new client to the Venice object store
+// tenant name and service name is used to form the bucket as "tenantName.serviceName"
+func NewPinnedClient(tenantName, serviceName string, resolver resolver.Interface, url string, opts ...Option) (Client, error) {
+
+	// TODO: validate bucket name
+	// TODO: get access id & secret key from object store
+
+	// Initialize client object.
+	c := &client{
+		bucketName:     fmt.Sprintf("%s.%s", tenantName, serviceName),
+		resolverClient: resolver,
+		connRetries:    maxRetry,
+	}
+
+	for _, o := range opts {
+		o(c)
+	}
+
+	if c.credentialsManager == nil {
+		clientName := fmt.Sprintf("%s.%s", tenantName, serviceName)
+		if err := c.initCredentialManager(clientName); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := c.connect(url); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // getObjStoreAddr get object store URLs from the resolver
@@ -321,9 +399,10 @@ func (c *client) PutObjectOfSize(ctx context.Context, objectName string, reader 
 
 // PutObjectExplicit uploads an object to object store under the given bucket name (i.e. serviceName)
 func (c *client) PutObjectExplicit(ctx context.Context,
-	serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error) {
+	serviceName string, objectName string, reader io.Reader,
+	size int64, metaData map[string]string, contentType string) (int64, error) {
 	for retry := 0; retry < maxRetry; retry++ {
-		n, err := c.client.PutObjectExplicit(ctx, serviceName, objectName, reader, size, metaData)
+		n, err := c.client.PutObjectExplicit(ctx, serviceName, objectName, reader, size, metaData, contentType)
 		if err == nil {
 			return n, err
 		}
@@ -337,6 +416,26 @@ func (c *client) PutObjectExplicit(ctx context.Context,
 	}
 
 	return 0, fmt.Errorf("maximum retries exceeded to upload %s under bucket %s", objectName, serviceName)
+}
+
+// FPutObjectExplicit - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+func (c *client) FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+	metaData map[string]string, contentType string) (int64, error) {
+	for retry := 0; retry < maxRetry; retry++ {
+		n, err := c.client.FPutObjectExplicit(ctx, serviceName, objectName, filePath, metaData, contentType)
+		if err == nil {
+			return n, err
+		}
+
+		if !strings.Contains(err.Error(), connectErr) {
+			return 0, err
+		}
+		if err := c.connect(); err != nil {
+			return 0, err
+		}
+	}
+
+	return 0, fmt.Errorf("maximum retries exceeded to upload filePath %s under bucket %s", filePath, serviceName)
 }
 
 type streamObj struct {
@@ -379,6 +478,25 @@ func objNameToInProgress(objName string) string {
 	return fmt.Sprintf("%s/%s", objName, inProgressFile)
 }
 
+// ListBuckets lists all the buckets existing in vos
+func (c *client) ListBuckets(ctx context.Context) ([]string, error) {
+	for retry := 0; retry < maxRetry; retry++ {
+		buckets, err := c.client.ListBuckets(ctx)
+		if err == nil {
+			return buckets, err
+		}
+		if !strings.Contains(err.Error(), connectErr) {
+			return nil, err
+		}
+
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("maximum retries exceeded to list buckets")
+}
+
 // PutStreamObject creates in-progress file and returns a writer to the caller
 // and every write() uploads a new object
 func (c *client) PutStreamObject(ctx context.Context, objectName string, metaData map[string]string) (io.WriteCloser, error) {
@@ -405,6 +523,27 @@ func (c *client) PutStreamObject(ctx context.Context, objectName string, metaDat
 func (c *client) GetObject(ctx context.Context, objectName string) (io.ReadCloser, error) {
 	for retry := 0; retry < maxRetry; retry++ {
 		reader, err := c.client.GetObject(ctx, objectName)
+		if err == nil {
+			return reader, err
+		}
+		if !strings.Contains(err.Error(), connectErr) {
+			return nil, err
+		}
+
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("maximum retries exceeded to get %s", objectName)
+}
+
+// GetObjectExplicit gets the object from object store
+// It will override the default service name given at time of initializing the client with the given
+// service name.
+func (c *client) GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error) {
+	for retry := 0; retry < maxRetry; retry++ {
+		reader, err := c.client.GetObjectExplicit(ctx, serviceName, objectName)
 		if err == nil {
 			return reader, err
 		}
@@ -553,6 +692,28 @@ func (c *client) ListObjects(prefix string) ([]string, error) {
 	return nil, fmt.Errorf("maximum retries exceeded to list %s", prefix)
 }
 
+// ListObjectsExplicit will override the default service name given at time of initializing the client with the given
+// service name.
+func (c *client) ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error) {
+	for retry := 0; retry < maxRetry; retry++ {
+		objs, err := c.client.ListObjectsExplicit(serviceName, prefix, recursive)
+		if err == nil {
+			return objs, err
+		}
+
+		if !strings.Contains(err.Error(), connectErr) {
+			return nil, err
+		}
+
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+
+	}
+
+	return nil, fmt.Errorf("maximum retries exceeded to list serviceName %s, prefix %s", serviceName, prefix)
+}
+
 // RemoveObjects deletes all objects with the given prefix
 func (c *client) RemoveObjects(prefix string) error {
 	for retry := 0; retry < maxRetry; retry++ {
@@ -626,4 +787,56 @@ func (c *client) RemoveObjectsWithContext(ctx context.Context, bucketName string
 		}
 	}()
 	return outCh
+}
+
+func (c *client) SelectObjectContentExplicit(ctx context.Context,
+	serviceName string, objectName string, sqlExpression string,
+	inputSerializationType InputSerializationType,
+	outputSerializationType OutputSerializationType) (io.ReadCloser, error) {
+	ist, err := c.convertInputSerializationType(inputSerializationType)
+	if err != nil {
+		return nil, err
+	}
+	ost, err := c.convertOutputSerializationType(outputSerializationType)
+	if err != nil {
+		return nil, err
+	}
+
+	for retry := 0; retry < maxRetry; retry++ {
+		content, err := c.client.SelectObjectContentExplicit(ctx,
+			serviceName, objectName, sqlExpression,
+			ist, ost)
+		if err == nil {
+			return content, err
+		}
+
+		if !strings.Contains(err.Error(), connectErr) {
+			return nil, err
+		}
+
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("maximum retries exceeded to select object content, serviceName %s, objName %s, expr %s",
+		serviceName, objectName, sqlExpression)
+}
+
+func (c *client) convertInputSerializationType(inputSerializationType InputSerializationType) (minio.InputSerializationType, error) {
+	switch inputSerializationType {
+	case CSVGZIP:
+		return minio.CSVGZIP, nil
+	default:
+		return 0, fmt.Errorf("unsupported InputSerializationType")
+	}
+}
+
+func (c *client) convertOutputSerializationType(outputSerializationType OutputSerializationType) (minio.OutputSerializationType, error) {
+	switch outputSerializationType {
+	case CSV:
+		return minio.CSV, nil
+	default:
+		return 0, fmt.Errorf("unsupported OutputSerializationType")
+	}
 }

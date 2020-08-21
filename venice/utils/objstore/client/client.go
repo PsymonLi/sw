@@ -10,6 +10,9 @@ import (
 
 // Client is the object store client to put/get objects
 type Client interface {
+	// ListBuckets lists all the buckets existing in vos
+	ListBuckets(ctx context.Context) ([]string, error)
+
 	// PutObject uploads an object to the object store
 	PutObject(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string) (int64, error)
 
@@ -22,7 +25,9 @@ type Client interface {
 	// PutObjectExplicit will override the default service name given at time of initializing the client with the given
 	// service name.
 	// In terms of MinIO, the given serviceName will become the MinIO's bucket name
-	PutObjectExplicit(ctx context.Context, serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error)
+	PutObjectExplicit(ctx context.Context,
+		serviceName string, objectName string, reader io.Reader,
+		size int64, metaData map[string]string, contentType string) (int64, error)
 
 	// PutStreamObject uploads stream of objects to the object store
 	// each write() uploads a new object
@@ -32,6 +37,11 @@ type Client interface {
 	// GetObject gets the object from the object store
 	// the caller must close() the reader after read()
 	GetObject(ctx context.Context, objectName string) (io.ReadCloser, error)
+
+	// GetObjectExplicit gets the object from object store
+	// It will override the default service name given at time of initializing the client with the given
+	// service name.
+	GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error)
 
 	// GetStreamObjectAtOffset reads an object uploaded by PutStreamObject()
 	// caller must close() after read()
@@ -47,6 +57,10 @@ type Client interface {
 	// ListObjects lists all objects with the given prefix
 	ListObjects(prefix string) ([]string, error)
 
+	// ListObjectsExplicit will override the default service name given at time of initializing the client with the given
+	// service name.
+	ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error)
+
 	// RemoveObjects removes all objects with the given prefix
 	// this function walks through all the objects with the given prefix and deletes one object at a time
 	// status is returned at the end of the walk with details of the failed objects, if any
@@ -61,6 +75,16 @@ type Client interface {
 
 	// SetServiceLifecycleWithContext sets lifecycle on an existing service with a context to control cancellations and timeouts.
 	SetServiceLifecycleWithContext(ctx context.Context, serviceName string, lifecycle Lifecycle) error
+
+	// SelectObjectContentExplicit selects content from the object stored in object store.
+	SelectObjectContentExplicit(ctx context.Context,
+		serviceName string, objectName string, sqlExpression string,
+		inputSerializationType InputSerializationType,
+		outputSerializationType OutputSerializationType) (io.ReadCloser, error)
+
+	// FPutObjectExplicit - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+	FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+		metaData map[string]string, contentType string) (int64, error)
 }
 
 // ObjectStats is the object information returned from stats API

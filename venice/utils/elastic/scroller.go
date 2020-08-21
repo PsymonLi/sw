@@ -42,7 +42,7 @@ func (s *scroller) Read(p []byte) (int, error) {
 
 // next scrolls to the next search data. Returns io.EOF if there are no more search results
 func (s *scroller) next() error {
-	result, err := s.search()
+	result, err := s.Search()
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,14 @@ func (s *scroller) next() error {
 	return nil
 }
 
-func (s *scroller) search() (*es.SearchResult, error) {
+// Sort adds a sort order. This can have negative effects on the performance of the scroll operation as Elasticsearch needs to sort first.
+func (s *scroller) Sort(field string, ascending bool) Scroller {
+	s.request.Sort(field, ascending)
+	return s
+}
+
+// Search fetches the next set of results from the Scroller
+func (s *scroller) Search() (*es.SearchResult, error) {
 	retryCount := 0
 	retryInterval := initialRetryInterval
 

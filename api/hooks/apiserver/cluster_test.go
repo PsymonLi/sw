@@ -1834,7 +1834,7 @@ func (m *fakeOclient) PutObjectOfSize(ctx context.Context, objectName string, re
 
 // PutObjectExplicit uploads an object to object store under the given bucket name (i.e. serviceName)
 func (m *fakeOclient) PutObjectExplicit(ctx context.Context,
-	serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error) {
+	serviceName string, objectName string, reader io.Reader, size int64, metaData map[string]string, contentType string) (int64, error) {
 	return m.written, m.retErr
 }
 
@@ -1846,6 +1846,13 @@ func (m *fakeOclient) PutStreamObject(ctx context.Context, objectName string, me
 // GetObjectis a mock client implementation
 func (m *fakeOclient) GetObject(ctx context.Context, objectName string) (io.ReadCloser, error) {
 	return m, m.retErr
+}
+
+// GetObjectExplicit gets the object from object store
+// It will override the default service name given at time of initializing the client with the given
+// service name.
+func (m *fakeOclient) GetObjectExplicit(ctx context.Context, serviceName string, objectName string) (io.ReadCloser, error) {
+	return nil, nil
 }
 
 // GetStreamObjectAtOffset is a mock client implementation
@@ -1860,6 +1867,11 @@ func (m *fakeOclient) StatObject(objectName string) (*objstore.ObjectStats, erro
 
 // ListObjects is a mock client implementation
 func (m *fakeOclient) ListObjects(prefix string) ([]string, error) {
+	return nil, nil
+}
+
+// ListObjectsExplicit lists all objects with the given prefix and serviceName
+func (m *fakeOclient) ListObjectsExplicit(serviceName string, prefix string, recursive bool) ([]string, error) {
 	return nil, nil
 }
 
@@ -1881,6 +1893,25 @@ func (m *fakeOclient) RemoveObjectsWithContext(ctx context.Context, bucketName s
 // SetServiceLifecycleWithContext sets lifecycle on an existing service with a context to control cancellations and timeouts.
 func (m *fakeOclient) SetServiceLifecycleWithContext(ctx context.Context, serviceName string, lifecycle objstore.Lifecycle) error {
 	return nil
+}
+
+// SelectObjectContentExplicit selects content from the object stored in object store.
+func (m *fakeOclient) SelectObjectContentExplicit(ctx context.Context,
+	serviceName string, objectName string, sqlExpression string,
+	inputSerializationType objstore.InputSerializationType,
+	outputSerializationType objstore.OutputSerializationType) (io.ReadCloser, error) {
+	return nil, nil
+}
+
+// FPutObjectExplicit - Create an object in a bucket, with contents from file at filePath. Allows request cancellation.
+func (m *fakeOclient) FPutObjectExplicit(ctx context.Context, serviceName, objectName, filePath string,
+	metaData map[string]string, contentType string) (int64, error) {
+	return 0, nil
+}
+
+// ListBuckets lists all the buckets existing in vos
+func (m *fakeOclient) ListBuckets(ctx context.Context) ([]string, error) {
+	return nil, errors.New("unimplemented")
 }
 
 // Read is a mock implementation

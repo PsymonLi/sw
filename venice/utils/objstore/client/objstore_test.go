@@ -231,8 +231,8 @@ func TestPutObject(t *testing.T) {
 	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
 	tu.AssertOk(t, err, "putobj failed")
 
-	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil).Times(1)
-	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil, "")
 	tu.AssertOk(t, err, "putobj failed")
 
 	// failure
@@ -244,8 +244,8 @@ func TestPutObject(t *testing.T) {
 	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
 	tu.Assert(t, err != nil, "putobj succeeded ")
 
-	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("failed")).Times(1)
-	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("failed")).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil, "")
 	tu.Assert(t, err != nil, "putobj succeeded ")
 
 	// connect error
@@ -257,9 +257,13 @@ func TestPutObject(t *testing.T) {
 	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
 	tu.Assert(t, err != nil, "putobj succeeded")
 
-	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
-	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil, "")
 	tu.Assert(t, err != nil, "putobj succeeded")
+
+	mc.EXPECT().FPutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.FPutObjectExplicit(context.Background(), "testService", "obj1", "filepath", nil, "")
+	tu.Assert(t, err != nil, "fputobj succeeded")
 
 	err = r.AddServiceInstance(&types.ServiceInstance{
 		TypeMeta: api.TypeMeta{
@@ -329,6 +333,10 @@ func TestGetObject(t *testing.T) {
 	// connect error
 	mc.EXPECT().GetObject(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("%s", connectErr)).Times(1)
 	_, err = mockClient.GetObject(context.Background(), "obj1")
+	tu.Assert(t, err != nil, "getobj didn't fail on connect error")
+
+	mc.EXPECT().GetObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.GetObjectExplicit(context.Background(), "svc1", "obj1")
 	tu.Assert(t, err != nil, "getobj didn't fail on connect error")
 
 	err = r.AddServiceInstance(&types.ServiceInstance{
@@ -427,7 +435,7 @@ func TestStatObject(t *testing.T) {
 	tu.Assert(t, err != nil, "statobj didn't fail on connect error")
 }
 
-func TestListObjects(t *testing.T) {
+func TestListObjectsAndBuckets(t *testing.T) {
 	c := gomock.NewController(t)
 	defer c.Finish()
 
@@ -473,6 +481,11 @@ func TestListObjects(t *testing.T) {
 	tu.AssertOk(t, err, "listobj failed")
 	tu.Assert(t, len(objlist) == len(s), fmt.Sprintf("list objects didn't match"))
 
+	mc.EXPECT().ListObjectsExplicit(gomock.Any(), gomock.Any(), gomock.Any()).Return(objlist, nil).Times(1)
+	s, err = mockClient.ListObjectsExplicit("svc1", "obj1", true)
+	tu.AssertOk(t, err, "listobjsexplicit failed")
+	tu.Assert(t, len(objlist) == len(s), fmt.Sprintf("listobjsexplicit objects didn't match"))
+
 	// failure
 	mc.EXPECT().ListObjects(gomock.Any()).Return(nil, fmt.Errorf("failed")).Times(1)
 	_, err = mockClient.ListObjects("obj1")
@@ -510,6 +523,16 @@ func TestListObjects(t *testing.T) {
 	mc.EXPECT().ListObjects(gomock.Any()).Return(objlist, fmt.Errorf("%s", connectErr)).Times(1)
 	_, err = mockClient.ListObjects("obj1")
 	tu.Assert(t, err != nil, "listobj didn't fail on connect error")
+
+	mockClient.client = mc
+	mc.EXPECT().ListBuckets(gomock.Any()).Return(objlist, fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.ListBuckets(context.Background())
+	tu.Assert(t, err != nil, "ListBuckets didn't fail on connect error")
+
+	mc.EXPECT().ListBuckets(gomock.Any()).Return([]string{"bucket1"}, nil).Times(1)
+	s, err = mockClient.ListBuckets(context.Background())
+	tu.AssertOk(t, err, "ListBuckets failed")
+	tu.Assert(t, len(s) == 1, fmt.Sprintf("ListBuckets result didn't match"))
 }
 
 func TestRemoveObjects(t *testing.T) {
@@ -647,6 +670,50 @@ func TestSetServiceLifecycle(t *testing.T) {
 	mc.EXPECT().SetServiceLifecycleWithContext(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	err = mockClient.SetServiceLifecycleWithContext(context.Background(), "svc1", Lifecycle{true, "", 30})
 	tu.AssertOk(t, err, "SetServiceLifecycleWithContext failed")
+}
+
+func TestSelectObjectContent(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l, err := net.Listen("tcp", "127.0.0.1:")
+	tu.AssertOk(t, err, "failed listen")
+	minioServer(l)
+	defer l.Close()
+
+	r := mockresolver.New()
+
+	err = r.AddServiceInstance(&types.ServiceInstance{
+		TypeMeta: api.TypeMeta{
+			Kind: "ServiceInstance",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: "server2",
+		},
+		Service: globals.VosMinio,
+		URL:     l.Addr().(*net.TCPAddr).String(),
+	})
+	tu.AssertOk(t, err, "failed to add server2 service")
+
+	retryOpt := WithConnectRetries(1)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
+	tu.AssertOk(t, err, "failed create new client")
+	tu.Assert(t, oc != nil, "new client nil")
+
+	mc := mockmc.NewMockobjStoreBackend(c)
+
+	mockClient := &client{
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
+	}
+
+	// failure case
+	mc.EXPECT().SelectObjectContentExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.SelectObjectContentExplicit(context.Background(), "svc1", "obj1", "", InputSerializationType(CSVGZIP), CSV)
+	tu.Assert(t, err != nil, "SelectObjectContentExplicit passed, expected to fail")
 }
 
 func TestGetStreamObjectAtOffset(t *testing.T) {

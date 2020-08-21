@@ -295,6 +295,12 @@ const (
 
 	// MinPolicerBytesPerSecond is the minimum value allowed for packet based traffic policer
 	MinPolicerBytesPerSecond = 4000
+
+	// FwlogsIndexBucketName represents the bucket name used for storing fwlogs index in object store
+	FwlogsIndexBucketName = "indexmeta"
+
+	// FwlogsRawlogsBucketName is used for storing rawlogs for faster query index
+	FwlogsRawlogsBucketName = "rawlogs"
 )
 
 var (

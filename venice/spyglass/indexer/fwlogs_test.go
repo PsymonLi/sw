@@ -36,6 +36,7 @@ import (
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/spyglass/cache"
 	"github.com/pensando/sw/venice/spyglass/indexer"
+	"github.com/pensando/sw/venice/spyglass/searchvos"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/elastic"
 	"github.com/pensando/sw/venice/utils/events/recorder"
@@ -124,6 +125,16 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 	t.Run("TestVerifyVosRateLimitingAndEventsAtSpyglass", func(t *testing.T) {
 		verifyVosRateLimitingAndEventsAtSpyglass(t, tmAgentState)
 	})
+
+	// testRawLogsIndexRecreation recreates the index
+	t.Run("TestRawLogsIndexRecreation", func(t *testing.T) {
+		verifyRawLogsIndexRecreation(ctx, t, r, mockCredentialManager, logger, esClient)
+	})
+
+	// testRawLogsIndexDownload downloads the index
+	t.Run("TestRawLogsIndexDownload", func(t *testing.T) {
+		verifyRawLogsIndexDownload(ctx, t, r, mockCredentialManager, logger)
+	})
 }
 
 // SkipTestFlowLogsRateLimitingAtDSC tests the flow logs rate limiting functionality at DSC
@@ -150,6 +161,9 @@ func SkipTestFlowLogsRateLimitingAtDSC(t *testing.T) {
 
 func setupSpyglass(ctx context.Context, t *testing.T,
 	r resolver.Interface, es elastic.ESClient, logger log.Logger, credsManager minio.CredentialsManager) {
+	// Create the vos finder
+	vosFinder := searchvos.NewSearchFwLogsOverVos(ctx, r, logger, searchvos.WithCredentialsManager(credsManager))
+
 	// Create the indexer
 	go func(r resolver.Interface) {
 		cache := cache.NewCache(logger)
@@ -162,18 +176,37 @@ func setupSpyglass(ctx context.Context, t *testing.T,
 			indexer.WithDisableAPIServerWatcher(),
 			indexer.WithNumVosObjectsToDelete(1),
 			indexer.WithCredentialsManager(credsManager),
-			indexer.WithDiskMonitorCleanupInterval(time.Second*30))
+			indexer.WithDiskMonitorCleanupInterval(time.Second*30),
+			indexer.WithSearchVosHandler(vosFinder),
+			indexer.WithMetaIndexerPersistDuration(time.Second*10))
 
 		AssertOk(t, err, "failed to add indexer")
 		Assert(t, idxer != nil, "failed to create indexer")
 
+		go idxer.Start()
+
 		router := mux.NewRouter()
 		router.Methods("GET").Subrouter().Handle("/debug/vars", expvar.Handler())
 		router.Methods("GET", "POST").Subrouter().Handle("/debug/config", indexer.HandleDebugConfig(idxer))
+
+	outer:
+		for {
+			select {
+			case <-time.After(time.Second):
+				if idxer.GetVosClient() != nil && idxer.GetElasticClient() != nil {
+					router.Methods("GET").Subrouter().Handle("/debug/fwlogs/recreateindex",
+						searchvos.HandleDebugFwlogsRecreateIndex(ctx, idxer.GetVosClient(), idxer.GetElasticClient(), vosFinder, logger))
+					router.Methods("GET").Subrouter().Handle("/debug/fwlogs/downloadindex",
+						searchvos.HandleDebugFwlogsDownloadIndex(ctx, idxer.GetVosClient(), vosFinder, logger))
+					break outer
+				}
+			}
+		}
+
 		go http.ListenAndServe(fmt.Sprintf("127.0.0.1:%s", globals.SpyglassRESTPort), router)
 
-		err = idxer.Start()
-		AssertOk(t, err, "failed to start indexer")
+		// err = idxer.Start()
+		// AssertOk(t, err, "failed to start indexer")
 	}(r)
 }
 
@@ -553,6 +586,103 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context,
 		}
 		return false, nil
 	}, "failed to find flow logs reporting error event", "2s", "120s")
+}
+
+func verifyRawLogsIndexRecreation(ctx context.Context,
+	t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager,
+	logger log.Logger, esClient elastic.ESClient) {
+	// Wait for a minute so that all the objects gets indexed into elastic
+	time.Sleep(time.Minute)
+
+	var client objstore.Client
+	var err error
+	assert := func() (bool, interface{}) {
+		client, err = objstore.NewClient(globals.DefaultTenant, globals.FwlogsBucketName, r, objstore.WithCredentialsManager(credsManager))
+		return err == nil, client
+	}
+	AssertEventually(t, assert, "error in creating objstore client", string("1s"), string("200s"))
+
+	AssertEventually(t, func() (bool, interface{}) {
+		// Remove the old raw logs index
+		os.RemoveAll(searchvos.LocalFlowsLocation)
+
+		// Verify that the directory si deleted
+		_, err := os.Stat(searchvos.LocalFlowsLocation)
+		if !os.IsNotExist(err) {
+			return false, nil
+		}
+
+		count, err := searchvos.RecreateRawLogsIndex(ctx,
+			time.Now().Add(-1*time.Hour), time.Now(), logger, client, esClient, searchvos.WithPersistDuration(time.Second*10))
+		if err != nil {
+			logger.Errorf("temp error in recreating index %+v", err)
+			return false, nil
+		}
+
+		if count == 0 {
+			return false, nil
+		}
+
+		logger.Infof("Reindexed objects %d", count)
+
+		// Verify that the new index is there
+		_, err = os.Stat(searchvos.LocalFlowsLocation)
+		return err == nil, nil
+	}, "failed to reindex flow logs", "2s", "120s")
+
+	// Also run the debug handle
+	logger.Infof("triggering recreateindex debug handle")
+	startTs := time.Now().Add(-1 * time.Hour)
+	endTs := time.Now()
+	uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/recreateindex")
+	uri += fmt.Sprintf("?startts=%s", startTs.Format("2006-01-02T15:04:05"))
+	uri += fmt.Sprintf("&endts=%s", endTs.Format("2006-01-02T15:04:05"))
+	resp, err := http.Get(uri)
+	AssertOk(t, err, "error is getting /debug/fwlogs/recreateindex")
+	defer resp.Body.Close()
+}
+
+func verifyRawLogsIndexDownload(ctx context.Context,
+	t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager,
+	logger log.Logger) {
+	// Wait for a minute so that all the objects gets indexed into elastic
+	time.Sleep(time.Minute)
+
+	var client objstore.Client
+	var err error
+	assert := func() (bool, interface{}) {
+		client, err = objstore.NewClient(globals.DefaultTenant, globals.FwlogsBucketName, r, objstore.WithCredentialsManager(credsManager))
+		return err == nil, client
+	}
+	AssertEventually(t, assert, "error in creating objstore client", string("1s"), string("200s"))
+
+	AssertEventually(t, func() (bool, interface{}) {
+		// Remove the old raw logs index
+		os.RemoveAll(searchvos.LocalFlowsLocation)
+
+		// Verify that the directory si deleted
+		_, err := os.Stat(searchvos.LocalFlowsLocation)
+		if !os.IsNotExist(err) {
+			return false, nil
+		}
+
+		err = searchvos.DownloadRawLogsIndex(ctx, logger, client)
+		if err != nil {
+			logger.Errorf("temp error in downloading index %+v", err)
+			return false, nil
+		}
+
+		// Verify that the new index is there
+		_, err = os.Stat(searchvos.LocalFlowsLocation)
+		return err == nil, nil
+	}, "failed to download flowlogs index", "2s", "120s")
+
+	// Also run the debug handle
+	logger.Infof("triggering downloadindex debug handle")
+	uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/downloadindex")
+	resp, err := http.Get(uri)
+	AssertOk(t, err, "error is getting /debug/fwlogs/downloadindex")
+	defer resp.Body.Close()
 }
 
 func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager) *tmagentstate.PolicyState {

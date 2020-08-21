@@ -1,5 +1,10 @@
 package indexer
 
+import (
+	"github.com/pensando/sw/venice/utils/elastic"
+	objstore "github.com/pensando/sw/venice/utils/objstore/client"
+)
+
 // Interface is an interface for Indexing functionality
 type Interface interface {
 
@@ -32,6 +37,12 @@ type Interface interface {
 	// Length of IDs and objects should match and there is one corelation
 	// between elements in IDs and objects slice.
 	Bulk(index string, IDs []string, objects []interface{}) error
+
+	// GetVosClient returns the vos client of this indexer
+	GetVosClient() objstore.Client
+
+	// GetVosClient returns the elastic client of this indexer
+	GetElasticClient() elastic.ESClient
 }
 
 // RunningStatus represents the status of indexer
