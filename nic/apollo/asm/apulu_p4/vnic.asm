@@ -13,6 +13,9 @@ vnic_info:
     seq             c7, k.control_metadata_rx_packet, TRUE
     phvwr.c7        p.p4i_i2e_mirror_session, d.vnic_info_d.rx_mirror_session
     phvwr.!c7       p.p4i_i2e_mirror_session, d.vnic_info_d.tx_mirror_session
+    sne             c6, d.vnic_info_d.public_mac, r0
+    andcf           c6, [!c7]
+    phvwr.c6        p.ethernet_1_srcAddr, d.vnic_info_d.public_mac
     phvwr           p.control_metadata_binding_check_enabled, \
                         d.vnic_info_d.binding_check_enabled
     phvwr           p.p4i_to_arm_epoch, d.vnic_info_d.epoch

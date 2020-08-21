@@ -127,7 +127,7 @@ action lif_vlan_info(vnic_id, bd_id, vpc_id) {
 
     // keys for mapping lookup
     modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
-    modify_field(p4i_i2e.mapping_lkp_type, ethernet_1.dstAddr);
+    modify_field(p4i_i2e.mapping_lkp_addr, ethernet_1.dstAddr);
     modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
 }
 
@@ -182,17 +182,17 @@ action vni_info(vnic_id, bd_id, vpc_id, is_l3_vnid) {
     // keys for local mapping lookup
     if (ipv4_2.valid == TRUE) {
         modify_field(key_metadata.local_mapping_lkp_type, KEY_TYPE_IPV4);
-        modify_field(key_metadata.local_mapping_lkp_type, ipv4_2.dstAddr);
+        modify_field(key_metadata.local_mapping_lkp_addr, ipv4_2.dstAddr);
         modify_field(key_metadata.local_mapping_lkp_id, vnic_metadata.vpc_id);
     } else {
         modify_field(key_metadata.local_mapping_lkp_type, KEY_TYPE_MAC);
-        modify_field(key_metadata.local_mapping_lkp_type, ethernet_2.dstAddr);
+        modify_field(key_metadata.local_mapping_lkp_addr, ethernet_2.dstAddr);
         modify_field(key_metadata.local_mapping_lkp_id, vnic_metadata.bd_id);
     }
 
     // keys for mapping lookup
     modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
-    modify_field(p4i_i2e.mapping_lkp_type, ethernet_2.dstAddr);
+    modify_field(p4i_i2e.mapping_lkp_addr, ethernet_2.dstAddr);
     modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
 }
 
@@ -223,11 +223,14 @@ table vni_otcam {
 /* VNIC info (Ingress)                                                        */
 /******************************************************************************/
 action vnic_info(epoch, meter_enabled, rx_mirror_session, tx_mirror_session,
-                 tx_policer_id, binding_check_enabled) {
+                 tx_policer_id, binding_check_enabled, public_mac) {
     if (control_metadata.rx_packet == TRUE) {
         modify_field(p4i_i2e.mirror_session, rx_mirror_session);
     } else {
         modify_field(p4i_i2e.mirror_session, tx_mirror_session);
+        if (public_mac != 0) {
+            modify_field(ethernet_1.srcAddr, public_mac);
+        }
     }
     modify_field(control_metadata.binding_check_enabled, binding_check_enabled);
     modify_field(p4i_to_arm.epoch, epoch);
@@ -366,8 +369,11 @@ table p4e_bd {
 /******************************************************************************/
 /* Rx VNIC info (Egress)                                                      */
 /******************************************************************************/
-action rx_vnic_info(rx_policer_id) {
+action rx_vnic_info(rx_policer_id, private_mac) {
     modify_field(vnic_metadata.rx_policer_id, rx_policer_id);
+    if (private_mac != 0) {
+        modify_field(ethernet_1.dstAddr, private_mac);
+    }
 }
 
 @pragma stage 3

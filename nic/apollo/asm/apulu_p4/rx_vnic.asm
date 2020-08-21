@@ -10,9 +10,10 @@ struct phv_         p;
 %%
 
 rx_vnic_info:
+    sne             c1, d.rx_vnic_info_d.private_mac, r0
     phvwr.e         p.vnic_metadata_rx_policer_id, \
                         d.rx_vnic_info_d.rx_policer_id
-    nop
+    phvwr.c1        p.ethernet_1_dstAddr, d.rx_vnic_info_d.private_mac
 
 /*****************************************************************************/
 /* error function                                                            */
