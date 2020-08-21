@@ -63,7 +63,8 @@ if_entry::factory(pds_if_spec_t *spec) {
     intf = if_db()->alloc();
     if (intf) {
         new (intf) if_entry();
-        intf->impl_ = (if_impl_base *)impl_base::factory(impl::IMPL_OBJ_ID_IF, spec);
+        intf->impl_ = (if_impl_base *)impl_base::factory(impl::IMPL_OBJ_ID_IF,
+                                                         spec);
     }
     return intf;
 }
@@ -303,8 +304,7 @@ if_entry::cleanup_config(api_obj_ctxt_t *obj_ctxt) {
 
 bool
 if_entry::circulate(api_obj_ctxt_t *obj_ctxt) {
-    if ((type_ == IF_TYPE_L3) || (type_ == IF_TYPE_LOOPBACK) ||
-        (type_ == IF_TYPE_HOST)) {
+    if ((type_ == IF_TYPE_L3) || (type_ == IF_TYPE_LOOPBACK)) {
         return true;
     }
     return false;
