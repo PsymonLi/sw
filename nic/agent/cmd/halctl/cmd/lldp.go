@@ -106,7 +106,7 @@ func printIfLldpInfo(resp *halproto.InterfaceGetResponse, cmdType int, numIntfs 
 	*numIntfs++
 
 	nbrProto := strings.Replace(lldpStatus.GetProto().String(), "LLDP_MODE_", "", -1)
-	fmt.Printf("Interface : %s, Port : %s\n", ifStr, portNum)
+	fmt.Printf("Interface : %s\n", ifStr)
 	rID := lldpStatus.GetRouterId()
 	if rID == 0 {
 		rID = 1

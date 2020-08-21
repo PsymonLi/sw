@@ -1038,6 +1038,9 @@ func initAllowedCommands() {
 	allowedCommands["halctlshowncsimac"] = 49
 	allowedCommands["halctlshowncsimcast"] = 50
 	allowedCommands["halctlshowncsibcast"] = 51
+	allowedCommands["halctlshowlldpneighbors"] = 52
+	allowedCommands["halctlshowlldpinterfaces"] = 53
+	allowedCommands["halctlshowlldpstatistics"] = 54
 }
 
 func isCmdAllowed(cmd string) bool {
@@ -1243,6 +1246,15 @@ func naplesExecCmd(req *nmd.DistributedServiceCardCmdExecute) (string, error) {
 	} else if req.Executable == "halctlshowncsibcast" {
 		req.Executable = "halctl"
 		req.Opts = "show ncsi bcast"
+	} else if req.Executable == "halctlshowlldpneighbors" {
+		req.Executable = "halctl"
+		req.Opts = "show lldp neighbors"
+	} else if req.Executable == "halctlshowlldpinterfaces" {
+		req.Executable = "halctl"
+		req.Opts = "show lldp interfaces"
+	} else if req.Executable == "halctlshowlldpstatistics" {
+		req.Executable = "halctl"
+		req.Opts = "show lldp statistics"
 	}
 	return executeCmd(req, strings.Fields(req.Opts))
 }
