@@ -5,30 +5,29 @@
                  [selectedIndex]="tabIndex">
     <mat-tab
              label="PENDING {{ (pendingRollouts && pendingRollouts.length >0)?  ' (' +  pendingRollouts.length + ')' : '(0)' }}">
-      <app-tableviewedit fxLayout="column" style="height: 100%"
-                         [creatingMode]="creatingMode"
-                         [showRowExpand]="showRowExpand"
-                         [data]="pendingRollouts"
-                         [cols]="cols"
-                         [expandedRowData]="expandedRowData"
-                         [captionTemplate]="captionTemplate_pending"
-                         [bodyTemplate]="bodyTemplate"
-                         [expandTemplate]="expandTemplate"
-                         [actionTemplate]="actionTemplatePending"
-                         [createTemplate]="createTemplate"
-                         (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-      </app-tableviewedit>
+
+      <app-pentable #pendingRolloutTable
+                    [data]="pendingRollouts"
+                    [columns]="cols"
+                    [rowHeight]="46"
+                    [captionTemplate]="captionTemplate_pending"
+                    [bodyTemplate]="bodyTemplate"
+                    [expandTemplate]="expandTemplate"
+                    [actionTemplate]="actionTemplatePending"
+                    [createTemplate]="createTemplate">
+      </app-pentable>
     </mat-tab>
     <mat-tab label="PAST {{ (pastRollouts && pastRollouts.length >0)? ' (' +  pastRollouts.length + ')' : '(0)' }}"
              [disabled]="isToDisablePastTab()">
-      <app-tableviewedit #pastRolloutTable fxLayout="column" style="height: 100%"
-                         [data]="pastRollouts"
-                         [cols]="cols"
-                         [captionTemplate]="captionTemplate_past"
-                         [bodyTemplate]="bodyTemplate"
-                         [actionTemplate]="actionTemplatePast"
-                         [enableCheckbox]="true">
-      </app-tableviewedit>
+      <app-pentable #pastRolloutTable fxLayout="column" style="height: 100%"
+                    [data]="pastRollouts"
+                    [columns]="cols"
+                    [rowHeight]="46"
+                    [captionTemplate]="captionTemplate_past"
+                    [bodyTemplate]="bodyTemplate"
+                    [actionTemplate]="actionTemplatePast"
+                    [enableCheckbox]="true">
+      </app-pentable>
     </mat-tab>
   </mat-tab-group>
 </app-pagebody>
@@ -111,7 +110,8 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-newrollout (formClose)="closeRowExpand()" [selectedRolloutData]="rowData" [isInline]="true"
+  <app-newrollout (formClose)="editFormClose(rowData)" [selectedRolloutData]="rowData"
+                  [isInline]="true"
                   [existingObjects]="dataObjects"
                   [rolloutImages]="rolloutImages"></app-newrollout>
 </ng-template>

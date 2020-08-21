@@ -23,10 +23,6 @@ $vertical-gutter: 5px;
   font-size: 20px;
 }
 
-.imageupload-table {
-  margin-top: 10px;
-}
-
 .imageupload-panel-table {
   margin-top: 10px;
 }
@@ -34,6 +30,7 @@ $vertical-gutter: 5px;
 .imageupload-panel-table .mat-expansion-panel-content,
 .imageupload-panel-table .mat-expansion-panel-content .mat-expansion-panel-body {
   height: 100%;
+  overflow-y: auto;
 }
 
 .imageupload-fileupload-progress-span {
@@ -47,4 +44,19 @@ $vertical-gutter: 5px;
 
 .imageupload-expansionpanel-header {
   border: 1px #eee solid;
+}
+
+.imageupload-table-container {
+  margin-top: 10px;
+}
+
+.imageupload-table {
+  .ui-table-wrapper {
+    border-right: 1px solid #d9d9d9;
+    border-left: 1px solid #d9d9d9;
+  }
+
+  .pentable-widget .ui-paginator-bottom.ui-widget-header {
+    border-color: #d9d9d9;
+  }
 }

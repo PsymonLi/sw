@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ChangeDetectorRef, OnDestroy, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Observable } from 'rxjs';
 
@@ -18,6 +18,8 @@ import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { RolloutService } from '@app/services/generated/rollout.service';
 import { RolloutRollout } from '@sdk/v1/models/generated/rollout';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 /**
  * This component let user upload Venice rollout images and manage existing images.
@@ -46,9 +48,13 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
   encapsulation: ViewEncapsulation.None
 })
 
-export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject, ObjstoreObject> implements OnInit, OnDestroy {
+export class ImageuploadComponent extends DataComponent implements OnInit, OnDestroy {
+
+  @ViewChild('imageUploadTable') imageUploadTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ObjstoreObject> = [];
+  tableLoading: boolean;
+
   isTabComponent: boolean = false;
   exportMap: CustomExportMap = {};
   disableTableWhenRowExpanded: boolean = true;
@@ -92,12 +98,9 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
     private rolloutService: RolloutService,
     protected uiconfigsService: UIConfigsService
   ) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
   setDefaultToolbar(): void {
     const breadcrumb = [{ label: 'System Upgrade', url: Utility.getBaseUIUrl() + 'admin/upgrade' }, { label: 'Images', url: '' }];
     const buttons = [];
@@ -116,8 +119,9 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
     });
   }
 
-  postNgInit() {
-    this.controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'ImageuploadComponent', 'state': Eventtypes.COMPONENT_INIT });
+  ngOnInit(): void {
+    super.ngOnInit();
+    this.penTable = this.imageUploadTable;
     this.getRolloutImages();
     this.subcribeToBackgroundFileUploadEvents();
   }
@@ -185,12 +189,18 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
    */
 
   getRolloutImages() {
+    this.tableLoading = true;
+    this.refreshGui(this.cdr);
     const sub = this.objstoreService.ListObject(Utility.ROLLOUT_IMGAGE_NAMESPACE).subscribe(
       (response) => {
         this.processRolloutImages(response);
+        this.tableLoading = false;
+        this.refreshGui(this.cdr);
       },
-      (error) => {
-        this.controllerService.invokeRESTErrorToaster('Failed to fetch rollout images.', error);
+      () => {
+        this.tableLoading = false;
+        this.controllerService.restErrorHandler('Failed to fetch rollout images.');
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(sub);
@@ -313,6 +323,7 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
     this.showUploadButton = true;
     this._xhr = null;
     BackgroundProcessManager.getInstance().unRegisterVeniceImageFileUpload();
+    this.refreshGui(this.cdr);
   }
 
   getFilesNames(files: any[]): string[] {
@@ -380,7 +391,6 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
   }
 
   ngOnDestroy() {
-    this.controllerService.publish(Eventtypes.COMPONENT_DESTROY, { 'component': 'ImageuploadComponent', 'state': Eventtypes.COMPONENT_DESTROY });
     if (this.isFileUploadInProgress() && this.uploadInForeground) {
       //  When user leaves upload image page, we don't cancel upload (//this.cancelUpload()), instead we put upload process in background.
       BackgroundProcessManager.getInstance().registerVeniceImageFileUpload(this._xhr, this.uploadingFiles);
@@ -407,7 +417,11 @@ export class ImageuploadComponent extends TablevieweditAbstract<IObjstoreObject,
         this.setDefaultToolbar();
         this.splitRollouts();
       },
-      this.controllerService.webSocketErrorHandler('Failed to get Rollouts info')
+      () => {
+        this.tableLoading = false;
+        this.controllerService.restErrorHandler('Failed to get Rollouts info');
+        this.refreshGui(this.cdr);
+      }
     );
     this.subscriptions.push(subscription);
   }

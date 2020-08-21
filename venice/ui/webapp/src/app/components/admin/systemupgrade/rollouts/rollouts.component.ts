@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, Input, ViewEncapsulation, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, Input, ViewEncapsulation, ViewChild, OnInit} from '@angular/core';
 import {Animations} from '@app/animations';
 import {Utility} from '@app/common/Utility';
 import { TablevieweditAbstract, TablevieweditHTMLComponent } from '@app/components/shared/tableviewedit/tableviewedit.component';
@@ -15,7 +15,10 @@ import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit'
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { RolloutUtil } from '@app/components/admin/systemupgrade/rollouts/RolloutUtil.ts';
-
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
+import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 /**
  * This component let user manage Venice Rollouts.
  * User can run CRUD opeations.  As well, user can click on one rollout to watch rollout status.
@@ -29,10 +32,13 @@ import { RolloutUtil } from '@app/components/admin/systemupgrade/rollouts/Rollou
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, RolloutRollout> {
-  @ViewChild('pastRolloutTable') pastRolloutTable: TablevieweditHTMLComponent;
+export class RolloutsComponent extends DataComponent implements OnInit {
+  @ViewChild('pendingRolloutTable') pendingRolloutTable: PentableComponent;
+  @ViewChild('pastRolloutTable') pastRolloutTable: PentableComponent;
+  tableLoading: boolean;
 
-  dataObjects: ReadonlyArray<RolloutRollout>;
+  dataObjects: ReadonlyArray<RolloutRollout> = [];
+  dataObjectsBackUp: ReadonlyArray<RolloutRollout> = [];
   pendingRollouts: RolloutRollout[] = [];
   pastRollouts: RolloutRollout[] = [];
 
@@ -53,21 +59,21 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   };
 
   cols: TableCol[] = [
-    {field: 'meta.name', header: 'Name', class: '', sortable: true, width: 10},
+    {field: 'meta.name', header: 'Name', class: '', sortable: true, width: 100},
     {field: 'meta.mod-time', header: 'Updated Time', class: '', sortable: true, width: '180px'},
     {field: 'meta.creation-time', header: 'Creation Time', class: '', sortable: true, width: '180px'},
-    {field: 'spec.version', header: 'Version', class: '', sortable: true},
+    {field: 'spec.version', header: 'Version', class: '', sortable: true, width: 100},
     {
       field: 'spec.scheduled-start-time',
       header: 'Scheduled Start Time',
       class: '',
       sortable: true,
-      width: 10
+      width: '180px'
     },
-    {field: 'spec.strategy', header: 'Strategy', class: '', sortable: true, width: 10},
-    {field: 'spec.upgrade-type', header: 'Upgrade Type', class: '', sortable: true, width: 10},
-    {field: 'status.prev-version', header: 'Prev Version', class: '', sortable: true},
-    {field: 'status.state', header: 'State', class: '', sortable: true, width: 20},
+    {field: 'spec.strategy', header: 'Strategy', class: '', sortable: true, width: 100},
+    {field: 'spec.upgrade-type', header: 'Upgrade Type', class: '', sortable: true, width: 100},
+    {field: 'status.prev-version', header: 'Prev Version', class: '', sortable: true, width: 100},
+    {field: 'status.state', header: 'State', class: '', sortable: true, width: 200},
   ];
 
   exportFilename: string = 'PSM-rollouts';
@@ -77,6 +83,7 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   currentIndex: number = 0;
 
   isFirstDataLoad: boolean = true;
+  shouldEnableButtons: boolean = true;
 
   constructor(protected controllerService: ControllerService,
               protected cdr: ChangeDetectorRef,
@@ -84,7 +91,7 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
               protected objstoreService: ObjstoreService,
               protected router: Router,
               protected uiconfigsService: UIConfigsService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
   /**
@@ -97,17 +104,13 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   creationFormClose() {
     super.creationFormClose();
     if (this.currentIndex !== this.tabIndex) {
-      setTimeout(() => {this.tabIndex = this.currentIndex; }, 200);
+       setTimeout(() => { this.changeTabAssignTable(this.currentIndex); }, 200);
     }
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-
-  postNgInit() {
-    this.setDefaultToolbar();
+  ngOnInit(): void {
+    super.ngOnInit();
+    this.penTable = this.tabIndex === 1 ? this.pastRolloutTable : this.pendingRolloutTable;
     this.getRollouts();
     this.getRolloutImages();
   }
@@ -121,9 +124,13 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
         this.dataObjects = response.data as ReadonlyArray<RolloutRollout>;
         this.setDefaultToolbar();
         this.splitRollouts();
+        this.tableLoading = false;
+        this.refreshGui(this.cdr);
       },
-      (error) => {
-        this.controllerService.invokeErrorToaster('Error - Failed to fetch Rollouts', error);
+      () => {
+        this.tableLoading = false;
+        this.controllerService.restErrorHandler('Failed to fetch Rollouts.');
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(subscription);
@@ -140,7 +147,8 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
       }
     }
     if (this.isFirstDataLoad) {
-       this.tabIndex  = (this.pendingRollouts.length === 0) ? 1 : 0; // If there is no pending rollout, switch to past rollout tab
+       const newIndex = (this.pendingRollouts.length === 0) ? 1 : 0; // If there is no pending rollout, switch to past rollout tab
+       this.changeTabAssignTable(newIndex);
        this.isFirstDataLoad = false;
     }
   }
@@ -191,10 +199,10 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
             // Switching to PENDING Tab for creation if on some other Tab
             this.currentIndex = this.tabIndex;
             if (this.tabIndex === 0) {
-              this.createNewObject();
+              this.penTable.createNewObject();
             } else {
-              this.tabIndex = 0;
-              setTimeout(() => {this.createNewObject(); }, 200);
+              this.changeTabAssignTable(0);
+              setTimeout(() => {this.penTable.createNewObject(); }, 200);
             }
           }
         }
@@ -250,7 +258,7 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   // Row expansion toggle
   onRowClick(event, rowData) {
     if (this.selectedRollOut) {
-      this.closeRowExpand();
+      this.editFormClose(rowData);
       this.selectedRollOut = null;
     } else {
       this.selectedRollOut = rowData;
@@ -274,7 +282,12 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
 
   selectedIndexChangeEvent(event) {
     // console.log('tab' + event);
-    this.tabIndex = event;
+    this.changeTabAssignTable(event);
+  }
+
+  changeTabAssignTable(newIndex: number) {
+    this.tabIndex = newIndex;
+    this.penTable =  this.tabIndex ? this.pastRolloutTable : this.pendingRolloutTable;
   }
 
   dump(obj): string {
@@ -282,7 +295,7 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   }
 
   isToDisablePastTab(): boolean {
-    return (this.creatingMode);
+    return (this.pendingRolloutTable.creatingMode);
   }
 
   isDeletable(data): boolean {
@@ -294,10 +307,12 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   }
 
   // override method
-  getSelectedDataObjects(): any[] {
-    if (this.tabIndex === 0) {
-      return super.getSelectedDataObjects();
-    }
-    return (this.tabIndex === 1 && this.pastRolloutTable && this.pastRolloutTable.selectedDataObjects) ? this.pastRolloutTable.selectedDataObjects : [];
+  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
+    this.tableLoading = false;
+  }
+
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
+    this.tableLoading = false;
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
   }
 }

@@ -44,13 +44,20 @@
         Images Repository
       </mat-panel-title>
     </mat-expansion-panel-header>
-    <app-tableviewedit fxFlex="auto" fxLayout="column" class="imageupload-table"
-                       [data]="dataObjects" [cols]="cols"
-                       [virtualRowHeight]="48" [sortField]="startingSortField"
-                       [sortOrder]="startingSortOrder" [tableLoading]="loading"
-                       [captionTemplate]="captionTemplate" [bodyTemplate]="bodyTemplate"
-                       [actionTemplate]="actionTemplate">
-    </app-tableviewedit>
+    <div class="imageupload-table-container">
+      <app-pentable #imageUploadTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    class="imageupload-table"
+                    [columns]="cols"
+                    [data]="dataObjects"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap"
+                    [loading]="tableLoading"
+                    [rowHeight]="46">
+      </app-pentable>
+    </div>
   </mat-expansion-panel>
 
 </app-pagebody>
