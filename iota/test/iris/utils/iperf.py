@@ -31,6 +31,9 @@ def ServerCmd(port = None, time=None, run_core=None, jsonOut=False, naples=False
     if jsonOut:
         cmd.append("-J")
 
+    # no periodic output
+    cmd.extend(["-i", "0"])
+
     if os != "windows" or naples:
         return " ".join(cmd)
     else:
@@ -95,6 +98,9 @@ def ClientCmd(server_ip, port = None, time=10, pktsize=None, proto='tcp', run_co
 
     if packet_count:
         cmd.extend(["-k", str(packet_count)])
+
+    # no periodic output
+    cmd.extend(["-i", "0"])
 
     if os != "windows" or naples:
         return " ".join(cmd)
@@ -209,6 +215,23 @@ def GetReceivedMbps(iperf_out):
         return ('{0:.2f}'.format(end["sum_received"]["bits_per_second"]/(1024 * 1024)))
     return ('{0:.2f}'.format(end["sum"]["bits_per_second"]/(1024 * 1024)))
 
+def GetReceivedPPS(iperf_out):
+    iperfJson = __get_json(iperf_out)
+    end = iperfJson.get("end", None)
+    if not end:
+        return '0'
+    if iperfJson["start"]["test_start"]["protocol"] == 'TCP':
+        return '0'
+    return ('{0:.2f}'.format(end["sum"]["packets"]/end["sum"]["seconds"]))
+
+def GetLostPackets(iperf_out):
+    iperfJson = __get_json(iperf_out)
+    end = iperfJson.get("end", None)
+    if not end:
+        return '0'
+    if iperfJson["start"]["test_start"]["protocol"] == 'TCP':
+        return '0'
+    return (end["sum"]["lost_packets"])
 
 if __name__ == '__main__':
     out = open("/Users/sudhiaithal/Downloads/test.json", "r")

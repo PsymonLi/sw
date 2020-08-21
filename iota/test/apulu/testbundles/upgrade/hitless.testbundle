@@ -15,3 +15,4 @@ testcases:
         args        :
             sleep             : 300
             naples_upgr_pkg   : "naples_fw_issu.tar"
+            iperf             : True

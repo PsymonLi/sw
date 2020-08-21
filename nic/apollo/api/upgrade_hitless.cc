@@ -711,8 +711,8 @@ upg_ev_sync (upg_ev_params_t *params)
             memset(&info, 0, sizeof(upg_obj_info_t));
             info.obj_id = id;
             // detect and assert for objs which were restored but never replayed
-            PDS_TRACE_ERR("check obj id %u for stale objs, total %u were stashed",
-                          id, hdr[id].obj_count);
+            PDS_TRACE_DEBUG("check obj id %u for stale objs, total %u were stashed",
+                            id, hdr[id].obj_count);
             restore_stale_obj_check(id, &info);
             if (info.backup.stashed_obj_count) {
                 PDS_TRACE_ERR("obj id %u, has %u stale objs", id,

@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import time
 import random
+import re
 import iota.harness.api as api
 import iota.test.iris.utils.iperf as iperf
 import iota.test.utils.hping as hping
@@ -146,7 +147,7 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
         else:
             port = api.AllocateTcpPort()
 
-        serverCmd = iperf.ServerCmd(port)
+        serverCmd = iperf.ServerCmd(port, jsonOut=True)
         clientCmd = iperf.ClientCmd(server_addr, port, time, packet_size, proto, None, ipproto, bandwidth, num_of_streams, jsonOut=True)
 
         cmd_cookie = "Server: %s(%s:%s:%d) <--> Client: %s(%s)" %\
@@ -173,7 +174,7 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
         api.Trigger_TerminateAllCommands(server_resp)
         return [cmdDesc, serverCmds, clientCmds], client_resp
 
-def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
+def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0, server_rsp=False):
     result = api.types.status.SUCCESS
     conn_timedout = 0
     control_socker_err = 0
@@ -184,6 +185,14 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
         api.Logger.debug("Iperf Result for %s" % (cmdDesc[idx]))
         api.Logger.debug("Iperf Server cmd %s" % (serverCmds[idx]))
         api.Logger.debug("Iperf Client cmd %s" % (clientCmds[idx]))
+        # for server logs we need to remove the last summary data. otherwise
+        # json parser fails
+        if server_rsp:
+            try:
+                off = re.search('\n{', cmd.stdout).start()
+                cmd.stdout = cmd.stdout[0:off+1]
+            except:
+                pass
         if cmd.exit_code != exit_code:
             api.Logger.error("Iperf client exited with error")
             api.PrintCommandResults(cmd)
@@ -204,8 +213,11 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
         elif not api.GlobalOptions.dryrun:
             tx_bw = iperf.GetSentMbps(cmd.stdout)
             rx_bw = iperf.GetReceivedMbps(cmd.stdout)
+            rx_pps = iperf.GetReceivedPPS(cmd.stdout)
+
             api.Logger.info(f"Iperf Send Rate {tx_bw} Mbps")
             api.Logger.info(f"Iperf Receive Rate {rx_bw} Mbps ")
+            api.Logger.info(f"Iperf Receive Rate {rx_pps} Packets/sec ")
             api.Logger.debug(f"Expected Rate min:{min_bw} Mbps max:{max_bw} Mbps")
             if min_bw:
                 if float(tx_bw) < float(min_bw) or float(rx_bw) < float(min_bw):
@@ -295,3 +307,20 @@ def ARPingWorkloads(workload_pairs, update_neighbor=False, send_dad=False, count
 
     resp = api.Trigger(req)
     return cmd_cookies, resp
+
+def IperfUdpPktLossVerify(cmd_cookies, server_rsp):
+    cmdDesc = cmd_cookies[0]
+    lost_duration_in_s = 0
+    for idx, cmd in enumerate(server_rsp.commands):
+        api.Logger.debug("Iperf packet loss verify for %s" % (cmdDesc[idx]))
+        rx_pps = float(iperf.GetReceivedPPS(cmd.stdout))
+        lost_pkts = iperf.GetLostPackets(cmd.stdout);
+        if int(rx_pps) == 0:
+            lost_duration = 0
+        else:
+            lost_duration = ((lost_pkts)/rx_pps)
+        if lost_duration_in_s < lost_duration:
+            lost_duration_in_s = lost_duration
+        api.Logger.info("Iperf received %.2f pkts/sec, lost pkts %u, lost duration %.4f sec"
+                        %(rx_pps, lost_pkts, float(lost_duration)))
+    return lost_duration_in_s

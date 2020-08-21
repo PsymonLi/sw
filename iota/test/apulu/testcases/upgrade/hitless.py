@@ -20,6 +20,41 @@ from apollo.oper.upgrade import client as UpgradeClient
 
 skip_connectivity_failure = False
 
+def check_max_pktloss_limit(tc, pkt_loss_duration):
+    if pkt_loss_duration != 0:
+        indent = "-" * 10
+        api.Logger.info(f"{indent} Packet Loss duration during UPGRADE of {tc.nodes} is {pkt_loss_duration} secs {indent}")
+        if tc.allowed_down_time and (pkt_loss_duration > tc.allowed_down_time):
+            api.Logger.info(f"{indent} Exceeded allowed Loss Duration {tc.allowed_down_time} secs {indent}")
+            # Failing test based on longer traffic loss duration is commented for now.
+            # enable below line when needed.
+            return api.types.status.FAILURE
+    else:
+        api.Logger.info("No Packet Loss Found during UPGRADE Test")
+    return api.types.status.SUCCESS
+
+def ping_traffic_stop_and_verify(tc):
+    if ping.TestTerminateBackgroundPing(tc, tc.pktsize,\
+                                        pktlossverif=tc.pktlossverif) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Ping background command termination.")
+        return api.types.status.FAILURE
+    # calculate max packet loss duration for background ping
+    pkt_loss_duration = ping.GetMaxPktLossDuration(tc, interval=tc.interval)
+    return check_max_pktloss_limit(tc, pkt_loss_duration)
+
+def iperf_traffic_stop_and_verify(tc):
+    # iperf we need to terminate first client or server based on which logs
+    # we are looking at. otherwise the json output will not have the correct
+    # timestamps because of interval dump is disabled
+    tc.server_term_resp = api.Trigger_TerminateAllCommands(tc.server_resp)
+    tc.client_term_resp = api.Trigger_TerminateAllCommands(tc.client_resp)
+    if traffic.verifyIPerf(tc.cmd_desc, tc.server_term_resp, server_rsp = True) != api.types.status.SUCCESS:
+        return api.types.status.FAILURE
+    pkt_loss_duration = traffic.IperfUdpPktLossVerify(tc.cmd_desc, tc.server_term_resp)
+    return check_max_pktloss_limit(tc, pkt_loss_duration)
+
+
+
 def check_pds_agent_debug_data(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
     for node in tc.nodes:
@@ -165,8 +200,9 @@ def PacketTestSetup(tc):
         return api.types.status.FAILURE
     if tc.iperf:
         out = traffic.iperfWorkloads(tc.workload_pairs, time=tc.duration, \
+                                    proto="udp", bandwidth="100M", \
                                     num_of_streams=32, sleep_time=30, \
-                                    packet_size=None, background=True)
+                                    packet_size=64, background=True)
         tc.cmd_desc, tc.server_resp, tc.client_resp = out[0], out[1], out[2]
     return api.types.status.SUCCESS
 
@@ -458,31 +494,9 @@ def Verify(tc):
         pkt_loss_duration = 0
         # terminate background traffic and calculate packet loss duration
         if tc.background:
-            if ping.TestTerminateBackgroundPing(tc, tc.pktsize,\
-                  pktlossverif=tc.pktlossverif) != api.types.status.SUCCESS:
-                api.Logger.error("Failed in Ping background command termination.")
-                result = api.types.status.FAILURE
-            # calculate max packet loss duration for background ping
-            pkt_loss_duration = ping.GetMaxPktLossDuration(tc, interval=tc.interval)
-            if pkt_loss_duration != 0:
-                indent = "-" * 10
-                if tc.pktlossverif:
-                    result = api.types.status.FAILURE
-                api.Logger.info(f"{indent} Packet Loss duration during UPGRADE of {tc.nodes} is {pkt_loss_duration} secs {indent}")
-                if tc.allowed_down_time and (pkt_loss_duration > tc.allowed_down_time):
-                    api.Logger.info(f"{indent} Exceeded allowed Loss Duration {tc.allowed_down_time} secs {indent}")
-                    # Failing test based on longer traffic loss duration is commented for now.
-                    # enable below line when needed.
-                    #result = api.types.status.FAILURE
-            else:
-                api.Logger.info("No Packet Loss Found during UPGRADE Test")
-
-    # Terminate the iperf in backaground
-    if tc.iperf:
-        tc.client_term_resp = api.Trigger_TerminateAllCommands(tc.client_resp)
-        api.Trigger_TerminateAllCommands(tc.server_resp)
-        tc.client_aggr_resp = api.Trigger_AggregateCommandsResponse(tc.client_resp, tc.client_term_resp)
-        traffic.verifyIPerf(tc.cmd_desc, tc.client_aggr_resp)
+            result = ping_traffic_stop_and_verify(tc)
+            if (result == api.types.status.SUCCESS) and tc.iperf:
+                result = iperf_traffic_stop_and_verify(tc)
 
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrademgr logs...")
