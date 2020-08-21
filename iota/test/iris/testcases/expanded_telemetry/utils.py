@@ -348,10 +348,12 @@ def generateFeatureCollectorList(tc):
     tc.lif_collector = []
     tc.flow_collector = []
     tc.flowmon_collector = []
+    tc.ep_collector = []
 
     tc.lif_collector_idx = []
     tc.flow_collector_idx = []
     tc.flowmon_collector_idx = []
+    tc.ep_collector_idx = []
 
     tc.collection = 'unified'
     collector_count = len(tc.collector)
@@ -372,6 +374,12 @@ def generateFeatureCollectorList(tc):
             if len(tc.flowmon_collector) < FLOWMON_COLLECTOR_MAX:
                 tc.flowmon_collector.append(tc.collector[c])
                 tc.flowmon_collector_idx.append(c)
+    elif tc.feature == 'endpoint-span':
+        for c in range(0, len(tc.collector)):
+            if tc.classic_mode == True or\
+               len(tc.ep_collector) < ERSPAN_COLLECTOR_MAX_IN_ESX:
+                tc.ep_collector.append(tc.collector[c])
+                tc.ep_collector_idx.append(c)
     elif tc.feature == 'flow-erspan-flowmon':
         for c in range(0, len(tc.collector)):
             if tc.iterators.collection == 'unified' or collector_count < 2:
@@ -604,6 +612,74 @@ def generateLifCollectorConfigForMultiMirrorSession(tc, colObjects):
 
     return api.types.status.SUCCESS
 
+#
+# Superimpose template-collector-config with Workload-IP-attributes
+#
+def generateEpCollectorConfig(tc, colObjects):
+    i = 0
+    for obj in colObjects:
+        obj.meta.name = "ep-collector-{}".format(i)
+        obj.spec.span_id = (tc.iterators.pktsize*(i+1)) - 1
+        obj.spec.packet_size = tc.iterators.pktsize
+
+        if tc.iterators.direction == 'ingress':
+            obj.spec.mirror_direction = MIRROR_DIR_INGRESS
+        elif tc.iterators.direction == 'egress':
+            obj.spec.mirror_direction = MIRROR_DIR_EGRESS
+        elif tc.iterators.direction == 'both':
+            obj.spec.mirror_direction = MIRROR_DIR_BOTH
+
+        for c in range(0, len(tc.ep_collector)):
+            idx = tc.ep_collector_idx[c]
+            if c != 0:
+                tmp = copy.deepcopy(obj.spec.collectors[0])
+                obj.spec.collectors.append(tmp)
+            obj.spec.collectors[c].export_config.destination = \
+                                   tc.collector_ip_address[idx]
+            tc.collector_span_id[idx] = obj.spec.span_id
+            if tc.collector_erspan_type[idx] == 'type_2':
+                obj.spec.collectors[c].type = 'erspan_type_2'
+            elif tc.collector_erspan_type[idx] == 'type_3':
+                obj.spec.collectors[c].type = 'erspan_type_3'
+            obj.spec.collectors[c].strip_vlan_hdr = tc.collector_vlan_strip[idx]
+
+        i += 1
+
+    return api.types.status.SUCCESS
+
+#
+# Superimpose template-collector-config with Workload-IP-attributes
+# Multiple InterfaceMirrorSessions case
+#
+def generateEpCollectorConfigForMultiMirrorSession(tc, colObjects):
+    for c in range(0, len(tc.ep_collector)):
+        idx = tc.ep_collector_idx[c]
+        if c != 0:
+            tmp = copy.deepcopy(colObjects[0])
+            colObjects.append(tmp)
+        colObjects[c].meta.name = "ep-collector-{}".format(c)
+
+        colObjects[c].spec.span_id = (tc.iterators.pktsize*(c+1)) - 1
+        colObjects[c].spec.packet_size = tc.iterators.pktsize
+        if tc.iterators.direction == 'ingress':
+            colObjects[c].spec.mirror_direction = MIRROR_DIR_INGRESS
+        elif tc.iterators.direction == 'egress':
+            colObjects[c].spec.mirror_direction = MIRROR_DIR_EGRESS
+        elif tc.iterators.direction == 'both':
+            colObjects[c].spec.mirror_direction = MIRROR_DIR_BOTH
+
+        colObjects[c].spec.collectors[0].export_config.destination = \
+                                         tc.collector_ip_address[idx]
+        tc.collector_span_id[idx] = colObjects[c].spec.span_id
+        if tc.collector_erspan_type[idx] == 'type_2':
+            colObjects[c].spec.collectors[0].type = 'erspan_type_2'
+        elif tc.collector_erspan_type[idx] == 'type_3':
+            colObjects[c].spec.collectors[0].type = 'erspan_type_3'
+        colObjects[c].spec.collectors[0].strip_vlan_hdr = \
+                                         tc.collector_vlan_strip[idx]
+
+    return api.types.status.SUCCESS
+
 def generateUplinkIntfCfgObj(node_name):
     cfgObjs = []
     uplinks = getUplinkInterfaceObj(node_name)
@@ -688,6 +764,68 @@ def deGenerateLifInterfaceConfig(tc, ifObjects, colObjects):
     for obj in ifObjects:
         for c in range(0, len(colObjects)):
             obj.spec.mirror_sessions.pop()
+
+#
+# Retrieve applicable Endpoints from Netagent Endpoint objects
+#
+def getEpNames(tc, epObjects):
+    tc.ep_name = []
+
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    # get the endpoint object for the WL selected
+    cmd = "/usr/bin/curl localhost:9007/api/endpoints/ | jq . |\
+           grep name | grep {}".format(tc.naples.workload_name)
+
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
+
+    trig_resp = api.Trigger(req)
+    for cmd in trig_resp.commands:
+        for line in cmd.stdout.split('\n'):
+            if tc.naples.node_name in line:
+                w = 0
+                for s in line.split():
+                    if w == 1:
+                        ep_name_tmp = s.replace(',', '')
+                        ep_name = ep_name_tmp.replace('"', '')
+                        tc.ep_name.append(ep_name)
+                        break
+                    w += 1
+
+    if len(tc.ep_name) == 0:
+        return api.types.status.FAILURE
+
+    return api.types.status.SUCCESS
+
+#
+# Superimpose template-ep-config with Netagent-objects' EPNames
+#
+def generateEndpointConfig(tc, epObjects, colObjects):
+    result = getEpNames(tc, epObjects)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    i = 0
+    for obj in epObjects:
+        obj.meta.name = tc.ep_name[i]
+
+        for c in range(0, len(colObjects)):
+            if c != 0:
+                tmp = copy.deepcopy(obj.spec.mirror_sessions[0])
+                obj.spec.mirror_sessions.append(tmp)
+            obj.spec.mirror_sessions[c] = "default/default/{}"\
+                     .format(colObjects[c].meta.name)
+        i += 1
+
+    return api.types.status.SUCCESS
+
+#
+# Superimpose template-ep-config with Mirror-references removal
+#
+def deGenerateEndpointConfig(tc, epObjects, colObjects):
+    for obj in epObjects:
+        for c in range(0, len(colObjects)):
+            obj.spec.mirror_sessions.pop()
+
 
 #
 # Superimpose template-mirror-config with Workload-IP-attributes
@@ -1007,6 +1145,18 @@ def showSessionAndP4TablesForDebug(tc):
            .format(tc.tunnel_rewrite_table_id)
     add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
+    cmd = "/nic/bin/halctl show mirror"
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
+
+    cmd = "/nic/bin/halctl show mirror --yaml"
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
+
+    cmd = "PATH=$PATH:/platform/bin/;\
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/platform/lib/:/nic/lib/;\
+    export PATH; export LD_LIBRARY_PATH;\
+    /nic/bin/delphictl metrics get MirrorMetrics"
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
+
     resp = api.Trigger(req)
     for cmd in resp.commands:
         api.PrintCommandResults(cmd)
@@ -1140,6 +1290,13 @@ def validate_ip_tuple(tc, sip, dip, sport, dport, tag_etype, vlan_tag,
         elif ip_proto == IP_PROTO_ICMP:
             tc.collector_icmp_pkts[c] -= 1
             tc.collector_other_pkts[c] += 1
+    elif tc.feature == 'endpoint-span':
+        if ip_proto == IP_PROTO_UDP:
+            tc.collector_udp_pkts[c] -= 1
+            tc.collector_other_pkts[c] += 1
+        elif ip_proto == IP_PROTO_ICMP:
+            tc.collector_icmp_pkts[c] -= 1
+            tc.collector_other_pkts[c] += 1
     else:
         result = api.types.status.FAILURE
 
@@ -1180,12 +1337,12 @@ def gatherCollectorIpResolutionInfo(tc, collector, collector_idx):
 #
 # Validate ERSPAN packets reception
 #
-def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
+def validateErspanPackets(tc, erspan_collector, erspan_collector_idx):
 
     result = api.types.status.SUCCESS
 
-    for c in range(0, len(lif_flow_collector)):
-        idx = lif_flow_collector_idx[c]
+    for c in range(0, len(erspan_collector)):
+        idx = erspan_collector_idx[c]
         tc.collector_tcp_pkts[c] = 0
         tc.collector_udp_pkts[c] = 0
         tc.collector_icmp_pkts[c] = 0
@@ -1206,20 +1363,20 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
         if api.GetNodeOs(tc.naples.node_name) == "windows":
             req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
             hostCmd = "cp /mnt/c/Windows/SysWOW64/*.pcap ."
-            add_command(req, lif_flow_collector[c], hostCmd, False)
+            add_command(req, erspan_collector[c], hostCmd, False)
             cmd = api.WINDOWS_POWERSHELL_CMD + " del ..\syswow64\*.pcap"
-            add_command(req, lif_flow_collector[c], cmd, False)
+            add_command(req, erspan_collector[c], cmd, False)
             resp = api.Trigger(req)
             if resp is None:
                 api.Logger.error("Failed to run host cmd: %s on host: %s"
-                                 %(hostCmd, lif_flow_collector[c].node_name))
+                                 %(hostCmd, erspan_collector[c].node_name))
                 return api.types.status.FAILURE
             for i in range(0, 2):
                 cmd = resp.commands[i]
                 if cmd.exit_code != 0:
                     api.Logger.error("HOST CMD: %s failed on host: %s,"
                                      " exit code: %d" %
-                                     (hostCmd, lif_flow_collector[c].node_name, cmd.exit_code))
+                                     (hostCmd, erspan_collector[c].node_name, cmd.exit_code))
                     api.PrintCommandResults(cmd)
                     return api.types.status.FAILURE
 
@@ -1228,9 +1385,11 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
             pcap_file_name = ('lif-mirror-%d.pcap'%c)
         elif tc.feature == 'flow-erspan':
             pcap_file_name = ('flow-mirror-%d.pcap'%c)
+        elif tc.feature == 'endpoint-span':
+            pcap_file_name = ('ep-mirror-%d.pcap'%c)
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        api.CopyFromWorkload(lif_flow_collector[c].node_name,
-            lif_flow_collector[c].workload_name, [pcap_file_name], dir_path)
+        api.CopyFromWorkload(erspan_collector[c].node_name,
+            erspan_collector[c].workload_name, [pcap_file_name], dir_path)
 
         mirrorscapy = dir_path + '/' + pcap_file_name
         api.Logger.info("File Name: %s" % (mirrorscapy))
@@ -1514,8 +1673,8 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
             for pkt in pkts:
                 pkt.show()
 
-    for c in range(0, len(lif_flow_collector)):
-        idx = lif_flow_collector_idx[c]
+    for c in range(0, len(erspan_collector)):
+        idx = erspan_collector_idx[c]
         if tc.result[c] == api.types.status.FAILURE:
             api.Logger.error("ERROR: {} {} {} {} {} {} {} ERSPAN_{}\
                               packets to {} {} {} (Vlan-Strip {})"\
@@ -1937,6 +2096,12 @@ def debugWorkLoadTraces(tc):
     c = 0
     for wl in tc.flowmon_collector:
         api.Logger.info("FLOWMON COLLECTOR WORKLOADS/VLAN {} {}"\
+                        .format(wl.uplink_vlan, tc.collector_ip_address[c]))
+        c += 1
+
+    c = 0
+    for wl in tc.ep_collector:
+        api.Logger.info("ENDPOINT COLLECTOR WORKLOADS/VLAN {} {}"\
                         .format(wl.uplink_vlan, tc.collector_ip_address[c]))
         c += 1
 

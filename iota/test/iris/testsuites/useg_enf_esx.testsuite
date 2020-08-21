@@ -56,6 +56,7 @@ testbundles:
         - firewall/normalization.testbundle
         - aging/aging_precheckin.testbundle
         - networking/lif_telemetry_precheckin.testbundle
+        - networking/endpoint_telemetry_precheckin.testbundle
         - penctl/penctl_hostpin.testbundle
         - p4ctl/p4ctl_precheckin.testbundle
         - naples_upgrade/naples_upgrade_hostpin.testbundle
@@ -80,6 +81,7 @@ testbundles:
         - firewall/policy.testbundle
         - aging/aging.testbundle
         - networking/lif_telemetry.testbundle
+        - networking/endpoint_telemetry.testbundle
         - alg/alg.testbundle
         - firewall/conntrack.testbundle
         - firewall/normalization.testbundle
@@ -99,6 +101,7 @@ testbundles:
     regression:
         - networking/connectivity.testbundle
         - networking/lif_telemetry_regression.testbundle
+        - networking/endpoint_telemetry_regression.testbundle
         - firewall/policy_scale.testbundle
         - alg/alg_regression.testbundle
         #- ipsec/ipsec.testbundle

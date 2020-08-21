@@ -1,0 +1,30 @@
+#
+# This test-bundle provides Endpoint SPAN testing support in 
+# - Useg-Enforced
+# modes
+#
+meta:
+    name              : endpoint_telemetry
+    nics              : [ pensando, mellanox, intel, broadcom ]
+    os                : [ esx ]
+    targetcount       : 1
+
+testcases:
+    -   name          : EndpointSpanInbandCollector
+        testcase      : testcases.expanded_telemetry.endpoint_span_collector
+        iterators     :
+            type      : nested
+            pktsize   : [128]
+            peer      : [remote]
+            collector : [remote]
+            session   : [multiple]
+            vlan      : [native, tag]
+            direction : [egress, both]
+            ccount    : [1, 2]    # in ESX only 2 collectors supported as of now; as sec-ip config not working/validated for ESX
+            collection: [unified]
+            erspan    : [mixed]
+            vlan_strip: [true]     # [false, mixed] can't be supported until useg vlan leaking issue is fixed
+        args          :
+            type      : sanity
+            pkt_count : bypass
+            arp_check : bypass
