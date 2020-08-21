@@ -223,6 +223,32 @@
         }
     },
 
+    "test_case_7_1" : {
+        "description" : "Testing with pre hook script failure injection in prepare",
+        "svc" : {
+            "svc1" : {
+                "ipc_id" : "51"
+            },
+            "svc2" : {
+                "ipc_id" : "52"
+            }
+        },
+
+        "pre_hook" : {
+            "script" : "test_script_failure.sh",
+            "stage" : "prepare"
+        },
+
+        "expected_result" : {
+            "api_return_code" : "1",
+            "log": {
+                "fsm_svc_svc1": ["", ""],
+                "fsm_svc_svc2": ["", ""],
+                "upgrade": ["", ""]
+            }
+        }
+    },
+
     "test_case_8" : {
         "description" : "Testing with post hook script failure injection in backup (Parallel Event)",
         "svc" : {

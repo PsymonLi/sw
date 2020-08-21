@@ -59,6 +59,7 @@ public:
         prev_stage_rsp_ = SVC_RSP_OK;
         stage_response_ = SVC_RSP_OK;
         is_pre_hooks_done_ = false;
+        pre_hooks_status_ = true;
         is_post_hooks_done_ = false;
         domain_ = IPC_SVC_DOM_ID_A;
     }
@@ -68,6 +69,7 @@ public:
     void set_start_stage(const upg_stage_t entry_stage) {
         start_stage_ = entry_stage;
         is_pre_hooks_done_ = false;
+        pre_hooks_status_ = true;
         is_post_hooks_done_ = false;
     }
     upg_stage_t end_stage(void) const { return end_stage_; }
@@ -97,6 +99,7 @@ public:
     bool is_parallel_event_sequence(void) const;
     const char* get_event_sequence_type(void) const;
     bool is_discovery(void) const;
+    void set_pre_hooks_status(bool flag) { pre_hooks_status_ = flag; };
     bool is_pre_hooks_done(void) const { return is_pre_hooks_done_; };
     bool is_post_hooks_done(void) const { return is_post_hooks_done_; };
     void set_is_pre_hooks_done(bool done) { is_pre_hooks_done_ = done; };
@@ -133,6 +136,7 @@ private:
     svc_rsp_code_t prev_stage_rsp_;
     svc_rsp_code_t stage_response_;
     bool is_pre_hooks_done_;
+    bool pre_hooks_status_;
     bool is_post_hooks_done_;
     ipc_svc_dom_id_t domain_;
 };

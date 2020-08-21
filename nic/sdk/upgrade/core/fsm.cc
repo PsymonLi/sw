@@ -147,6 +147,7 @@ invoke_hooks (upg_stage_t stage_id, hook_execution_t hook_type,
 
     if (result == false) {
         if (hook_type == PRE_STAGE) {
+            fsm_states.set_pre_hooks_status(false);
             fsm_states.update_stage_progress(SVC_RSP_FAIL, false);
         } else {
            fsm_states.set_stage_response(SVC_RSP_FAIL);
@@ -428,6 +429,7 @@ fsm::set_current_stage(const upg_stage_t stage_id) {
     timeout_ = double(timeout_ * 1.0) / 1000;
     domain_ = stage.domain();
     stage_response_ = SVC_RSP_OK;
+    pre_hooks_status_ = true;
 
     if (domain_ == IPC_SVC_DOM_ID_B &&
         fsm_states.init_params()->upg_event_fwd_cb) {
@@ -582,7 +584,7 @@ fsm::update_stage_progress(const svc_rsp_code_t rsp, bool check_pending_rsp) {
     set_stage_response(rsp);
     set_prev_stage_rsp(rsp);
 
-    if (is_satge_transition_required(rsp)) {
+    if (pre_hooks_status_ == false || is_satge_transition_required(rsp)) {
         execute_post_hooks(current_stage_, stage_response());
         current_stage_ = lookup_stage_transition(current_stage_, stage_response());
         update_stage_progress_internal_();

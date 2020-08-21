@@ -72,7 +72,12 @@ invoke_hooks (upg_stage_t stage_id, hook_execution_t hook_type,
 static bool
 execute_pre_hooks (upg_stage_t stage_id)
 {
-    return invoke_hooks(stage_id, PRE_STAGE);
+    bool status = false;
+    status = invoke_hooks(stage_id, PRE_STAGE);
+    if ( !status ) {
+        fsm_states.set_pre_hooks_status(false);
+    }
+    return status;
 }
 
 static bool
