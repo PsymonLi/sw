@@ -508,6 +508,26 @@ e2e-targets:
        vars:
           BmOs: windows
 
+ # 1 elba with ubuntu OS
+ 1elba-ubuntu:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-17
+       count: 1
+       resources:
+         servers:
+           - type: server-elba
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
  # 1 capri and 1 elba with ubuntu OS
  1capri1elba-ubuntu:
    commands: [ "cat /warmd.json && sleep 30000000"]
