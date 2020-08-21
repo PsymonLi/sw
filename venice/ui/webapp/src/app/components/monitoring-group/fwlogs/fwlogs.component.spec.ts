@@ -251,7 +251,7 @@ describe('fwlogsComponent', () => {
     const title = fixture.debugElement.query(By.css('.tableheader-title'));
     expect(title.nativeElement.textContent).toContain('Firewall Logs (1)');
     // check table contents
-    const tableBody = fixture.debugElement.query(By.css('.ui-table-scrollable-body tbody'));
+    const tableBody = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
     expect(tableBody).toBeTruthy();
 
     TestingUtility.verifyTable(

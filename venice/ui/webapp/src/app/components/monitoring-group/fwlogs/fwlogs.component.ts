@@ -1,11 +1,10 @@
-import { Component, OnInit, ViewEncapsulation, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, ChangeDetectionStrategy, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
 import { Utility } from '@app/common/Utility';
 import { Animations } from '@app/animations';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { IPUtility } from '@app/common/IPUtility';
-import { LazyLoadEvent, OverlayPanel } from 'primeng/primeng';
-import { TableviewAbstract, TablevieweditHTMLComponent } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { OverlayPanel } from 'primeng/primeng';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
@@ -13,12 +12,11 @@ import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
-import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
 import { SearchUtil } from '@app/components/search/SearchUtil';
 import { SecurityService } from '@app/services/generated/security.service';
 import { SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { PolicyRuleTuple } from './';
-import { SelectItem, MultiSelect } from 'primeng/primeng';
+import { SelectItem } from 'primeng/primeng';
 import { TimeRange } from '@app/components/shared/timerange/utility';
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -26,19 +24,21 @@ import { ValidatorFn } from '@angular/forms';
 import { TimeRangeOption, citadelTimeOptions, citadelMaxTimePeriod } from '@app/components/shared/timerange/timerange.component';
 import { FwlogService } from '@app/services/generated/fwlog.service';
 import { IFwlogFwLogQuery, FwlogFwLogQuery, FwlogFwLogQuery_sort_order, FwlogFwLogQuery_actions, FwlogFwLogList, FwlogFwLog, IFwlogFwLog } from '@sdk/v1/models/generated/fwlog';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-fwlogs',
   templateUrl: './fwlogs.component.html',
   styleUrls: ['./fwlogs.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
-export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> {
+export class FwlogsComponent extends DataComponent implements OnInit {
   public static ALLOPTION = 'All';
-  @ViewChild(TablevieweditHTMLComponent) tableWrapper: TablevieweditHTMLComponent;
+  @ViewChild('fwlogsTable') fwlogsTable: PentableComponent;
   @ViewChild('ruleDetailsOverlay') overlay: OverlayPanel;
-  // @ViewChild('logOptions') logOptionsMultiSelect: MultiSelect ;
 
   dataObjects: ReadonlyArray<FwlogFwLog> = [];
   loading: boolean = false;
@@ -141,7 +141,7 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
     protected securityService: SecurityService,
     protected fwlogService: FwlogService
   ) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
   // Fetches count of logs inside venice
@@ -156,10 +156,6 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
       this.loading = true;
       this.getVeniceRecords = true;
       this.fwlogsQueryObserver.next(query);
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
   }
 
   addAllOption(options: SelectItem[]) {
@@ -185,24 +181,9 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
     });
   }
 
-  // onActionChange(event: any) {
-  //   const values = this.logOptionsMultiSelect.value;
-  //   const index = this.getAllActionIndex(values);  // to check if 'All' is one of the selected actions
-  //   if (values != null && values.length > 1) {
-  //     if (index !== -1 && event.itemValue === FwlogsComponent.ALLOPTION) { // if 'All' is the most recent selected, un-select others
-  //       values[0] = values[index];
-  //       values.splice(1);
-  //     } else if (index !== -1 && event.itemValue !== FwlogsComponent.ALLOPTION) { // if another option selected after 'All', un-select 'All'
-  //       values.splice(index, 1);
-  //     }
-  //   }
-  // }
-
-  getAllActionIndex(values: any): number {
-    return values.findIndex((value: String) => value === FwlogsComponent.ALLOPTION);
-  }
-
-  postNgInit() {
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.fwlogsTable;
     this.fwlogQueryListener();
     this.fetchVeniceRecords();
     this.getNaples();
@@ -266,8 +247,12 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
     this.getFwlogs();  // after clear search criteria, we want to restore table records.
   }
 
-  onTableSort(event: LazyLoadEvent) {
-    this.getFwlogs(event.sortOrder);
+  onTableSort(event) {
+    // FwlogFwLogQuery only does time ordering sort, so only fetch if sorting by time column.
+    // otherwise, just let table do local sort.
+    if (event.field === 'meta.mod-time') {
+      this.getFwlogs(event.order);
+    }
   }
 
   getNaples() {
@@ -282,6 +267,7 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
         for (const smartnic of this.naples) {
           this.macAddrToName[smartnic.meta.name] = smartnic.spec.id;
         }
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
@@ -345,6 +331,7 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
             }
           }
         }
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get security policies')
     );
@@ -361,28 +348,18 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
             this.controllerService.removeToaster('Fwlog Search Failed');
             this.lastUpdateTime = new Date().toISOString();
             const body = resp.body as FwlogFwLogList;
-            let logs = null;
+            if (!this.isSearching()) {
+              const listMeta = body['list-meta'] || {};
+              this.veniceRecords = listMeta['total-count'] || 0;
+            }
             if (!this.getVeniceRecords) {
               // Code to get data
-              if (body.items !== undefined && body.items !== null) {
-                logs = body.items;
-              }
-              if (logs != null) {
-                this.dataObjects = logs.map((l) => {
-                  return new FwlogFwLog(l);
-                });
-              } else {
-                this.dataObjects = [];
-              }
+              const logs = body.items || [];
+              this.dataObjects = logs.map((l) => {
+                return new FwlogFwLog(l);
+              });
               this.loading = false;
             } else {
-              // Code to calculate venice Records
-              const listmeta = body['list-meta'];
-              if (listmeta !== undefined && listmeta !== null) {
-                this.veniceRecords = (listmeta['total-count'] !== undefined && listmeta['total-count'] !== null) ? body['list-meta']['total-count'] : 0;
-              } else {
-                this.veniceRecords = 0;
-              }
               this.getVeniceRecords = false;
               if (this.selectedTimeRange !== undefined) {
                 this.getFwlogs();
@@ -390,11 +367,13 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
                 this.loading = false;
               }
             }
+            this.refreshGui(this.cdr);
           },
           (error) => {
             this.dataObjects = [];
             this.controllerService.invokeRESTErrorToaster('Fwlog Search Failed', error);
             this.loading = false;
+            this.refreshGui(this.cdr);
           }
         );
         this.subscriptions.push(this.searchSubscription);
@@ -403,11 +382,13 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
     this.subscriptions.push(sub);
   }
 
-  getFwlogs(order = this.tableWrapper.table.sortOrder) {
+  getFwlogs(order = this.fwlogsTable.sortOrder) {
     if (this.query.$formGroup.invalid) {
       this.controllerService.invokeErrorToaster('Fwlog Search', 'Invalid query');
       return;
     }
+
+    this.loading = true;
 
     if (this.searchSubscription != null) {
       this.searchSubscription.unsubscribe();
@@ -487,7 +468,6 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
 
     query.tenants = [Utility.getInstance().getTenant()];
 
-    this.loading = true;
     // Get request
     this.fwlogsQueryObserver.next(query);
   }
@@ -502,5 +482,13 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
     return Utility.isValueInRangeValdator(0, 65536, objectname, msg);
   }
 
-
+  isSearching() {
+    const searchFields = ['destination-ips', 'destination-ports', 'source-ips', 'source-ports', 'protocols', 'actions'];
+    const formGroupValues = this.query.getFormGroupValues() || {};
+    return Object.keys(formGroupValues).some(formGroupKey => {
+      return searchFields.some(searchField => {
+        return searchField === formGroupKey && formGroupValues[formGroupKey] && formGroupValues[formGroupKey].length > 0;
+      });
+    });
+  }
 }

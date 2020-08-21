@@ -14,7 +14,7 @@
            (onPage)="onPage($event)"
            (onRowSelect)="rowSelected($event)"
            (onRowUnselect)="rowUnselected($event)"
-           (onSort)="onSort()"
+           (onSort)="onSort($event)"
            [paginator]="true"
            [reorderableColumns]="true"
            [resetPageOnSort]="false"
@@ -69,21 +69,23 @@
             </p-dropdown>
           </div>
         </th>
-        <th *ngFor="let col of selectedColumns; let last = last"
-            [class]="col.class ? col.class : ''"
-            pReorderableColumn
-            [pReorderableColumnDisabled]="col.notReorderable"
-            pResizableColumn
-            [pSortableColumn]="col.sortable ? col.field : ''"
-            [style.width]="getCellWidth(col.width)"
-            (mousedown)="onThMouseDown($event)">
-          <div class="pentable-th-box">
-            <app-sorticon class="pentable-sorticon" [field]="col.field"
-                          [isSortable]="col.sortable && !isDisabled()">
-              {{col.header}}
-            </app-sorticon>
-          </div>
-        </th>
+        <ng-container *ngFor="let col of selectedColumns; let last = last">
+          <th *roleGuard="col.roleGuard ? col.roleGuard : '' "
+              [class]="col.class ? col.class : ''"
+              pReorderableColumn
+              [pReorderableColumnDisabled]="col.notReorderable"
+              pResizableColumn
+              [pSortableColumn]="col.sortable ? col.field : ''"
+              [style.width]="getCellWidth(col.width)"
+              (mousedown)="onThMouseDown($event)">
+            <div class="pentable-th-box">
+              <app-sorticon class="pentable-sorticon" [field]="col.field"
+                            [isSortable]="col.sortable && !isDisabled()">
+                {{col.header}}
+              </app-sorticon>
+            </div>
+          </th>
+        </ng-container>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-rowData let-rowIndex="rowIndex">

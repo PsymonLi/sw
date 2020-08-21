@@ -1,15 +1,13 @@
 <app-pagebody [icon]="bodyIcon" header="Firewall Profile" class="firewallprofiles">
-  <app-tableviewedit fxLayout="column" class="firewallprofiles-widget" [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand" [data]="dataObjects" [cols]="cols"
-                     [createTemplate]="createTemplate"
-                     [captionTemplate]="captionTemplate">
-  </app-tableviewedit>
+  <app-pentable #firewallprofilesTable
+                [captionTemplate]="captionTemplate"
+                class="firewallprofiles-widget"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects">
+  </app-pentable>
 </app-pagebody>
 
-<!--
-  This tableviewedit does not have table body on purpose. 
-  .firewallprofiles-widget .ui-table-scrollable-wrapper css class:  hide table
-  -->
 <ng-template #captionTemplate let-count="count">
   <div fxFlex="auto" fxLayout="column">
     <div *ngIf="selectedFirewallProfile"

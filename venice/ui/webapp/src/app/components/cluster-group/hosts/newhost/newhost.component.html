@@ -53,12 +53,10 @@
 </ng-template>
 
 <ng-template #DataTable>
-  <app-tableviewedit fxLayout="column" class="newhost-batchadd-table"
-                     [data]="naplesWithoutHosts"
-                     [cols]="cols"
-                     [virtualRowHeight]="48"
-                     [bodyTemplate]="bodyTemplate">
-  </app-tableviewedit>
+  <app-pentable [bodyTemplate]="bodyTemplate"
+                [columns]="cols"
+                [data]="naplesWithoutHosts">
+  </app-pentable>
 </ng-template>
 
 <ng-template #bodyTemplate let-rowData let-col="col">

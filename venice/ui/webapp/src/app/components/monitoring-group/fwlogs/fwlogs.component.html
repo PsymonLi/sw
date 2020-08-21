@@ -1,22 +1,17 @@
 <app-pagebody class="fwlogs" header="Firewall Logs" [icon]="bodyIcon">
-  <app-tableviewedit fxLayout="column" class="fwlogs-widget"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [dataKey]="null"
-                     [sortField]="startingSortField"
-                     [sortOrder]="startingSortOrder"
-                     compareSelectionBy="equals"
-                     [tableLoading]="loading"
-                     [runDoCheck]="false"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [isToFetchDataOnSort]="true"
-                     (lazyLoadEvent)="onTableSort($event)"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
+  <app-pentable #fwlogsTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                class="fwlogs-widget"
+                [columns]="cols"
+                [data]="dataObjects"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="loading"
+                (sortEmitter)="onTableSort($event)"
+                [rowHeight]="46">
+  </app-pentable>
 </app-pagebody>
 
 <!-- TABLE HEADER -->
@@ -28,7 +23,8 @@
     <div fxFlex="auto" fxLayout="row">
       <app-tableheader fxFlex="auto" title="Firewall Logs" [max]="maxRecords"
                        [total]="dataObjects.length" [icon]="headerIcon"
-                       [tableMenuItems]="tableMenuItems" [enableColumnSelect]="true" [cols]="cols"
+                       [tableMenuItems]="fwlogsTable.tableMenuItems" [enableColumnSelect]="true"
+                       [cols]="cols"
                        (columnSelectChange)="onColumnSelectChange($event)"
                        [lastUpdateTime]="lastUpdateTime" [showRefreshIcon]="true"
                        (refreshIconClick)="getFwlogs()" class="fwlogs-table-header"
@@ -216,15 +212,6 @@
                placeholder="TCP">
       </div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <!-- <p-multiSelect #logOptions class="fwlogs-multiselect"
-                       formControlName="actions" appendTo="body" styleClass="fwlogs-font"
-                       [filter]="false"
-                       [showToggleAll]="false"
-                       [showHeader]="false"
-                       defaultLabel="All"
-                       [options]="actionOptions"
-                       (onChange)="onActionChange($event)">
-        </p-multiSelect> -->
         <p-dropdown class="fwlogs-singleselect" formControlName="actions" appendTo="body"
                     styleClass="fwlogs-font" [options]="actionOptions"></p-dropdown>
       </div>

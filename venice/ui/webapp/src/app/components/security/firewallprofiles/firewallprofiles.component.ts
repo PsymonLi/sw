@@ -1,11 +1,8 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectorRef, ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
-import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
 import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
@@ -16,15 +13,19 @@ import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster'
 import { IApiStatus, ISecurityFirewallProfile, SecurityFirewallProfile } from '@sdk/v1/models/generated/security';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { Observable } from 'rxjs';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-firewallprofiles',
   templateUrl: './firewallprofiles.component.html',
   styleUrls: ['./firewallprofiles.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: Animations
 })
-export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityFirewallProfile, SecurityFirewallProfile> implements OnInit, OnDestroy {
+export class FirewallprofilesComponent  extends DataComponent implements OnInit, OnDestroy {
+  @ViewChild('firewallprofilesTable') firewallprofilesTable: PentableComponent;
 
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
@@ -70,12 +71,12 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
     protected securityService: SecurityService,
     private clusterService: ClusterService
   ) {
-    super(_controllerService, cdr, uiconfigsService);
+    super(_controllerService, uiconfigsService);
   }
 
-  postNgInit() {
-
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'FirewallprofilesComponent', 'state': Eventtypes.COMPONENT_INIT });
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.firewallprofilesTable;
     this.getSecurityFirewallprofiles();
     this.getNaples();
     this.setDefaultToolbar();
@@ -94,6 +95,7 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
           // There should be only one record
           this.selectedFirewallProfile = this.dataObjects[0];
         }
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get firewall profiles')
     );
@@ -107,8 +109,7 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
         {
           cssClass: 'global-button-primary firewallprofiles-update-button',
           text: 'UPDATE',
-          computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-          callback: () => { this.createNewObject(); }
+          callback: () => { this.firewallprofilesTable.createNewObject(); }
         }
       ];
     }
@@ -118,18 +119,6 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
     });
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-  ngOnDestroy() {
-    this.subscriptions.forEach(
-      subscription => {
-        subscription.unsubscribe();
-      }
-    );
-  }
-
   generateDeleteConfirmMsg(object: ISecurityFirewallProfile) {
     return 'Are you sure you want to delete firewall profile: ' + object.meta.name;
   }
@@ -137,6 +126,7 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
   generateDeleteSuccessMsg(object: ISecurityFirewallProfile) {
     return 'Deleted firewall profile ' + object.meta.name;
   }
+
   deleteRecord(object: SecurityFirewallProfile): Observable<{ body: SecurityFirewallProfile | IApiStatus | Error, statusCode: number }> {
     throw new Error('Method not implemented.');
   }
@@ -151,7 +141,6 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
         return Array.isArray(value) ? value.join(', ') : value;
     }
   }
-
 
   closeDetails() {
     this.selectedFirewallProfile = null;
@@ -181,6 +170,7 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
             this.macToNameMap[smartnic.meta.name] = smartnic.spec.id;
           }
         }
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSCs info')
     );
@@ -190,7 +180,4 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
   getNaplesName(mac: string): string {
     return this.macToNameMap[mac];
   }
-
-
-
 }

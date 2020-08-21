@@ -64,6 +64,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Output() searchCancelledEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() searchEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() selectedObjectsUpdateEmitter: EventEmitter<any> = new EventEmitter<any>();
+  @Output() sortEmitter: EventEmitter<any> = new EventEmitter<any>();
 
   colMouseMoveUnlisten: () => void;
   colMouseUpUnlisten: () => void;
@@ -84,6 +85,8 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   selectedDataObjectsKeySet: Set<any> = new Set<any>();
   serverMode: boolean = false; // Temp for AuditEvents PenServer
   showRowExpand: boolean = false;
+  skipOnSort: boolean = false;
+  skipOnSortInit: boolean = true;
   subscriptions: Subscription[] = [];
   tableMenuItems: TableMenuItem[] = [
     {
@@ -133,9 +136,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   ngAfterViewInit() {
     this.resizeTable();
+    this.skipOnSortInit = false;
   }
 
   ngOnChanges(change: SimpleChanges) {
+    const loadingCompleted = change.loading && change.loading.previousValue && !change.loading.currentValue;
+    if (loadingCompleted || (change.loading && change.loading.firstChange)) {
+      this.skipOnSort = true;
+    }
     if (this.searchable && !this.filterSub) {
       this.filterSub = this._route.queryParams.subscribe(params => {
         if (params.hasOwnProperty('filter')) {
@@ -151,7 +159,6 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       // if there is a "filter" query param:
       // - wait until data finishes loading (component init)
       // - if data has been updated, emit search results for parent to update filtered list
-      const loadingCompleted = change.loading && change.loading.previousValue && !change.loading.currentValue;
       let dataChanged = false;
       if (change.data && !this.loading) {
         const _ = Utility.getLodash();
@@ -443,8 +450,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     this.isPageSelected();
   }
 
-  onSort() {
-    // this.reset();
+  onSort($event) {
+    // p-table always emits a sort event on initialization and also after every loading complete.
+    // currently, we don't need those, so we skip emitting the event to our page components.
+    if (!this.skipOnSort && !this.skipOnSortInit) {
+      this.sortEmitter.emit($event);
+    } else {
+      this.skipOnSort = false;
+    }
   }
 
   /**

@@ -7,11 +7,6 @@ $vertical-gutter: 5px;
   @include primary-font();
 }
 
-.firewallprofiles-widget {
-  @include primary-font();
-  height: 100%;
-}
-
 .firewallprofiles-detail-header {
   margin: 5px 0px;
   font-size: 16px;
@@ -28,8 +23,14 @@ $vertical-gutter: 5px;
 }
 
 // hide the firewallprofiles table
-.firewallprofiles-widget .ui-table-scrollable-wrapper {
-  display: none;
+.firewallprofiles-widget {
+  .ui-table-caption {
+    border: none;
+  }
+
+  .ui-table-wrapper {
+    display: none;
+  }
 }
 
 .firewallprofiles-summary-panel-content-value-warning {
