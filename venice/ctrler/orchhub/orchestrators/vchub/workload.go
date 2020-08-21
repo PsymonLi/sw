@@ -546,17 +546,21 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 	// Old VnicInfo is retained as vMotion can be aborted.
 	// Attempt 3 times
 	var err error
-	var apisrvWl *workload.Workload
 	for i := 0; i < defaultRetryCount; i++ {
 		// Attempt multiple times in case concurrent operations are happening for the
 		// same workload in apiserver. Hook unpacks changes into existing object
 		// so the res ver does not need to be updated in the request
-		apisrvWl, err = v.StateMgr.Controller().Workload().SyncStartMigration(&wlCopy)
+		_, err = v.StateMgr.Controller().Workload().SyncStartMigration(&wlCopy)
 		if err == nil {
-			// Update pcache copy
-			workloadObj.Workload = apisrvWl
-			v.cache.SetWorkload(workloadObj, false)
-			break
+			ctWl, ctErr := v.StateMgr.Controller().Workload().Find(workloadObj.GetObjectMeta())
+			if ctErr != nil {
+				v.Log.Errorf("Failed to find workload after start migration call: %s", ctErr)
+			} else {
+				// Update pcache copy
+				workloadObj.Workload = &ctWl.Workload
+				v.cache.SetWorkload(workloadObj, false)
+				break
+			}
 		}
 	}
 	if err != nil {
@@ -620,17 +624,21 @@ func (v *VCHub) handleVMotionFailed(m defs.VMotionFailedMsg) {
 		// Free the useg vlans allocated on the new host
 		v.releaseNewUsegs(wlObj)
 		var err error
-		var apisrvWl *workload.Workload
 		for i := 0; i < defaultRetryCount; i++ {
 			// Attempt multiple times in case concurrent operations are happening for the
 			// same workload in apiserver. Hook unpacks changes into existing object
 			// so the res ver does not need to be updated in the request
-			apisrvWl, err = v.StateMgr.Controller().Workload().SyncAbortMigration(wlObj.Workload)
+			_, err = v.StateMgr.Controller().Workload().SyncAbortMigration(wlObj.Workload)
 			if err == nil {
-				// Update pcache copy
-				wlObj.Workload = apisrvWl
-				v.cache.SetWorkload(wlObj, false)
-				break
+				ctWl, ctErr := v.StateMgr.Controller().Workload().Find(wlObj.GetObjectMeta())
+				if ctErr != nil {
+					v.Log.Errorf("Failed to find workload after abort migration call: %s", ctErr)
+				} else {
+					// Update pcache copy
+					wlObj.Workload = &ctWl.Workload
+					v.cache.SetWorkload(wlObj, false)
+					break
+				}
 			}
 		}
 		if err != nil {
@@ -825,17 +833,21 @@ func (v *VCHub) finalSyncMigration(wlObj *defs.VCHubWorkload) {
 	}
 
 	var err error
-	var apisrvWl *workload.Workload
 	for i := 0; i < defaultRetryCount; i++ {
 		// Attempt multiple times in case concurrent operations are happening for the
 		// same workload in apiserver. Hook unpacks changes into existing object
 		// so the res ver does not need to be updated in the request
-		apisrvWl, err = v.StateMgr.Controller().Workload().SyncFinalSyncMigration(wlObj.Workload)
+		_, err = v.StateMgr.Controller().Workload().SyncFinalSyncMigration(wlObj.Workload)
 		if err == nil {
-			// Update pcache copy
-			wlObj.Workload = apisrvWl
-			v.cache.SetWorkload(wlObj, false)
-			break
+			ctWl, ctErr := v.StateMgr.Controller().Workload().Find(wlObj.GetObjectMeta())
+			if ctErr != nil {
+				v.Log.Errorf("Failed to find workload after final sync migration call: %s", ctErr)
+			} else {
+				// Update pcache copy
+				wlObj.Workload = &ctWl.Workload
+				v.cache.SetWorkload(wlObj, false)
+				break
+			}
 		}
 	}
 	if err != nil {
@@ -853,17 +865,21 @@ func (v *VCHub) finishMigration(wlObj *defs.VCHubWorkload) {
 		// This should never happen, go ahead and finish migration
 	}
 	var err error
-	var apisrvWl *workload.Workload
 	for i := 0; i < defaultRetryCount; i++ {
 		// Attempt multiple times in case concurrent operations are happening for the
 		// same workload in apiserver. Hook unpacks changes into existing object
 		// so the res ver does not need to be updated in the request
-		apisrvWl, err = v.StateMgr.Controller().Workload().SyncFinishMigration(wlObj.Workload)
+		_, err = v.StateMgr.Controller().Workload().SyncFinishMigration(wlObj.Workload)
 		if err == nil {
-			// Update pcache copy
-			wlObj.Workload = apisrvWl
-			v.cache.SetWorkload(wlObj, false)
-			break
+			ctWl, ctErr := v.StateMgr.Controller().Workload().Find(wlObj.GetObjectMeta())
+			if ctErr != nil {
+				v.Log.Errorf("Failed to find workload after finish migration call: %s", ctErr)
+			} else {
+				// Update pcache copy
+				wlObj.Workload = &ctWl.Workload
+				v.cache.SetWorkload(wlObj, false)
+				break
+			}
 		}
 	}
 	if err != nil {
