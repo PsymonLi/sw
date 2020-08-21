@@ -96,7 +96,7 @@ upgrade_pstate_create_or_open (bool create)
     std::tie(curr_version, prev_version) = api::g_upg_state->module_version(
                                               core::PDS_THREAD_ID_API,
                                               MODULE_VERSION_HITLESS);
-    if (sdk::platform::sysinit_mode_default(g_upg_state->init_mode())) {
+    if (!sdk::platform::sysinit_mode_hitless(g_upg_state->init_mode())) {
         store = api::g_upg_state->backup_shmstore(PDS_AGENT_OPER_SHMSTORE_ID);
         SDK_ASSERT(store != NULL);
         if (create) {
