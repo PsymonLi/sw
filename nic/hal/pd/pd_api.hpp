@@ -2090,6 +2090,18 @@ pd_mirror_session_get_hw_id_args_init(pd_mirror_session_get_hw_id_args_t *args)
 typedef struct pd_mirror_stats_update_args_s {
 } __PACK__ pd_mirror_stats_update_args_t;
 
+typedef struct pd_mirror_session_stats_get_args_s {
+    mirror_session_t *session;
+    mirror_stats_t   *stats;
+} __PACK__ pd_mirror_session_stats_get_args_t;
+
+static inline  void
+pd_mirror_session_stats_get_args_init(pd_mirror_session_stats_get_args_t *args)
+{
+    args->session = NULL;
+    args->stats = NULL;
+}
+
 // flow monitoring rule
 typedef struct pd_flow_monitor_rule_create_args_s {
     flow_monitor_rule_t *rule;
@@ -3451,7 +3463,8 @@ pd_nvme_cq_create_args_init (pd_nvme_cq_create_args_t *args)
     ENTRY(PD_FUNC_ID_MIRROR_STATS_UPDATE,        359, "PD_FUNC_ID_MIRROR_STATS_UPDATE")\
     ENTRY(PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC, 360, "PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC")  \
     ENTRY(PD_FUNC_ID_COPP_CLEAR_STATS,           361, "PD_FUNC_ID_COPP_CLEAR_STATS") \
-    ENTRY(PD_FUNC_ID_MAX,                        362, "pd_func_id_max")
+    ENTRY(PD_FUNC_ID_MIRROR_SESSION_STATS_GET,   362, "PD_FUNC_ID_MIRROR_SESSION_STATS_GET") \
+    ENTRY(PD_FUNC_ID_MAX,                        363, "pd_func_id_max")
 
 DEFINE_ENUM(pd_func_id_t, PD_FUNC_IDS)
 #undef PD_FUNC_IDS
@@ -3687,6 +3700,7 @@ typedef struct pd_func_args_s {
         PD_UNION_ARGS_FIELD(pd_mirror_session_delete);
         PD_UNION_ARGS_FIELD(pd_mirror_session_get_hw_id);
         PD_UNION_ARGS_FIELD(pd_mirror_stats_update);
+        PD_UNION_ARGS_FIELD(pd_mirror_session_stats_get);
 
         // lif erspan
         PD_UNION_ARGS_FIELD(pd_uplink_erspan_enable);
@@ -4155,6 +4169,7 @@ PD_FUNCP_TYPEDEF(pd_mirror_session_cfg_update);
 PD_FUNCP_TYPEDEF(pd_mirror_session_delete);
 PD_FUNCP_TYPEDEF(pd_mirror_session_get_hw_id);
 PD_FUNCP_TYPEDEF(pd_mirror_stats_update);
+PD_FUNCP_TYPEDEF(pd_mirror_session_stats_get);
 
 // flow monitor rule
 PD_FUNCP_TYPEDEF(pd_flow_monitor_rule_create);

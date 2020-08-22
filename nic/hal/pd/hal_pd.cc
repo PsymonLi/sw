@@ -308,6 +308,7 @@ hal_pd_load_symbols (void)
     PD_FUNC_LOAD(PD_FUNC_ID_MIRROR_SESSION_DELETE, pd_mirror_session_delete);
     PD_FUNC_LOAD(PD_FUNC_ID_MIRROR_SESSION_GET_HW_ID, pd_mirror_session_get_hw_id);
     PD_FUNC_LOAD(PD_FUNC_ID_MIRROR_STATS_UPDATE, pd_mirror_stats_update);
+    PD_FUNC_LOAD(PD_FUNC_ID_MIRROR_SESSION_STATS_GET, pd_mirror_session_stats_get);
 
     // drop monitoring rule
     PD_FUNC_LOAD(PD_FUNC_ID_DROP_MONITOR_RULE_CREATE, pd_drop_monitor_rule_create);

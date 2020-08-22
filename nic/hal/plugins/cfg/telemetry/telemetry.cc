@@ -30,6 +30,7 @@ using hal::pd::pd_mirror_session_create_args_t;
 using hal::pd::pd_mirror_session_update_args_t;
 using hal::pd::pd_mirror_session_delete_args_t;
 using hal::pd::pd_mirror_session_get_hw_id_args_t;
+using hal::pd::pd_mirror_session_stats_get_args_t;
 using hal::mirror_session_t;
 using hal::pd::pd_flow_monitor_rule_create_args_t;
 using hal::pd::pd_flow_monitor_rule_delete_args_t;
@@ -608,6 +609,22 @@ mirror_session_get_hw_id_helper (mirror_session_t *session,
     return ret;
 }
 
+static hal_ret_t
+mirror_session_stats_get_helper (mirror_session_t *session,
+                                 mirror_stats_t   *stats)
+{
+    pd_mirror_session_stats_get_args_t args;
+    pd::pd_func_args_t pd_func_args = {0};
+
+    pd_mirror_session_stats_get_args_init(&args);
+    args.session = session;
+    args.stats   = stats;
+    pd_func_args.pd_mirror_session_stats_get = &args;
+    auto ret = pd::hal_pd_call(pd::PD_FUNC_ID_MIRROR_SESSION_STATS_GET,
+                               &pd_func_args);
+    return ret;
+}
+
 static bool
 mirror_session_fill_rsp (void *entry, void *ctxt)
 {
@@ -658,6 +675,11 @@ mirror_session_fill_rsp (void *entry, void *ctxt)
         break;
     }
 
+    mirror_stats_t   stats = {0};
+    ret = mirror_session_stats_get_helper(session, &stats);
+    SDK_ASSERT(ret == HAL_RET_OK);
+    response->mutable_stats()->set_num_mirrored_bytes(stats.num_mirrored_bytes);
+    response->mutable_stats()->set_num_mirrored_packets(stats.num_mirrored_packets);
     HAL_TRACE_VERBOSE("Added Mirror Session ID {} in get response",
                       session->sw_id);
     return false;

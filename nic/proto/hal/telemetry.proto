@@ -406,6 +406,8 @@ message MirrorSessionGetRequestMsg {
 }
 
 message MirrorSessionStats {
+  uint64         num_mirrored_bytes   = 1;     // Total bytes mirrored
+  uint64         num_mirrored_packets = 2;     // Total packets mirrored
 }
 
 message MirrorSessionGetResponse {

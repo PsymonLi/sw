@@ -250,6 +250,11 @@ typedef struct mirror_session_s {
     ht_ctxt_t  mirror_session_ht_ctxt;
 } __PACK__ mirror_session_t;
 
+typedef struct mirror_stats_s {
+    uint64_t            num_mirrored_bytes;
+    uint64_t            num_mirrored_packets;
+} mirror_stats_t;
+
 typedef struct collector_config_s {
     uint64_t            collector_id;
     uint16_t            vlan;

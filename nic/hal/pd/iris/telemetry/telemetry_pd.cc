@@ -1251,6 +1251,28 @@ pd_mirror_stats_get (mirror_session_t *session,
 
 }
 
+hal_ret_t
+pd_mirror_session_stats_get (pd_func_args_t *pd_func_args)
+{
+    hal_ret_t ret;
+    pd_mirror_session_stats_get_args_t *args =
+        pd_func_args->pd_mirror_session_stats_get;
+    delphi::objects::mirrormetrics_t  mirr_metrics = {0};
+
+    if ((args == NULL) || (args->session == NULL) ||
+        (args->stats == NULL) || (args->session->pd == NULL)) {
+        HAL_TRACE_ERR("NULL argument");
+        return HAL_RET_INVALID_ARG;
+    }
+
+    ret = pd_mirror_stats_get(args->session, &mirr_metrics);
+    if (ret == HAL_RET_OK) {
+        args->stats->num_mirrored_bytes = mirr_metrics.bytes;
+        args->stats->num_mirrored_packets = mirr_metrics.pkts;
+    }
+    return ret;
+}
+
 //-----------------------------------------------------------------------------
 // Populate current aggregate mirror stats in intermdediate global db
 //-----------------------------------------------------------------------------
