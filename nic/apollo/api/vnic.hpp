@@ -37,6 +37,7 @@ class vnic_state;
 #define PDS_VNIC_UPD_RX_POLICER          0x200
 #define PDS_VNIC_UPD_TX_MIRROR_SESSION   0x400
 #define PDS_VNIC_UPD_RX_MIRROR_SESSION   0x800
+#define PDS_VNIC_UPD_CONN_TRACK_EN       0x1000
 
 /// \defgroup PDS_VNIC_ENTRY - vnic functionality
 /// \ingroup PDS_VNIC

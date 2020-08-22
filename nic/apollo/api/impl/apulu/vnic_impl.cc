@@ -1422,6 +1422,21 @@ vnic_impl::upd_dhcp_binding_(vnic_entry *vnic, vnic_entry *orig_vnic,
     return ret;
 }
 
+void
+vnic_impl::send_vnic_upd_event_(vnic_entry *vnic) {
+    if_entry *host_if;
+    ::core::event_t event;
+    pds_obj_key_t host_if_key;
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = EVENT_ID_VNIC_UPD;
+    event.vnic.vnic = vnic->key();
+    host_if_key = vnic->host_if();
+    host_if = if_find(&host_if_key);
+    event.vnic.conn_track_en = host_if->conn_track_en();
+    sdk::ipc::broadcast(EVENT_ID_VNIC_UPD, &event, sizeof(event));
+}
+
 sdk_ret_t
 vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
                             vnic_entry *orig_vnic, api_obj_ctxt_t *obj_ctxt) {
@@ -1490,6 +1505,11 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
                           "entry at %u", vnic->key2str().c_str(), hw_id_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
         }
+    }
+
+    if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_CONN_TRACK_EN) {
+        // send vnic update notification
+        send_vnic_upd_event_(vnic);
     }
 
     // update DHCP binding, if needed
@@ -1578,8 +1598,19 @@ vnic_impl::reprogram_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         }
         return SDK_RET_OK;
     }
-    // not expecting any other recursive updates at this point
-    SDK_ASSERT(FALSE);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+vnic_impl::reactivate_hw(api_base *api_obj, pds_epoch_t epoch,
+                         api_obj_ctxt_t *obj_ctxt) {
+
+    // when connection tracking is enabled/disabled on a PF,
+    // all corresponding vnics associated with
+    if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_CONN_TRACK_EN) {
+        // send vnic update notification
+        send_vnic_upd_event_((vnic_entry *)api_obj);
+    }
     return SDK_RET_OK;
 }
 

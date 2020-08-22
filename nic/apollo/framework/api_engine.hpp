@@ -481,7 +481,7 @@ end:
         // if A is an element of B, A must be added to the clist of B
         // NOTE: A could be in dirty object list or dependent object list
         //       by this time (route-table chg can trigger vpc -> subnet -> vnic
-        //       changes A could be subnet and B could vnic and A is in
+        //       changes, A could be subnet and B could vnic and A is in
         //       aol list)
         if (api_obj_a->in_dirty_list()) {
             octxt_a = batch_ctxt_.dom[api_obj_a];
@@ -494,7 +494,7 @@ end:
         return octxt;
     }
 
-    /// \brief Dump api engine counters
+    /// \brief dump api engine counters
     /// \param[in] fd     file descriptor to print counters to
     sdk_ret_t dump_api_counters(int fd);
 
@@ -525,7 +525,7 @@ private:
         }
     }
 
-    /// \brief De-dup given API operation
+    /// \brief de-dup given API operation
     /// This is based on the currently computed operation and new API operation
     /// seen on the object
     /// \param[in] curr_op Current outstanding API operation on the object
@@ -533,34 +533,33 @@ private:
     /// \return De-duped/compressed API operation
     api_op_t api_op_(api_op_t curr_op, api_op_t new_op);
 
-    /// \brief Pre-process create operation and form effected list of objs
+    /// \brief pre-process create operation and form effected list of objs
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_create_(api_ctxt_t *api_ctxt);
 
-    /// \brief Pre-process delete operation and form effected list of objs
+    /// \brief pre-process delete operation and form effected list of objs
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_delete_(api_ctxt_t *api_ctxt);
 
-    /// \brief Pre-process update operation and form effected list of objs
+    /// \brief pre-process update operation and form effected list of objs
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_update_(api_ctxt_t *api_ctxt);
 
-    /// \brief Process an API and form effected list of objs
-    ///
+    /// \brief process an API and form effected list of objs
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_api_(api_ctxt_t *api_ctxt);
 
-    /// \brief Allocate any sw & hw resources for the given object and operation
+    /// \brief allocate any sw & hw resources for the given object and operation
     /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt Transient information maintained to process the API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t reserve_resources_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt);
 
-    /// \brief Process given object from the dirty list
+    /// \brief process given object from the dirty list
     /// This is done by doing add/update of corresponding h/w entries, based
     /// on accumulated configuration without activating the epoch
     /// \param[in] api_obj API object being processed
@@ -568,14 +567,14 @@ private:
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t program_config_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt);
 
-    /// \brief Add objects that are dependent on given object to dependent
+    /// \brief add objects that are dependent on given object to dependent
     ///        object list
     /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt Transient information maintained to process the API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t add_deps_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt);
 
-    /// \brief Activate configuration by switching to new epoch
+    /// \brief activate configuration by switching to new epoch
     /// If object has effected any stage 0 datapath table(s), switch to new
     /// epoch in this stage NOTE: NO failures must happen in this stage
     /// \param[in] api_obj API object being processed
@@ -585,7 +584,7 @@ private:
     sdk_ret_t activate_config_(dirty_obj_list_t::iterator it,
                                api_base *api_obj, api_obj_ctxt_t *obj_ctxt);
 
-    /// \brief Abort all changes made to an object, rollback to its prev state
+    /// \brief abort all changes made to an object, rollback to its prev state
     /// NOTE: this is not expected to fail and also epoch is not activated if
     /// we are here
     /// \param[in] it    iterator position of api obj to be deleted
@@ -658,7 +657,7 @@ private:
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t batch_abort_(void);
 
-    /// \brief Add given api object to dirty list of the API batch
+    /// \brief add given api object to dirty list of the API batch
     /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt Transient information maintained to process the API
     void add_to_dirty_list_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
@@ -667,7 +666,7 @@ private:
         batch_ctxt_.dol.push_back(api_obj);
     }
 
-    /// \brief Delete given api object from dirty list of the API batch
+    /// \brief delete given api object from dirty list of the API batch
     /// \param[in] it iterator position of api obj to be deleted
     /// \param[in] api_obj API object being processed
     void del_from_dirty_list_(dirty_obj_list_t::iterator it,
@@ -677,7 +676,7 @@ private:
         api_obj->clear_in_dirty_list();
     }
 
-    /// \brief Delete given api object from dependent object list
+    /// \brief delete given api object from dependent object list
     /// \param[in] it iterator position of api obj to be deleted
     /// \param[in] api_obj API object being processed
     void del_from_deps_list_(dep_obj_list_t::iterator it,

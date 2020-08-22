@@ -30,6 +30,12 @@ using sdk::lib::catalog;
 
 namespace api {
 
+typedef struct host_if_upd_ctxt_s {
+    if_entry *host_if;
+    api_obj_ctxt_t *obj_ctxt;
+    uint64_t upd_bmap;
+} __PACK__ host_if_upd_ctxt_t;
+
 if_entry::if_entry() {
     ht_ctxt_.reset();
     memset(&if_info_, 0, sizeof(if_info_));
@@ -361,6 +367,40 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
         obj_ctxt->upd_bmap |= PDS_IF_UPD_RX_MIRROR_SESSION;
     }
     PDS_TRACE_DEBUG("if %s update bmap 0x%lx", key_.str(), obj_ctxt->upd_bmap);
+    return SDK_RET_OK;
+}
+
+static bool
+vnic_upd_walk_cb_ (void *api_obj, void *ctxt) {
+    vnic_entry *vnic;
+    host_if_upd_ctxt_t *upd_ctxt = (host_if_upd_ctxt_t *)ctxt;
+
+    vnic = (vnic_entry *)api_framework_obj((api_base *)api_obj);
+    if (vnic->host_if() == upd_ctxt->host_if->key()) {
+        api_obj_add_to_deps(upd_ctxt->obj_ctxt->api_op,
+                            OBJ_ID_IF, upd_ctxt->host_if,
+                            OBJ_ID_VNIC, (api_base *)api_obj,
+                            upd_ctxt->upd_bmap);
+    }
+    return false;
+}
+
+sdk_ret_t
+if_entry::add_deps(api_obj_ctxt_t *obj_ctxt) {
+    uint64_t vnic_upd_bmap = 0;
+    host_if_upd_ctxt_t upd_ctxt = { 0 };
+
+    if (type_ != IF_TYPE_HOST) {
+        return SDK_RET_OK;
+    }
+    if (obj_ctxt->upd_bmap & PDS_IF_UPD_CONN_TRACK_EN) {
+        // we need update all vnics associated with this host interface
+        vnic_upd_bmap |= PDS_VNIC_UPD_CONN_TRACK_EN;
+        upd_ctxt.host_if = this;
+        upd_ctxt.obj_ctxt = obj_ctxt;
+        upd_ctxt.upd_bmap = vnic_upd_bmap;
+        return vnic_db()->walk(vnic_upd_walk_cb_, &upd_ctxt);
+    }
     return SDK_RET_OK;
 }
 
