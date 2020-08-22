@@ -68,7 +68,7 @@ type delPendingHeap struct {
 
 // store is an implementation of the Store interface
 type store struct {
-	sync.RWMutex
+	sync.Mutex
 	objs         *patricia.Trie
 	stats        StoreStats
 	delPending   *delPendingHeap
@@ -310,8 +310,8 @@ func (s *store) Get(key string) (runtime.Object, error) {
 		hdr.Record("store.Get", time.Since(start))
 	}()
 	prefix := patricia.Prefix(key)
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 	v := s.objs.Get(prefix)
 	if v == nil {
 		return nil, errorNotFound
@@ -356,8 +356,8 @@ func (s *store) GetFromSnapshot(rev uint64, key string) (runtime.Object, error) 
 		hdr.Record("store.Get", time.Since(start))
 	}()
 	prefix := patricia.Prefix(key)
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 	ret, err := s.getFromSnapshot(rev, prefix)
 	if err != nil {
 		return nil, err
@@ -468,8 +468,8 @@ func (s *store) List(key, kind string, opts api.ListWatchOptions) ([]runtime.Obj
 		ret = append(ret, it.(runtime.Object))
 		return nil
 	}
-	defer s.RUnlock()
-	s.RLock()
+	defer s.Unlock()
+	s.Lock()
 	s.objs.VisitSubtree(prefix, visitfunc)
 	s.stats.lists.Add(1)
 	return ret, nil
@@ -517,8 +517,8 @@ func (s *store) ListFromSnapshot(rev uint64, key, kind string, opts api.ListWatc
 		ret = append(ret, it.(runtime.Object))
 		return nil
 	}
-	defer s.RUnlock()
-	s.RLock()
+	defer s.Unlock()
+	s.Lock()
 	s.objs.VisitSubtree(prefix, visitfunc)
 	s.stats.snapLists.Add(1)
 	return ret, nil
@@ -631,8 +631,8 @@ purgeSnapshot:
 
 // Stat returns stat for list of keys
 func (s *store) Stat(keys []string) []apiintf.ObjectStat {
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 	var ret []apiintf.ObjectStat
 	for i := range keys {
 		prefix := patricia.Prefix(keys[i])
@@ -681,6 +681,8 @@ func (s *store) StatAll(prefix string) []apiintf.ObjectStat {
 		return nil
 	}
 	ppfx := patricia.Prefix(prefix)
+	s.Lock()
+	defer s.Unlock()
 	s.objs.VisitSubtree(ppfx, visitFunc)
 	s.stats.statall.Add(1)
 	return ret
