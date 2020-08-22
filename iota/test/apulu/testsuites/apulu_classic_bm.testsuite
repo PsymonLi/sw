@@ -23,9 +23,11 @@ setup:
         - step : config.topology
           args :
              spec :
-                node1 : 2naples_bm_static_node1.cfgyml
-                node2 : 2naples_bm_static_node2.cfgyml
+                node1 : 2naples_container_cps_node1.cfgyml
+                node2 : 2naples_container_cps_node2.cfgyml
         - step : config.bringup_workloads
+          args :
+            trex : True
         - step : config.add_routes
         - step : utils.naples_upgrade.install
           args :

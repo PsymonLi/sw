@@ -3,7 +3,6 @@ import random
 import re
 import traceback
 import iota.harness.api as api
-import iota.test.utils.timout_wrapper as timeout_wrapper
 import iota.test.utils.traffic as traffic
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.config.del_iptable_rule as iptable_rule
@@ -11,14 +10,11 @@ import iota.test.apulu.testcases.upgrade.utils as upgrade_utils
 import iota.test.utils.ping as ping
 import iota.test.apulu.utils.naples as naples_utils
 import iota.test.apulu.utils.misc as misc_utils
+import iota.test.apulu.utils.pdsutils as pds_utils
 from iota.test.apulu.testcases.upgrade.status import *
+import iota.test.apulu.testcases.networking.trex_traffic_scale as traffic_gen
 
-# Following come from DOL
-import upgrade_pb2 as upgrade_pb2
-from apollo.config.node import client as NodeClient
-from apollo.oper.upgrade import client as UpgradeClient
-
-skip_connectivity_failure = False
+SKIP_CONNECTIVITY_FAILURE = False
 
 def check_max_pktloss_limit(tc, pkt_loss_duration):
     if pkt_loss_duration != 0:
@@ -34,6 +30,9 @@ def check_max_pktloss_limit(tc, pkt_loss_duration):
     return api.types.status.SUCCESS
 
 def ping_traffic_stop_and_verify(tc):
+    if not tc.background:
+        return api.types.status.SUCCESS
+    
     if ping.TestTerminateBackgroundPing(tc, tc.pktsize,\
                                         pktlossverif=tc.pktlossverif) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Ping background command termination.")
@@ -53,8 +52,6 @@ def iperf_traffic_stop_and_verify(tc):
     pkt_loss_duration = traffic.IperfUdpPktLossVerify(tc.cmd_desc, tc.server_term_resp)
     return check_max_pktloss_limit(tc, pkt_loss_duration)
 
-
-
 def check_pds_agent_debug_data(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
     for node in tc.nodes:
@@ -66,77 +63,9 @@ def check_pds_agent_debug_data(tc):
         api.PrintCommandResults(cmd_resp)
         if cmd_resp.exit_code != 0:
             api.Logger.error("Failed to dump the mapping table")
+
+    pds_utils.ShowFlowSummary(tc.nodes)
     return api.types.status.SUCCESS
-
-def trigger_upgrade_request(tc):
-    result = api.types.status.SUCCESS
-    if api.IsDryrun():
-        return result
-
-    backgroun_req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
-    # start upgrade manager process
-    for node in tc.nodes:
-        cmd = "/nic/tools/start-upgmgr.sh -n "
-        api.Logger.info("Starting Upgrade Manager %s"%(cmd))
-        api.Trigger_AddNaplesCommand(backgroun_req, node, cmd, background=True)
-    api.Trigger(backgroun_req)
-
-    # wait for upgrade manager to comeup
-    misc_utils.Sleep(10)
-    for node in tc.nodes:
-        # initiate upgrade client objects
-        # Generate Upgrade objects
-        UpgradeClient.GenerateUpgradeObjects(node, api.GetNicMgmtIP(node))
-
-        upg_obj = UpgradeClient.GetUpgradeObject(node)
-        upg_obj.SetPkgName(tc.pkg_name)
-        upg_obj.SetUpgMode(upgrade_pb2.UPGRADE_MODE_HITLESS)
-        upg_status = upg_obj.UpgradeReq()
-        api.Logger.info(f"Hitless Upgrade request for {node} returned status {upg_status}")
-        if upg_status != upgrade_pb2.UPGRADE_STATUS_OK:
-            api.Logger.error(f"Failed to start upgrade manager on {node}")
-            result = api.types.status.FAILURE
-            continue
-    return result
-
-def hitless_upgrade_poll_config_replay_ready(tc):
-    result = api.types.status.SUCCESS
-    for node in tc.nodes:
-        upg_obj = UpgradeClient.GetUpgradeObject(node)
-        if not upg_obj.PollConfigReplayReady():
-            api.Logger.error(f"Failed to move to config replay ready stage")
-            result = api.types.status.FAILURE
-            break
-    return result
-
-# Push config after upgrade
-def hitless_upgrade_trigger_config_replay(tc):
-    result = api.types.status.SUCCESS
-    api.Logger.info("Triggering Config replay...")
-    # Trigger config replay
-    for node in tc.nodes:
-        upg_obj = UpgradeClient.GetUpgradeObject(node)
-        if not upg_obj.TriggerCfgReplay():
-            api.Logger.error(f"Failed in config replay for {node}")
-            result = api.types.status.FAILURE
-            break
-    if result == api.types.status.SUCCESS:
-        api.Logger.info("Config replay Success")
-    return result
-
-def hitless_upgrade_validate_config(tc):
-    result = api.types.status.SUCCESS
-    api.Logger.info("Validating Configuration... ")
-
-    for node in tc.nodes:
-        upg_obj = UpgradeClient.GetUpgradeObject(node)
-        if not upg_obj.ValidateCfgPostUpgrade():
-            api.Logger.error(f"Failed in config validation post replay for {node}")
-            result = api.types.status.FAILURE
-            break
-    if result == api.types.status.SUCCESS:
-        api.Logger.info("Validated config successfully")
-    return result
 
 def ChooseWorkLoads(tc):
     tc.workload_pairs = config_api.GetPingableWorkloadPairs(
@@ -157,30 +86,7 @@ def VerifyConnectivity(tc):
         return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
-def VerifyMgmtConnectivity(tc):
-    if api.IsDryrun():
-        return api.types.status.SUCCESS
-    # ensure Mgmt Connectivity
-    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
-    for node in tc.nodes:
-        api.Logger.info("Checking connectivity to Naples Mgmt IP: %s"%api.GetNicIntMgmtIP(node))
-        api.Trigger_AddHostCommand(req, node,
-                'ping -c 5 -i 0.2 {}'.format(api.GetNicIntMgmtIP(node)))
-    resp = api.Trigger(req)
-
-    if not resp.commands:
-        return api.types.status.FAILURE
-    result = api.types.status.SUCCESS
-    for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code:
-            result = api.types.status.FAILURE
-    return result
-
 def PacketTestSetup(tc):
-    if tc.upgrade_mode is None:
-        return api.types.status.SUCCESS
-
     tc.bg_cmd_cookies = None
     tc.bg_cmd_resp = None
     tc.pktsize = 128
@@ -190,7 +96,6 @@ def PacketTestSetup(tc):
     tc.interval = 0.001 #1msec
     tc.count = int(tc.duration / tc.interval)
 
-
     # start background ping before start of test
     if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
             count=tc.count, pktlossverif=tc.pktlossverif, \
@@ -198,6 +103,7 @@ def PacketTestSetup(tc):
         api.Logger.error("Failed in triggering background Ping during Setup")
         tc.skip = True
         return api.types.status.FAILURE
+
     if tc.iperf:
         out = traffic.iperfWorkloads(tc.workload_pairs, time=tc.duration, \
                                     proto="udp", bandwidth="100M", \
@@ -206,71 +112,17 @@ def PacketTestSetup(tc):
         tc.cmd_desc, tc.server_resp, tc.client_resp = out[0], out[1], out[2]
     return api.types.status.SUCCESS
 
-@timeout_wrapper.timeout(seconds=300)
-def __poll_upgrade_status(tc, status, **kwargs):
-    not_found = True
-    retry = 0
-
-    while not_found:
-        misc_utils.Sleep(1)
-        not_found = False
-
-        for node in tc.nodes:
-            api.Logger.info(f"retry {retry}: Checking upgrade status {status.name} on {node}")
-            not_found = not upgrade_utils.CheckUpgradeStatus(node, status)
-        retry += 1
-
-def PollUpgradeStatus(tc, status, **kwargs):
-    if api.IsDryrun():
-       return api.types.status.SUCCESS
-
-    try:
-        __poll_upgrade_status(tc, status, **kwargs)
-        return api.types.status.SUCCESS
-    except:
-        #traceback.print_exc()
-        api.Logger.error(f"Failed to poll upgrade status {status.name}")
-        return api.types.status.FAILURE
-
-@timeout_wrapper.timeout(seconds=300)
-def __poll_upgrade_stage(tc, stage):
-    not_found = True
-    retry = 0
-
-    while not_found:
-        misc_utils.Sleep(1)
-        not_found = False
-
-        for node in tc.nodes:
-            api.Logger.info(f"retry {retry}: Checking upgrade stage {stage.name} on {node}")
-            not_found = not upgrade_utils.CheckUpgradeStage(node, stage)
-
-        retry += 1
-
-def PollUpgradeStage(tc, stage, **kwargs):
-    if api.IsDryrun():
-       return api.types.status.SUCCESS
-    try:
-        __poll_upgrade_stage(tc, stage, **kwargs)
-        return api.types.status.SUCCESS
-    except:
-        #traceback.print_exc()
-        api.Logger.error(f"Failed to poll upgrade stage {stage.name}")
-        return api.types.status.FAILURE
-
 def Setup(tc):
     result = api.types.status.SUCCESS
     tc.workload_pairs = []
     tc.skip = False
     tc.sleep = getattr(tc.args, "sleep", 200)
-    tc.upgrade_mode = "hitless"
     tc.allowed_down_time = getattr(tc.args, "allowed_down_time", 0)
     tc.pkg_name = getattr(tc.args, "naples_upgr_pkg", "naples_fw.tar")
     tc.node_selection = tc.iterators.selection
     tc.iperf = getattr(tc.args, "iperf", False)
     tc.failure_stage = getattr(tc.args, "failure_stage", None)
     tc.failure_reason = getattr(tc.args, "failure_reason", None)
-    tc.hitless_instance = { }
 
     if tc.node_selection not in ["any", "all"]:
         api.Logger.error("Incorrect Node selection option {} specified. Use 'any' or 'all'".format(tc.node_selection))
@@ -307,7 +159,7 @@ def Setup(tc):
         return api.types.status.FAILURE
 
     # verify mgmt connectivity
-    result = VerifyMgmtConnectivity(tc)
+    result = traffic.VerifyMgmtConnectivity(tc.nodes)
     if result != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check during Setup.")
         tc.skip = True
@@ -327,7 +179,7 @@ def Setup(tc):
     # verify endpoint connectivity
     if VerifyConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Connectivity Check during Setup.")
-        if not skip_connectivity_failure:
+        if not SKIP_CONNECTIVITY_FAILURE:
             result = api.types.status.FAILURE
             tc.skip = True
             return result
@@ -338,6 +190,12 @@ def Setup(tc):
         api.Logger.error("Failed in Packet Test setup.")
         return result
 
+    # Start  Trex
+    if traffic_gen.start_trex_traffic(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed to start Trex traffic")
+        tc.skip = True
+        return api.types.status.FAILURE
+
     api.Logger.info(f"Upgrade: Setup returned {result}")
     return result
 
@@ -347,37 +205,41 @@ def Trigger(tc):
         return TriggerHitlessNegative(tc)
 
     # Trigger upgrade
-    result = trigger_upgrade_request(tc)
+    result = upgrade_utils.HitlessTriggerUpdateRequest(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     # Make sure upgrade is kick started
-    result = PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
+    result = upgrade_utils.HitlessPollUpgradeStatus(
+                           tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
     if result != api.types.status.SUCCESS:
         return result
 
     # Poll upgrade stage ready
-    result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_READY, timeout=300)
+    result = upgrade_utils.HitlessPollUpgradeStage(
+                           tc, UpgStage.UPG_STAGE_READY, timeout=300)
     if result !=  api.types.status.SUCCESS:
-       return result
+        return result
 
     # Delete iptable rule to unblock the GRPC port
     iptable_rule.DelIptablesRule(tc.nodes)
 
     # Poll config replay ready state
-    result = hitless_upgrade_poll_config_replay_ready(tc)
+    result = upgrade_utils.HitlessPollConfigReplayReady(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     api.Logger.info("PDS agent is ready to receive the config replay")
+    pds_utils.ShowFlowSummary(tc.nodes)
 
     # Replay the configuration
-    result = hitless_upgrade_trigger_config_replay(tc)
+    result = upgrade_utils.HitlessTriggerConfigReplay(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     # Poll finish stage
-    return PollUpgradeStage(tc, UpgStage.UPG_STAGE_FINISH, timeout=300)
+    return upgrade_utils.HitlessPollUpgradeStage(
+                        tc, UpgStage.UPG_STAGE_FINISH, timeout=300)
 
 def TriggerHitlessNegative(tc):
     result = upgrade_utils.HitlessSaveInstanceId(tc)
@@ -385,17 +247,19 @@ def TriggerHitlessNegative(tc):
         return result
 
     # Trigger upgrade
-    result = trigger_upgrade_request(tc)
+    result = upgrade_utils.HitlessTriggerUpdateRequest(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     # Make sure upgrade is kick started
-    result = PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
+    result = upgrade_utils.HitlessPollUpgradeStatus(
+                           tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
     if result != api.types.status.SUCCESS:
         return result
 
     # Poll upgrade stage prepare
-    result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_PREPARE, timeout=300)
+    result = upgrade_utils.HitlessPollUpgradeStage(
+                           tc, UpgStage.UPG_STAGE_PREPARE, timeout=300)
     if result !=  api.types.status.SUCCESS:
         return result
 
@@ -404,36 +268,38 @@ def TriggerHitlessNegative(tc):
         return result
 
     # Poll upgrade stage ready
-    result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_READY, timeout=300)
-    if result !=  api.types.status.SUCCESS:
-       return result
+    result = upgrade_utils.HitlessPollUpgradeStage(
+                           tc, UpgStage.UPG_STAGE_READY, timeout=300)
+    if result != api.types.status.SUCCESS:
+        return result
 
     # Delete iptable rule to unblock the GRPC port
     iptable_rule.DelIptablesRule(tc.nodes)
 
     # Poll config replay ready state
-    result = hitless_upgrade_poll_config_replay_ready(tc)
+    result = upgrade_utils.HitlessPollConfigReplayReady(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     api.Logger.info("PDS agent is ready to receive the config replay")
 
     # Replay the configuration
-    result = hitless_upgrade_trigger_config_replay(tc)
+    result = upgrade_utils.HitlessTriggerConfigReplay(tc)
     if result != api.types.status.SUCCESS:
         return result
 
     # Poll for upgrade failed status
-    return PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_FAILED, timeout=300)
+    return upgrade_utils.HitlessPollUpgradeStatus(
+                         tc, UpgStatus.UPG_STATUS_FAILED, timeout=300)
 
 def Verify(tc):
-    sshd_restart_wait = 20 #sec
     result = api.types.status.SUCCESS
+
     if api.IsDryrun():
         return result
-    # Let sshd start in new domain
-    api.Logger.info(f"Waiting {sshd_restart_wait} sec for sshd to restart in new Domain...")
-    misc_utils.Sleep(sshd_restart_wait)
+
+    # Stop Trex traffic
+    traffic_gen.stop_trex_traffic(tc)
 
     # Check upgrade status
     if tc.failure_stage != None:
@@ -446,13 +312,13 @@ def Verify(tc):
             result = api.types.status.FAILURE
 
     # validate the configuration
-    result = hitless_upgrade_validate_config(tc)
+    result = upgrade_utils.HitlessUpgradeValidateConfig(tc)
     if result != api.types.status.SUCCESS:
         api.Logger.info("Ignoring the configuration validation failure")
         result = api.types.status.SUCCESS
 
     # verify mgmt connectivity
-    if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
+    if traffic.VerifyMgmtConnectivity(tc.nodes) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
         result = api.types.status.FAILURE
 
@@ -481,22 +347,19 @@ def Verify(tc):
     # verify workload connectivity
     if VerifyConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Connectivity Check after Upgrade.")
-        if not skip_connectivity_failure:
+        if not SKIP_CONNECTIVITY_FAILURE:
             result = api.types.status.FAILURE
 
-    if tc.upgrade_mode:
-        tc.sleep = 100
-        # If rollout status is failure, then no need to wait for traffic test
-        if result == api.types.status.SUCCESS:
-            api.Logger.info("Sleep for %s secs for traffic test to complete"%tc.sleep)
-            misc_utils.Sleep(tc.sleep)
+    tc.sleep = 100
+    # If rollout status is failure, then no need to wait for traffic test
+    if result == api.types.status.SUCCESS:
+        api.Logger.info("Sleep for %s secs for traffic test to complete"%tc.sleep)
+        misc_utils.Sleep(tc.sleep)
 
-        pkt_loss_duration = 0
-        # terminate background traffic and calculate packet loss duration
-        if tc.background:
-            result = ping_traffic_stop_and_verify(tc)
-            if (result == api.types.status.SUCCESS) and tc.iperf:
-                result = iperf_traffic_stop_and_verify(tc)
+    # terminate background traffic and calculate packet loss duration
+    result = ping_traffic_stop_and_verify(tc)
+    if result == api.types.status.SUCCESS and tc.iperf:
+        result = iperf_traffic_stop_and_verify(tc)
 
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrademgr logs...")

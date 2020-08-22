@@ -16,3 +16,23 @@ testcases:
             sleep             : 300
             naples_upgr_pkg   : "naples_fw_issu.tar"
             iperf             : True
+    
+    -   name: UPGRADE_HITLESS_SCALE
+        testcase    : testcases.upgrade.hitless
+        stress      : True
+        ignore      : True
+        args                   :
+            sleep              : 300
+            naples_upgr_pkg    : "naples_fw_issu.tar"
+            iperf              : True
+            Trex               : True
+            security_profile   :
+                conntrack      : True
+                tcpidletimeout : 90
+                udpidletimeout : 90            
+        iterators              :
+            type               : simple
+            selection          : [ any ]  # upgrade all or any
+            max_active_flow    : [3200000]
+            cps                : [100000]
+            duration           : [300]

@@ -10,8 +10,8 @@ import iota.test.utils.arping as arp_utils
 
 import iota.protos.pygen.topo_svc_pb2 as topo_svc
 
-__max_udp_ports = 1
-__max_tcp_ports = 1
+MAX_UDP_PORTS = 1
+MAX_TCP_PORTS = 2
 
 portUdpAllocator = resmgr.TestbedPortAllocator(205)
 portTcpAllocator = resmgr.TestbedPortAllocator(4500)
@@ -73,14 +73,14 @@ def __add_iptables_to_workloads(workloads=[]):
 def _add_exposed_ports(wl_msg):
     if  wl_msg.workload_type != topo_svc.WORKLOAD_TYPE_CONTAINER:
         return
-    for p in ["4500", "4501", "4507"]:
+    for _ in range(MAX_TCP_PORTS):
         tcp_port = wl_msg.exposed_ports.add()
-        tcp_port.Port = p
+        tcp_port.Port = str(portTcpAllocator.Alloc())
         tcp_port.Proto = "tcp"
 
-    for _ in range(__max_udp_ports):
+    for _ in range(MAX_UDP_PORTS):
         udp_port = wl_msg.exposed_ports.add()
-        udp_port.Port = "1001"
+        udp_port.Port = str(portUdpAllocator.Alloc())
         udp_port.Proto = "udp"
 
 

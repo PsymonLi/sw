@@ -3,13 +3,19 @@ import os
 import datetime
 import re
 import subprocess
+import traceback
 import iota.harness.api as api
 from iota.test.apulu.testcases.upgrade.status import *
 import iota.protos.pygen.iota_types_pb2 as types_pb2
 import iota.test.apulu.utils.misc as misc_utils
+import iota.test.utils.timout_wrapper as timeout_wrapper
 
-__upg_log_path = "/obfl/upgrademgr.log"
-__upg_log_fname = "upgrademgr.log"
+# Following come from DOL
+import upgrade_pb2 as upgrade_pb2
+from apollo.oper.upgrade import client as UpgradeClient
+
+__UPG_LOG_PATH = "/obfl/upgrademgr.log"
+__UPG_LOG_FNAME = "upgrademgr.log"
 __ERROR = "E"
 
 HITLESS_INSTANCE_A = "instance_a"
@@ -55,7 +61,7 @@ def __disset_upg_log(node, logs):
             records.append({e: m.group(e) for e in ["lvl", "ts", "tid", "fname", "msg"]})
             records[-1]["raw"] = log
         else:
-            api.Logger.error(f"Failed to dissect log on {node} : {log}")
+            api.Logger.warn(f"Failed to dissect log on {node} : {log}")
     return records
 
 def __calculate_upg_state_duration(node, records):
@@ -103,7 +109,7 @@ def ResetUpgLog(nodes):
     req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
     for node in nodes:
-        cmd = f":>{__upg_log_path}"
+        cmd = f":>{__UPG_LOG_PATH}"
         api.Trigger_AddNaplesCommand(req, node, cmd)
 
     resp = api.Trigger(req)
@@ -116,9 +122,9 @@ def ResetUpgLog(nodes):
 
 def GetUpgLog(nodes, log_dir):
     nodes = nodes if nodes else api.GetNaplesHostnames()
-    file_name = f"{log_dir}/{__upg_log_fname}"
+    file_name = f"{log_dir}/{__UPG_LOG_FNAME}"
     for node in nodes:
-        api.CopyFromNaples(node, [__upg_log_path], log_dir, via_oob=True)
+        api.CopyFromNaples(node, [__UPG_LOG_PATH], log_dir, via_oob=True)
         if os.path.exists(file_name):
             os.rename(file_name, __get_upg_log_fname_from_node(node, log_dir))
         else:
@@ -347,3 +353,125 @@ def HitlessNegativeSetup(tc):
     if rv != api.types.status.SUCCESS:
            return rv
     return  api.types.status.SUCCESS
+
+def HitlessTriggerUpdateRequest(tc):
+    result = api.types.status.SUCCESS
+    if api.IsDryrun():
+        return result
+
+    backgroun_req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    # start upgrade manager process
+    for node in tc.nodes:
+        cmd = "/nic/tools/start-upgmgr.sh -n "
+        api.Logger.info("Starting Upgrade Manager %s"%(cmd))
+        api.Trigger_AddNaplesCommand(backgroun_req, node, cmd, background=True)
+    api.Trigger(backgroun_req)
+
+    # wait for upgrade manager to comeup
+    misc_utils.Sleep(10)
+    for node in tc.nodes:
+        # initiate upgrade client objects
+        # Generate Upgrade objects
+        UpgradeClient.GenerateUpgradeObjects(node, api.GetNicMgmtIP(node))
+
+        upg_obj = UpgradeClient.GetUpgradeObject(node)
+        upg_obj.SetPkgName(tc.pkg_name)
+        upg_obj.SetUpgMode(upgrade_pb2.UPGRADE_MODE_HITLESS)
+        upg_status = upg_obj.UpgradeReq()
+        api.Logger.info(f"Hitless Upgrade request for {node} returned status {upg_status}")
+        if upg_status != upgrade_pb2.UPGRADE_STATUS_OK:
+            api.Logger.error(f"Failed to start upgrade manager on {node}")
+            result = api.types.status.FAILURE
+            continue
+    return result
+
+def HitlessPollConfigReplayReady(tc):
+    result = api.types.status.SUCCESS
+    for node in tc.nodes:
+        upg_obj = UpgradeClient.GetUpgradeObject(node)
+        if not upg_obj.PollConfigReplayReady():
+            api.Logger.error(f"Failed to move to config replay ready stage")
+            result = api.types.status.FAILURE
+            break
+    return result
+
+# Push config after upgrade
+def HitlessTriggerConfigReplay(tc):
+    result = api.types.status.SUCCESS
+    api.Logger.info("Triggering Config replay...")
+    # Trigger config replay
+    for node in tc.nodes:
+        upg_obj = UpgradeClient.GetUpgradeObject(node)
+        if not upg_obj.TriggerCfgReplay():
+            api.Logger.error(f"Failed in config replay for {node}")
+            result = api.types.status.FAILURE
+            break
+    if result == api.types.status.SUCCESS:
+        api.Logger.info("Config replay Success")
+    return result
+
+def HitlessUpgradeValidateConfig(tc):
+    result = api.types.status.SUCCESS
+    api.Logger.info("Validating Configuration... ")
+
+    for node in tc.nodes:
+        upg_obj = UpgradeClient.GetUpgradeObject(node)
+        if not upg_obj.ValidateCfgPostUpgrade():
+            api.Logger.error(f"Failed in config validation post replay for {node}")
+            result = api.types.status.FAILURE
+            break
+    if result == api.types.status.SUCCESS:
+        api.Logger.info("Validated config successfully")
+    return result
+
+@timeout_wrapper.timeout(seconds=300)
+def __poll_upgrade_status(tc, status, **kwargs):
+    not_found = True
+    retry = 0
+
+    while not_found:
+        misc_utils.Sleep(1)
+        not_found = False
+
+        for node in tc.nodes:
+            api.Logger.info(f"retry {retry}: Checking upgrade status {status.name} on {node}")
+            not_found = not CheckUpgradeStatus(node, status)
+        retry += 1
+
+def HitlessPollUpgradeStatus(tc, status, **kwargs):
+    if api.IsDryrun():
+       return api.types.status.SUCCESS
+
+    try:
+        __poll_upgrade_status(tc, status, **kwargs)
+        return api.types.status.SUCCESS
+    except:
+        #traceback.print_exc()
+        api.Logger.error(f"Failed to poll upgrade status {status.name}")
+        return api.types.status.FAILURE
+
+@timeout_wrapper.timeout(seconds=300)
+def __poll_upgrade_stage(tc, stage):
+    not_found = True
+    retry = 0
+
+    while not_found:
+        misc_utils.Sleep(1)
+        not_found = False
+
+        for node in tc.nodes:
+            api.Logger.info(f"retry {retry}: Checking upgrade stage {stage.name} on {node}")
+            not_found = not CheckUpgradeStage(node, stage)
+
+        retry += 1
+
+def HitlessPollUpgradeStage(tc, stage, **kwargs):
+    if api.IsDryrun():
+       return api.types.status.SUCCESS
+    try:
+        __poll_upgrade_stage(tc, stage, **kwargs)
+        return api.types.status.SUCCESS
+    except:
+        #traceback.print_exc()
+        api.Logger.error(f"Failed to poll upgrade stage {stage.name}")
+        return api.types.status.FAILURE

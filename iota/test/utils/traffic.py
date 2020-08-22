@@ -314,7 +314,7 @@ def IperfUdpPktLossVerify(cmd_cookies, server_rsp):
     for idx, cmd in enumerate(server_rsp.commands):
         api.Logger.debug("Iperf packet loss verify for %s" % (cmdDesc[idx]))
         rx_pps = float(iperf.GetReceivedPPS(cmd.stdout))
-        lost_pkts = iperf.GetLostPackets(cmd.stdout);
+        lost_pkts = iperf.GetLostPackets(cmd.stdout)
         if int(rx_pps) == 0:
             lost_duration = 0
         else:
@@ -324,3 +324,26 @@ def IperfUdpPktLossVerify(cmd_cookies, server_rsp):
         api.Logger.info("Iperf received %.2f pkts/sec, lost pkts %u, lost duration %.4f sec"
                         %(rx_pps, lost_pkts, float(lost_duration)))
     return lost_duration_in_s
+
+def VerifyMgmtConnectivity(nodes):
+    '''
+    Verify management connectivity.
+    '''
+    if api.IsDryrun():
+        return api.types.status.SUCCESS
+
+    result = api.types.status.SUCCESS
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    for node in nodes:
+        api.Logger.info("Checking connectivity to Naples Mgmt IP: %s"%api.GetNicIntMgmtIP(node))
+        api.Trigger_AddHostCommand(req, node,
+                'ping -c 5 -i 0.2 {}'.format(api.GetNicIntMgmtIP(node)))
+    resp = api.Trigger(req)
+
+    if not resp.commands:
+        return api.types.status.FAILURE
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code:
+            result = api.types.status.FAILURE
+    return result

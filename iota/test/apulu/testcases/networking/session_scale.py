@@ -10,8 +10,6 @@ import iota.test.utils.traffic as traffic_utils
 import iota.test.apulu.utils.pdsutils as pds_utils
 import iota.test.apulu.utils.flow as flowutils
 import iota.harness.infra.utils.periodic_timer as pt
-import zmq
-
 from iota.test.iris.utils.trex_wrapper import *
 
 skip_trex_traffic = False
@@ -206,7 +204,7 @@ def configDeleteTrigger(tc):
             tc.is_config_deleted = True
         if res != api.types.status.SUCCESS:
             api.Logger.error(f"config delete operation failed : {res}")
-            break;
+            break
     return res
 
 def configRestoreTrigger(tc):

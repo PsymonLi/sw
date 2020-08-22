@@ -1,6 +1,6 @@
 from "centos:7.3.1611"
 
-run "yum -y install https://centos7.iuscommunity.org/ius-release.rpm"
+run "yum -y install https://repo.ius.io/ius-release-el7.rpm"
 run "yum -y install python36u python36u-pip"
 run "yum -y install http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm"
 
@@ -53,6 +53,7 @@ PACKAGES = %w[
   vlc
   sudo
   ethtool
+  wireshark
 ]
 
 run "yum install -y http://repo.iotti.biz/CentOS/7/x86_64/netperf-2.7.0-1.el7.lux.x86_64.rpm"
@@ -67,8 +68,15 @@ run "pip3 install --upgrade #{PIP3_PACKAGES.join(" ")}"
 
 run "mkdir -p /iota/tools/raw"
 run "git clone https://github.com/secdev/scapy && cd scapy && python3 setup.py install"
+run "mkdir -p /opt/trex && cd /opt/trex && \
+	wget --no-check-certificate --no-cache https://trex-tgn.cisco.com/trex/release/v2.65.tar.gz && tar -xzvf v2.65.tar.gz"
 
 
+after do
+  if getenv("RELEASE") != ""
+    flatten
+  end
+end
 
 #copy "raw.tar.gz", "/iota/tools/raw/"
 

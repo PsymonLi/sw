@@ -3,7 +3,7 @@
 import pdb
 import os
 import iota.harness.api as api
-
+import iota.test.apulu.utils.pdsctl as pdsctl
 from infra.common.logging import logger
 
 def pdsClearFlows(node_name=None):
@@ -15,6 +15,15 @@ def pdsClearFlows(node_name=None):
          for node_name in  api.GetNaplesHostnames():
             api.Trigger_AddNaplesCommand(req, node_name, clear_cmd)
     api.Trigger(req)
+    return api.types.status.SUCCESS
+
+def ShowFlowSummary(nodes=[]):
+    if api.IsDryrun():
+        return api.types.status.SUCCESS
+
+    for node in nodes:
+        pdsctl.ExecutePdsctlShowCommand(node, "flow", "--summary | grep \"No. of flows :\"", yaml=False, print_op=True)
+
     return api.types.status.SUCCESS
 
 def SetPdsLogsLevel(level, node_name=None):
@@ -75,7 +84,7 @@ def GetProcPid(node_name, proc_name):
 
     cmd = "pidof {}".format(proc_name)
     req = api.Trigger_CreateExecuteCommandsRequest()
-    api.Trigger_AddNaplesCommand(req, node_name,cmd)
+    api.Trigger_AddNaplesCommand(req, node_name, cmd)
     resp = api.Trigger(req)
 
     for cmd in resp.commands:
@@ -84,3 +93,4 @@ def GetProcPid(node_name, proc_name):
             raise Exception("Could not find %s process on %s"%(proc_name, node_name))
         else:
             return int(cmd.stdout.strip())
+

@@ -38,7 +38,7 @@ def __disset_upg_log(node, logs):
             records.append({e: m.group(e) for e in ["lvl", "ts", "tid", "fname", "msg"]})
             records[-1]["raw"] = log
         else:
-            api.Logger.error(f"Failed to dissect log on {node} : {log}")
+            api.Logger.warn(f"Failed to dissect log on {node} : {log}")
     return records
 
 def __calculate_upg_state_duration(node, records):

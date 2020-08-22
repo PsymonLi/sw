@@ -46,7 +46,7 @@ class LocalMappingObject(base.MappingObjectBase):
         self.HasDefaultRoute = False
         if ipversion == utils.IP_VERSION_6:
             self.AddrFamily = 'IPV6'
-            self.IPAddr = parent.SUBNET.AllocIPv6Address();
+            self.IPAddr = parent.SUBNET.AllocIPv6Address()
             if not self.PublicIPAddr and self.__is_public:
                 self.PublicIPAddr = next(ResmgrClient[node].PublicIpv6AddressAllocator)
             if parent.SUBNET.V6RouteTable:

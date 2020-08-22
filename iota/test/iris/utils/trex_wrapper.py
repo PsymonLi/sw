@@ -1,26 +1,48 @@
 #! /usr/bin/python3
 
 import iota.harness.api as api
-from trex.astf.api import *
+from trex.astf.api import ASTFClient
 import yaml
 import tempfile
 import traceback
 import time
+import os
 
-default_trex_cfg_path = "/etc/trex_cfg.yaml"
-TRexDir = "/opt/trex/v2.65/"
-trex_cfg_template = os.path.join(os.path.dirname(__file__), "config/trex_cfg_template.yaml")
+DEFAULT_TREX_CFG_PATH = "/etc/trex_cfg.yaml"
+TREX_DIR = "/opt/trex/v2.65/"
+TREX_CFG_TEMPLATE = os.path.join(os.path.dirname(__file__), "config/trex_cfg_template.yaml")
 
 class TRexIotaWrapper(ASTFClient):
-    def __init__(self, workload, role='client', gw='128.0.0.1', debug=False, kill=1):
+    def __init__(self,
+                 workload,
+                 role='client',
+                 gw='128.0.0.1',
+                 debug=False,
+                 kill=1,
+                 sync_port=4501,
+                 async_port=4500,
+                 verbose_level='error',
+                 logger=None,
+                 sync_timeout=20,
+                 async_timeout=20):
+
+        ASTFClient.__init__(self,
+                            server=workload.mgmt_ip,
+                            sync_port=sync_port,
+                            async_port=async_port,
+                            verbose_level=verbose_level,
+                            logger=logger,
+                            sync_timeout=sync_timeout,
+                            async_timeout=async_timeout)
         self.role = role
         self.gw = gw
         self.workload = workload
         self._procHandle = None
+        self.sync_port = sync_port
+        self.async_port = async_port
         self._createTrexCfg()
         self._killTrex(kill)
-        self._startTrex(debug,kill)
-        ASTFClient.__init__(self, server=workload.mgmt_ip)
+        self._startTrex(debug, kill)
 
     @property
     def role(self):
@@ -29,27 +51,27 @@ class TRexIotaWrapper(ASTFClient):
     @role.setter
     def role(self, value):
         if value not in ['client', 'server']:
-            ValueError("Unsupported role %s"%(role))
+            ValueError("Unsupported role %s"%(self.role))
         self._role = value
 
     def _removeTrexCfg(self):
         req = api.Trigger_CreateExecuteCommandsRequest()
         api.Trigger_AddCommand(req, self.workload.node_name,
                                self.workload.workload_name,
-                               "rm -f %s"%default_trex_cfg_path)
+                               "rm -f %s"%DEFAULT_TREX_CFG_PATH)
         resp = api.Trigger(req)
         for cmd in resp.commands:
             api.PrintCommandResults(cmd)
 
     def _getTrexCfg(self, iface1, iface2, ip1, ip2, gw1, gw2):
         try:
-            f = open(trex_cfg_template)
+            f = open(TREX_CFG_TEMPLATE)
             out_file = tempfile.NamedTemporaryFile(mode='w+', prefix="trex_cfg_%s_"%
                                                    self.workload.workload_name)
             cfg = yaml.load(f)
-
+            cfg[0]['zmq_pub_port'] = self.async_port
+            cfg[0]['zmq_rpc_port'] = self.sync_port
             cfg[0]['interfaces'] = [iface1, iface2]
-
             cfg[0]['port_info'] = [{'ip': ip1, 'default_gw': gw1},
                                    {'ip': ip2, 'default_gw': gw2}]
 
@@ -85,7 +107,7 @@ class TRexIotaWrapper(ASTFClient):
                 raise Exception("Failed to copy TRex configuration to %s "%())
 
             api.Trigger_AddCommand(req, self.workload.node_name, self.workload.workload_name,
-                                   "yes | mv %s %s"%(cfgFileName, default_trex_cfg_path))
+                                   "yes | mv %s %s"%(cfgFileName, DEFAULT_TREX_CFG_PATH))
             resp = api.Trigger(req)
             for cmd in resp.commands:
                 api.PrintCommandResults(cmd)
@@ -106,7 +128,7 @@ class TRexIotaWrapper(ASTFClient):
         req = api.Trigger_CreateExecuteCommandsRequest()
         api.Trigger_AddCommand(req, self.workload.node_name,
                                self.workload.workload_name,
-                               "test -e %s && cat %s"%(default_trex_cfg_path, default_trex_cfg_path))
+                               "test -e %s && cat %s"%(DEFAULT_TREX_CFG_PATH, DEFAULT_TREX_CFG_PATH))
         resp = api.Trigger(req)
         for cmd in resp.commands:
             api.PrintCommandResults(cmd)
@@ -139,12 +161,12 @@ class TRexIotaWrapper(ASTFClient):
 
     def _startTrex(self, debug=False, kill=1):
         req = api.Trigger_CreateExecuteCommandsRequest()
-        debug_cmd = " --rpc-log /home/vm/trex.log -v 10"
+        debug_cmd = " --rpc-log /root/trex.log -v 10"
 
         if self.role == "server":
-            cmd = "cd %s; ./t-rex-64 -i --astf --astf-server-only"%TRexDir
+            cmd = "cd %s; ./t-rex-64 -i --astf --astf-server-only"%TREX_DIR
         else:
-            cmd = "cd %s; ./t-rex-64 -i --astf --astf-client-mask 0x1"%TRexDir
+            cmd = "cd %s; ./t-rex-64 -i --astf --astf-client-mask 0x1"%TREX_DIR
 
         if debug:
             cmd += debug_cmd

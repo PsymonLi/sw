@@ -1,0 +1,961 @@
+# VxLAN Topology Specification
+meta:
+    id: TOPO_VxLAN_HOSTMODE
+
+device:
+    id             : 1
+    mode           : host # bitw (default), host
+    stack          : ipv4 # ipv4 (default), ipv6
+    bridging       : false # false (default), true
+    learn-mode     : none # none (default), auto, notify
+    overlayrouting : false # false (default), true
+    ipaddress      : '30.30.30.30' # Taken from resmgr
+    gateway        : '1.0.0.1' # Taken from resmgr
+    macaddress     : macaddr/0000.aaaa.aaa1
+    encap          : vxlan # vxlan or mplsodup
+
+uplink:
+    - entry:
+        id      : uplink0
+        port    : 1
+        mode    : switch
+        status  : UP
+    - entry:
+        id      : uplink1
+        port    : 2
+        mode    : switch
+        status  : UP
+
+security_profile:
+    id        : 1
+
+vpc:
+    - id         : 100
+      stack      : ipv4 # dual, ipv4 , ipv6
+      count      : 1
+      type       : underlay
+      interface:
+        - iid           : 1
+          iftype        : l3
+          ifadminstatus : UP
+          ipprefix      : '30.1.0.1\24'
+          macaddress    : macaddr/00ae.cd00.4fde
+          portid        : 1
+          encap         : none
+        - iid           : 2
+          iftype        : l3
+          ifadminstatus : UP
+          ipprefix      : '30.2.0.1\24'
+          macaddress    : macaddr/00ae.cd00.4fdd
+          portid        : 2
+          encap         : none
+        - iid           : 3
+          iftype        : loopback
+          ifadminstatus : UP
+          ipprefix      : '30.30.30.30\32'
+          encap         : none
+      nexthop:
+        - id         : 1
+          count      : 1
+          type       : underlay
+          l3intfid   : 1
+          macaddress : macaddr/00ae.cd00.14ce
+        - id         : 2
+          count      : 1
+          type       : underlay
+          l3intfid   : 2
+          macaddress : macaddr/00ae.cd00.14cd
+      bgpglobal:
+        - localasn      : 100
+          routerid      : 30.30.30.30
+      bgppeer:
+        # underlay bgp peer 1
+        - peeraddr      : 30.1.0.2
+          localaddr     : 30.1.0.1
+          adminstate    : 1
+          sendcomm      : true
+          sendextcomm   : true
+          connectretry  : 5
+          rrclient      : false
+          # specify interface to override ip addresses from testbed json
+          interface     : "Uplink0"
+          remoteasn     : 100
+          holdtime      : 180
+          keepalive     : 60
+          bgppeeraf:
+              peeraddr  : 30.1.0.2
+              localaddr : 30.1.0.1
+              afi       : ipv4
+              safi      : unicast
+        # underlay bgp peer 2
+        - peeraddr      : 30.2.0.2
+          localaddr     : 30.2.0.1
+          adminstate    : 1
+          sendcomm      : true
+          sendextcomm   : true
+          connectretry  : 5
+          rrclient      : false
+          # specify interface to override ip addresses from testbed json
+          interface     : "Uplink1"
+          remoteasn     : 100
+          holdtime      : 180
+          keepalive     : 60
+          bgppeeraf:
+              peeraddr  : 30.2.0.2
+              localaddr : 30.2.0.1
+              afi       : ipv4
+              safi      : unicast
+    - id         : 1
+      stack      : ipv4 # dual, ipv4 , ipv6
+      count      : 1
+      type       : tenant
+      tunnel:
+        - id         : 1
+          count      : 1
+          type       : underlay
+          srcaddr    : '30.30.30.30'
+          dstaddr    : '40.40.40.40'
+          macaddress : macaddr/0000.aaaa.aaa1
+          encap      : vxlan
+          nhid       : 1
+      dhcppolicy:
+        - id               : 10
+          serverip         : '2.1.0.1'
+          ntpserver        : '2.1.0.5'
+          routers          : '2.1.0.1'
+          dnsserver        : '2.1.0.1'
+          domainname       : "pensando.io"
+          filename         : "test"
+          interfacemtu     : 9000
+          lease_timeout    : 3600
+        - id               : 11
+          serverip         : '3.1.0.1'
+          ntpserver        : '3.1.0.5'
+          routers          : '3.1.0.1'
+          dnsserver        : '3.1.0.1'
+          domainname       : "pensando.io"
+          filename         : "test"
+          interfacemtu     : 9000
+          lease_timeout    : 3600
+        - id               : 12
+          serverip         : '9.0.0.1'
+          ntpserver        : '9.0.0.5'
+          routers          : '9.0.0.1'
+          dnsserver        : '9.0.0.1'
+          domainname       : "pensando.io"
+          filename         : "test"
+          interfacemtu     : 9000
+          lease_timeout    : 3600
+      subnet:
+        - id               : 1
+          count            : 1
+          v4prefixlen      : 24
+          v4prefix         : '2.1.0.0\24'
+          hostifidx        : 0xa0000049
+          fabricencap      : vxlan # vxlan or mplsodup
+          fabricencapvalue : 202
+          v4routerip       : '2.1.0.1'
+          vroutermac       : macaddr/0055.0100.0001
+          dhcppolicy       : 10
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
+          vnic:
+            - id        : 1
+              count     : 1             # 1 untagged VNIC
+              vnicencap:
+                type: none
+              vmac      : macaddr/00ae.cd00.0811
+              hostifidx : 0xa0000049
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 1
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.102'
+                - id       : 2
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.103'
+                - id       : 3
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.104'
+                - id       : 4
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.105'
+                - id       : 5
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.106'
+                - id       : 6
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.107'
+                - id       : 7
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.108'
+                - id       : 8
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.109'
+                - id       : 9
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.110'
+                - id       : 10
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.111'
+                - id       : 11
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.112'
+                - id       : 12
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.113'
+                - id       : 13
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.114'
+                - id       : 14
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.115'
+                - id       : 15
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0811
+                  lipaddr  : '2.1.0.116'
+              srcguard: false         # true or false (default false)
+              public  : false
+              tagged  : false         # true or false (default true)
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '64.0.0.0\24'
+                    - '3.1.0.0\24'
+                    - '9.0.0.0\24'
+              dhcpenabled  : true
+          rmap:                       # Remote IP mappings per subnet
+            - id       : 1
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.203'
+              tunnelid : 1
+            - id       : 2
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.204'
+              tunnelid : 1
+            - id       : 3
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.205'
+              tunnelid : 1
+            - id       : 4
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.206'
+              tunnelid : 1
+            - id       : 5
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.207'
+              tunnelid : 1
+            - id       : 6
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.208'
+              tunnelid : 1
+            - id       : 7
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.209'
+              tunnelid : 1
+            - id       : 8
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.210'
+              tunnelid : 1
+            - id       : 9
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.211'
+              tunnelid : 1
+            - id       : 10
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.212'
+              tunnelid : 1                                                        
+            - id       : 11
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.213'
+              tunnelid : 1
+            - id       : 12
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.214'
+              tunnelid : 1
+            - id       : 13
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.215'
+              tunnelid : 14
+            - id       : 14
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.216'
+              tunnelid : 1
+            - id       : 15
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000a
+              ripaddr  : '2.1.0.217'
+              tunnelid : 1                                                        
+        - id               : 2
+          count            : 1
+          v4prefixlen      : 24
+          v4prefix         : '3.1.0.0\24'
+          hostifidx        : 0xa000004a
+          fabricencap      : vxlan # vxlan or mplsodup
+          fabricencapvalue : 302
+          v4routerip       : '3.1.0.1'
+          vroutermac       : macaddr/0055.0100.0002
+          dhcppolicy       : 11
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
+          vnic:
+            - id        : 2
+              count     : 1             # 1 untagged VNIC
+              vmac      : macaddr/00ae.cd00.0812
+              hostifidx : 0xa000004a
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 16
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0812
+                  lipaddr  : '3.1.0.102'
+                  public   : true
+                  publicip : 12.12.12.12
+              srcguard: false         # true or false (default false)
+              public  : true
+              vnicencap:
+                type: none
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '64.0.0.0\24'
+                    - '2.1.0.0\24'
+                    - '9.0.0.0\24'
+              dhcpenabled  : true
+            - id        : 3
+              count     : 1
+              vmac      : macaddr/00ae.cd00.0813
+              hostifidx : 0xa000004b
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 17
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0813
+                  lipaddr  : '3.1.0.202'
+              srcguard: false         # true or false (default false)
+              public  : false
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 300
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '2.1.0.0\24'
+                    - '9.0.0.0\24'
+                    - '64.0.0.0\24'
+              dhcpenabled  : true
+        - id               : 3
+          count            : 1
+          v4prefixlen      : 24
+          v4prefix         : '9.0.0.0\24'
+          hostifidx        : 0xa000004b
+          fabricencap      : vxlan # vxlan or mplsodup
+          fabricencapvalue : 902
+          v4routerip       : '9.0.0.1'
+          vroutermac       : macaddr/0055.0100.0003
+          dhcppolicy       : 12
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
+          vnic:
+            - id        : 4
+              count     : 1             # 1 tagged VNIC
+              vmac      : macaddr/00ae.cd00.0814
+              hostifidx : 0xa000004b
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 18
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.102'
+                - id       : 19
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.103'
+                - id       : 20
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.104'
+                - id       : 21
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.105'
+                - id       : 22
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.106'
+                - id       : 23
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.107'
+                - id       : 24
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.108'
+                - id       : 25
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.109'
+                - id       : 26
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.110'
+                - id       : 27
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.111'
+                - id       : 28
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.112'
+                - id       : 29
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.113'
+                - id       : 30
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.114'
+                - id       : 31
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.115'
+                - id       : 32
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.116'
+              srcguard: false         # true or false (default false)
+              public  : false
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 999
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '2.1.0.0\24'
+                    - '3.1.0.0\24'
+                    - '64.0.0.0\24'
+              dhcpenabled  : true
+            - id        : 5
+              count     : 1             # 1 tagged VNIC
+              vmac      : macaddr/00ae.cd00.0815
+              hostifidx : 0xa000004b
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 33
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.202'
+                - id       : 34
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.203'
+                - id       : 35
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.204'
+                - id       : 36
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.205'
+                - id       : 37
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.206'
+                - id       : 38
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.207'
+                - id       : 39
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.208'
+                - id       : 40
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.209'
+                - id       : 41
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.210'
+                - id       : 42
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.211'                                                     
+                - id       : 43
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.212'
+                - id       : 44
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.213'
+                - id       : 45
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.214'
+                - id       : 46
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.215'
+                - id       : 47
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0815
+                  lipaddr  : '9.0.0.216'                                                      
+              srcguard: false         # true or false (default false)
+              public  : false
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 998
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '2.1.0.0\24'
+                    - '3.1.0.0\24'
+                    - '64.0.0.0\24'
+              dhcpenabled  : true
+          rmap:                       # Remote IP mappings per subnet
+            - id       : 16
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.123'
+              tunnelid : 1
+            - id       : 17
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.124'
+              tunnelid : 1
+            - id       : 18
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.125'
+              tunnelid : 1
+            - id       : 19
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.126'
+              tunnelid : 1       
+            - id       : 20
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.127'
+              tunnelid : 1
+            - id       : 21
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.128'
+              tunnelid : 1
+            - id       : 22
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.129'
+              tunnelid : 1
+            - id       : 23
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.130'
+              tunnelid : 1
+            - id       : 24
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.131'
+              tunnelid : 1       
+            - id       : 25
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.132'
+              tunnelid : 1
+            - id       : 26
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.133'
+              tunnelid : 1
+            - id       : 27
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.134'
+              tunnelid : 1
+            - id       : 28
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.135'
+              tunnelid : 1
+            - id       : 29
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.136'
+              tunnelid : 1       
+            - id       : 30
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000d
+              ripaddr  : '9.0.0.137'
+              tunnelid : 1
+            - id       : 31
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.223'
+              tunnelid : 1
+            - id       : 32
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.224'
+              tunnelid : 1
+            - id       : 33
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.225'
+              tunnelid : 1
+            - id       : 34
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.226'
+              tunnelid : 1
+            - id       : 35
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.227'
+              tunnelid : 1
+            - id       : 36
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.228'
+              tunnelid : 1
+            - id       : 37
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.229'
+              tunnelid : 1
+            - id       : 38
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.230'
+              tunnelid : 1
+            - id       : 39
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.231'
+              tunnelid : 1
+            - id       : 40
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.232'
+              tunnelid : 1                                                        
+            - id       : 41
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.233'
+              tunnelid : 1
+            - id       : 42
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.234'
+              tunnelid : 1
+            - id       : 43
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.235'
+              tunnelid : 1
+            - id       : 44
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.236'
+              tunnelid : 1
+            - id       : 45
+              count    : 10
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.000e
+              ripaddr  : '9.0.0.237'
+              tunnelid : 1                                                        
+      nexthop:
+        - id         : 3
+          type       : overlay
+          count      : 1
+          tunnelid   : 1
+      routetbl:
+             - type: specific
+               routetype: disjoint
+               servicenatprefix: '64.0.0.80\32'
+               dnatip: 10.0.200.102
+               v4routes:
+                   - '64.0.0.102\32'
+                   - '64.0.0.80\32' # service NAT IP
+                   - '10.0.200.102\32' # dnat ip needs a route entry
+               teptype : underlay
+               nat:
+                 level : route
+                 type : static
+
+      policy:
+             - type : specific
+               policytype : default
+               direction : bidir
+
+      nat:
+        count : 2
+        prefixlen : 32
+        addrtype : PUBLIC_AND_SERVICE
+        protocol : tcp,udp,icmp
+
+    - id               : 51
+      stack            : ipv4 # dual, ipv4 , ipv6
+      count            : 1
+      type             : control
+      fabricencap      : vxlan # vxlan or mplsodup
+      fabricencapvalue : 11
+      interface:
+        - iid           : 51
+          iftype        : control
+          ifadminstatus : UP
+          ipprefix      : '11.1.1.102\24'
+          gateway       : '11.1.1.1'
+          macaddress    : macaddr/feff.0b01.0102
+      subnet:
+        - id               : 51
+          count            : 1
+          v4prefixlen      : 10
+          v4prefix         : '11.0.0.0\8'
+          hostifidx        : 0xa0000046
+          fabricencap      : vxlan # vxlan or mplsodup
+          fabricencapvalue : 12
+          v4routerip       : '11.1.1.1'
+          vroutermac       : macaddr/0066.0100.0001
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
+          vnic:
+            - id        : 51
+              count     : 1             # 1 untagged VNIC
+              vmac      : macaddr/feff.0b01.0102
+              hostifidx : 0xa0000046
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 51
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/feff.0b01.0102
+                  lipaddr  : '11.1.1.102'
+              srcguard: false         # true or false (default false)
+              public  : false
+              vnicencap:
+                type: none
+      nexthop:
+        - id         : 51
+          type       : overlay
+          count      : 1
+          tunnelid   : 1
+          origin     : discovered
+      routetbl:
+             - type: specific
+               routetype: disjoint
+               v4routes:
+                   - '11.1.2.0\24'
+               teptype : underlay
+      policy:
+        - type       : specific
+          policytype : default
+          direction  : bidir
+
+policer:
+  - id: 1
+    direction: egress
+    type: bps
+    rate:   6000000
+    burst:  6000000
+  - id: 2
+    direction: ingress
+    type: bps
+    rate:   8000000
+    burst:  8000000
+  - id: 3
+    direction: egress
+    type: pps
+    rate:   600000
+    burst:  600000
+  - id: 4
+    direction: ingress
+    type: pps
+    rate:   800000
+    burst:  800000
+  - id: 5
+    direction: egress
+    type: pps
+    rate:   60000
+    burst:  60000
+  - id: 6
+    direction: egress
+    type: pps
+    rate:   300000
+    burst:  300000
+  - id: 7
+    direction: egress
+    type: pps
+    rate:   10000
+    burst:  10000
+  - id: 8
+    direction: egress
+    type: pps
+    rate:   90000
+    burst:  90000
+  - id: 9
+    direction: egress
+    type: pps
+    rate:   400000
+    burst:  400000
+
+hostinterface:
+    txpolicer: true
+
+# ECMP:
+# Object types and order of creation of objects for different kinds of ECMP.
+# In dol, DualEcmp flag is maintained in route, nexthop group and nexthop objs.
+# For route table with DualEcmp set to True, only a nexthopgroup with DualEcmp
+# set to True is selected.
+#
+# 1. no-ecmp
+#     route       -->     tep         -->     nexthop
+#     [OVERLAY]         [UNDERLAY]           [UNDERLAY]
+#
+# 2. underlay ecmp
+#     route       -->     tep         -->     nhgroup      -->     {nexthops}
+#   [OVERLAY]           [UNDERLAY-ECMP]      [UNDERLAY ECMP]       [UNDERLAY]
+#
+# 3. overlay ecmp
+#     route       -->     nhgroup     -->     {nexthops}   -->     {teps}  -->     {nexthops}
+#    [OVERLAY ECMP]      [OVERLAY ECMP]      [OVERLAY]          [UNDERLAY]        [UNDERLAY]
+#
+# 4. dual ecmp
+#     route       -->     nhgroup     -->     {nexthops}   -->     {teps}  -->     {nhgroup}    -->   {{nexthops}}
+#     [OVERLAY ECMP]      [OVERLAY ECMP]      [OVERLAY]          [UNDERLAY ECMP]  [UNDERLAY ECMP]       [UNDERLAY]

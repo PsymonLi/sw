@@ -14,18 +14,10 @@ import random
 import sys
 import os
 import traceback
-import sys
 from iota.test.iris.utils.trex_wrapper import *
+import iota.test.apulu.testcases.networking.utils as utils
 
 configChangeThreadFailure = False
-
-def __getOperations(tc_operation):
-    opers = list()
-    if tc_operation is None:
-        return opers
-    else:
-        opers = list(map(lambda x:x.capitalize(), tc_operation))
-    return opers
 
 def StoreCurrentPdsLogLevel(tc):
     tc.pdsLogLevelByNode = {}
@@ -44,35 +36,6 @@ def RestorePdsLogLevel(tc):
             ret = api.types.status.FAILURE
             api.Logger.error("Failed to restore PDS trace level node:%s, level:%s"%(n,l))
     return ret
-
-
-def UpdateSecurityProfileTimeouts(tc):
-    if not hasattr(tc.args, 'security_profile'):
-        return api.types.status.SUCCESS
-    sec_prof_spec = tc.args.security_profile
-    oper = __getOperations(['update'])
-
-    api.Logger.verbose("Update Security Profile Spec: ")
-    api.Logger.verbose("conntrack      : %s "%getattr(sec_prof_spec, 'conntrack', False))
-    api.Logger.verbose("tcpidletimeout : %s "%getattr(sec_prof_spec, 'tcpidletimeout', 0))
-    api.Logger.verbose("udpidletimeout : %s "%getattr(sec_prof_spec, 'udpidletimeout', 0))
-    # Update security profile timeout
-    tc.selected_sec_profile_objs = config_api.SetupConfigObjects('security_profile', allnode=True)
-    ret = api.types.status.SUCCESS
-    for op in oper:
-        res = config_api.ProcessObjectsByOperation(op, tc.selected_sec_profile_objs, sec_prof_spec)
-        if res != api.types.status.SUCCESS:
-            ret = api.types.status.FAILURE
-            api.Logger.error("Failed to %s Security Profile Spec Timeouts"%op)
-        else:
-            api.Logger.info("Successfully %s Security Profile Spec Timeouts"%op)
-
-    nodes = api.GetNaplesHostnames()
-    for node in nodes:
-        res, resp = pdsctl.ExecutePdsctlShowCommand(node, "security-profile",
-                                     None, yaml=False, print_op=True)
-    return ret
-
 
 def showStats(tc):
     if tc.cancel:
@@ -164,7 +127,7 @@ def configDeleteTrigger(tc):
             tc.is_config_deleted = True
         if res != api.types.status.SUCCESS:
             api.Logger.error(f"configDeleteTrigger operation failed : {res}")
-            break;
+            break
     api.Logger.debug("configDeleteTrigger for %s completed with result: %s"%(tc.obj_sel, res))
     return res
 
@@ -287,7 +250,7 @@ def getTunables(tc):
     if tc.iterators.proto == 'tcp':
         tunables['pcap_file'] = "http_gzip.pcap" #mtu is less than 1K
     elif tc.iterators.proto == 'udp':
-        tunables['pcap_file'] = "chargen-udp.pcap" 
+        tunables['pcap_file'] = "chargen-udp.pcap"
 
     else:
         raise Exception("Pcap file not defined for proto: %s"%
@@ -313,7 +276,7 @@ def Setup(tc):
     tc.cancel = False
     tc.workloads = api.GetWorkloads()
 
-    UpdateSecurityProfileTimeouts(tc)
+    utils.UpdateSecurityProfileTimeouts(tc)
     chooseWorkload(tc)
     server, client = tc.workload_pair[0], tc.workload_pair[1]
     if not updateSessionLimits(tc, server):
@@ -337,8 +300,20 @@ def Setup(tc):
         return api.types.status.FAILURE
 
     try:
-        tc.serverHandle = TRexIotaWrapper(server, role="server", gw=client.ip_address, kill=0)
-        tc.clientHandle = TRexIotaWrapper(client, role="client", gw=server.ip_address, kill=0)
+        tc.serverHandle = TRexIotaWrapper(
+            server,
+            role="server",
+            gw=client.ip_address,
+            kill=0,
+            sync_port=server.exposed_tcp_ports[0],
+            async_port=server.exposed_tcp_ports[1])
+        tc.clientHandle = TRexIotaWrapper(
+            client,
+            role="client",
+            gw=server.ip_address,
+            kill=0,
+            sync_port=client.exposed_tcp_ports[0],
+            async_port=client.exposed_tcp_ports[1])
 
         api.Logger.info("connect trex...")
         tc.serverHandle.connect()
@@ -347,7 +322,7 @@ def Setup(tc):
         api.Logger.info("reset connection...")
         tc.serverHandle.reset(True)
         tc.clientHandle.reset(True)
-        
+
         api.Logger.info("setting profile...")
         profile_path = getProfilePath(tc)
         tc.serverHandle.load_profile(getProfilePath(tc), getTunables(tc))
@@ -399,7 +374,6 @@ def Trigger(tc):
 
         return api.types.status.SUCCESS
     except Exception as e:
-        
         api.Logger.info("Exception hit for traffic between server(%s) and client(%s) "
                         %(tc.serverHandle.workload.workload_name,
                           tc.clientHandle.workload.workload_name))
