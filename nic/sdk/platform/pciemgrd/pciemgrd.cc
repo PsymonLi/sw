@@ -777,6 +777,7 @@ void
 pciemgrd_logconfig(pciemgrenv_t *pme)
 {
     pciesys_loginfo("---------------- config ----------------\n");
+    pciesys_loginfo("fwvers: %s\n", pme->params.fwvers);
     pciesys_loginfo("enabled_ports 0x%x\n", pme->enabled_ports);
     pciesys_loginfo("device capabilities: gen%dx%d\n",
                     pme->params.cap_gen, pme->params.cap_width);
