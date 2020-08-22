@@ -552,7 +552,21 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg); // use forkjoin to update workload labels
       }
     }
-}
+  }
+
+  updateAppLabelWithInterface() {
+    this.penTable.selectedDataObjects.map((workload) => {
+        return ObjectsRelationsUtility.updateWorkloadAppLabelWithInterface(workload);
+    });
+    this.handleEditSave(this.getSelectedDataObjects());
+  }
+
+  removeAllAppLabels() {
+    this.penTable.selectedDataObjects.map((workload) => {
+        return ObjectsRelationsUtility.removeAllWorkloadAppLabels(workload);
+    });
+    this.handleEditSave(this.getSelectedDataObjects());
+  }
 
   onInvokeAPIonMultipleRecordsSuccess () {
     this.inLabelEditMode = false;

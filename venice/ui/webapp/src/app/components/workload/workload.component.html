@@ -210,6 +210,7 @@
                          [nameKey]="'meta.name'"
                          [objects]="getSelectedDataObjects()">
         </app-labeleditor>
+
         <mat-icon [ngClass]="{
                     'global-multi-records-delete-icon': true,
                     'global-button-disabled': disableMultiDelIcons() || !hasSelectedRows()
@@ -217,6 +218,24 @@
                   (click)="onDeleteSelectedWorkloads($event)"
                   [matTooltip]="!hasSelectedRows() ? 'Select workloads to delete' : disableMultiDelIcons() ? 'At least one workload can not be deleted' : 'Delete selected workloads'">
           delete
+        </mat-icon>
+        <mat-icon [ngClass]="{
+                    'global-multi-records-delete-icon': true,
+                    'global-button-disabled': !hasSelectedRows()
+                  }"
+                  *featureGuard="'troubleshooting'"
+                  (click)="updateAppLabelWithInterface()"
+                  [matTooltip]="hasSelectedRows() ? 'Update app labels with interface on selected workloads' : 'Select workloads to update app labels with interface'">
+          code
+        </mat-icon>
+        <mat-icon [ngClass]="{
+                    'global-multi-records-delete-icon': true,
+                    'global-button-disabled': !hasSelectedRows()
+                  }"
+                  *featureGuard="'troubleshooting'"
+                  (click)="removeAllAppLabels()"
+                  [matTooltip]="hasSelectedRows() ? 'Remove app labels with interface on selected workloads' : 'Select workloads to remove app labels with interface'">
+          remove
         </mat-icon>
       </div>
     </div>

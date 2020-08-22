@@ -129,6 +129,8 @@ export interface HandleWatchItemResult {
  */
 export class ObjectsRelationsUtility {
 
+    public static WORKLOAD_APP_LABEL_KEY_PREFIX: string = 'config.app.';
+
     public static buildDSCsNameMacMap(naples: ReadonlyArray<ClusterDistributedServiceCard> | ClusterDistributedServiceCard[]): DSCsNameMacMap {
         const _myDSCnameToMacMap: DSCsNameMacMap = {
             nameToMacMap: {},
@@ -786,5 +788,53 @@ export class ObjectsRelationsUtility {
     public static isNetworkInterfaceInFlowawareOrFallwallMode(selectedNetworkInterface: NetworkNetworkInterface, dscs: ClusterDistributedServiceCard[], dscprofiles: ClusterDSCProfile[] ): boolean {
         const  dsc: ClusterDistributedServiceCard = this.getDSCFromNetworkinterface(selectedNetworkInterface, dscs);
         return this.isDSCInFlowawareOrFallwallMode(dsc, dscprofiles);
+    }
+
+    /**
+     * This API is needed in Workload Component
+     * @param WorkloadWorkload
+     * Given a workload object, loop through workload.spec.interface[] to make workload.meta.labels[]
+     *      workload.spec.interfaces:[{
+     *          "mac-address": "0050.56b8.15b4",
+     *          "micro-seg-vlan": 1034,
+     *      },...]}
+     * workload.meta.labels key name as "config.app.X" and intetface's micro-seg-vlan value ('1034') as value
+     *      workload.meta.labels:[
+     *          { "config.app.0": "App-1034" },
+     *          { "config.app.1": "App-xxx" }]
+     * if  label key "config.app.x"  already exists, don't over write the key and value.
+     */
+
+    public static updateWorkloadAppLabelWithInterface(workload: WorkloadWorkload): WorkloadWorkload {
+        workload.spec.interfaces.map((interfaceObj, index) => {
+            if (interfaceObj['micro-seg-vlan']) {
+                // We try to make "config.app.0": "App-1034";
+                const labelValue = 'App-' +  interfaceObj['micro-seg-vlan'];
+                const labelKey = ObjectsRelationsUtility.WORKLOAD_APP_LABEL_KEY_PREFIX +  index;
+                // If key config.app.# does not exist, we add to workload.meta.labels
+                if (!workload.meta.labels) {
+                    workload.meta.labels = {};
+                }
+                if (!workload.meta.labels[labelKey]) {
+                    workload.meta.labels[labelKey] = labelValue;
+                }
+            }
+        });
+        return workload;
+    }
+
+    /**
+     * Remove all 'config.app.#' key in workload.meta.labels {..}
+     * @param workload
+     */
+    public static removeAllWorkloadAppLabels(workload: WorkloadWorkload): WorkloadWorkload {
+        if (!workload.meta.labels) {
+            return workload;
+        }
+        const configApps = Object.keys(workload.meta.labels).filter(label => label.includes(ObjectsRelationsUtility.WORKLOAD_APP_LABEL_KEY_PREFIX));
+        configApps.map((appName) => {
+            delete workload.meta.labels[appName];
+        });
+        return workload;
     }
 }
