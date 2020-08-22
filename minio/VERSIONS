@@ -7,7 +7,7 @@ platform_libs 0.0.45
 storage_libs 0.0.1
 asic_libs 2.0.7
 ncc_tools 1.0.1
-sorrento_tools ef177ad3a3791dc2a40447bbd3033d67b590e537
+sorrento_tools 49f7bf21c37e51d34fca20bce1196574445c8996
 pbc_config 2.0.2
 upgrade 1.0.23
 iota 1.0.3
