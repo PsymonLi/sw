@@ -19,32 +19,32 @@ type nexus3kRest struct {
 	breakout bool
 }
 
-func newNexus3kRest(ip, username, password string) Switch {
+func newNexus3kRest(ip, username, password string) (Switch, error) {
 	clt := client.NewClient()
 
 	err := clt.SetHost(ip)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	err = clt.SetUsername(username)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	err = clt.SetPassword(password)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	_, err = clt.GetSystemInfo()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	n3kInst := &nexus3kRest{username: username, password: password, ip: ip, clt: clt}
 
-	return n3kInst
+	return n3kInst, nil
 }
 
 func (sw *nexus3kRest) runConfigCommands(cmds []string) error {

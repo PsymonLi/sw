@@ -81,14 +81,14 @@ def Verify(tc):
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0 and not api.Trigger_IsBackgroundCommand(cmd):
            api.Logger.error("Installation failed on Node  %s\n"
-                                   % (n))
+                                   % (cmd.node_name))
            return api.types.status.FAILURE
 
     for cmd in tc.deploy_cmd_resp.commands:
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0 and not api.Trigger_IsBackgroundCommand(cmd):
            api.Logger.error("Deploy failed on Node  %s\n"
-                                              % (n))
+                                              % (cmd.node_name))
 
            return api.types.status.FAILURE
 
@@ -96,7 +96,7 @@ def Verify(tc):
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0 and not api.Trigger_IsBackgroundCommand(cmd):
            api.Logger.error("Validation procedure failed on Node  %s\n"
-                                              % (n))
+                                              % (cmd.node_name))
 
            return api.types.status.FAILURE
     dir_path = os.path.dirname(os.path.realpath(__file__))

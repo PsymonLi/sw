@@ -1,6 +1,8 @@
 package DataSwitch
 
 import "github.com/pensando/sw/venice/utils/log"
+import "fmt"
+import "errors"
 
 // N3KSwitchType represents n3k switch type
 const N3KSwitchType = "n3k"
@@ -138,16 +140,17 @@ type Switch interface {
 }
 
 //NewSwitch Create a new switch handler
-func NewSwitch(swType, ip, username, password string) Switch {
+func NewSwitch(swType, ip, username, password string) (Switch, error) {
 	switch swType {
 	case N3KSwitchType:
-		sw := newNexus3kRest(ip, username, password)
-		if sw != nil {
-			log.Info("Switch Rest API mode enabled\n")
-			return sw
+		sw, err := newNexus3kRest(ip, username, password)
+		if err != nil {
+			log.Errorf("Failed to initialize REST Interface: %v - USING SSH SWITCH CLIENT", err)
+			return newNexus3kSsh(ip+":22", username, password)
 		}
-		log.Info("USING SSH SWITCH CLIENT")
-		return newNexus3kSsh(ip+":22", username, password)
+		log.Info("Switch Rest API mode enabled\n")
+		return sw, nil
 	}
-	return nil
+	msg := fmt.Sprintf("Unknown switch-type: %v", swType)
+	return nil, errors.New(msg)
 }

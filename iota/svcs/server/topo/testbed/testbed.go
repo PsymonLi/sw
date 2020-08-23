@@ -651,10 +651,10 @@ func portLinkFlap(ctx context.Context, dataSwitches []*iota.DataSwitch, flapCoun
 		flapCount, downTime, flapInterval)
 	for i := 0; i < int(flapCount); i++ {
 		for _, ds := range dataSwitches {
-			dataSwitch := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
-			if dataSwitch == nil {
+			dataSwitch, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+			if err != nil {
 				log.Errorf("TOPO SVC | InitTestBed | Switch not found %s", dataswitch.N3KSwitchType)
-				return errors.New("Switch not found")
+				return err
 			}
 			defer dataSwitch.Disconnect()
 
@@ -670,10 +670,10 @@ func portLinkFlap(ctx context.Context, dataSwitches []*iota.DataSwitch, flapCoun
 		log.Info("Sleeping after link down")
 
 		for _, ds := range dataSwitches {
-			dataSwitch := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
-			if dataSwitch == nil {
+			dataSwitch, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+			if err != nil {
 				log.Errorf("TOPO SVC | InitTestBed | Switch not found %s", dataswitch.N3KSwitchType)
-				return errors.New("Switch not found")
+				return err
 			}
 			defer dataSwitch.Disconnect()
 
@@ -751,10 +751,10 @@ func DoSwitchOperation(ctx context.Context, switchPortID uint32, nativeVlan uint
 	}
 
 	for _, ds := range req.DataSwitches {
-		n3k := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
-		if n3k == nil {
+		n3k, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+		if err != nil {
 			log.Errorf("TOPO SVC | InitTestBed | Switch not found %s", dataswitch.N3KSwitchType)
-			return errors.New("Switch not found")
+			return err
 		}
 		defer n3k.Disconnect()
 
@@ -887,14 +887,14 @@ func SetUpTestbedSwitch(dsSwitches []*iota.DataSwitch, switchPortID uint32, nati
 	}
 
 	for _, ds := range dsSwitches {
-		n3k := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
-		if n3k == nil {
+		n3k, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+		if err != nil {
 			log.Errorf("TOPO SVC | InitTestBed | Switch not found %s", dataswitch.N3KSwitchType)
-			return nil, errors.New("Switch not found")
+			return nil, err
 		}
 		speed := getSpeed(ds.GetSpeed())
 
-		err := clearSwitchPortConfig(n3k, ds.GetPorts())
+		err = clearSwitchPortConfig(n3k, ds.GetPorts())
 		if err != nil {
 			log.Errorf("TOPO SVC | InitTestBed | Clear Switch port config failed: %s", err.Error())
 			return nil, errors.New("Clear switch port config failed")

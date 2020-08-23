@@ -1296,8 +1296,12 @@ def UnsetBreakoutInterfaces():
     try:
         req = topo_svc.UnsetBreakoutMsg()
         for instance in store.GetTestbed().GetInstances():
+            if getattr(instance, "Type", "vm") == "vm":
+                continue
             for nic in getattr(instance, "Nics", []):
                 for port in getattr(nic, "Ports", []):
+                    if hasattr(port, 'Name') and port.Name not in ["inb_mnic0", "inb_mnic1"]:
+                        continue
                     if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                         switch_ctx = req.data_switches.add()
                         switch_ctx.username = port.SwitchUsername

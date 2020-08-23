@@ -224,6 +224,8 @@ class _Testbed:
             for nicIndex, nic in enumerate(instance.Nics):
                 nic_processor = getattr(nic, 'Processor', 'capri')
                 for port in nic.Ports:
+                    if hasattr(port, 'Name') and port.Name not in ["inb_mnic0", "inb_mnic1"]:
+                        continue
                     if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                         switch_ctx = switch_ips.get(port.SwitchIP, None)
                         if not switch_ctx:

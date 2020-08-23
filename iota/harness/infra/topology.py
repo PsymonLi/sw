@@ -240,6 +240,8 @@ class Node(object):
             self.__ports = ports
             self.__port_speed = speed
             for port in self.__ports:
+                if hasattr(port, 'Name') and port.Name not in ["inb_mnic0", "inb_mnic1"]:
+                    continue
                 if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                     nw_obj = parser.Dict2Object(dict())
                     setattr(nw_obj, 'SwitchIP', port.SwitchIP)

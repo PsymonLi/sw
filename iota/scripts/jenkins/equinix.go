@@ -53,10 +53,10 @@ type buildMeta struct {
 
 func connect(ip string) (dataswitch.Switch, error) {
 
-	n3k := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ip, sswitchUserName, switchPassword)
-	if n3k == nil {
+	n3k, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ip, sswitchUserName, switchPassword)
+	if err != nil {
 		log.Errorf("Connecting to switch %v %s, failed", ip, dataswitch.N3KSwitchType)
-		return nil, errors.New("Switch not found")
+		return nil, err
 	}
 
 	return n3k, nil

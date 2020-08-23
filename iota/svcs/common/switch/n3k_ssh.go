@@ -648,14 +648,14 @@ type nexus3k struct {
 	breakout bool
 }
 
-func newNexus3kSsh(ip, username, password string) Switch {
+func newNexus3kSsh(ip, username, password string) (Switch, error) {
 	n3kInst := &nexus3k{username: username, password: password, ip: ip}
 	ctx, err := connect(ip, username, password)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	n3kInst.ctx = ctx
-	return n3kInst
+	return n3kInst, nil
 }
 
 func (sw *nexus3k) runConfigIFCommands(port string, cmds []string) error {

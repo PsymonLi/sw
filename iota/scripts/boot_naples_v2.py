@@ -1511,7 +1511,7 @@ class PenOrchestrator:
         if len(self.__testbed.Nics) > 1:
             print("Found %d Naples with host %s in testbed" % (len(self.__testbed.Nics), GlobalOptions.instance_name))
             for nic in self.__testbed.Nics: 
-                name = "naples_%s_%s" % (nic.ConsoleIP, nic.ConsolePort)
+                name = "%s_naples_%s_%s" % (self.__testbed.Name, nic.ConsoleIP, nic.ConsolePort)
                 setattr(nic, 'NaplesName', name)
 
     def AtExitCleanup(self):

@@ -1459,9 +1459,9 @@ func (ts *TopologyService) UnsetBreakoutInterfaces(ctx context.Context, req *iot
 	log.Infof("TOPO SVC | DEBUG | UnsetBreakoutInterfaces Received Request Msg: %v", req)
 
 	for _, ds := range req.DataSwitches {
-		n3k := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
-		if n3k == nil {
-			req.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: "failed to connect to n3k"}
+		n3k, err := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+		if err != nil {
+			req.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}
 			return req, nil
 		}
 
