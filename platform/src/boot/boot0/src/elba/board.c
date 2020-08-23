@@ -1,29 +1,17 @@
 
 /*
- * Copyright (c) 2019, Pensando Systems Inc.
+ * Copyright (c) 2020, Pensando Systems Inc.
  */
 
 #include "dtls.h"
-#include "cap_board.h"
-#include "cap_cpld.h"
-#include "defs.h"
-#include "cap_ms_c_hdr.h"
-#include "iomem.h"
+#include "board.h"
+#include "cpld.h"
 
 // Mapping of [track][attempt] to fwid
 static const bsm_fwid_map_t std_bsm_fwid_map = {
     .track = {    // enable  fwid...
         [FW_MAIN_A] = { 1, { FW_MAIN_A, FW_MAIN_B, FW_GOLD,   FW_GOLD   } },
         [FW_MAIN_B] = { 1, { FW_MAIN_B, FW_MAIN_A, FW_GOLD,   FW_GOLD   } },
-        [FW_GOLD]   = { 1, { FW_GOLD,   FW_GOLD,   FW_GOLD,   FW_GOLD   } },
-        [FW_DIAG]   = { 0, { FW_DIAG,   FW_DIAG,   FW_DIAG,   FW_DIAG   } }
-    }
-};
-
-static const bsm_fwid_map_t vomero_bsm_fwid_map = {
-    .track = {    // enable  fwid...
-        [FW_MAIN_A] = { 1, { FW_MAIN_A, FW_MAIN_B, FW_MAIN_A, FW_MAIN_B } },
-        [FW_MAIN_B] = { 1, { FW_MAIN_B, FW_MAIN_A, FW_MAIN_B, FW_MAIN_A } },
         [FW_GOLD]   = { 1, { FW_GOLD,   FW_GOLD,   FW_GOLD,   FW_GOLD   } },
         [FW_DIAG]   = { 0, { FW_DIAG,   FW_DIAG,   FW_DIAG,   FW_DIAG   } }
     }
@@ -59,33 +47,15 @@ struct board_info {
 };
 // Non-boolean field defaults:
 #define BRD_DEF_LOG2_BFL_SECSIZE        16
-#define BRD_DEF_QSPI_FREQUENCY          50000000
+#define BRD_DEF_QSPI_FREQUENCY          40000000
 #define BRD_DEF_FWID_MAP                &std_bsm_fwid_map
 #define BRD_DEF_PARTS                   std_parts
 
 static const struct board_info brd[BOARD_TYPE_NUM] = {
-    [BOARD_TYPE_FORIO] = {
-        .chip_type          = CHIP_TYPE_ASIC,
-        .cpld_id            = CPLD_ID_FORIO,
-        .qspi_read_delay    = 1,
-        .qspi_frequency     = 40000000,
+    [BOARD_TYPE_HAPS] = {
+        .chip_type          = CHIP_TYPE_HAPS,
+        .qspi_frequency     = 500000,
     },
-    [BOARD_TYPE_VOMERO_REV1] = {
-        .chip_type          = CHIP_TYPE_ASIC,
-        .cpld_id            = CPLD_ID_VOMERO_REV1,
-        .fwid_map           = &vomero_bsm_fwid_map,
-        .qspi_read_delay    = 1,
-        .qspi_frequency     = 40000000,
-        .fwsel_gold_not_ok  = 1,
-    },
-    [BOARD_TYPE_VOMERO_REV2] = {
-        .chip_type          = CHIP_TYPE_ASIC,
-        .cpld_id            = CPLD_ID_VOMERO_REV2,
-        .fwid_map           = &vomero_bsm_fwid_map,
-        .qspi_read_delay    = 1,
-        .qspi_frequency     = 40000000,
-        .fwsel_gold_not_ok  = 1,
-    }
 };
 
 int
@@ -93,8 +63,8 @@ get_chip_type(void)
 {
     uint32_t sta_ver;
 
-    sta_ver = readreg(MS_(STA_VER));
-    return CAP_MS_CSR_STA_VER_CHIP_TYPE_GET(sta_ver);
+    sta_ver = soc_readreg(STA_VER);
+    return ELB_SOC_CSR_STA_VER_CHIP_TYPE_GET(sta_ver);
 }
 
 int
@@ -128,7 +98,7 @@ init_board_type(void)
 }
 
 int
-cap_board_type(void)
+board_type(void)
 {
     static int b_type = BOARD_TYPE_NONE;
     if (b_type == BOARD_TYPE_NONE) {
@@ -140,7 +110,7 @@ cap_board_type(void)
 static const struct board_info *
 board_info_ptr(void)
 {
-    return &brd[cap_board_type()];
+    return &brd[board_type()];
 }
 
 int
@@ -148,6 +118,13 @@ board_get_bfl_log2_secsize(void)
 {
     uint32_t val = board_info_ptr()->log2_bfl_secsize;
     return val ?: BRD_DEF_LOG2_BFL_SECSIZE;
+}
+
+uint32_t
+board_qspi_clk(void)
+{
+    int chip_type = get_chip_type();
+    return (chip_type == CHIP_TYPE_HAPS) ? QSPI_CLK_HAPS : QSPI_CLK_ASIC;
 }
 
 uint32_t
@@ -198,6 +175,20 @@ board_get_part(const char *name, intptr_t *addrp, uint32_t *sizep)
         }
     }
     return -1;
+}
+
+uint32_t
+board_uart_clk(void)
+{
+    int chip_type = get_chip_type();
+    return (chip_type == CHIP_TYPE_HAPS) ? UART_CLK_HAPS : UART_CLK_ASIC;
+}
+
+uint32_t
+board_uart_baud(void)
+{
+    int chip_type = get_chip_type();
+    return (chip_type == CHIP_TYPE_HAPS) ? UART_BAUD_HAPS : UART_BAUD_ASIC;
 }
 
 int

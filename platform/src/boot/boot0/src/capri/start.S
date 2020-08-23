@@ -5,9 +5,10 @@
 
         #include "defs.h"
         #include "iomem.h"
+        #include "uboot.h"
         #include "version.h"
 
-        .section .text.startup, "ax", @progbits
+        .section .text.init, "ax", @progbits
         .globl  _start
 _start:
         b       0f

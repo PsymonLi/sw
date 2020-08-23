@@ -4,9 +4,7 @@
  */
 
 #include "dtls.h"
-#include "iomem.h"
-#include "defs.h"
-#include "cap_qspi.h"
+#include "cdns_qspi.h"
 
 /*
  * QSPI Initialization (HAPS direct boot from flash)
@@ -35,13 +33,13 @@
 static inline uint32_t
 qspi_readreg(int reg)
 {
-    return readreg(QSPI_BASE + reg);
+    return apb_readreg(QSPI_BASE + reg);
 }
 
 static inline void
 qspi_writereg(int reg, uint32_t val)
 {
-    writereg(QSPI_BASE + reg, val);
+    apb_writereg(QSPI_BASE + reg, val);
 }
 
 static void
@@ -221,7 +219,7 @@ qspi_init(void)
         qspi_set_div(4);
         qspi_set_read_144_mode();
     } else {
-        qspi_set_div(qspi_calc_div(QSPI_CLK_FREQ_ASIC, board_qspi_frequency()));
+        qspi_set_div(qspi_calc_div(board_qspi_clk(), board_qspi_frequency()));
         qspi_set_read_122_mode();
     }
     qspi_set_read_delay(board_qspi_read_delay());

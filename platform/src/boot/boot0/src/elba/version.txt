@@ -1,0 +1,1 @@
+1 77eb3a211fec30be34bb870c9bfe8a9c  ../obj/elba/boot0.bin

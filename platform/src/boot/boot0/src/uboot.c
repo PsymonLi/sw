@@ -5,6 +5,7 @@
 
 #include "dtls.h"
 #include "defs.h"
+#include "uboot.h"
 
 /*
  * Verify the integrity of a u-boot image by checking its CRC32.

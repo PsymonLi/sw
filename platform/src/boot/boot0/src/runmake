@@ -1,6 +1,22 @@
 #!/bin/sh
 
-export ASIC=capri
+set -e
+
+usage() {
+    echo "usage: $0 (capri|elba) args..." >&2
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+case "X-$1" in
+X-capri)    export ASIC=capri; ;;
+X-elba)     export ASIC=elba; ;;
+*)          usage
+esac
+shift
+
 export PIPELINE=iris
 export NICDIR=../../../../../nic
 export BLD_OUT_DIR=$NICDIR/build/aarch64/$PIPELINE/$ASIC/out

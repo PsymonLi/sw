@@ -3,11 +3,9 @@
  * Copyright (c) 2019, Pensando Systems Inc.
  */
 
-#ifndef __CAP_WDT_H__
-#define __CAP_WDT_H__
+#ifndef __DW_WDT_H__
+#define __DW_WDT_H__
 
-#define WDT_BASE        0x1400ULL
-#define WDT_STRIDE      0x400
 #define WDT_CTR_BASE(c) (WDT_BASE + WDT_STRIDE * (c))
 
 #define WDT_CR          0x00

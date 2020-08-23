@@ -52,18 +52,6 @@
  */
 
 /*
- * MS Nonresettable Register used to hold state.
- * Bits [10:0] of non-resettable register 0
- */
-#define BSM_STATE_REG               MS_(MSR_CFG_NONRESETTABLE)
-#define BSM_STATE_REG_LSB           0
-
-/*
- * WDT to use for high level timeouts
- */
-#define BSM_WDT                     3
-
-/*
  * Autoboot Stages
  */
 #define BSM_STG_BOOT0               0

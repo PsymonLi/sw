@@ -9,13 +9,13 @@
 /*
  * Capri Clocks
  */
-#define REF_CLK_FREQ_ASIC           156250000
-#define QSPI_CLK_FREQ_ASIC          400000000
+#define REF_CLK_ASIC                156250000
+#define QSPI_CLK_ASIC               400000000
 
 /*
  * UART configuration
  */
-#define UART_CLK                    REF_CLK_FREQ_ASIC
+#define UART_CLK                    REF_CLK_ASIC
 #define UART_BAUD                   115200
 
 /*
@@ -37,23 +37,15 @@
 #define CAP_GPIO_CPLD_DATA(x)       (((x) >> 6) & 0xff)
 
 /*
- * U-Boot Magic
+ * MS Nonresettable Register used to hold state.
+ * Bits [10:0] of non-resettable register 0
  */
-#define UBOOT_SIZE_MAGIC            0xfb89090a
-#define UBOOT_CRC32_MAGIC           0xd8569817
-#define UBOOT_PART_SIZE             (4 << 20)
+#define BSM_STATE_REG               MS_(MSR_CFG_NONRESETTABLE)
+#define BSM_STATE_REG_LSB           0
 
-#define BOOT0_MAGIC                 0x30f29e8b
-
-#ifndef __ASSEMBLY__
-struct uboot_header {
-    uint32_t    inst;
-    uint32_t    size_magic;
-    uint32_t    size;
-    uint32_t    reserved;
-    uint32_t    crc_magic;
-    uint32_t    crc;
-};
-#endif
+/*
+ * WDT to use for high level timeouts
+ */
+#define BSM_WDT                     3
 
 #endif

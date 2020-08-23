@@ -4,9 +4,6 @@
  */
 
 #include "dtls.h"
-#include "defs.h"
-#include "cap_ms_c_hdr.h"
-#include "iomem.h"
 #include "bsm.h"
 #include "version.h"
 
@@ -127,7 +124,7 @@ select_image(void)
             panic("No boot path found");
         }
     } else {
-        // Restart, new attempt 
+        // Restart, new attempt
         logf("boot0: restart from stage=%u, track=%u, attempt=%u, fwid=%u\n",
                 bsm.stage, bsm.track, bsm.attempt, bsm.fwid);
         if (bsm.attempt == BSM_ATTEMPT_MASK) {
@@ -164,7 +161,7 @@ main(void)
     /*
      * Initialize I/O.
      */
-    uart_init();
+    uart_init(board_uart_clk(), board_uart_baud());
     qspi_init();
     gpio_init();
 

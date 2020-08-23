@@ -47,7 +47,7 @@ xcpt_panic(struct xcpt_regs *regs)
 
     if (!in_panic) {
         in_panic = 1;
-        uart_init();
+        uart_init(board_uart_clk(), board_uart_baud());
         logf_printf("Fatal exception taken\n");
         logf_printf("esr: %016lx\n", regs->esr);
         logf_printf("pc : %016lx,  lr: %016lx,  sp: %016lx\n",

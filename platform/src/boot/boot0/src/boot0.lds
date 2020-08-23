@@ -9,7 +9,7 @@ SECTIONS
 	/* . = ALIGN(64); */
 	.text :
 	{
-		../obj/start.o (.text*)
+		*(.text.init*)
 		*(.text*)
 	}
 

@@ -3,15 +3,8 @@
  * Copyright (c) 2018, Pensando Systems Inc.
  */
 
-#ifndef __DTLS_H__
-#define __DTLS_H__
-
-#include <stdint.h>
-#include <string.h>
-#include <stdarg.h>
-
-#include "cap_ms_c_hdr.h"
-#include "iomem.h"
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #define ARRAY_SIZE(n)       (sizeof (n) / sizeof ((n)[0]))
 
@@ -30,8 +23,9 @@ typedef struct {
 
 // board.c
 int get_chip_type(void);
-int cap_board_type(void);
+int board_type(void);
 int get_cpld_id(void);
+uint32_t board_qspi_clk(void);
 uint32_t board_qspi_frequency(void);
 uint8_t board_qspi_read_delay(void);
 const bsm_fwid_map_t *board_bsm_fwid_map(void);
@@ -39,6 +33,8 @@ uint8_t board_bsm_wdt_disable(void);
 uint8_t board_reset_on_panic(void);
 int board_get_part(const char *name, intptr_t *addrp, uint32_t *sizep);
 int board_get_bfl_log2_secsize(void);
+uint32_t board_uart_clk(void);
+uint32_t board_uart_baud(void);
 int board_fwsel_goldfw_ok(void);
 
 // cpld.c
@@ -84,7 +80,7 @@ void qspi_init(void);
 
 // uart.c
 void uart_wait_idle(void);
-void uart_init(void);
+void uart_init(uint32_t clk, uint32_t baud);
 void putchar(int c);
 void puts(const char *s);
 

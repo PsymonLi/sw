@@ -1,0 +1,1 @@
+6 bf2a27da4c35d6d5ea80ecee1bf000fa  ../obj/capri/boot0.bin

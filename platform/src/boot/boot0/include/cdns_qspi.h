@@ -3,14 +3,8 @@
  * Copyright (c) 2018, Pensando Systems Inc.
  */
 
-#ifndef __CAP_QSPI_H__
-#define __CAP_QSPI_H__
-
-#define QSPI_BASE               0x2400ULL
-#define QSPI_AHB_BASE           0x70000000ULL
-#define QSPI_AHB_LEN            0x08000000ULL
-#define QSPI_TRIGGER            0x7fff0000ULL
-#define QSPI_TRIGGER_FAKE       (QSPI_BASE + 0xf0)      /* dac2 FastModel */
+#ifndef __CDNS_QSPI_H__
+#define __CDNS_QSPI_H__
 
 #define QSPI_CONFIG             0x00
 #define QSPI_READ_IR            0x04

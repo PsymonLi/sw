@@ -3,8 +3,8 @@
  * Copyright (c) 2019, Pensando Systems Inc.
  */
 
-#ifndef __CAP_BOARD_H__
-#define __CAP_BOARD_H__
+#ifndef __BOARD_H__
+#define __BOARD_H__
 
 enum {
     BOARD_TYPE_NONE,

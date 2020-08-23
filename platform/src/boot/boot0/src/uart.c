@@ -4,20 +4,18 @@
  */
 
 #include "dtls.h"
-#include "iomem.h"
-#include "defs.h"
-#include "cap_uart.h"
+#include "dw_uart.h"
 
 static inline void
 uart_writereg(int reg, int val)
 {
-    writereg(UART0_BASE + reg, val);
+    apb_writereg(UART0_BASE + reg, val);
 }
 
 static inline uint32_t
 uart_readreg(int reg)
 {
-    return readreg(UART0_BASE + reg);
+    return apb_readreg(UART0_BASE + reg);
 }
 
 void
@@ -29,11 +27,11 @@ uart_wait_idle(void)
 }
 
 void
-uart_init(void)
+uart_init(uint32_t clk, uint32_t baud)
 {
     uint32_t div;
 
-    div = 2 * UART_CLK / UART_BAUD / 16;
+    div = 2 * clk / baud / 16;
     div = (div >> 1) + (div & 0x1);
 
     uart_wait_idle();

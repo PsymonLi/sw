@@ -4,20 +4,18 @@
  */
 
 #include "dtls.h"
-#include "iomem.h"
-#include "defs.h"
-#include "cap_ssi.h"
+#include "dw_ssi.h"
 
 static inline uint32_t
 ssi_readreg(int reg)
 {
-    return readreg(SSI_BASE + reg);
+    return apb_readreg(SSI_BASE + reg);
 }
 
 static inline void
 ssi_writereg(int reg, uint32_t val)
 {
-    writereg(SSI_BASE + reg, val);
+    apb_writereg(SSI_BASE + reg, val);
 }
 
 // Initialize the SPI controller for a transaction

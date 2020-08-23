@@ -4,14 +4,12 @@
  */
 
 #include "dtls.h"
-#include "iomem.h"
-#include "cap_gpio.h"
-#include "dtls.h"
+#include "dw_gpio.h"
 
 static inline uint32_t
 gpio_readreg(int reg)
 {
-    return readreg(GPIO_BASE + reg);
+    return apb_readreg(GPIO_BASE + reg);
 }
 
 uint32_t
