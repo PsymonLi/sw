@@ -6,7 +6,7 @@
 case $1 in
     start)
 	printf "Starting lldpd: "
-	start-stop-daemon -S -q -p /var/run/lldpd.pid --exec /usr/sbin/lldpd -- -c -e -f -l
+	start-stop-daemon -S -q -p /var/run/lldpd.pid --exec /usr/sbin/lldpd -- -c -e -f -l -C !inb*,!int*,!oob*
 	[ $? = 0 ] && echo "OK" || echo "FAIL"
 	;;
     stop)
