@@ -529,7 +529,7 @@ e2e-targets:
           BmOs: linux
 
  # 1 capri and 1 elba with ubuntu OS
- 1capri1elba-ubuntu:
+ 1capri-1elba-ubuntu:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
@@ -542,7 +542,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: server-d
-           - type: hpe
            - type: server-elba
          nic-type: naples
    provision:
@@ -569,6 +568,29 @@ e2e-targets:
        password: vm
        vars:
           BmOs: linux
+
+ 1capri-1elba-esx67:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-9
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: server-d
+           - type: server-elba
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
