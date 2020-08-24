@@ -201,9 +201,9 @@ func TestCreateBuckets(t *testing.T) {
 	inst.Init(fb)
 	err := inst.createDefaultBuckets(fb)
 	AssertOk(t, err, "create buckets failed")
-	// +1 for accounting for meta buckets created for flowlogs
-	Assert(t, fb.bucketExists == len(objstore.Buckets_name)+1, "did not find correct number of calls [%v][%v]", fb.bucketExists, len(objstore.Buckets_name))
-	Assert(t, fb.makeBucket == len(objstore.Buckets_name)+1, "did not find correct number of calls [%v][%v]", fb.makeBucket, len(objstore.Buckets_name))
+	// +3 for accounting for meta buckets created for flowlogs
+	Assert(t, fb.bucketExists == len(objstore.Buckets_name)+3, "did not find correct number of calls [%v][%v]", fb.bucketExists, len(objstore.Buckets_name))
+	Assert(t, fb.makeBucket == len(objstore.Buckets_name)+3, "did not find correct number of calls [%v][%v]", fb.makeBucket, len(objstore.Buckets_name))
 	for k := range objstore.Buckets_value {
 		tenantName := "default"
 		if v1, ok := bmap[tenantName+"."+k]; !ok {
@@ -249,7 +249,7 @@ func TestOptions(t *testing.T) {
 		Assert(t, k.(string) == "", "incorrect tenantName", k.(string))
 		dmc, ok := v.(DiskMonitorConfig)
 		Assert(t, ok, "incorrect type expected vospkg.DiskMonitorConfig")
-		Assert(t, len(dmc.CombinedBuckets) == 2, "incorrecy number of buckets", dmc.CombinedBuckets)
+		Assert(t, len(dmc.CombinedBuckets) == 4, "incorrect number of buckets", dmc.CombinedBuckets)
 		Assert(t, dmc.CombinedThresholdPercent == -1, "incorrect threshold", dmc.CombinedThresholdPercent)
 		Assert(t, dmc.TenantName == "", "incorrect tenant name", dmc.TenantName)
 		return true
@@ -302,7 +302,7 @@ func TestSetBucketLifecycle(t *testing.T) {
 	inst.Init(fb)
 	err := inst.setBucketLifecycle()
 	AssertOk(t, err, "setBucketLifecycle failed")
-	Assert(t, len(lcmap) == 2, "lifecycle not set for fwlogs bucket", len(lcmap))
+	Assert(t, len(lcmap) == 4, "lifecycle not set for fwlogs bucket", len(lcmap))
 }
 
 func TestNew(t *testing.T) {

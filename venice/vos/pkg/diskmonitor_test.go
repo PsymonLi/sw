@@ -66,7 +66,7 @@ func TestDiskUpdateOps(t *testing.T) {
 				ev.Category == "system" &&
 				ev.Severity == "critical" &&
 				strings.Contains(ev.Message, "Flow logs disk usage threshold exceeded") &&
-				strings.Contains(ev.Message, "current threshold 1.000000e-04") {
+				strings.Contains(ev.Message, "current threshold 2.000000e-04") {
 				eventCount++
 			}
 		}
@@ -109,18 +109,28 @@ func TestDiskUpdateOps(t *testing.T) {
 	os.MkdirAll(tempMetaDir, os.ModePerm)
 	exec.Command("/bin/sh", "-c", "cp * "+tempMetaDir+"/.").Output()
 
+	tempIndexDir := "./default.indexmeta"
+	os.MkdirAll(tempIndexDir, os.ModePerm)
+	exec.Command("/bin/sh", "-c", "cp * "+tempIndexDir+"/.").Output()
+
+	tempRawlogsDir := "./default.rawlogs"
+	os.MkdirAll(tempRawlogsDir, os.ModePerm)
+	exec.Command("/bin/sh", "-c", "cp * "+tempRawlogsDir+"/.").Output()
+
 	// Remove dummy dirs and files
 	defer func() {
 		os.RemoveAll(tempDir)
 		os.RemoveAll(tempMetaDir)
+		os.RemoveAll(tempIndexDir)
+		os.RemoveAll(tempRawlogsDir)
 	}()
 
 	// Test static threshold
 	paths := new(sync.Map)
 	c := DiskMonitorConfig{
 		TenantName:               "",
-		CombinedThresholdPercent: 0.0001,
-		CombinedBuckets:          []string{"fwlogs", "meta-fwlogs"},
+		CombinedThresholdPercent: 0.0002,
+		CombinedBuckets:          []string{"fwlogs", "meta-fwlogs", "indexmeta", "rawlogs"},
 	}
 	paths.Store("", c)
 	cancelFunc, err := inst.createDiskUpdateWatcher(paths,

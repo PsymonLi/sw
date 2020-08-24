@@ -49,6 +49,8 @@ const (
 	cpuDivisionFactor              = 6
 	defaultFlowlogsLifecycleConfig = `<LifecycleConfiguration><Rule><ID>expire-flowlogs</ID><Prefix></Prefix><Status>Enabled</Status>` +
 		`<Expiration><Days>30</Days></Expiration></Rule></LifecycleConfiguration>`
+	rawlogsLifecycleConfig = `<LifecycleConfiguration><Rule><ID>expire-rawlogs</ID><Prefix></Prefix><Status>Enabled</Status>` +
+		`<Expiration><Days>1</Days></Expiration></Rule></LifecycleConfiguration>`
 	periodicDiskMonitorTime   = time.Minute * 30
 	metaPrefix                = "X-Amz-Meta-"
 	metaCreationTime          = "Creation-Time"
@@ -143,9 +145,21 @@ func (i *instance) createDefaultBuckets(client vos.BackendClient) error {
 			}
 
 			if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
-				metaBucketName := "default." + "meta-" + strings.ToLower(n)
+				metaBucketName := "default." + globals.FwlogsMetaBucketName
 				if err = i.createBucket(metaBucketName, false); err != nil {
 					log.Errorf("create bucket [%v] failed retry [%d] (%s)", metaBucketName, retryCount, err)
+					loop = true
+				}
+
+				indexBucketName := "default." + globals.FwlogsIndexBucketName
+				if err = i.createBucket(indexBucketName, false); err != nil {
+					log.Errorf("create bucket [%v] failed retry [%d] (%s)", indexBucketName, retryCount, err)
+					loop = true
+				}
+
+				rawlogsBucketName := "default." + globals.FwlogsRawlogsBucketName
+				if err = i.createBucket(rawlogsBucketName, false); err != nil {
+					log.Errorf("create bucket [%v] failed retry [%d] (%s)", rawlogsBucketName, retryCount, err)
 					loop = true
 				}
 			}
@@ -213,6 +227,8 @@ outer:
 		if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
 			buckets["default."+strings.ToLower(n)] = defaultFlowlogsLifecycleConfig
 			buckets["default."+globals.FwlogsMetaBucketName] = defaultFlowlogsLifecycleConfig
+			buckets["default."+globals.FwlogsIndexBucketName] = defaultFlowlogsLifecycleConfig
+			buckets["default."+globals.FwlogsRawlogsBucketName] = rawlogsLifecycleConfig
 		}
 
 		for bucket, lc := range buckets {
@@ -508,7 +524,11 @@ func GetBucketDiskThresholds() *sync.Map {
 	// Dynamic threshold calculation is needed for supporting dynamic disk expansion.
 	// Debug API "/debug/config" can be used for overriding threshold percent.
 	m := new(sync.Map)
-	c := newDiskMonitorConfig("", float64(-1), "fwlogs", "meta-fwlogs")
+	c := newDiskMonitorConfig("", float64(-1),
+		globals.FwlogsBucketName,
+		globals.FwlogsMetaBucketName,
+		globals.FwlogsIndexBucketName,
+		globals.FwlogsRawlogsBucketName)
 	m.Store("", c)
 	return m
 }
