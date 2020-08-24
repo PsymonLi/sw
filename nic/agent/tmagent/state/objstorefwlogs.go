@@ -393,7 +393,7 @@ func transmitLogs(ctx context.Context,
 		}
 		imeta["csvversion"] = fwLogCSVVersion
 		imeta["metaversion"] = fwLogMetaVersion
-		imeta["creation-Time"] = time.Now().Format(time.RFC3339Nano)
+		imeta["creation-Time"] = time.Now().UTC().Format(time.RFC3339Nano)
 
 		// Send the file on to the channel for testing
 		if fls.testChannel != nil {

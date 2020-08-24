@@ -52,7 +52,10 @@ const (
 )
 
 var (
-	apiServerAddr = globals.APIServer
+	apiServerAddr           = globals.APIServer
+	updateLastProcessedKeys = func(string) {
+		//not implemented
+	}
 )
 
 type queryResult struct {
@@ -63,7 +66,7 @@ type queryResult struct {
 	lastResult  time.Time
 }
 
-func TestFwlogsMetaIndex(t *testing.T) {
+func TestFlowlogsCustomIndexingFunctionality(t *testing.T) {
 	// runtime.GOMAXPROCS(1)
 	fmt.Println("max procs", runtime.GOMAXPROCS(-1))
 	fmt.Println("RUN *******")
@@ -82,10 +85,6 @@ func TestFwlogsMetaIndex(t *testing.T) {
 		Service: globals.VosMinio,
 		URL:     url,
 	})
-
-	updateLastProcessedKeys := func(string) {
-		//not implemented
-	}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -111,12 +110,12 @@ func TestFwlogsMetaIndex(t *testing.T) {
 	vosFinder.SetMetaIndexer(mi)
 	setupSpyglassRESTServer(ctx, vosFinder, logger)
 
-	var flowsToUseForSearchTest [][]string
+	// var flowsToUseForSearchTest [][]string
 	var generatedFiles []string
 	if writeDataFiles {
 		ts, err := time.Parse(time.RFC3339, "2006-01-02T15:00:00Z")
 		AssertOk(t, err, "error in parsing startTs")
-		flowsToUseForSearchTest, generatedFiles = generateLogs(t, ts, client, bucketName, true)
+		_, generatedFiles = generateLogs(t, ts, client, bucketName, true)
 	}
 
 	if createIndices {
@@ -126,53 +125,58 @@ func TestFwlogsMetaIndex(t *testing.T) {
 	// Waiting for spyglass rest server to start
 	time.Sleep(time.Second * 20)
 
-	// Test meta index debug handle
-	t.Run("TestMetaIndexDebugRESTHandle", func(t *testing.T) {
-		testMetaIndexDebugRESTHandle(t, flowsToUseForSearchTest)
-	})
+	// // Test meta index debug handle
+	// t.Run("TestMetaIndexDebugRESTHandle", func(t *testing.T) {
+	// 	testMetaIndexDebugRESTHandle(t, flowsToUseForSearchTest)
+	// })
 
-	// Test query cache
-	t.Run("TestQueryCache", func(t *testing.T) {
-		testQueryCache(t, flowsToUseForSearchTest)
-	})
+	// // Test query cache
+	// t.Run("TestQueryCache", func(t *testing.T) {
+	// 	testQueryCache(t, flowsToUseForSearchTest)
+	// })
 
-	// All queries should have got purged
-	t.Run("TestQueryCachePurge", func(t *testing.T) {
-		testQueryCachePurge(t)
-	})
+	// // All queries should have got purged
+	// t.Run("TestQueryCachePurge", func(t *testing.T) {
+	// 	testQueryCachePurge(t)
+	// })
 
-	// All queries should have got purged
-	t.Run("TestConcurrentQueries", func(t *testing.T) {
-		testConcurrentQueries(t, flowsToUseForSearchTest)
-	})
+	// // All queries should have got purged
+	// t.Run("TestConcurrentQueries", func(t *testing.T) {
+	// 	testConcurrentQueries(t, flowsToUseForSearchTest)
+	// })
 
-	// Tests search for the last 24 hours of logs using the raw logs index
-	t.Run("TestSearchRawLogs", func(t *testing.T) {
-		testSearchRawLogs(t, flowsToUseForSearchTest)
-	})
+	// // Tests search for the last 24 hours of logs using the raw logs index
+	// t.Run("TestSearchRawLogs", func(t *testing.T) {
+	// 	testSearchRawLogs(t, flowsToUseForSearchTest)
+	// })
 
 	// Tests searching the logs/index present in MetaIndexer's memory
 	t.Run("TestSearchRawLogsFromMetaIndexerMemory", func(t *testing.T) {
 		testSearchRawLogsFromMetaIndexerMemory(t,
-			r, mockCredentialManager, logger, bucketName, flowsToUseForSearchTest, generatedFiles)
+			r, mockCredentialManager, logger, bucketName)
 	})
 
-	// This test generates logs at the current time and searches them
-	t.Run("TestSearchLatestRawLogs", func(t *testing.T) {
-		testSearchLatestRawLogs(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
-	})
-
-	// TODO: Reenable - failed in sanity
-	// // This test is to make verify that all search operations return the same result set
-	// t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
-	// 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
+	// // This test generates logs at the current time and searches them
+	// t.Run("TestSearchLatestRawLogs", func(t *testing.T) {
+	// 	testSearchLatestRawLogs(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
 	// })
 
-	// TestDoubleIndexing tests that if the same set of logs gets indexed twice, still the search should be able
-	// to de-duplicate the search results
-	t.Run("TestDoubleIndexing", func(t *testing.T) {
-		testDoubleIndexing(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
-	})
+	// // // TODO: Reenable - failed in sanity
+	// // // // This test is to make verify that all search operations return the same result set
+	// // // t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
+	// // // 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
+	// // // })
+
+	// // TestIndexDownloadAndQuery tests redownload of an index and compares query results before and after
+	// t.Run("TestIndexDownloadAndQuery", func(t *testing.T) {
+	// 	testIndexDownloadAndQuery(t, r, mockCredentialManager, logger, mi, flowsToUseForSearchTest, logsChannel, bucketName)
+	// })
+
+	// // TestDoubleIndexing tests that if the same set of logs gets indexed twice, still the search should be able
+	// // to de-duplicate the search results
+	// t.Run("TestDoubleIndexing", func(t *testing.T) {
+	// 	testDoubleIndexing(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
+	// })
 }
 
 func testConcurrentQueries(t *testing.T, flowsToUseForSearchTest [][]string) {
@@ -900,7 +904,7 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 
 func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 	r *mock.ResolverClient, mockCredentialManager minio.CredentialsManager, logger log.Logger,
-	bucketName string, flowsCollectedForSearchTest [][]string, generatedFiles []string) {
+	bucketName string) {
 	ctx := context.Background()
 	client, _ := objstore.NewClient("default", "indexmeta", r, objstore.WithCredentialsManager(mockCredentialManager))
 	testChannel := make(chan string, 500000)
@@ -910,22 +914,29 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 		//not implemented
 	}
 
+	// // Write new data files at current time
+	var flowsToUseForSearchTest [][]string
+	var generatedFiles []string
+	flowsToUseForSearchTest, generatedFiles = generateLogs(t, time.Now().UTC(), client, bucketName, false)
+
 	// Give a very high persist time so that the logs never get persisted.
 	// That way we will be able to query them from memory
 	mi := searchvos.NewMetaIndexer(ctx, logger, 1, testChannel, rawLogsTestChannel, searchvos.WithPersistDuration(time.Minute*30))
 	logsChannel := make(chan searchvos.MetaLogs)
 	mi.Start(logsChannel, client, updateLastProcessedKeys)
 
+	// Also create a corresponding vosfinder instance for searching csv logs
+	vosFinder := searchvos.NewSearchFwLogsOverVos(ctx, r, logger, searchvos.WithCredentialsManager(mockCredentialManager))
+	vosFinder.SetMetaIndexer(mi)
+
 	// Create indices
 	createIndex(t, client, bucketName, generatedFiles, logsChannel, false, logger)
+	startTs := time.Now().UTC().Add(-5 * time.Minute)
+	endTs := time.Now().UTC()
 
 	t.Run("TestSearchFlows", func(t *testing.T) {
 		// Search for flows
-		for _, flow := range flowsCollectedForSearchTest {
-			startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
-			endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
+		for _, flow := range flowsToUseForSearchTest {
 			src := flow[2]
 			dest := flow[3]
 			sport := "100"
@@ -945,8 +956,26 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 				"default", "dummy", src, dest, sport, dport, proto, "",
 				ipSrc, ipDest, startTs, endTs, -1, map[string]struct{}{})
 
+			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
 			Assert(t, len(flows) > 0, "no flows returned for src %s dest %s", src, dest)
 			for _, flow := range flows {
+				Assert(t, flow[2] == src, "source ip is not matching")
+				Assert(t, flow[3] == dest, "dest ip is not matching")
+			}
+
+			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
+				"", "default.indexmeta", "default.indexmeta", "", src, dest, sport, dport, proto, "",
+				startTs, endTs, true, -1, false, time.Second*15)
+
+			AssertOk(t, err, "error in searching csv flows, err %+v", err)
+			var csvFlows [][]string
+			for flow := range csvFlowsChannel {
+				csvFlows = append(csvFlows, flow)
+			}
+			Assert(t, len(csvFlows) > 0, "no csv flows found for src %s dest %s", src, dest)
+			Assert(t, len(csvFlows) == len(flows), "len of csvflows and flows is not matching",
+				len(csvFlows), len(flows))
+			for _, flow := range csvFlows {
 				Assert(t, flow[2] == src, "source ip is not matching")
 				Assert(t, flow[3] == dest, "dest ip is not matching")
 			}
@@ -955,11 +984,11 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 
 	t.Run("TestSearchByDestIP", func(t *testing.T) {
 		// Search for flows
-		for _, flow := range flowsCollectedForSearchTest {
-			startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
-			endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
+		for _, flow := range flowsToUseForSearchTest {
+			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
+			// AssertOk(t, err, "error in parsing time %+v", err)
+			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
+			// AssertOk(t, err, "error in parsing time %+v", err)
 			dest := flow[3]
 			sport := "100"
 			dport := "100"
@@ -973,20 +1002,37 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 				"default", "dummy", "", dest, sport, dport, proto, "",
 				0, ipDest, startTs, endTs, -1, map[string]struct{}{})
 
+			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
 			Assert(t, len(flows) > 0, "no flows returned for dest %s", dest)
 			for _, flow := range flows {
 				Assert(t, flow[3] == dest, "dest ip is not matching")
+			}
+
+			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
+				"", "default.indexmeta", "default.indexmeta", "", "", dest, sport, dport, proto, "",
+				startTs, endTs, true, -1, false, time.Second*15)
+
+			AssertOk(t, err, "error in searching csv flows, err %+v", err)
+			var csvFlows [][]string
+			for flow := range csvFlowsChannel {
+				csvFlows = append(csvFlows, flow)
+			}
+			Assert(t, len(csvFlows) > 0, "no csv flows found for dest %s", dest)
+			Assert(t, len(csvFlows) == len(flows), "len of csvflows and flows is not matching",
+				len(csvFlows), len(flows))
+			for _, csvFlow := range csvFlows {
+				Assert(t, csvFlow[3] == flow[3], "dest ip is not matching")
 			}
 		}
 	})
 
 	t.Run("TestSearchBySrcIP", func(t *testing.T) {
 		// Search for flows
-		for _, flow := range flowsCollectedForSearchTest {
-			startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
-			endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
-			AssertOk(t, err, "error in parsing time %+v", err)
+		for _, flow := range flowsToUseForSearchTest {
+			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
+			// AssertOk(t, err, "error in parsing time %+v", err)
+			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
+			// AssertOk(t, err, "error in parsing time %+v", err)
 			src := flow[2]
 			sport := "100"
 			dport := "100"
@@ -1000,9 +1046,26 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 				"default", "dummy", src, "", sport, dport, proto, "",
 				ipSrc, 0, startTs, endTs, -1, map[string]struct{}{})
 
+			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
 			Assert(t, len(flows) > 0, "no flows returned for src %s", src)
 			for _, flow := range flows {
 				Assert(t, flow[2] == src, "src ip is not matching")
+			}
+
+			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
+				"", "default.indexmeta", "default.indexmeta", "", src, "", sport, dport, proto, "",
+				startTs, endTs, true, -1, false, time.Second*15)
+
+			AssertOk(t, err, "error in searching csv flows, err %+v", err)
+			var csvFlows [][]string
+			for flow := range csvFlowsChannel {
+				csvFlows = append(csvFlows, flow)
+			}
+			Assert(t, len(csvFlows) > 0, "no csv flows found for src %s", src)
+			Assert(t, len(csvFlows) == len(flows), "len of csvflows and flows is not matching",
+				len(csvFlows), len(flows))
+			for _, csvFlow := range csvFlows {
+				Assert(t, csvFlow[2] == flow[2], "source ip is not matching")
 			}
 		}
 	})
@@ -1017,7 +1080,7 @@ func testSearchLatestRawLogs(t *testing.T,
 	// Write new data files at current time
 	var flowsToUseForSearchTest [][]string
 	var generatedFiles []string
-	flowsToUseForSearchTest, generatedFiles = generateLogs(t, time.Now(), client, bucketName, false)
+	flowsToUseForSearchTest, generatedFiles = generateLogs(t, time.Now().UTC(), client, bucketName, false)
 
 	// Create indices
 	createIndex(t, client, bucketName, generatedFiles, logsChannel, false, logger)
@@ -1211,7 +1274,7 @@ func testDoubleIndexing(t *testing.T,
 	// Write new data files at current time
 	var flowsToUseForSearchTest [][]string
 	var generatedFiles []string
-	flowsToUseForSearchTest, generatedFiles = generateLogs(t, time.Now(), client, bucketName, false)
+	flowsToUseForSearchTest, generatedFiles = generateLogs(t, time.Now().UTC(), client, bucketName, false)
 
 	// Create indices for 1st time
 	createIndex(t, client, bucketName, generatedFiles, logsChannel, false, logger)
@@ -1469,6 +1532,76 @@ func testDoubleIndexing(t *testing.T,
 	}
 }
 
+func testIndexDownloadAndQuery(t *testing.T,
+	r *mock.ResolverClient, mockCredentialManager minio.CredentialsManager, logger log.Logger,
+	mi *searchvos.MetaIndexer, flowsCollectedForSearchTest [][]string, logsChannel chan searchvos.MetaLogs,
+	bucketName string) {
+	client, _ := objstore.NewClient("default", "indexmeta", r, objstore.WithCredentialsManager(mockCredentialManager))
+
+	// Query flows for comparison after index download
+	results := map[string][]interface{}{}
+	for _, flow := range flowsCollectedForSearchTest {
+		dest := flow[3]
+		// Dont pass startTs & endTs
+		uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+			"?" + "&bucket=default.rawlogs" + "&dataBucket=default.rawlogs" + "&dest=" + dest +
+			"&returnFiles=true" +
+			"&returnFlows=true" +
+			"&sort=ascending" + "&purge=5s" +
+			"&startts=2006-01-02T15:00:00" +
+			"&endts=2006-01-02T15:05:00")
+		result := getHelper(t, uri)
+		flowsInterface, ok := result["flows"]
+		Assert(t, ok, "flows key is not present in the returned data")
+		rawFlows, ok := flowsInterface.([]interface{})
+		Assert(t, ok, "flows expected type is []interface{}")
+		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00, 2006-01-02T15:05:00")
+		results[dest] = rawFlows
+	}
+
+	// First remove all the logs from local disk
+	os.RemoveAll(searchvos.LocalFlowsLocation)
+
+	// stop and restart the indexer, it will retrigger index download
+	mi.Stop()
+	mi.Start(logsChannel, client, updateLastProcessedKeys)
+	// Wait for few secs for the index to get redownlaoded
+	time.Sleep(time.Second * 10)
+	_, err := os.Stat(searchvos.LocalFlowsLocation + "default.rawlogs" + "/rawlogs/flows")
+	AssertOk(t, err, "index not downloaded again")
+
+	// Query again after index download
+	resultsNew := map[string][]interface{}{}
+	for _, flow := range flowsCollectedForSearchTest {
+		dest := flow[3]
+		// Dont pass startTs & endTs
+		uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+			"?" + "&bucket=default.rawlogs" + "&dataBucket=default.rawlogs" + "&dest=" + dest +
+			"&returnFiles=true" +
+			"&returnFlows=true" +
+			"&sort=ascending" + "&purge=5s" +
+			"&startts=2006-01-02T15:00:00" +
+			"&endts=2006-01-02T15:05:00")
+		result := getHelper(t, uri)
+		flowsInterface, ok := result["flows"]
+		Assert(t, ok, "flows key is not present in the returned data")
+		rawFlows, ok := flowsInterface.([]interface{})
+		Assert(t, ok, "flows expected type is []interface{}")
+		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00, 2006-01-02T15:05:00")
+		resultsNew[dest] = rawFlows
+	}
+
+	Assert(t, len(results) != 0, "results is empty")
+	Assert(t, len(resultsNew) != 0, "resultsNew is empty")
+
+	for dest, result := range results {
+		resultNew, ok := resultsNew[dest]
+		Assert(t, ok, "results for dest %s are not matching", dest)
+		Assert(t, len(resultNew) == len(result), "results for dest %s are not matching", dest)
+		deepCompareFlows(t, result, resultNew)
+	}
+}
+
 func deepCompareFlows(t *testing.T, flows1 []interface{}, flows2 []interface{}) {
 	for i := 0; i < len(flows1); i++ {
 		flow1 := flows1[i].([]interface{})
@@ -1663,7 +1796,10 @@ func generateLogs(t *testing.T,
 			mw.WriteAll(data)
 			buf := csvBuf
 
-			fileName := fmt.Sprintf("%d/default/2006/1/2/15/%s_%s.csv", j, fStartTs, fEndTs)
+			y, m, d := startTs.Date()
+			h, _, _ := startTs.Clock()
+			// fileName := fmt.Sprintf("%d/default/2006/1/2/15/%s_%s.csv", j, fStartTs, fEndTs)
+			fileName := fmt.Sprintf("%d/default/%d/%d/%d/%d/%s_%s.csv", y, m, d, h, j, fStartTs, fEndTs)
 			if zip {
 				zw := gzip.NewWriter(&zippedBuf)
 				zw.Write(buf.Bytes())

@@ -180,10 +180,11 @@ func objectsQuery(startTs, endTs time.Time) es.Query {
 }
 
 // DownloadRawLogsIndex downloads the index from minio
+// It diffs the index with the data present locally and downloads only the missing files
 func DownloadRawLogsIndex(ctx context.Context,
-	logger log.Logger, vosUnpinnedClient objstore.Client) error {
+	logger log.Logger, vosUnpinnedClient objstore.Client, force bool) error {
 	downloadTaskID := uuid.NewV4().String()
-	logger.Infof("id %s, DownloadRawLogsIndex start %+v", downloadTaskID, time.Now())
+	logger.Infof("id %s, DownloadRawLogsIndex start %+v, force %t", downloadTaskID, time.Now(), force)
 
 	// List the buckets and filter the rawlogs buckets
 	// What happens if the index recreation fails?
@@ -221,6 +222,18 @@ func DownloadRawLogsIndex(ctx context.Context,
 		for _, object := range output {
 			temp := object
 			filepath := LocalFlowsLocation + bucket + "/" + strings.TrimSuffix(object, gzipExtension)
+
+			// check if the objects already exists locally, if yes then skip download
+			if !force {
+				existing, err := isfileExisting(filepath)
+				if existing {
+					continue
+				}
+				if err != nil {
+					logger.Errorf("id %s, DownloadRawLogsIndex failed to stat object %s, err %+v", object, err)
+				}
+			}
+
 			err := downloadAndUnzip(ctx,
 				vosUnpinnedClient, filepath, bucket, temp)
 			if err != nil {

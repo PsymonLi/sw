@@ -257,28 +257,33 @@ func (s *SearchFwLogsOverVos) searchFlowsHelper(ctx context.Context,
 	// If only endTs is zero then we will search the startTs, startTs+24 hours
 	// If only startTs is zero, then we will error out
 	// Is startTs is zero, set it to now
+	nowUTC := time.Now().UTC()
 	if startTs.IsZero() && endTs.IsZero() {
-		endTs = time.Now()
-		startTs = endTs.Add(-1 * defaultEndTsDuration)
+		endTs = nowUTC
+		startTs = nowUTC.Add(-1 * defaultEndTsDuration)
 	} else if endTs.IsZero() {
 		endTs = startTs.Add(defaultEndTsDuration)
 	}
+
+	// tenant name is part of the bucket
+	tenantName := strings.Split(bucket, ".")[0]
 
 	qc.updateLastQueried()
 
 	if !strings.Contains(bucket, indexMetaBucketName) &&
 		(s.mi.getIndexRecreationStatus() == indexRecreationFinished) &&
-		(endTs.Before(time.Now().Add(-1*time.Hour*24)) || strings.Contains(dataBucket, rawlogsBucketName)) {
-		return s.queryRawLogs(ctx, qc, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+		(startTs.After(nowUTC.Add(-1*time.Hour*24)) || startTs.Equal(nowUTC.Add(-1*time.Hour*24)) ||
+			strings.Contains(dataBucket, rawlogsBucketName)) {
+		return s.queryRawLogs(ctx, qc, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
 			startTs, endTs, ascending, maxResults, returnObjectNames)
 	}
 
-	return s.queryCSVLogs(ctx, qc, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+	return s.queryCSVLogs(ctx, qc, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
 		startTs, endTs, ascending, maxResults, returnObjectNames)
 }
 
 func (s *SearchFwLogsOverVos) queryCSVLogs(ctx context.Context,
-	qc *queryCache, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	qc *queryCache, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool) error {
 	getDataHelper := func(client objstore.Client,
 		bucket, file, expr string) ([][]string, error) {
@@ -315,25 +320,25 @@ func (s *SearchFwLogsOverVos) queryCSVLogs(ctx context.Context,
 	srcShID := GetShard(ipSrc)
 	destShID := GetShard(ipDest)
 
-	st, en := getNextTimePeriod(ascending, startTs, endTs)
+	st, en := getNextTimePeriod(ascending, startTs, endTs, startTs, endTs, false)
 mainSearchLoop:
 	for {
 		filesOut := make(chan fileInfo, 1000)
 		if ipSrc != 0 && ipDest != 0 {
-			_, err := s.getFilesForIPs(ctx, qc, srcShID, bucket, sip, dip, st, en, filesOut, ascending)
+			_, err := s.getFilesForIPs(ctx, qc, tenantName, srcShID, bucket, sip, dip, st, en, filesOut, ascending)
 			if err != nil {
 				return err
 			}
 		} else {
 			if ipSrc != 0 {
-				_, err := s.getFilesForIPs(ctx, qc, srcShID, bucket, sip, "", st, en, filesOut, ascending)
+				_, err := s.getFilesForIPs(ctx, qc, tenantName, srcShID, bucket, sip, "", st, en, filesOut, ascending)
 				if err != nil {
 					return err
 				}
 			}
 
 			if ipDest != 0 {
-				_, err := s.getFilesForIPs(ctx, qc, destShID, bucket, "", dip, st, en, filesOut, ascending)
+				_, err := s.getFilesForIPs(ctx, qc, tenantName, destShID, bucket, "", dip, st, en, filesOut, ascending)
 				if err != nil {
 					return err
 				}
@@ -452,15 +457,12 @@ mainSearchLoop:
 			}
 		}
 
-		if (ascending && en.After(endTs)) || (!ascending && st.Before(startTs)) {
+		if (ascending && (en.After(endTs) || en.Equal(endTs))) ||
+			(!ascending && (st.Before(startTs) || st.Equal(startTs))) {
 			break
 		}
 
-		if ascending {
-			st, en = en, en.Add(time.Hour)
-		} else {
-			st, en = st.Add(-1*time.Hour), st
-		}
+		st, en = getNextTimePeriod(ascending, st, en, startTs, endTs, true)
 	}
 
 	close(qc.logsChannel)
@@ -469,7 +471,7 @@ mainSearchLoop:
 }
 
 func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
-	qc *queryCache, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	qc *queryCache, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool) error {
 	files := map[string]struct{}{}
 	var ipSrc, ipDest uint32
@@ -486,9 +488,6 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 		return fmt.Errorf("both src & dest ips are empty")
 	}
 
-	// tenant name is part of the bucket
-	tenantName := strings.Split(bucket, ".")[0]
-
 	// first try to query the logs present in memory
 	if s.mi != nil {
 		flows, err := s.mi.SearchRawLogsFromMemory(ctx,
@@ -503,7 +502,7 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 	srcShID := GetShard(ipSrc)
 	destShID := GetShard(ipDest)
 
-	st, en := getNextTimePeriod(ascending, startTs, endTs)
+	st, en := getNextTimePeriod(ascending, startTs, endTs, startTs, endTs, false)
 	var objs []string
 	var err error
 	clients := getObjstoreClients()
@@ -619,15 +618,12 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 			s.sendFlowsHelper(ctx, qc, flowsOut, ascending, 0)
 		}
 
-		if (ascending && en.After(endTs)) || (!ascending && st.Before(startTs)) {
+		if (ascending && (en.After(endTs) || en.Equal(endTs))) ||
+			(!ascending && (st.Before(startTs) || st.Equal(startTs))) {
 			break
 		}
 
-		if ascending {
-			st, en = en, en.Add(time.Hour)
-		} else {
-			st, en = st.Add(-1*time.Hour), st
-		}
+		st, en = getNextTimePeriod(ascending, st, en, startTs, endTs, true)
 	}
 
 	close(qc.logsChannel)
@@ -637,9 +633,33 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 }
 
 func (s *SearchFwLogsOverVos) getFilesForIPs(ctx context.Context,
-	qc *queryCache, shID byte, bucket, ipSrc,
+	qc *queryCache, tenantName string, shID byte, bucket, ipSrc,
 	ipDest string, startTs, endTs time.Time,
 	out chan<- fileInfo, ascending bool) ([]string, error) {
+	// If the start and endts are within the last 1 hour then also search the files
+	// which are present in memory and not saved on the disk yet
+	if startTs.After(time.Now().UTC().Add(-1*time.Hour)) ||
+		startTs.Equal(time.Now().UTC().Add(-1*time.Hour)) {
+		s.mi.lock.Lock()
+		metaIndex, ok := s.mi.index[tenantName]
+		if ok {
+			clockHourIndex, ok := metaIndex.index[shID]
+			if ok {
+				y, m, d := startTs.Date()
+				h, _, _ := startTs.Clock()
+				clockHour := time.Date(y, m, d, h, 0, 0, 0, time.UTC)
+				shIndex, ok := clockHourIndex[clockHour]
+				if ok {
+					files := s.getFileNames(qc, shIndex, ipSrc, ipDest)
+					for _, f := range files {
+						out <- f
+					}
+				}
+			}
+		}
+		s.mi.lock.Unlock()
+	}
+
 	filePrefix := getIndexFilePrefix(startTs, endTs, shID, ascending)
 	s.logger.Debugf("id %s, %d %+v %+v", qc.id, shID, startTs, endTs, filePrefix)
 	clients := getObjstoreClients()
@@ -1020,25 +1040,52 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 	return result
 }
 
-func getNextTimePeriod(ascending bool, startTs, endTs time.Time) (time.Time, time.Time) {
+func getNextTimePeriod(ascending bool,
+	startTs, endTs, startTsOrig, endTsOrig time.Time, continuation bool) (time.Time, time.Time) {
+	var st, en time.Time
 	if ascending {
 		y, m, d := startTs.Date()
 		h, min, s := startTs.Clock()
-		if min != 0 || s != 0 {
+		var nextHour time.Time
+		if !continuation && (min != 0 || s != 0) {
 			// If the time is not representing a clock hour then we need to first search from
 			// startTs to the nearest clock hour
-			nextHour := time.Date(y, m, d, h+1, 0, 0, 0, startTs.Location())
-			return startTs, nextHour
+			st = startTs
+			nextHour = time.Date(y, m, d, h+1, 0, 0, 0, startTs.Location())
+		} else if !continuation {
+			st = startTs
+			nextHour = startTs.Add(time.Hour)
+		} else {
+			st = endTs
+			nextHour = endTs.Add(time.Hour)
 		}
-		return startTs, startTs.Add(time.Hour)
+
+		switch {
+		case nextHour.After(endTsOrig) || nextHour.Equal(endTsOrig):
+			return st, endTsOrig
+		default:
+			return st, nextHour
+		}
 	}
 
 	y, m, d := endTs.Date()
 	h, min, s := endTs.Clock()
-	if min != 0 || s != 0 {
-		clockTime := time.Date(y, m, d, h, 0, 0, 0, endTs.Location())
-		return clockTime, endTs
+	var previousHour time.Time
+	if !continuation && (min != 0 || s != 0) {
+		previousHour = time.Date(y, m, d, h, 0, 0, 0, endTs.Location())
+		en = endTs
+	} else if !continuation {
+		previousHour = endTs.Add(-1 * time.Hour)
+		en = endTs
+	} else {
+		previousHour = startTs.Add(-1 * time.Hour)
+		en = startTs
 	}
 
-	return endTs.Add(-1 * time.Hour), endTs
+	switch {
+	case previousHour.Before(startTsOrig) || previousHour.Equal(startTsOrig):
+		return startTsOrig, en
+	default:
+		return previousHour, en
+	}
 }

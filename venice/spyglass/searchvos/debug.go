@@ -223,6 +223,30 @@ func HandleDebugFwlogsDownloadIndex(ctx context.Context,
 	client objstore.Client, vosFinder *SearchFwLogsOverVos, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Infof("debug API: downloading index")
-		go DownloadRawLogsIndex(ctx, logger, client)
+		var force, wait bool
+		var err error
+		for k, v := range r.URL.Query() {
+			switch k {
+			case "force":
+				force, err = strconv.ParseBool(v[0])
+				if err != nil {
+					logger.Errorf("error in parsing force parameter %+v", err)
+					http.Error(w, "error in parsing force parameter", http.StatusBadRequest)
+					return
+				}
+			case "wait":
+				wait, err = strconv.ParseBool(v[0])
+				if err != nil {
+					logger.Errorf("error in parsing wait parameter %+v", err)
+					http.Error(w, "error in parsing wait parameter", http.StatusBadRequest)
+					return
+				}
+			}
+		}
+		if wait {
+			DownloadRawLogsIndex(ctx, logger, client, force)
+			return
+		}
+		go DownloadRawLogsIndex(ctx, logger, client, force)
 	}
 }

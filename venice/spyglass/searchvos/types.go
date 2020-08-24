@@ -181,3 +181,20 @@ func (s descendingLogs) Less(i, j int) bool {
 
 	return s[i][4] > s[j][4]
 }
+
+type indexRecreationStatus int32
+
+const (
+	// indexRecreationFinished tells if index recreation has finished after Spyglass restart
+	indexRecreationFinished indexRecreationStatus = iota
+
+	// indexRecreationRunning tells if index recreation is running after Spyglass restart
+	indexRecreationRunning
+
+	// indexRecreationFailed tells if index recreation has failed after Spyglass restart
+	indexRecreationFailed
+
+	// indexRecreationFinishedWithError tells if index recreation has finished with some error
+	// after Spyglass restart
+	indexRecreationFinishedWithError
+)

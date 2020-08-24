@@ -116,7 +116,7 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 	// the next rate limiting related test cases.
 	time.Sleep(10 * time.Second)
 
-	// TestDebuhRESTHandle
+	// TestDebugRESTHandle
 	t.Run("TestDebugRESTHandle", func(t *testing.T) {
 		verifyDebugRESTHandle(ctx, t, r, logger)
 	})
@@ -666,7 +666,7 @@ func verifyRawLogsIndexDownload(ctx context.Context,
 			return false, nil
 		}
 
-		err = searchvos.DownloadRawLogsIndex(ctx, logger, client)
+		err = searchvos.DownloadRawLogsIndex(ctx, logger, client, false)
 		if err != nil {
 			logger.Errorf("temp error in downloading index %+v", err)
 			return false, nil
@@ -677,12 +677,32 @@ func verifyRawLogsIndexDownload(ctx context.Context,
 		return err == nil, nil
 	}, "failed to download flowlogs index", "2s", "120s")
 
-	// Also run the debug handle
-	logger.Infof("triggering downloadindex debug handle")
-	uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/downloadindex")
+	// Also run the debug handle in forced and wait mode
+	logger.Infof("triggering downloadindex debug handle, forced and wait")
+	uri := strings.TrimSpace(
+		fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/downloadindex" +
+			"?wait=true&force=true")
+	forcedDownloadStartTime := time.Now()
 	resp, err := http.Get(uri)
+	forcedDownloadEndTime := time.Now()
 	AssertOk(t, err, "error is getting /debug/fwlogs/downloadindex")
 	defer resp.Body.Close()
+	forcedDownloadTime := forcedDownloadEndTime.Sub(forcedDownloadStartTime).Milliseconds()
+
+	// Now run the debug handle in unforced and wait mode
+	logger.Infof("triggering downloadindex debug handle, unforced and wait")
+	uri = strings.TrimSpace(
+		fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/downloadindex" +
+			"?wait=true&force=false")
+	unforcedDownloadStartTime := time.Now()
+	resp, err = http.Get(uri)
+	unforcedDownloadEndTime := time.Now()
+	AssertOk(t, err, "error is getting /debug/fwlogs/downloadindex")
+	defer resp.Body.Close()
+	unforcedDownloadTime := unforcedDownloadEndTime.Sub(unforcedDownloadStartTime).Milliseconds()
+
+	logger.Infof("time taken for forced and unforced download", forcedDownloadTime, unforcedDownloadTime)
+	Assert(t, unforcedDownloadTime < forcedDownloadTime, "unforced download should be faster then forced download")
 }
 
 func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager) *tmagentstate.PolicyState {

@@ -70,19 +70,14 @@ const (
 	// It helps in reducing memory footprint of Spyglass.
 	flowsChunkSize = 1000
 
-	// indexRecreationRunning tells if index recreation is running after Spyglass restart
-	indexRecreationRunning = int32(1)
-
-	// indexRecreationFinished tells if index recreation has finished after Spyglass restart
-	indexRecreationFinished = int32(0)
-
 	// file extensions
-	indexExtension   = ".index"
-	protoEtension    = ".protobinary"
-	flowsExtension   = ".flows"
-	flowPtrExtension = ".flowptr"
-	gzipExtension    = ".gz"
-	flowsBlockSize   = 496000 // bytes
+	indexExtension = ".index"
+	protoEtension  = ".protobinary"
+	flowsExtension = ".flows"
+	gzipExtension  = ".gz"
+
+	// Chunk size to use for initiating flows buffer
+	flowsBlockSize = 496000 // bytes
 )
 
 type objectToDeleteForRecovery struct {
@@ -169,6 +164,7 @@ type MetaIndexer struct {
 	lastProcessKeysUpdateFunc func(string)
 	persistDuration           time.Duration
 	indexRecreationStatus     int32
+	doneCh                    chan bool
 
 	// In case of panic while persisting in local storage or minio, all the files that were stored before the panic for the last 10 minutes are deleted from
 	// local storage and minio storage.
@@ -202,7 +198,8 @@ func NewMetaIndexer(ctx context.Context,
 		lastPersistTime:       time.Now(),
 		lastLogsPersistTime:   time.Now(),
 		persistDuration:       persistDuration,
-		indexRecreationStatus: indexRecreationFinished,
+		indexRecreationStatus: int32(indexRecreationFinished),
+		doneCh:                make(chan bool),
 		recoveryChannel:       make(chan objectToDeleteForRecovery, 10000),
 	}
 
@@ -256,8 +253,16 @@ func newRawLogs() *rawLogs {
 func (mi *MetaIndexer) Start(logsChannel chan MetaLogs,
 	client objstore.Client, lastProcessKeysUpdateFunc func(string)) {
 	mi.lastProcessKeysUpdateFunc = lastProcessKeysUpdateFunc
+	mi.doneCh = make(chan bool)
 	go mi.indexMeta(client, logsChannel)
 	go mi.persist(client)
+	go mi.startDownloadIndex(client)
+}
+
+// Stop stops the MetaIndexer
+// Used only for testing
+func (mi *MetaIndexer) Stop() {
+	close(mi.doneCh)
 }
 
 // UpdateShardRawLogs updates the shardRawLogs field
@@ -273,19 +278,21 @@ func (mi *MetaIndexer) GetShardRawLogs() int32 {
 
 // setIndexRecreationStatus updates the indexRecreationStatus status.
 // It is set to to true when the faster index is getting recreated after Spyglass restart.
-func (mi *MetaIndexer) setIndexRecreationStatus(value int32) {
-	atomic.StoreInt32(&mi.indexRecreationStatus, value)
+func (mi *MetaIndexer) setIndexRecreationStatus(value indexRecreationStatus) {
+	atomic.StoreInt32(&mi.indexRecreationStatus, int32(value))
 }
 
 // getIndexRecreationStatus returns the indexRecreationStatus field
-func (mi *MetaIndexer) getIndexRecreationStatus() int32 {
-	return atomic.LoadInt32(&mi.indexRecreationStatus)
+func (mi *MetaIndexer) getIndexRecreationStatus() indexRecreationStatus {
+	return indexRecreationStatus(atomic.LoadInt32(&mi.indexRecreationStatus))
 }
 
 // indexMeta creates the faster index (raw logs) and slower index (CSV logs)
 func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLogs) {
 	for {
 		select {
+		case <-mi.doneCh:
+			return
 		case <-mi.ctx.Done():
 			return
 		case logs, ok := <-logsChannel:
@@ -672,11 +679,45 @@ func (mi *MetaIndexer) updateShardWithRawLogsDestIPHelper(tnRLogs *rawLogs,
 	}
 }
 
+func (mi *MetaIndexer) startDownloadIndex(client objstore.Client) {
+	// Keep trying index download endlessly
+	maxRetries := 120
+	retryCount := 0
+	mi.setIndexRecreationStatus(indexRecreationRunning)
+	ctxNew, cancel := context.WithCancel(mi.ctx)
+	defer cancel()
+	for {
+		retryCount++
+		err := DownloadRawLogsIndex(ctxNew, mi.logger, client, false)
+		if err != nil {
+			// Raise an event when recreation fails
+			mi.logger.Errorf("temp, index download failed with err: %+v", err)
+			mi.setIndexRecreationStatus(indexRecreationFailed)
+		} else {
+			mi.setIndexRecreationStatus(indexRecreationFinished)
+			return
+		}
+		if retryCount >= maxRetries {
+			// Raise an event when recreation fails
+			mi.logger.Errorf("final, index download failed with err: %+v", err)
+			mi.setIndexRecreationStatus(indexRecreationFinishedWithError)
+			return
+		}
+		select {
+		case <-mi.doneCh:
+			return
+		case <-time.After(time.Minute):
+		}
+	}
+}
+
 func (mi *MetaIndexer) persist(client objstore.Client) {
 	duration := time.Duration((mi.persistDuration.Seconds() / 4)) * time.Second
 
 	for {
 		select {
+		case <-mi.doneCh:
+			return
 		case <-mi.ctx.Done():
 			return
 		case <-time.After(duration):
@@ -715,7 +756,7 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 						destIdxCount := len(shIndex.index.Destidxs)
 						fStartTs := time.Unix(shIndex.index.Startts, 0).Format(timeFormatWithColon)
 						fEndTs := time.Unix(shIndex.index.Endts, 0).Format(timeFormatWithColon)
-						jitter := time.Now().Format(timeFormatWithColon)
+						jitter := time.Now().UTC().Format(timeFormatWithColon)
 						fileName := fmt.Sprintf("%s/%d/%s/", rawlogsBucketName, shID, clockHour.Format(time.RFC3339)) +
 							fStartTs + "_" + fEndTs + "_" + jitter + protoEtension
 
@@ -793,7 +834,7 @@ func (mi *MetaIndexer) persistIndex(client objstore.Client,
 						data := shIndex.encode()
 						fStartTs := shIndex.startTs.Format(timeFormatWithColon)
 						fEndTs := shIndex.endTs.Format(timeFormatWithColon)
-						jitter := time.Now().Format(timeFormatWithColon)
+						jitter := time.Now().UTC().Format(timeFormatWithColon)
 						fileName := fmt.Sprintf("processedIndices/%d/%s/", shID, clockHour.Format(time.RFC3339)) + fStartTs + "_" + fEndTs + "_" + jitter
 						dataInBytes := data
 						contentType := "application/binary"
@@ -1146,6 +1187,22 @@ func appendToFile(fileName string, data []byte) int64 {
 	return currentOffset
 }
 
+func writeToFile(fileName string, data []byte) error {
+	err := createFilePathIfNotExisting(fileName)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	return err
+}
+
 func getTrimmedCSVObjectKey(key string) string {
 	// Trim the key length, saves space in index, remove duplicate characters
 	// Remove the extension as its always .csv.gzip
@@ -1309,7 +1366,7 @@ func listFilesLocally(bucketName, prefix string) ([]string, error) {
 	return files, nil
 }
 
-// SearchRawLogsFromMemory searches  raw logs index/logs present in memory
+// SearchRawLogsFromMemory searches raw logs index/logs present in memory
 func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 	tenant, id, sip, dip, sport, dport, proto, act string,
 	ipSrc, ipDest uint32, startTs, endTs time.Time, maxResults int,
@@ -1340,11 +1397,12 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 
 			// There is no need to filter based on file for the logs that are in memory because
 			// these logs have not been written on the disk yet, so there are no duplicates,
-			// but we still want to populate the files searches so that we can skip them
+			// but we still want to populate the files searched so that we can skip them
 			// if they are also presnet on disk. This may result in returning partial data
 			// from some files right after a crash becuase in memory we may still have partial
 			// data from that file, but complete data on disk. Once we return results for a file
-			// from memory, we wont return it again from the disk.
+			// from memory, we wont return it again from the disk. This will be only a temporary situation
+			// after a crash, once the in memory data is written to disk, we will start returning full results.
 
 			files[flowRec.Id] = struct{}{}
 			if flowRec.Ts < startTs.Unix() || flowRec.Ts > endTs.Unix() {
@@ -1559,4 +1617,16 @@ func createFilePathIfNotExisting(fileName string) error {
 		}
 	}
 	return err
+}
+
+func isfileExisting(fileName string) (bool, error) {
+	_, err := os.Stat(fileName)
+	switch {
+	case err == nil:
+		return true, nil
+	case os.IsNotExist(err):
+		return false, nil
+	default:
+		return false, err
+	}
 }
