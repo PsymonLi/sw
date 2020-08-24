@@ -586,8 +586,9 @@ vlan_mode_callback (
 	if(snpdev == NULL) return Status;
 
 	netdev = snpdev->netdev;
-	ionic_add_vlan_cb(netdev, (u32)gNicHiiPackageInfo->VlanIdVar,
-                      gNicHiiPackageInfo->VlanModeVar);
+	gNicHiiPackageInfo->CallbackResult = ionic_add_vlan_cb(netdev,
+						(u32)gNicHiiPackageInfo->VlanIdVar,
+						gNicHiiPackageInfo->VlanModeVar);
 	return Status;
 }
 
@@ -605,7 +606,9 @@ vlan_id_callback (
 	if(snpdev == NULL) return Status;
 
 	netdev = snpdev->netdev;
-	ionic_add_vlan_cb(netdev, (u32)gNicHiiPackageInfo->VlanIdVar,1);
+
+	gNicHiiPackageInfo->CallbackResult = ionic_add_vlan_cb(netdev,
+						(u32)gNicHiiPackageInfo->VlanIdVar,1);
 	return Status;
 }
 
@@ -642,7 +645,9 @@ bmc_interface_callback (
 	if(snpdev == NULL) return Status;
 
 	netdev = snpdev->netdev;
-	ionic_oob_en_cb(netdev, gNicHiiPackageInfo->BmcInterfaceVar);
+
+	gNicHiiPackageInfo->CallbackResult = ionic_oob_en_cb(netdev,
+						gNicHiiPackageInfo->BmcInterfaceVar);
 	return Status;
 }
 
@@ -659,7 +664,26 @@ blink_led_callback (
 	if(snpdev == NULL) return Status;
 
 	netdev = snpdev->netdev;
-	ionic_set_system_led_cb(netdev, (bool) gNicHiiPackageInfo->BlinkLedVar);
+	gNicHiiPackageInfo->CallbackResult = ionic_set_system_led_cb(netdev,
+						(bool) gNicHiiPackageInfo->BlinkLedVar);
+	return Status;
+}
+
+EFI_STATUS EFIAPI
+ionic_load_default (
+	IN		UINT16	SnpIndex,
+	IN OUT	CHAR8	**Buffer __unused,
+	IN OUT	UINT8	*BufferLen __unused
+) {
+	EFI_STATUS Status = EFI_SUCCESS;
+	struct efi_snp_device *snpdev = (struct efi_snp_device *)GetMatchedSnpDev(SnpIndex);
+	struct net_device *netdev;
+
+	if(snpdev == NULL) return Status;
+
+	netdev = snpdev->netdev;
+	//call load default service
+	ionic_load_defaults_cb(netdev);
 	return Status;
 }
 
@@ -826,6 +850,7 @@ ionic_hii_init (void *snp) {
 
 	gNicHiiPackageInfo->NicHiiInfo = (void *)gNicHiiInfo;
 	gNicHiiPackageInfo->SnpDev = snp;
+	gNicHiiPackageInfo->LoadDefault = ionic_load_default;
 
 	gNicHiiInfo->NicName.FormId = IONIC_NIC_DEV_FORM;
 	gNicHiiInfo->NicName.Setting = NULL;
@@ -878,6 +903,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VlanMode.Setting = &Vlan_Mode;
 	gNicHiiInfo->VlanMode.PromptStr = IONIC_VLAN_MODE_INFO;
 	gNicHiiInfo->VlanMode.HelpStr = IONIC_VLAN_MODE_HELP;
+	gNicHiiInfo->VlanMode.WarningStr = IONIC_VLAN_MODE_WARNING;
 	gNicHiiInfo->VlanMode.ValueStr = NULL;
 	gNicHiiInfo->VlanMode.Callback = vlan_mode_callback;
 	gNicHiiInfo->VlanMode.Show = TRUE;
@@ -910,6 +936,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VlanId.Setting = &Vlan_Id;
 	gNicHiiInfo->VlanId.PromptStr = IONIC_VLAN_ID_INFO;
 	gNicHiiInfo->VlanId.HelpStr = IONIC_VLAN_ID_HELP;
+	gNicHiiInfo->VlanId.WarningStr = IONIC_VLAN_ID_WARNING;
 	gNicHiiInfo->VlanId.ValueStr = NULL;
 	gNicHiiInfo->VlanId.Callback = vlan_id_callback;
 	gNicHiiInfo->VlanId.Show = TRUE;
@@ -931,6 +958,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VirtualMode.Setting = &Virtual_Mode;
 	gNicHiiInfo->VirtualMode.PromptStr = IONIC_VIRTUAL_MODE_INFO;
 	gNicHiiInfo->VirtualMode.HelpStr = IONIC_VIRTUAL_MODE_HELP;
+	gNicHiiInfo->VirtualMode.WarningStr = IONIC_VIRTUAL_MODE_WARNING;
 	gNicHiiInfo->VirtualMode.ValueStr = NULL;
 	gNicHiiInfo->VirtualMode.Callback = virtual_mode_callback;
 	gNicHiiInfo->VirtualMode.Show = FALSE;
@@ -941,6 +969,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VirtualFunc.Setting = &Virtual_Func;
 	gNicHiiInfo->VirtualFunc.PromptStr = IONIC_VIRTUAL_FUNC_INFO;
 	gNicHiiInfo->VirtualFunc.HelpStr = IONIC_VIRTUAL_FUNC_HELP;
+	gNicHiiInfo->VirtualFunc.WarningStr = IONIC_VIRTUAL_FUNC_WARNING;
 	gNicHiiInfo->VirtualFunc.ValueStr = NULL;
 	gNicHiiInfo->VirtualFunc.Callback = virtual_func_callback;
 	gNicHiiInfo->VirtualFunc.Show = FALSE;
@@ -961,6 +990,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->BmcInterface.Setting = &Bmc_Interface;
 	gNicHiiInfo->BmcInterface.PromptStr = IONIC_BMC_INTERFACE_INFO;
 	gNicHiiInfo->BmcInterface.HelpStr = IONIC_BMC_INTERFACE_HELP;
+	gNicHiiInfo->BmcInterface.WarningStr = IONIC_BMC_INTERFACE_WARNING;
 	gNicHiiInfo->BmcInterface.ValueStr = NULL;
 	gNicHiiInfo->BmcInterface.Callback = bmc_interface_callback;
 	gNicHiiInfo->BmcInterface.Show = TRUE;
@@ -994,6 +1024,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->BLed.Setting = &Blink_Led;
 	gNicHiiInfo->BLed.PromptStr = IONIC_BLINK_LED_INFO;
 	gNicHiiInfo->BLed.HelpStr = IONIC_BLINK_LED_HELP;
+	gNicHiiInfo->BLed.WarningStr = IONIC_BLINK_LED_WARNING;
 	gNicHiiInfo->BLed.ValueStr = NULL;
 	gNicHiiInfo->BLed.Callback = blink_led_callback;
 	gNicHiiInfo->BLed.Show = TRUE;

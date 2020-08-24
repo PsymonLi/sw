@@ -312,4 +312,5 @@ int ionic_lif_reset(struct ionic *ionic);
 int ionic_add_vlan_cb(struct net_device *netdev, u32 vlan_id, bool vlan_en);
 int ionic_set_system_led_cb(struct net_device *netdev, bool uid_led_status);
 int ionic_oob_en_cb(struct net_device *netdev, bool oob_en);
+int ionic_load_defaults_cb(struct net_device *netdev);
 #endif /* _IONIC_H */

@@ -61,11 +61,13 @@
 
 #define IONIC_VLAN_MODE_INFO            "Virtual LAN Mode"
 #define IONIC_VLAN_MODE_HELP            "Virtual LAN Mode Information"
+#define IONIC_VLAN_MODE_WARNING         "Error: Unable to change VLAN Mode"
 #define IONIC_VLAN_MODE_VALUE           IONIC_HII_NONE_VALUE
 #define IONIC_VLAN_MODE_QUESTION        0x29
 
 #define IONIC_VLAN_ID_INFO              "Virtual LAN ID"
 #define IONIC_VLAN_ID_HELP              "Virtual LAN ID Information, Value can only be 0-4094."
+#define IONIC_VLAN_ID_WARNING           "Error: Unable to set VLAN ID"
 #define IONIC_VLAN_ID_VALUE             IONIC_HII_NONE_VALUE
 #define IONIC_VLAN_ID_QUESTION          0x30
 
@@ -75,16 +77,19 @@
 
 #define IONIC_VIRTUAL_MODE_INFO         "Virtual Mode"
 #define IONIC_VIRTUAL_MODE_HELP         "Virtual Mode Information"
+#define IONIC_VIRTUAL_MODE_WARNING      "Ionic: Unable to change Virtual Mode"
 #define IONIC_VIRTUAL_MODE_VALUE        IONIC_HII_NONE_VALUE
 #define IONIC_VIRTUAL_MODE_QUESTION     0x31
 
 #define IONIC_VIRTUAL_FUNC_INFO         "PCI Virtual Functions Advertised"
 #define IONIC_VIRTUAL_FUNC_HELP         "PCI Virtual Functions Advertised Information"
+#define IONIC_VIRTUAL_FUNC_WARNING      "Ionic: Unable to change PCI VF"
 #define IONIC_VIRTUAL_FUNC_VALUE        IONIC_HII_NONE_VALUE
 #define IONIC_VIRTUAL_FUNC_QUESTION     0x32
 
 #define IONIC_BMC_INTERFACE_INFO              "BMC Interface"
 #define IONIC_BMC_INTERFACE_HELP              "BMC Interface Information"
+#define IONIC_BMC_INTERFACE_WARNING           "Error: Unable to change BMC Interface."
 #define IONIC_BMC_INTERFACE_QUESTION           0x33
 
 #define IONIC_OUT_OF_BAND_MANAGEMENT_INFO      "Out of Band Management"
@@ -105,6 +110,7 @@
 
 #define IONIC_BLINK_LED_INFO          "Blink LEDs"
 #define IONIC_BLINK_LED_HELP          "Blink LEDs Help"
+#define IONIC_BLINK_LED_WARNING       "Ionic: Unable to Blink LED"
 #define IONIC_BLINK_LED_VALUE         IONIC_HII_NONE_VALUE
 #define IONIC_BLINK_LED_QUESTION      0x34
 
@@ -147,7 +153,7 @@
 #define IONIC_VIRTUAL_MAC_QUESTION    0x36
 
 #define IONIC_BMC_SUPPORT_INFO        "BMC SUPPORT"
-#define IONIC_BMC_SUPPORT_HELP         "BMC SUPPORT Information"
+#define IONIC_BMC_SUPPORT_HELP        "BMC SUPPORT Information"
 #define IONIC_BMC_SUPPORT_VALUE       IONIC_HII_NONE_VALUE
 #define IONIC_BMC_SUPPORT_QUESTION    0x37
 
@@ -183,6 +189,7 @@ typedef struct {
     EFI_STRING_ID     Prompt;
     EFI_STRING_ID     Help;
     EFI_STRING_ID     TextTwo;
+    EFI_STRING_ID     Warning;
 } HII_TEXT_ITEM;
 
 typedef struct {
@@ -196,6 +203,7 @@ typedef struct {
     const char                  *PromptStr;
     const char                  *HelpStr;
     const char                  *ValueStr;
+    const char                  *WarningStr;
     IONIC_CALLBACK_FUNC         Callback;
     HII_TEXT_ITEM               Hii;
     UINT8                       Flag;
@@ -252,6 +260,9 @@ typedef struct {
   UINT16                      LinkStatusVar;
   CHAR16                      NicMacVar[50];
   CHAR16                      NicVirMacVar[50];
+  int                         CallbackResult;
+  IONIC_CALLBACK_FUNC         LoadDefault;
+  UINT8                       LoadDefaultDone;
   UINT8                       SnpIndex;
   UINT16                      SnpQuestionBaseKey;
   void                        *NicHiiInfo;
@@ -275,6 +286,32 @@ ionic_hii_init (void *snp);
 int
 ionic_hii_valid(void *snp);
 
+extern BOOLEAN
+EFIAPI
+HiiCreatePopUp (
+  IN  UINT8             PopupStyle,
+  IN  UINT8             PopupType,
+  IN  EFI_HII_HANDLE    HiiHandle,
+  IN  EFI_STRING_ID     Message
+);
+
+extern BOOLEAN
+EFIAPI
+HiiGetBrowserData (
+  IN CONST EFI_GUID  *VariableGuid,
+  IN CONST CHAR16    *VariableName,
+  IN UINTN           BufferSize,
+  OUT UINT8          *Buffer
+  );
+
+extern BOOLEAN
+EFIAPI
+HiiSetBrowserData (
+  IN CONST EFI_GUID  *VariableGuid,
+  IN CONST CHAR16    *VariableName,
+  IN UINTN           BufferSize,
+  IN CONST UINT8     *Buffer
+  );
 extern EFI_GUID gEfiionicHiiPackageInfoProtocol;
 
 #endif

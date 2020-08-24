@@ -174,8 +174,8 @@ int ionic_dev_cmd_hii_identify(struct ionic_dev *idev, unsigned long max_seconds
 	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
 }
 
-int ionic_dev_cmd_system_led(struct ionic_dev *idev, unsigned long max_seconds,
-		     bool uid_led_status)
+static int ionic_dev_cmd_system_led(struct ionic_dev *idev,
+             unsigned long max_seconds, bool uid_led_status)
 {
 	union ionic_dev_cmd cmd = {
 		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
@@ -186,8 +186,8 @@ int ionic_dev_cmd_system_led(struct ionic_dev *idev, unsigned long max_seconds,
 	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
 }
 
-int ionic_dev_cmd_oob_en(struct ionic_dev *idev, unsigned long max_seconds,
-		     bool oob_en)
+static int ionic_dev_cmd_oob_en(struct ionic_dev *idev,
+         unsigned long max_seconds, bool oob_en)
 {
 	union ionic_dev_cmd cmd = {
 		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
@@ -198,8 +198,17 @@ int ionic_dev_cmd_oob_en(struct ionic_dev *idev, unsigned long max_seconds,
 	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
 }
 
-int ionic_dev_cmd_vlan_setattr(struct ionic_dev *idev, unsigned long max_seconds,
-		     u32 vlan_id, bool vlan_en)
+static int ionic_dev_cmd_reset_hii(struct ionic_dev *idev,
+                 unsigned long max_seconds)
+{
+	union ionic_dev_cmd cmd = {
+		.hii_init.opcode = IONIC_CMD_HII_RESET,
+	};
+	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
+}
+
+static int ionic_dev_cmd_vlan_setattr(struct ionic_dev *idev,
+             unsigned long max_seconds, u32 vlan_id, bool vlan_en)
 {
 	union ionic_dev_cmd cmd = {
 		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
@@ -1227,10 +1236,10 @@ static int ionic_add_vlan(struct ionic_dev *idev, struct lif *lif, u32 vlan_id,
 				vlan_id, ctx.comp.rx_filter_add.filter_id, err);
 			return err;
 		}
-		lif->vlan_en = vlan_en;
-		lif->vlan_id = vlan_id;
 		lif->vlan_filter_id = ctx.comp.rx_filter_add.filter_id;
 	}
+	lif->vlan_en = vlan_en;
+	lif->vlan_id = vlan_id;
 	return 0;
 }
 
@@ -1657,5 +1666,28 @@ int ionic_oob_en_cb(struct net_device *netdev, bool oob_en)
 		return err;
 	}
 	lif->oob_en = oob_en;
+	return 0;
+}
+
+/**
+ * Load defaults HII Callback.
+ * */
+int ionic_load_defaults_cb(struct net_device *netdev)
+{
+	struct ionic *ionic = netdev->priv;
+	struct lif *lif = ionic->lif;
+	int err;
+
+	err = ionic_dev_cmd_reset_hii(&ionic->idev, devcmd_timeout);
+	if (err) {
+		DBG2("Failed to reset to defaults\n");
+		return err;
+	}
+
+	err = ionic_hii_identify(&ionic->idev, lif);
+	if (err) {
+		DBG2("%s ::lif getting hii settings failed\n", __FUNCTION__);
+		return err;
+	}
 	return 0;
 }

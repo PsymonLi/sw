@@ -31,7 +31,14 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
 #include <ipxe/efi/efi_strings.h>
 #include <ipxe/efi/efi_hii.h>
 #include <ipxe/efi/Protocol/HiiString.h>
+#include <ipxe/efi/Protocol/HiiPopup.h>
+#include <ipxe/efi/Protocol/HiiConfigRouting.h>
+#include <ipxe/efi/Protocol/FormBrowser2.h>
 
+EFI_GUID gEfiHiiConfigRoutingProtocolGuid = EFI_HII_CONFIG_ROUTING_PROTOCOL_GUID;
+EFI_HII_CONFIG_ROUTING_PROTOCOL   *gHiiConfigRouting = NULL;
+EFI_FORM_BROWSER2_PROTOCOL        *mUefiFormBrowser2 = NULL;
+CONST CHAR16 mConfigHdrTemplate[] = L"GUID=00000000000000000000000000000000&NAME=0000&PATH=00";
 
 static void * efi_ifr_op ( struct efi_ifr_builder *ifr, unsigned int opcode,size_t len );
 
@@ -307,7 +314,6 @@ HiiGetString (
     goto Error;
   }
 
-
   //
   // Allocate a buffer for the return string
   //
@@ -382,6 +388,233 @@ UnicodeSPrint (
   return NumberOfPrinted;
 }
 
+VOID *
+EFIAPI InternalMemSetMem16 (
+  OUT     VOID                      *Buffer,
+  IN      UINTN                     Length,
+  IN      UINT16                    Value
+  )
+{
+  for (; Length != 0; Length--) {
+    ((UINT16*)Buffer)[Length - 1] = Value;
+  }
+  return Buffer;
+}
+
+UINTN EFIAPI InternalStrLen (
+  IN      CONST CHAR16              *String
+  )
+{
+  UINTN                             Length;
+
+  if(((UINTN) String & BIT0) != 0) return 0;
+
+  for (Length = 0; *String != L'\0'; String++, Length++) {
+  }
+  return Length;
+}
+
+CHAR16 * InternalStrCpy ( CHAR16 *dest, const CHAR16 *src )
+{
+	const UINT16 *src_bytes = ( ( const UINT16 * ) src );
+	UINT16 *dest_bytes = ( ( UINT16 * ) dest );
+
+	/* We cannot use strncpy(), since that would pad the destination */
+	for ( ; ; src_bytes++, dest_bytes++ ) {
+		*dest_bytes = *src_bytes;
+		if ( ! *dest_bytes )
+			break;
+	}
+	return dest;
+}
+
+CHAR16 * InternalStrCat ( CHAR16 *dest, const CHAR16 *src )
+{
+	InternalStrCpy ( ( dest + InternalStrLen ( dest ) ), src );
+	return dest;
+}
+
+CHAR16 * InternalStrnCpy ( CHAR16 *dest, const CHAR16 *src, UINT8 max )
+{
+	const UINT16 *src_bytes = ( ( const UINT16 * ) src );
+	UINT16 *dest_bytes = ( ( UINT16 * ) dest );
+
+	for ( ; max ; max--, src_bytes++, dest_bytes++ ) {
+		*dest_bytes = *src_bytes;
+		if ( ! *dest_bytes )
+			break;
+	}
+	while ( max-- )
+		*(dest_bytes++) = '\0';
+	return dest;
+}
+
+VOID
+EFIAPI
+CreatePopUp (
+  IN  UINTN          Attribute,
+  OUT EFI_INPUT_KEY  *Key,      OPTIONAL
+  ...
+  )
+{
+  EFI_STATUS                       Status;
+  VA_LIST                          Args;
+  EFI_BOOT_SERVICES                *gBS = efi_systab->BootServices;
+  EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL  *ConOut = efi_systab->ConOut;
+  EFI_SIMPLE_TEXT_INPUT_PROTOCOL   *ConIn = efi_systab->ConIn;
+  EFI_SIMPLE_TEXT_OUTPUT_MODE      SavedConsoleMode;
+  UINTN                            Columns;
+  UINTN                            Rows;
+  UINTN                            Column;
+  UINTN                            Row;
+  UINTN                            NumberOfLines;
+  UINTN                            MaxLength;
+  CHAR16                           *String;
+  UINTN                            Length;
+  CHAR16                           *Line = NULL;
+  UINTN                            EventIndex;
+
+  VA_START (Args, Key);
+  MaxLength = 0;
+  NumberOfLines = 0;
+  while ((String = VA_ARG (Args, CHAR16 *)) != NULL) {
+    MaxLength = MAX (MaxLength, InternalStrLen (String));
+    NumberOfLines++;
+  }
+  VA_END (Args);
+
+  gBS->CopyMem(&SavedConsoleMode,ConOut->Mode,sizeof (SavedConsoleMode));
+
+  ConOut->QueryMode (ConOut, SavedConsoleMode.Mode, &Columns, &Rows);
+
+  ConOut->EnableCursor (ConOut, FALSE);
+  ConOut->SetAttribute (ConOut, Attribute);
+
+  NumberOfLines = MIN (NumberOfLines, Rows - 3);
+
+  MaxLength = MIN (MaxLength, Columns - 2);
+
+  Row    = (Rows - (NumberOfLines + 3)) / 2;
+  Column = (Columns - (MaxLength + 2)) / 2;
+
+  gBS->AllocatePool ( EfiBootServicesData, (MaxLength + 3) * sizeof (CHAR16) ,(VOID **)&Line );
+
+  gBS->SetMem((UINT8 *)Line,(MaxLength + 3) * sizeof (CHAR16) ,0xAA);
+
+  InternalMemSetMem16 (Line, (MaxLength + 2), BOXDRAW_HORIZONTAL);
+
+  Line[0] = BOXDRAW_DOWN_RIGHT;
+  Line[MaxLength + 1] = BOXDRAW_DOWN_LEFT;
+  Line[MaxLength + 2] = L'\0';
+
+  ConOut->SetCursorPosition (ConOut, Column, Row++);
+  ConOut->OutputString (ConOut, Line);
+
+  // Draw middle of the popup with strings
+  //
+  VA_START (Args, Key);
+  while ((String = VA_ARG (Args, CHAR16 *)) != NULL && NumberOfLines > 0) {
+    Length = InternalStrLen (String);
+    InternalMemSetMem16 (Line, MaxLength + 2, L' ');
+    if (Length <= MaxLength) {
+      //
+      // Length <= MaxLength
+      //
+      gBS->CopyMem(Line + 1 + (MaxLength - Length) / 2, String, Length * sizeof (CHAR16));
+    } else {
+      //
+      // Length > MaxLength
+      //
+      gBS->CopyMem(Line + 1, String + (Length - MaxLength) / 2 ,MaxLength * sizeof (CHAR16));
+    }
+    Line[0]             = BOXDRAW_VERTICAL;
+    Line[MaxLength + 1] = BOXDRAW_VERTICAL;
+    Line[MaxLength + 2] = L'\0';
+    ConOut->SetCursorPosition (ConOut, Column, Row++);
+    ConOut->OutputString (ConOut, Line);
+    NumberOfLines--;
+  }
+  VA_END (Args);
+
+  //
+  // Draw bottom of popup box
+  //
+  InternalMemSetMem16 (Line, (MaxLength + 2), BOXDRAW_HORIZONTAL);
+  Line[0]             = BOXDRAW_UP_RIGHT;
+  Line[MaxLength + 1] = BOXDRAW_UP_LEFT;
+  Line[MaxLength + 2] = L'\0';
+  ConOut->SetCursorPosition (ConOut, Column, Row++);
+  ConOut->OutputString (ConOut, Line);
+
+  //
+  // Free the allocated line buffer
+  //
+  gBS->FreePool (Line);
+  ConOut->EnableCursor      (ConOut, SavedConsoleMode.CursorVisible);
+  ConOut->SetCursorPosition (ConOut, SavedConsoleMode.CursorColumn, SavedConsoleMode.CursorRow);
+  ConOut->SetAttribute      (ConOut, SavedConsoleMode.Attribute);
+
+  // Wait for a keystroke
+  //
+  if (Key != NULL) {
+    while (TRUE) {
+      Status = ConIn->ReadKeyStroke (ConIn, Key);
+      if (!EFI_ERROR (Status)) {
+        break;
+      }
+      if (Status != EFI_NOT_READY) {
+        continue;
+      }
+      gBS->WaitForEvent (1, &ConIn->WaitForKey, &EventIndex);
+    }
+  }
+}
+
+BOOLEAN
+EFIAPI
+HiiCreatePopUp (
+  IN  UINT8             PopupStyle,
+  IN  UINT8        		  PopupType,
+  IN  EFI_HII_HANDLE    HiiHandle,
+  IN  EFI_STRING_ID     Message
+)
+{
+  EFI_BOOT_SERVICES         *gBS = efi_systab->BootServices;
+  EFI_STATUS                Status;
+  EFI_HII_POPUP_PROTOCOL    *HiiPopupProtocol = NULL;
+  EFI_GUID                  EfiHiiPopupProtocolGuid = EFI_HII_POPUP_PROTOCOL_GUID;
+  EFI_INPUT_KEY             Key;
+  EFI_STRING                String;
+  UINT8                     StringLen;
+
+  Status = gBS->LocateProtocol (&EfiHiiPopupProtocolGuid, NULL, (VOID **) &HiiPopupProtocol);
+  if (EFI_ERROR (Status) || HiiPopupProtocol == NULL) {
+
+    String = HiiGetString(HiiHandle,Message,&StringLen,"English");
+
+    CreatePopUp (
+                EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE,
+                &Key,
+                String,
+                NULL
+              );
+    return TRUE;
+  }
+
+  Status = HiiPopupProtocol->CreatePopup(HiiPopupProtocol, \
+                                          PopupStyle, \
+                                          PopupType, \
+                                          HiiHandle, \
+                                          Message, \
+                                          NULL);
+
+  if (EFI_ERROR (Status)) {
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
 void efi_ifr_checkbox_op ( struct efi_ifr_builder *ifr,
              unsigned int prompt_id,unsigned int help_id,
              unsigned int question_id,
@@ -430,7 +663,6 @@ efi_ifr_oneofoption_op ( struct efi_ifr_builder *ifr,
     bs->CopyMem(&OpCode->Value,&Value,ValueLen);
 }
 
-
 void
 efi_ifr_OneOf_Op (  struct efi_ifr_builder *ifr,
   EFI_QUESTION_ID  QuestionId,
@@ -460,6 +692,216 @@ efi_ifr_OneOf_Op (  struct efi_ifr_builder *ifr,
 
 }
 
+EFI_STRING
+EFIAPI
+InternalHiiBrowserCallback (
+  IN CONST EFI_GUID    *VariableGuid,
+  IN CONST CHAR16      *VariableName,
+  IN CONST EFI_STRING  SetResultsData
+  )
+{
+  EFI_STATUS  Status;
+  UINTN       ResultsDataSize = 0;
+  EFI_STRING  ResultsData;
+  CHAR16      TempResultsData;
+  EFI_BOOT_SERVICES *gBS = efi_systab->BootServices;
+  EFI_GUID  gEfiFormBrowser2ProtocolGuid = EFI_FORM_BROWSER2_PROTOCOL_GUID;
+
+  if (mUefiFormBrowser2 == NULL) {
+    Status = gBS->LocateProtocol (&gEfiFormBrowser2ProtocolGuid, NULL, (VOID **) &mUefiFormBrowser2);
+    if (EFI_ERROR (Status) || mUefiFormBrowser2 == NULL) {
+      return NULL;
+    }
+  }
+
+  ResultsDataSize = 0;
+
+  if (SetResultsData != NULL) {
+    //
+    // Request to to set data in the uncommitted browser state information
+    //
+    ResultsData = SetResultsData;
+  } else {
+    //
+    // Retrieve the length of the buffer required ResultsData from the Browser Callback
+    //
+    Status = mUefiFormBrowser2->BrowserCallback (
+                              mUefiFormBrowser2,
+                              &ResultsDataSize,
+                              &TempResultsData,
+                              TRUE,
+                              VariableGuid,
+                              VariableName
+                              );
+
+    if (!EFI_ERROR (Status)) {
+      //
+      // No Resluts Data, only allocate one char for '\0'
+      //
+
+      gBS->AllocatePool ( EfiBootServicesData, sizeof (CHAR16) ,(VOID **)&ResultsData );
+      gBS->SetMem(ResultsData,sizeof (CHAR16),0);
+
+      return ResultsData;
+    }
+
+    if (Status != EFI_BUFFER_TOO_SMALL) {
+      return NULL;
+    }
+
+    gBS->AllocatePool ( EfiBootServicesData, ResultsDataSize ,(VOID **)&ResultsData );
+    gBS->SetMem(ResultsData,ResultsDataSize,0);
+
+    if (ResultsData == NULL) {
+      return NULL;
+    }
+  }
+
+  Status = mUefiFormBrowser2->BrowserCallback (
+                            mUefiFormBrowser2,
+                            &ResultsDataSize,
+                            ResultsData,
+                            (BOOLEAN)(SetResultsData == NULL),
+                            VariableGuid,
+                            VariableName
+                            );
+  if (EFI_ERROR (Status)) {
+    return NULL;
+  }
+
+  return ResultsData;
+}
+
+EFI_STRING
+EFIAPI
+InternalHiiBlockToConfig (
+  IN CONST EFI_STRING  ConfigRequest,
+  IN CONST UINT8       *Block,
+  IN UINTN             BlockSize
+  )
+{
+  EFI_STATUS  Status;
+  EFI_STRING  ConfigResp;
+  CHAR16      *Progress;
+  EFI_BOOT_SERVICES *gBS = efi_systab->BootServices;
+
+  if(gHiiConfigRouting == NULL){
+    Status = gBS->LocateProtocol (&gEfiHiiConfigRoutingProtocolGuid, NULL, (VOID **) &gHiiConfigRouting);
+  }
+
+  Status = gHiiConfigRouting->BlockToConfig (
+                                gHiiConfigRouting,
+                                ConfigRequest,
+                                Block,
+                                BlockSize,
+                                &ConfigResp,
+                                &Progress
+                                );
+
+  if (EFI_ERROR (Status)) {
+    return NULL;
+  }
+  return ConfigResp;
+}
+
+BOOLEAN
+EFIAPI
+HiiGetBrowserData (
+  IN CONST EFI_GUID  *VariableGuid,
+  IN CONST CHAR16    *VariableName,
+  IN UINTN           BufferSize,
+  OUT UINT8          *Buffer
+  )
+{
+  EFI_STRING  ResultsData;
+  UINTN       Size;
+  EFI_STRING  ConfigResp;
+  EFI_STATUS  Status;
+  CHAR16      *Progress;
+  EFI_BOOT_SERVICES *gBS = efi_systab->BootServices;
+
+  if(gHiiConfigRouting == NULL){
+    Status = gBS->LocateProtocol (&gEfiHiiConfigRoutingProtocolGuid, NULL, (VOID **) &gHiiConfigRouting);
+  }
+  //
+  // Retrieve the results data from the Browser Callback
+  //
+  ResultsData = InternalHiiBrowserCallback (VariableGuid, VariableName, NULL);
+
+  if (ResultsData == NULL) {
+    return FALSE;
+  }
+
+  Size = (InternalStrLen (mConfigHdrTemplate) + 1) * sizeof (CHAR16);
+  Size = Size + (InternalStrLen (ResultsData) + 1) * sizeof (CHAR16);
+
+  gBS->AllocatePool ( EfiBootServicesData, Size ,(VOID **)&ConfigResp );
+  gBS->SetMem(ConfigResp,Size,0);
+
+  efi_snprintf ( ConfigResp, Size,"%ls&%ls", mConfigHdrTemplate, ResultsData);
+
+  gBS->FreePool (ResultsData);
+
+  if (ConfigResp == NULL) {
+    return FALSE;
+  }
+
+  Status = gHiiConfigRouting->ConfigToBlock (
+                                gHiiConfigRouting,
+                                ConfigResp,
+                                Buffer,
+                                &BufferSize,
+                                &Progress
+                                );
+
+  gBS->FreePool (ConfigResp);
+
+  if (EFI_ERROR (Status)) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+BOOLEAN
+EFIAPI
+HiiSetBrowserData (
+  IN CONST EFI_GUID  *VariableGuid,
+  IN CONST CHAR16    *VariableName,
+  IN UINTN           BufferSize,
+  IN CONST UINT8     *Buffer
+  )
+{
+  UINTN       Size;
+  EFI_STRING  ConfigRequest;
+  EFI_STRING  ConfigResp;
+  EFI_STRING  ResultsData;
+  EFI_BOOT_SERVICES *gBS = efi_systab->BootServices;
+
+  Size = (InternalStrLen (mConfigHdrTemplate) + 32 + 1) * sizeof (CHAR16);
+
+  gBS->AllocatePool ( EfiBootServicesData, Size ,(VOID **)&ConfigRequest );
+  gBS->SetMem(ConfigRequest,Size,0);
+
+  efi_snprintf ( ConfigRequest, Size,"%ls&OFFSET=0&WIDTH=%x", mConfigHdrTemplate, BufferSize);
+
+  if (ConfigRequest == NULL) {
+    return FALSE;
+  }
+
+  ConfigResp = InternalHiiBlockToConfig (ConfigRequest, Buffer, BufferSize);
+
+  gBS->FreePool (ConfigRequest);
+  if (ConfigResp == NULL) {
+    return FALSE;
+  }
+
+  ResultsData = InternalHiiBrowserCallback (VariableGuid, VariableName, ConfigResp + InternalStrLen(mConfigHdrTemplate) + 1);
+
+  gBS->FreePool (ConfigResp);
+
+  return (BOOLEAN)(ResultsData != NULL);
+}
 
 void efi_ifr_suppress_grayout_op ( struct efi_ifr_builder *ifr,
                               UINT16 		QuestionId,

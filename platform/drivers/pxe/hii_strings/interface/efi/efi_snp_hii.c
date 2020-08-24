@@ -69,7 +69,7 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
 #include <ipxe/pci.h>
 #include <ipxe/efi/efi_ionic.h>
 #include <ipxe/efi/efi_driver.h>
-
+#include <ipxe/efi/Protocol/HiiPopup.h>
 
 /** EFI platform setup formset GUID */
 static EFI_GUID efi_hii_platform_setup_formset_guid
@@ -264,6 +264,8 @@ static void ionic_hii_process( struct efi_ifr_builder *ifr ,UINT16 FormId,UINT8 
             if(NicHiiPtr->PromptStr) NicHiiPtr->Hii.Prompt = efi_ifr_string( ifr, "%s", NicHiiPtr->PromptStr );
 
             if(NicHiiPtr->HelpStr) NicHiiPtr->Hii.Help = efi_ifr_string( ifr, "%s", NicHiiPtr->HelpStr );
+
+            if(NicHiiPtr->WarningStr) NicHiiPtr->Hii.Warning = efi_ifr_string( ifr, "%s", NicHiiPtr->WarningStr );
 
             if(NicHiiPtr->ValueStr){
                 // check if need to update value string from callback function
@@ -655,6 +657,30 @@ static int ionic_fetch_vis_func (struct efi_snp_device *snpdev __unused)
 {
     fetch_len = sizeof(UINT8);
     return 0;
+}
+
+void ionic_fetch_sync_up (struct efi_snp_device *snpdev)
+{
+    struct net_device *netdev = snpdev->netdev;
+    struct ionic *ionic = netdev->priv;
+    struct lif *lif = ionic->lif;
+    UINT8  Data8;
+    UINT16  Data16;
+
+    Data8 = lif->vlan_en;
+    HiiSetBrowserData(&NicHii->VlanMode.VarstoreGuid,L"VlanMode",sizeof(UINT8),(UINT8 *)&Data8);
+
+    Data16 = lif->vlan_id;
+    HiiSetBrowserData(&NicHii->VlanId.VarstoreGuid,L"VlanId",sizeof(UINT16),(UINT8 *)&Data16);
+
+    Data8 = lif->uid_led_on;
+    HiiSetBrowserData(&NicHii->BLed.VarstoreGuid,L"BlinkLed",sizeof(UINT8),(UINT8 *)&Data8);
+
+    Data8 = lif->ncsi_cap;
+    HiiSetBrowserData(&NicHii->BmcSupport.VarstoreGuid,L"BmcSupport",sizeof(UINT8),(UINT8 *)&Data8);
+
+    Data8 = lif->oob_en;
+    HiiSetBrowserData(&NicHii->BmcInterface.VarstoreGuid,L"BmcInterface",sizeof(UINT8),(UINT8 *)&Data8);
 }
 
 struct ionic_fetch_operation {
@@ -1102,6 +1128,9 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
     UINT16          Index;
 
     if ((action == EFI_BROWSER_ACTION_FORM_OPEN) || (action == EFI_BROWSER_ACTION_FORM_CLOSE)){
+        if (action == EFI_BROWSER_ACTION_FORM_OPEN) {
+            ionic_fetch_sync_up(Nic->SnpDev);
+        }
         return EFI_SUCCESS;
     }
 
@@ -1109,7 +1138,7 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
         return EFI_SUCCESS;
     }
 
-    if (action != EFI_BROWSER_ACTION_CHANGED){
+    if ((action != EFI_BROWSER_ACTION_CHANGED) && (action != EFI_BROWSER_ACTION_DEFAULT_STANDARD)){
         return EFI_UNSUPPORTED;
     }
 
@@ -1120,31 +1149,72 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
     Index = question_id & 0xFF00;
     Id = question_id & 0xFF;
 
+    if((Id < IONIC_VLAN_MODE_QUESTION) || (Id > IONIC_BMC_SUPPORT_QUESTION)) {
+        return EFI_UNSUPPORTED;
+    }
+
+    if((Id >= IONIC_VLAN_MODE_QUESTION) && (Id <= IONIC_BMC_SUPPORT_QUESTION)) {
+        if(action == EFI_BROWSER_ACTION_DEFAULT_STANDARD) {
+            if(Nic->LoadDefaultDone == 0){
+                if(Nic->LoadDefault)
+                    Nic->LoadDefault(Index,&Buffer,&BufferLen);
+                Nic->LoadDefaultDone = 1;
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
+            return EFI_SUCCESS;
+        }
+    }
+
+    Nic->LoadDefaultDone = 0;
     switch(Id){
         case IONIC_VLAN_MODE_QUESTION:
             Nic->VlanModeVar = value->b;
             if(NicHii->VlanMode.Callback) NicHii->VlanMode.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->VlanMode.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_VLAN_ID_QUESTION:
             Nic->VlanIdVar = value->u16_1;
 
             if(NicHii->VlanId.Callback) NicHii->VlanId.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->VlanId.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_VIRTUAL_MODE_QUESTION:
             Nic->VirtualModeVar = value->b;
             if(NicHii->VirtualMode.Callback) NicHii->VirtualMode.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->VirtualMode.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_VIRTUAL_FUNC_QUESTION:
             Nic->VirtualFuncVar = value->b;
             if(NicHii->VirtualFunc.Callback) NicHii->VirtualFunc.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->VirtualFunc.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_BMC_INTERFACE_QUESTION:
             Nic->BmcInterfaceVar = value->b;
             if(NicHii->BmcInterface.Callback) NicHii->BmcInterface.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->BmcInterface.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_BLINK_LED_QUESTION:
             Nic->BlinkLedVar = value->b;
             if(NicHii->BLed.Callback) NicHii->BLed.Callback(Index,&Buffer,&BufferLen);
+            if(Nic->CallbackResult != IONIC_RC_SUCCESS){
+                HiiCreatePopUp(EfiHiiPopupStyleWarning,EfiHiiPopupTypeOk,HiiHandle,NicHii->BLed.Hii.Warning);
+                ionic_fetch_sync_up(Nic->SnpDev);
+            }
             break;
         case IONIC_MAC_ADDR_QUESTION:
             String = HiiGetString(HiiHandle,value->string,&BufferLen,"English");
