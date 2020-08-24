@@ -141,3 +141,51 @@ message NeighborList {
 
     repeated Neighbor Items = 3 [(gogoproto.jsontag) = "items,"];
 }
+
+message RouteStatus {
+    string          Prefix           = 1 [(gogoproto.jsontag) = "prefix"];
+    string          PrefixLen        = 2 [(gogoproto.jsontag) = "prefixlen"];
+    string          ASPath           = 3 [(gogoproto.jsontag) = "aspath"];
+    string          PathOrigId       = 4 [(gogoproto.jsontag) = "pathorigid"];
+    string          NextHopAddr      = 5 [(gogoproto.jsontag) = "nexthopaddr"];
+    string          RouteSource      = 6 [(gogoproto.jsontag) = "routesource"];
+    string          IsActive         = 7 [(gogoproto.jsontag) = "isactive"];
+    string          ReasonNotBest    = 8 [(gogoproto.jsontag) = "reasonnotbest"];
+    string          PeerAddr         = 9 [(gogoproto.jsontag) = "remote_addr"];
+    repeated string ExtComm          = 10 [(gogoproto.jsontag) = "extcomm"];
+    bool            BestRoute        = 11 [(gogoproto.jsontag) = "bestroute"];
+    bool            EcmpRoute        = 12 [(gogoproto.jsontag) = "ecmproute"];
+    uint32          FlapStatsFlapcnt = 13 [(gogoproto.jsontag) = "flap_stats_flapcnt"];
+    bool            FlapStatsSupprsd = 14 [(gogoproto.jsontag) = "flap_stats_supprsd"];
+    bool            Stale            = 15 [(gogoproto.jsontag) = "stale"];
+    uint32          FlapStartTime    = 16 [(gogoproto.jsontag) = "flap_start_time"];
+}
+
+message RouteFilter {
+    api.TypeMeta    T   = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta  O   = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    option (venice.objectPrefix) = {Collection: "routefilter"};
+
+    string Instance = 3 [(gogoproto.jsontag) = "instance"];
+    string Route = 4 [(gogoproto.jsontag) = "route"];
+    string Type = 5 [(gogoproto.jsontag) = "type"];
+    string ExtComm = 6 [(gogoproto.jsontag) = "extcomm"];
+    string Vnid = 7 [(gogoproto.jsontag) = "vnid"];
+    string RType = 8 [(gogoproto.jsontag) = "rtype"];
+    string NHop = 9 [(gogoproto.jsontag) = "nhop"];
+}
+
+message Route {
+    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    option (venice.objectPrefix) = {Collection: "routes"};
+
+    RouteStatus      Status  = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status"];
+}
+
+message RouteList {
+    api.TypeMeta  T     = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ListMeta  L     = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "list-meta,inline"];
+
+    repeated Route Items = 3 [(gogoproto.jsontag) = "items,"];
+}

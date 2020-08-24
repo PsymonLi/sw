@@ -24,15 +24,19 @@ service RoutingV1 {
         };
     };
 
-    rpc GetNeighbor(NeighborFilter) returns(Neighbor) {
-        option (google.api.http) = {
-            get: "/{Instance}/neighbors/{Neighbor}"
-        };
-    };
-
     rpc HealthZ(EmptyReq) returns(Health) {
         option (google.api.http) = {
             get: "/{Instance}/health"
         };
     }
+
+    rpc ListRoutes(RouteFilter) returns(RouteList) {
+        option (google.api.http) = {
+            post: "/{Instance}/routes"
+            body: "*"
+            additional_bindings {
+                get: "/{Instance}/routes"
+            }
+        };
+    };
 }

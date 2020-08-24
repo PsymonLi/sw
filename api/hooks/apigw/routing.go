@@ -105,9 +105,19 @@ func (r *routingHooks) getCtx(ctx context.Context, inst string) (context.Context
 	return rctx, nil
 }
 
-func (r *routingHooks) LisNeighborsPreCallHook(ctx context.Context, in, out interface{}) (context.Context, interface{}, interface{}, bool, error) {
+func (r *routingHooks) ListNeighborsPreCallHook(ctx context.Context, in, out interface{}) (context.Context, interface{}, interface{}, bool, error) {
 	r.l.Infof("got ListNeighbors Pre call hook [%+v]", in)
 	req, ok := in.(*routing.NeighborFilter)
+	if !ok {
+		return ctx, in, out, false, fmt.Errorf("internal error:unknown type")
+	}
+	rctx, err := r.getCtx(ctx, req.Instance)
+	return rctx, in, out, false, err
+}
+
+func (r *routingHooks) ListRoutesPreCallHook(ctx context.Context, in, out interface{}) (context.Context, interface{}, interface{}, bool, error) {
+	r.l.Infof("got ListRoutes Pre call hook [%+v]", in)
+	req, ok := in.(*routing.RouteFilter)
 	if !ok {
 		return ctx, in, out, false, fmt.Errorf("internal error:unknown type")
 	}
@@ -133,15 +143,7 @@ func (r *routingHooks) registerRoutingHooks(svc apigw.APIGatewayService, l log.L
 		log.Fatalf("could not find method ListNeighbors to register (%s)", err)
 	}
 	prof.SetAuditLevel(audit.Level_Request.String())
-	prof.AddPreCallHook(r.LisNeighborsPreCallHook)
-	prof.AddPreAuthZHook(r.addOp)
-
-	prof, err = svc.GetServiceProfile("GetNeighbor")
-	if err != nil {
-		log.Fatalf("could not find method GetNeighbor to register (%s)", err)
-	}
-	prof.SetAuditLevel(audit.Level_Request.String())
-	prof.AddPreCallHook(r.LisNeighborsPreCallHook)
+	prof.AddPreCallHook(r.ListNeighborsPreCallHook)
 	prof.AddPreAuthZHook(r.addOp)
 
 	prof, err = svc.GetServiceProfile("HealthZ")
@@ -150,6 +152,14 @@ func (r *routingHooks) registerRoutingHooks(svc apigw.APIGatewayService, l log.L
 	}
 	prof.SetAuditLevel(audit.Level_Request.String())
 	prof.AddPreCallHook(r.HealthZPreCallHook)
+	prof.AddPreAuthZHook(r.addOp)
+
+	prof, err = svc.GetServiceProfile("ListRoutes")
+	if err != nil {
+		log.Fatalf("could not find method ListRoutes to register (%s)", err)
+	}
+	prof.SetAuditLevel(audit.Level_Request.String())
+	prof.AddPreCallHook(r.ListRoutesPreCallHook)
 	prof.AddPreAuthZHook(r.addOp)
 
 	return nil

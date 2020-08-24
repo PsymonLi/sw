@@ -25,22 +25,15 @@ var _ api.ObjectMeta
 type grpcServerRoutingV1 struct {
 	Endpoints EndpointsRoutingV1Server
 
-	GetNeighborHdlr   grpctransport.Handler
 	HealthZHdlr       grpctransport.Handler
 	ListNeighborsHdlr grpctransport.Handler
+	ListRoutesHdlr    grpctransport.Handler
 }
 
 // MakeGRPCServerRoutingV1 creates a GRPC server for RoutingV1 service
 func MakeGRPCServerRoutingV1(ctx context.Context, endpoints EndpointsRoutingV1Server, logger log.Logger) RoutingV1Server {
 	return &grpcServerRoutingV1{
 		Endpoints: endpoints,
-		GetNeighborHdlr: grpctransport.NewServer(
-			endpoints.GetNeighborEndpoint,
-			DecodeGrpcReqNeighborFilter,
-			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("GetNeighbor", logger)))...,
-		),
-
 		HealthZHdlr: grpctransport.NewServer(
 			endpoints.HealthZEndpoint,
 			DecodeGrpcReqEmptyReq,
@@ -54,25 +47,14 @@ func MakeGRPCServerRoutingV1(ctx context.Context, endpoints EndpointsRoutingV1Se
 			EncodeGrpcRespNeighborList,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("ListNeighbors", logger)))...,
 		),
-	}
-}
 
-func (s *grpcServerRoutingV1) GetNeighbor(ctx oldcontext.Context, req *NeighborFilter) (*Neighbor, error) {
-	_, resp, err := s.GetNeighborHdlr.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, err
+		ListRoutesHdlr: grpctransport.NewServer(
+			endpoints.ListRoutesEndpoint,
+			DecodeGrpcReqRouteFilter,
+			EncodeGrpcRespRouteList,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("ListRoutes", logger)))...,
+		),
 	}
-	r := resp.(respRoutingV1GetNeighbor).V
-	return &r, resp.(respRoutingV1GetNeighbor).Err
-}
-
-func decodeHTTPrespRoutingV1GetNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errorDecoder(r)
-	}
-	var resp Neighbor
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return &resp, err
 }
 
 func (s *grpcServerRoutingV1) HealthZ(ctx oldcontext.Context, req *EmptyReq) (*Health, error) {
@@ -107,6 +89,24 @@ func decodeHTTPrespRoutingV1ListNeighbors(_ context.Context, r *http.Response) (
 		return nil, errorDecoder(r)
 	}
 	var resp NeighborList
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerRoutingV1) ListRoutes(ctx oldcontext.Context, req *RouteFilter) (*RouteList, error) {
+	_, resp, err := s.ListRoutesHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respRoutingV1ListRoutes).V
+	return &r, resp.(respRoutingV1ListRoutes).Err
+}
+
+func decodeHTTPrespRoutingV1ListRoutes(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp RouteList
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }

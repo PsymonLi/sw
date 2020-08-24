@@ -149,26 +149,20 @@
         ]
       }
     },
-    "/routing/v1/{Instance}/neighbors/{Neighbor}": {
+    "/routing/v1/{Instance}/routes": {
       "get": {
-        "operationId": "GetGetNeighbor",
+        "operationId": "GetListRoutes_1",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/routingNeighbor"
+              "$ref": "#/definitions/routingRouteList"
             }
           }
         },
         "parameters": [
           {
             "name": "Instance",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "Neighbor",
             "in": "path",
             "required": true,
             "type": "string"
@@ -251,6 +245,72 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "extcomm",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "vnid",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "rtype",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "nhop",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "routing/v1"
+        ]
+      },
+      "post": {
+        "operationId": "PostListRoutes",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/routingRouteList"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Instance",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/routingRouteFilterCreate"
+            }
           }
         ],
         "tags": [
@@ -1063,6 +1123,175 @@
           "format": "int64"
         },
         "peerindex": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "routingRoute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "status": {
+          "$ref": "#/definitions/routingRouteStatus"
+        }
+      }
+    },
+    "routingRouteFilter": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "instance": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "extcomm": {
+          "type": "string"
+        },
+        "vnid": {
+          "type": "string"
+        },
+        "rtype": {
+          "type": "string"
+        },
+        "nhop": {
+          "type": "string"
+        }
+      }
+    },
+    "routingRouteFilterCreate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "instance": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "extcomm": {
+          "type": "string"
+        },
+        "vnid": {
+          "type": "string"
+        },
+        "rtype": {
+          "type": "string"
+        },
+        "nhop": {
+          "type": "string"
+        }
+      }
+    },
+    "routingRouteList": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "list-meta": {
+          "$ref": "#/definitions/apiListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/routingRoute"
+          }
+        }
+      }
+    },
+    "routingRouteStatus": {
+      "type": "object",
+      "properties": {
+        "prefix": {
+          "type": "string"
+        },
+        "prefixlen": {
+          "type": "string"
+        },
+        "aspath": {
+          "type": "string"
+        },
+        "pathorigid": {
+          "type": "string"
+        },
+        "nexthopaddr": {
+          "type": "string"
+        },
+        "routesource": {
+          "type": "string"
+        },
+        "isactive": {
+          "type": "string"
+        },
+        "reasonnotbest": {
+          "type": "string"
+        },
+        "remote_addr": {
+          "type": "string"
+        },
+        "extcomm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "bestroute": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "ecmproute": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "flap_stats_flapcnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "flap_stats_supprsd": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "stale": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "flap_start_time": {
           "type": "integer",
           "format": "int64"
         }

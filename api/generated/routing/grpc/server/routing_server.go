@@ -815,6 +815,384 @@ func (s *sroutingRoutingBackend) regMsgsFunc(l log.Logger, scheme *runtime.Schem
 
 		"routing.NeighborList":   apisrvpkg.NewMessage("routing.NeighborList"),
 		"routing.NeighborStatus": apisrvpkg.NewMessage("routing.NeighborStatus"),
+		"routing.Route": apisrvpkg.NewMessage("routing.Route").WithKeyGenerator(func(i interface{}, prefix string) string {
+			if i == nil {
+				r := routing.Route{}
+				return r.MakeKey(prefix)
+			}
+			r := i.(routing.Route)
+			return r.MakeKey(prefix)
+		}).WithObjectVersionWriter(func(i interface{}, version string) interface{} {
+			r := i.(routing.Route)
+			r.Kind = "Route"
+			r.APIVersion = version
+			return r
+		}).WithKvUpdater(func(ctx context.Context, kvs kvstore.Interface, i interface{}, prefix string, create bool, updateFn kvstore.UpdateFunc) (interface{}, error) {
+			r := i.(routing.Route)
+			key := r.MakeKey(prefix)
+			r.Kind = "Route"
+			var err error
+			if create {
+				if updateFn != nil {
+					upd := &routing.Route{}
+					n, err := updateFn(upd)
+					if err != nil {
+						l.ErrorLog("msg", "could not create new object", "err", err)
+						return nil, err
+					}
+					new := n.(*routing.Route)
+					new.TypeMeta = r.TypeMeta
+					new.GenerationID = "1"
+					new.UUID = r.UUID
+					new.CreationTime = r.CreationTime
+					new.SelfLink = r.SelfLink
+					r = *new
+				} else {
+					r.GenerationID = "1"
+				}
+				err = kvs.Create(ctx, key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV create failed", "key", key, "err", err)
+				}
+			} else {
+				var cur routing.Route
+				err = kvs.Get(ctx, key, &cur)
+				if err != nil {
+					l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+					return nil, err
+				}
+				r.UUID = cur.UUID
+				r.CreationTime = cur.CreationTime
+				if r.ResourceVersion != "" {
+					l.Infof("resource version is specified %s\n", r.ResourceVersion)
+					err = kvs.Update(ctx, key, &r, kvstore.Compare(kvstore.WithVersion(key), "=", r.ResourceVersion))
+				} else {
+					err = kvs.Update(ctx, key, &r)
+				}
+				if err != nil {
+					l.ErrorLog("msg", "KV update failed", "key", key, "err", err)
+				}
+
+			}
+			return r, err
+		}).WithKvTxnUpdater(func(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn, i interface{}, prefix string, create bool, updatefn kvstore.UpdateFunc) error {
+			r := i.(routing.Route)
+			key := r.MakeKey(prefix)
+			var err error
+			if create {
+				if updatefn != nil {
+					upd := &routing.Route{}
+					n, err := updatefn(upd)
+					if err != nil {
+						l.ErrorLog("msg", "could not create new object", "err", err)
+						return err
+					}
+					new := n.(*routing.Route)
+					new.TypeMeta = r.TypeMeta
+					new.GenerationID = "1"
+					new.UUID = r.UUID
+					new.CreationTime = r.CreationTime
+					new.SelfLink = r.SelfLink
+					r = *new
+				} else {
+					r.GenerationID = "1"
+				}
+				err = txn.Create(key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV transaction create failed", "key", key, "err", err)
+				}
+			} else {
+				if updatefn != nil {
+					var cur routing.Route
+					err = kvs.Get(ctx, key, &cur)
+					if err != nil {
+						l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+						return err
+					}
+					robj, err := updatefn(&cur)
+					if err != nil {
+						l.ErrorLog("msg", "unable to update current object", "key", key, "err", err)
+						return err
+					}
+					r = *robj.(*routing.Route)
+					txn.AddComparator(kvstore.Compare(kvstore.WithVersion(key), "=", r.ResourceVersion))
+				} else {
+					var cur routing.Route
+					err = kvs.Get(ctx, key, &cur)
+					if err != nil {
+						l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+						return err
+					}
+					r.UUID = cur.UUID
+					r.CreationTime = cur.CreationTime
+					if _, err := strconv.ParseUint(r.GenerationID, 10, 64); err != nil {
+						r.GenerationID = cur.GenerationID
+						_, err := strconv.ParseUint(cur.GenerationID, 10, 64)
+						if err != nil {
+							// Cant recover ID!!, reset ID
+							r.GenerationID = "2"
+						}
+					}
+				}
+				err = txn.Update(key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV transaction update failed", "key", key, "err", err)
+				}
+			}
+			return err
+		}).WithUUIDWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.Route)
+			r.UUID = uuid.NewV4().String()
+			return r, nil
+		}).WithCreationTimeWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.Route)
+			var err error
+			ts, err := types.TimestampProto(time.Now())
+			if err == nil {
+				r.CreationTime.Timestamp = *ts
+			}
+			return r, err
+		}).WithModTimeWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.Route)
+			var err error
+			ts, err := types.TimestampProto(time.Now())
+			if err == nil {
+				r.ModTime.Timestamp = *ts
+			}
+			return r, err
+		}).WithSelfLinkWriter(func(path, ver, prefix string, i interface{}) (interface{}, error) {
+			r := i.(routing.Route)
+			r.SelfLink = path
+			return r, nil
+		}).WithKvGetter(func(ctx context.Context, kvs kvstore.Interface, key string) (interface{}, error) {
+			r := routing.Route{}
+			err := kvs.Get(ctx, key, &r)
+			if err != nil {
+				l.ErrorLog("msg", "Object get failed", "key", key, "err", err)
+			}
+			return r, err
+		}).WithKvDelFunc(func(ctx context.Context, kvs kvstore.Interface, key string) (interface{}, error) {
+			r := routing.Route{}
+			err := kvs.Delete(ctx, key, &r)
+			if err != nil {
+				l.ErrorLog("msg", "Object delete failed", "key", key, "err", err)
+			}
+			return r, err
+		}).WithKvTxnDelFunc(func(ctx context.Context, txn kvstore.Txn, key string) error {
+			err := txn.Delete(key)
+			if err != nil {
+				l.ErrorLog("msg", "Object Txn delete failed", "key", key, "err", err)
+			}
+			return err
+		}).WithGetRuntimeObject(func(i interface{}) runtime.Object {
+			r := i.(routing.Route)
+			return &r
+		}).WithValidate(func(i interface{}, ver string, ignoreStatus, ignoreSpec bool) []error {
+			r := i.(routing.Route)
+			return r.Validate(ver, "", ignoreStatus, ignoreSpec)
+		}).WithNormalizer(func(i interface{}) interface{} {
+			r := i.(routing.Route)
+			r.Normalize()
+			return r
+		}).WithReferencesGetter(func(i interface{}) (map[string]apiintf.ReferenceObj, error) {
+			ret := make(map[string]apiintf.ReferenceObj)
+			r := i.(routing.Route)
+
+			tenant := ""
+			r.References(tenant, "", ret)
+			return ret, nil
+		}),
+
+		"routing.RouteFilter": apisrvpkg.NewMessage("routing.RouteFilter").WithKeyGenerator(func(i interface{}, prefix string) string {
+			if i == nil {
+				r := routing.RouteFilter{}
+				return r.MakeKey(prefix)
+			}
+			r := i.(routing.RouteFilter)
+			return r.MakeKey(prefix)
+		}).WithObjectVersionWriter(func(i interface{}, version string) interface{} {
+			r := i.(routing.RouteFilter)
+			r.Kind = "RouteFilter"
+			r.APIVersion = version
+			return r
+		}).WithKvUpdater(func(ctx context.Context, kvs kvstore.Interface, i interface{}, prefix string, create bool, updateFn kvstore.UpdateFunc) (interface{}, error) {
+			r := i.(routing.RouteFilter)
+			key := r.MakeKey(prefix)
+			r.Kind = "RouteFilter"
+			var err error
+			if create {
+				if updateFn != nil {
+					upd := &routing.RouteFilter{}
+					n, err := updateFn(upd)
+					if err != nil {
+						l.ErrorLog("msg", "could not create new object", "err", err)
+						return nil, err
+					}
+					new := n.(*routing.RouteFilter)
+					new.TypeMeta = r.TypeMeta
+					new.GenerationID = "1"
+					new.UUID = r.UUID
+					new.CreationTime = r.CreationTime
+					new.SelfLink = r.SelfLink
+					r = *new
+				} else {
+					r.GenerationID = "1"
+				}
+				err = kvs.Create(ctx, key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV create failed", "key", key, "err", err)
+				}
+			} else {
+				var cur routing.RouteFilter
+				err = kvs.Get(ctx, key, &cur)
+				if err != nil {
+					l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+					return nil, err
+				}
+				r.UUID = cur.UUID
+				r.CreationTime = cur.CreationTime
+				if r.ResourceVersion != "" {
+					l.Infof("resource version is specified %s\n", r.ResourceVersion)
+					err = kvs.Update(ctx, key, &r, kvstore.Compare(kvstore.WithVersion(key), "=", r.ResourceVersion))
+				} else {
+					err = kvs.Update(ctx, key, &r)
+				}
+				if err != nil {
+					l.ErrorLog("msg", "KV update failed", "key", key, "err", err)
+				}
+
+			}
+			return r, err
+		}).WithKvTxnUpdater(func(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn, i interface{}, prefix string, create bool, updatefn kvstore.UpdateFunc) error {
+			r := i.(routing.RouteFilter)
+			key := r.MakeKey(prefix)
+			var err error
+			if create {
+				if updatefn != nil {
+					upd := &routing.RouteFilter{}
+					n, err := updatefn(upd)
+					if err != nil {
+						l.ErrorLog("msg", "could not create new object", "err", err)
+						return err
+					}
+					new := n.(*routing.RouteFilter)
+					new.TypeMeta = r.TypeMeta
+					new.GenerationID = "1"
+					new.UUID = r.UUID
+					new.CreationTime = r.CreationTime
+					new.SelfLink = r.SelfLink
+					r = *new
+				} else {
+					r.GenerationID = "1"
+				}
+				err = txn.Create(key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV transaction create failed", "key", key, "err", err)
+				}
+			} else {
+				if updatefn != nil {
+					var cur routing.RouteFilter
+					err = kvs.Get(ctx, key, &cur)
+					if err != nil {
+						l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+						return err
+					}
+					robj, err := updatefn(&cur)
+					if err != nil {
+						l.ErrorLog("msg", "unable to update current object", "key", key, "err", err)
+						return err
+					}
+					r = *robj.(*routing.RouteFilter)
+					txn.AddComparator(kvstore.Compare(kvstore.WithVersion(key), "=", r.ResourceVersion))
+				} else {
+					var cur routing.RouteFilter
+					err = kvs.Get(ctx, key, &cur)
+					if err != nil {
+						l.ErrorLog("msg", "trying to update an object that does not exist", "key", key, "err", err)
+						return err
+					}
+					r.UUID = cur.UUID
+					r.CreationTime = cur.CreationTime
+					if _, err := strconv.ParseUint(r.GenerationID, 10, 64); err != nil {
+						r.GenerationID = cur.GenerationID
+						_, err := strconv.ParseUint(cur.GenerationID, 10, 64)
+						if err != nil {
+							// Cant recover ID!!, reset ID
+							r.GenerationID = "2"
+						}
+					}
+				}
+				err = txn.Update(key, &r)
+				if err != nil {
+					l.ErrorLog("msg", "KV transaction update failed", "key", key, "err", err)
+				}
+			}
+			return err
+		}).WithUUIDWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.RouteFilter)
+			r.UUID = uuid.NewV4().String()
+			return r, nil
+		}).WithCreationTimeWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.RouteFilter)
+			var err error
+			ts, err := types.TimestampProto(time.Now())
+			if err == nil {
+				r.CreationTime.Timestamp = *ts
+			}
+			return r, err
+		}).WithModTimeWriter(func(i interface{}) (interface{}, error) {
+			r := i.(routing.RouteFilter)
+			var err error
+			ts, err := types.TimestampProto(time.Now())
+			if err == nil {
+				r.ModTime.Timestamp = *ts
+			}
+			return r, err
+		}).WithSelfLinkWriter(func(path, ver, prefix string, i interface{}) (interface{}, error) {
+			r := i.(routing.RouteFilter)
+			r.SelfLink = path
+			return r, nil
+		}).WithKvGetter(func(ctx context.Context, kvs kvstore.Interface, key string) (interface{}, error) {
+			r := routing.RouteFilter{}
+			err := kvs.Get(ctx, key, &r)
+			if err != nil {
+				l.ErrorLog("msg", "Object get failed", "key", key, "err", err)
+			}
+			return r, err
+		}).WithKvDelFunc(func(ctx context.Context, kvs kvstore.Interface, key string) (interface{}, error) {
+			r := routing.RouteFilter{}
+			err := kvs.Delete(ctx, key, &r)
+			if err != nil {
+				l.ErrorLog("msg", "Object delete failed", "key", key, "err", err)
+			}
+			return r, err
+		}).WithKvTxnDelFunc(func(ctx context.Context, txn kvstore.Txn, key string) error {
+			err := txn.Delete(key)
+			if err != nil {
+				l.ErrorLog("msg", "Object Txn delete failed", "key", key, "err", err)
+			}
+			return err
+		}).WithGetRuntimeObject(func(i interface{}) runtime.Object {
+			r := i.(routing.RouteFilter)
+			return &r
+		}).WithValidate(func(i interface{}, ver string, ignoreStatus, ignoreSpec bool) []error {
+			r := i.(routing.RouteFilter)
+			return r.Validate(ver, "", ignoreStatus, ignoreSpec)
+		}).WithNormalizer(func(i interface{}) interface{} {
+			r := i.(routing.RouteFilter)
+			r.Normalize()
+			return r
+		}).WithReferencesGetter(func(i interface{}) (map[string]apiintf.ReferenceObj, error) {
+			ret := make(map[string]apiintf.ReferenceObj)
+			r := i.(routing.RouteFilter)
+
+			tenant := ""
+			r.References(tenant, "", ret)
+			return ret, nil
+		}),
+
+		"routing.RouteList":   apisrvpkg.NewMessage("routing.RouteList"),
+		"routing.RouteStatus": apisrvpkg.NewMessage("routing.RouteStatus"),
 		// Add a message handler for ListWatch options
 		"api.ListWatchOptions": apisrvpkg.NewMessage("api.ListWatchOptions"),
 		// Add a message handler for Label options

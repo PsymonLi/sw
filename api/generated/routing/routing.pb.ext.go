@@ -174,6 +174,26 @@ func (m *NeighborFilter) MakeURI(cat, ver, prefix string) string {
 	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/neighborfilter/", in.Name)
 }
 
+// MakeKey generates a KV store key for the object
+func (m *Route) MakeKey(prefix string) string {
+	return fmt.Sprint(globals.ConfigRootPrefix, "/", prefix, "/", "routes/", m.Name)
+}
+
+func (m *Route) MakeURI(cat, ver, prefix string) string {
+	in := m
+	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/routes/", in.Name)
+}
+
+// MakeKey generates a KV store key for the object
+func (m *RouteFilter) MakeKey(prefix string) string {
+	return fmt.Sprint(globals.ConfigRootPrefix, "/", prefix, "/", "routefilter/", m.Name)
+}
+
+func (m *RouteFilter) MakeURI(cat, ver, prefix string) string {
+	in := m
+	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/routefilter/", in.Name)
+}
+
 // Clone clones the object into into or creates one of into is nil
 func (m *EmptyReq) Clone(into interface{}) (interface{}, error) {
 	var out *EmptyReq
@@ -389,6 +409,90 @@ func (m *NeighborStatus) Defaults(ver string) bool {
 		m.Status = "idle"
 	}
 	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *Route) Clone(into interface{}) (interface{}, error) {
+	var out *Route
+	var ok bool
+	if into == nil {
+		out = &Route{}
+	} else {
+		out, ok = into.(*Route)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*Route))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *Route) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *RouteFilter) Clone(into interface{}) (interface{}, error) {
+	var out *RouteFilter
+	var ok bool
+	if into == nil {
+		out = &RouteFilter{}
+	} else {
+		out, ok = into.(*RouteFilter)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*RouteFilter))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *RouteFilter) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *RouteList) Clone(into interface{}) (interface{}, error) {
+	var out *RouteList
+	var ok bool
+	if into == nil {
+		out = &RouteList{}
+	} else {
+		out, ok = into.(*RouteList)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*RouteList))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *RouteList) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *RouteStatus) Clone(into interface{}) (interface{}, error) {
+	var out *RouteStatus
+	var ok bool
+	if into == nil {
+		out = &RouteStatus{}
+	} else {
+		out, ok = into.(*RouteStatus)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*RouteStatus))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *RouteStatus) Defaults(ver string) bool {
+	return false
 }
 
 // Validators and Requirements
@@ -628,6 +732,81 @@ func (m *NeighborStatus) Normalize() {
 
 }
 
+func (m *Route) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *Route) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	return ret
+}
+
+func (m *Route) Normalize() {
+
+	m.ObjectMeta.Normalize()
+
+}
+
+func (m *RouteFilter) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *RouteFilter) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	return ret
+}
+
+func (m *RouteFilter) Normalize() {
+
+	m.ObjectMeta.Normalize()
+
+}
+
+func (m *RouteList) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *RouteList) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Items {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sItems[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *RouteList) Normalize() {
+
+	for k, v := range m.Items {
+		if v != nil {
+			v.Normalize()
+			m.Items[k] = v
+		}
+	}
+
+}
+
+func (m *RouteStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *RouteStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *RouteStatus) Normalize() {
+
+}
+
 // Transformers
 
 func (m *Neighbor) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
@@ -689,6 +868,8 @@ func init() {
 		&Health{},
 		&Neighbor{},
 		&NeighborFilter{},
+		&Route{},
+		&RouteFilter{},
 	)
 
 	validatorMapRouting = make(map[string]map[string][]func(string, interface{}) error)

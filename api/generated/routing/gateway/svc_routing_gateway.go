@@ -54,38 +54,6 @@ type adapterRoutingV1 struct {
 	gw      apigw.APIGateway
 }
 
-func (a adapterRoutingV1) GetNeighbor(oldctx oldcontext.Context, t *routing.NeighborFilter, options ...grpc.CallOption) (*routing.Neighbor, error) {
-	// Not using options for now. Will be passed through context as needed.
-	trackTime := time.Now()
-	defer func() {
-		hdr.Record("apigw.RoutingV1GetNeighbor", time.Since(trackTime))
-	}()
-	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("GetNeighbor")
-	if err != nil {
-		return nil, errors.New("unknown service profile")
-	}
-
-	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*routing.NeighborFilter)
-		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
-		if ok {
-			srvCl, ok := cl.(routing.RoutingV1Client)
-			if !ok {
-				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
-				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
-			}
-			return srvCl.GetNeighbor(inctx, in)
-		}
-		return a.service.GetNeighbor(inctx, in)
-	}
-	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
-	if ret == nil {
-		return nil, err
-	}
-	return ret.(*routing.Neighbor), err
-}
-
 func (a adapterRoutingV1) HealthZ(oldctx oldcontext.Context, t *routing.EmptyReq, options ...grpc.CallOption) (*routing.Health, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -150,6 +118,38 @@ func (a adapterRoutingV1) ListNeighbors(oldctx oldcontext.Context, t *routing.Ne
 	return ret.(*routing.NeighborList), err
 }
 
+func (a adapterRoutingV1) ListRoutes(oldctx oldcontext.Context, t *routing.RouteFilter, options ...grpc.CallOption) (*routing.RouteList, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.RoutingV1ListRoutes", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("ListRoutes")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*routing.RouteFilter)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(routing.RoutingV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.ListRoutes(inctx, in)
+		}
+		return a.service.ListRoutes(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*routing.RouteList), err
+}
+
 func (a adapterRoutingV1) AutoWatchSvcRoutingV1(oldctx oldcontext.Context, in *api.AggWatchOptions, options ...grpc.CallOption) (routing.RoutingV1_AutoWatchSvcRoutingV1Client, error) {
 	ctx := context.Context(oldctx)
 	prof, err := a.gwSvc.GetServiceProfile("AutoWatchSvcRoutingV1")
@@ -209,11 +209,11 @@ func (e *sRoutingV1GwService) setupSvcProfile() {
 	e.defSvcProf.SetDefaults()
 	e.svcProf = make(map[string]apigw.ServiceProfile)
 
-	e.svcProf["GetNeighbor"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
-
 	e.svcProf["HealthZ"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
 
 	e.svcProf["ListNeighbors"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
+
+	e.svcProf["ListRoutes"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
 }
 
 // GetDefaultServiceProfile returns the default fallback service profile for this service

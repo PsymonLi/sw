@@ -70,7 +70,7 @@ func TestRoutingHooksPreCallHook(t *testing.T) {
 	listReq := routing.NeighborFilter{
 		Instance: "dummy1",
 	}
-	nctx, _, _, skip, err = hooks.LisNeighborsPreCallHook(ctx, &listReq, nil)
+	nctx, _, _, skip, err = hooks.ListNeighborsPreCallHook(ctx, &listReq, nil)
 	AssertOk(t, err, "expecting to succeed")
 	Assert(t, !skip, "expecting to not skip")
 	cl, ok = apiutils.GetVar(nctx, apiutils.CtxKeyAPIGwOverrideClient)
@@ -107,9 +107,4 @@ func TestRoutingHooksRegistration(t *testing.T) {
 	AssertOk(t, err, "error getting service profile for ListNeighbors")
 	Assert(t, len(prof.PreAuthZHooks()) == 1, fmt.Sprintf("unexpected number of pre authz hooks [%d] for ListNeighbors profile", len(prof.PreAuthZHooks())))
 	Assert(t, len(prof.PreCallHooks()) == 1, fmt.Sprintf("unexpected number of pre call hooks [%d] for ListNeighbors profile", len(prof.PreCallHooks())))
-
-	prof, err = svc.GetServiceProfile("GetNeighbor")
-	AssertOk(t, err, "error getting service profile for GetNeighbor")
-	Assert(t, len(prof.PreAuthZHooks()) == 1, fmt.Sprintf("unexpected number of pre authz hooks [%d] for GetNeighbor profile", len(prof.PreAuthZHooks())))
-	Assert(t, len(prof.PreCallHooks()) == 1, fmt.Sprintf("unexpected number of pre call hooks [%d] for GetNeighbor profile", len(prof.PreCallHooks())))
 }

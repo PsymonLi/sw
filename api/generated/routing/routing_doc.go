@@ -16,6 +16,10 @@ The following Messages are defined.
   NeighborFilter
   NeighborList
   NeighborStatus
+  Route
+  RouteFilter
+  RouteList
+  RouteStatus
 
 The following Services and Methods are defined.
 

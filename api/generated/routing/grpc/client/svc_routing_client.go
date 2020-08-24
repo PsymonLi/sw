@@ -27,20 +27,6 @@ var _ kvstore.Interface
 // NewRoutingV1 sets up a new client for RoutingV1
 func NewRoutingV1(conn *grpc.ClientConn, logger log.Logger) routing.ServiceRoutingV1Client {
 
-	var lGetNeighborEndpoint endpoint.Endpoint
-	{
-		lGetNeighborEndpoint = grpctransport.NewClient(
-			conn,
-			"routing.RoutingV1",
-			"GetNeighbor",
-			routing.EncodeGrpcReqNeighborFilter,
-			routing.DecodeGrpcRespNeighbor,
-			&routing.Neighbor{},
-			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
-			grpctransport.ClientBefore(dummyBefore),
-		).Endpoint()
-		lGetNeighborEndpoint = trace.ClientEndPoint("RoutingV1:GetNeighbor")(lGetNeighborEndpoint)
-	}
 	var lHealthZEndpoint endpoint.Endpoint
 	{
 		lHealthZEndpoint = grpctransport.NewClient(
@@ -69,12 +55,26 @@ func NewRoutingV1(conn *grpc.ClientConn, logger log.Logger) routing.ServiceRouti
 		).Endpoint()
 		lListNeighborsEndpoint = trace.ClientEndPoint("RoutingV1:ListNeighbors")(lListNeighborsEndpoint)
 	}
+	var lListRoutesEndpoint endpoint.Endpoint
+	{
+		lListRoutesEndpoint = grpctransport.NewClient(
+			conn,
+			"routing.RoutingV1",
+			"ListRoutes",
+			routing.EncodeGrpcReqRouteFilter,
+			routing.DecodeGrpcRespRouteList,
+			&routing.RouteList{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lListRoutesEndpoint = trace.ClientEndPoint("RoutingV1:ListRoutes")(lListRoutesEndpoint)
+	}
 	return routing.EndpointsRoutingV1Client{
 		Client: routing.NewRoutingV1Client(conn),
 
-		GetNeighborEndpoint:   lGetNeighborEndpoint,
 		HealthZEndpoint:       lHealthZEndpoint,
 		ListNeighborsEndpoint: lListNeighborsEndpoint,
+		ListRoutesEndpoint:    lListRoutesEndpoint,
 	}
 }
 

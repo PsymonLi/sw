@@ -30,3 +30,7 @@ export * from './routing-neighbor.model';
 export * from './routing-neighbor-filter.model';
 export * from './routing-neighbor-list.model';
 export * from './routing-neighbor-status.model';
+export * from './routing-route.model';
+export * from './routing-route-filter.model';
+export * from './routing-route-list.model';
+export * from './routing-route-status.model';

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	goruntime "runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/perseus/env"
 	"github.com/pensando/sw/venice/perseus/types"
+	vldtor "github.com/pensando/sw/venice/utils/apigen/validators"
 	"github.com/pensando/sw/venice/utils/diagnostics"
 	diagsvc "github.com/pensando/sw/venice/utils/diagnostics/service"
 	"github.com/pensando/sw/venice/utils/events"
@@ -603,12 +605,6 @@ func (m *ServiceHandlers) AutoWatchSvcRoutingV1(*api.AggWatchOptions, routing.Ro
 	return fmt.Errorf("not implemented")
 }
 
-// GetNeighbor gets one neighbor
-func (m *ServiceHandlers) GetNeighbor(ctx context.Context, in *routing.NeighborFilter) (*routing.Neighbor, error) {
-	log.Infof("got call for Get Neighbors [%+v]", in)
-	return &routing.Neighbor{}, nil
-}
-
 func getPeerCfgFromCache(peer string) (*network.BGPNeighbor, error) {
 	if cache.config.Spec.BGPConfig != nil {
 		for _, n := range cache.config.Spec.BGPConfig.Neighbors {
@@ -619,6 +615,129 @@ func getPeerCfgFromCache(peer string) (*network.BGPNeighbor, error) {
 		return nil, fmt.Errorf("peer not in cache")
 	}
 	return nil, fmt.Errorf("BGPConfig not in cache")
+}
+
+func validateListRoutesReq(in *routing.RouteFilter) error {
+	if strings.Compare(in.Type, "ipv4-unicast") != 0 && strings.Compare(in.Type, "l2vpn-evpn") != 0 {
+		return fmt.Errorf("Unknown route-type. valid options are: ipv4-unicast/l2vpn-evpn")
+	}
+	if in.ExtComm != "" {
+		if utils.ExtCommToBytes(in.ExtComm) == nil {
+			return fmt.Errorf("Invalid extended community ID %s", in.ExtComm)
+		}
+	}
+	if in.Vnid != "" {
+		_, ok := strconv.ParseUint(in.Vnid, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid vni-id %s", in.Vnid)
+		}
+	}
+	if in.RType != "" {
+		t, ok := strconv.ParseUint(in.RType, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", in.RType)
+		}
+		if t < 1 || t > 5 {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", in.RType)
+		}
+	}
+	if len(in.NHop) != 0 && vldtor.IPAddr(in.NHop) != nil {
+		return fmt.Errorf("Invalid nextHop address %v", in.NHop)
+	}
+	return nil
+}
+
+// ListRoutes lists routes
+func (m *ServiceHandlers) ListRoutes(ctx context.Context, in *routing.RouteFilter) (*routing.RouteList, error) {
+	log.Infof("got call for ListRoutes [%+v]", in)
+	var req pdstypes.BGPNLRIPrefixGetRequest
+	if err := validateListRoutesReq(in); err != nil {
+		return nil, err
+	}
+
+	var rType uint32
+	var vnid uint32
+	var nhip *pdstypes.IPAddress
+	ec := []byte{}
+	filter := false
+
+	if in.ExtComm != "" {
+		filter = true
+		ec = utils.ExtCommToBytes(in.ExtComm)
+	}
+	if in.Vnid != "" {
+		filter = true
+		v, _ := strconv.ParseUint(in.Vnid, 10, 32)
+		vnid = uint32(v)
+	}
+	if in.RType != "" {
+		filter = true
+		t, _ := strconv.ParseUint(in.RType, 10, 32)
+		rType = uint32(t)
+	}
+	if in.NHop != "" {
+		filter = true
+		nhip = utils.IPAddrStrToPdsIPAddr(in.NHop)
+	}
+
+	if filter == true {
+		req = pdstypes.BGPNLRIPrefixGetRequest{
+			RequestsOrFilter: &pdstypes.BGPNLRIPrefixGetRequest_Filter{
+				Filter: &pdstypes.BGPNLRIPrefixFilter{
+					ExtComm:   ec,
+					Vnid:      vnid,
+					RouteType: rType,
+					NextHop:   nhip,
+				},
+			},
+		}
+	}
+
+	respMsg, err := m.pegasusClient.BGPNLRIPrefixGet(context.Background(), &req)
+	if err != nil {
+		return nil, fmt.Errorf("Getting Routes failed (%s)", err)
+	}
+	if respMsg.ApiStatus != pdstypes.ApiStatus_API_STATUS_OK {
+		return nil, errors.New("Operation failed with error")
+	}
+	routes := &routing.RouteList{}
+	routes.TypeMeta.Kind = "RouteList"
+	for _, p := range respMsg.Response {
+		nlri := utils.NewBGPNLRIPrefixStatus(p.Status, true)
+
+		//Print AFI/SAFI info
+		afi := strings.TrimPrefix(nlri.Afi.String(), "BGP_AFI_")
+		safi := strings.TrimPrefix(nlri.Safi.String(), "BGP_SAFI_")
+
+		//Lets check if its right afi/safi
+		afisafi := strings.ToLower(afi) + "-" + strings.ToLower(safi)
+		if strings.Compare(in.Type, afisafi) != 0 {
+			continue
+		}
+		route := &routing.Route{
+			Status: routing.RouteStatus{
+				Prefix:           nlri.Prefix.String(),
+				PrefixLen:        fmt.Sprint(nlri.PrefixLen),
+				ASPath:           nlri.ASPathStr,
+				PathOrigId:       nlri.PathOrigId,
+				NextHopAddr:      nlri.NextHopAddr,
+				RouteSource:      nlri.RouteSource,
+				IsActive:         nlri.IsActive,
+				ReasonNotBest:    nlri.ReasonNotBest,
+				PeerAddr:         nlri.PeerAddr,
+				BestRoute:        nlri.BestRoute,
+				EcmpRoute:        nlri.EcmpRoute,
+				FlapStatsFlapcnt: nlri.FlapStatsFlapcnt,
+				FlapStatsSupprsd: nlri.FlapStatsSupprsd,
+				Stale:            nlri.Stale,
+				FlapStartTime:    nlri.FlapStartTime,
+				ExtComm:          nlri.ExtComm,
+			},
+		}
+		route.TypeMeta.Kind = "Route"
+		routes.Items = append(routes.Items, route)
+	}
+	return routes, nil
 }
 
 // ListNeighbors lists neighbors

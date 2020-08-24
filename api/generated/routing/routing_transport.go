@@ -288,3 +288,139 @@ func EncodeGrpcRespNeighborStatus(ctx context.Context, response interface{}) (in
 func DecodeGrpcRespNeighborStatus(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }
+
+func encodeHTTPRoute(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPRoute(_ context.Context, r *http.Request) (interface{}, error) {
+	var req Route
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqRoute encodes GRPC request
+func EncodeGrpcReqRoute(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*Route)
+	return req, nil
+}
+
+// DecodeGrpcReqRoute decodes GRPC request
+func DecodeGrpcReqRoute(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*Route)
+	return req, nil
+}
+
+// EncodeGrpcRespRoute encodes GRC response
+func EncodeGrpcRespRoute(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespRoute decodes GRPC response
+func DecodeGrpcRespRoute(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPRouteFilter(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPRouteFilter(_ context.Context, r *http.Request) (interface{}, error) {
+	var req RouteFilter
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqRouteFilter encodes GRPC request
+func EncodeGrpcReqRouteFilter(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteFilter)
+	return req, nil
+}
+
+// DecodeGrpcReqRouteFilter decodes GRPC request
+func DecodeGrpcReqRouteFilter(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteFilter)
+	return req, nil
+}
+
+// EncodeGrpcRespRouteFilter encodes GRC response
+func EncodeGrpcRespRouteFilter(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespRouteFilter decodes GRPC response
+func DecodeGrpcRespRouteFilter(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPRouteList(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPRouteList(_ context.Context, r *http.Request) (interface{}, error) {
+	var req RouteList
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqRouteList encodes GRPC request
+func EncodeGrpcReqRouteList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteList)
+	return req, nil
+}
+
+// DecodeGrpcReqRouteList decodes GRPC request
+func DecodeGrpcReqRouteList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteList)
+	return req, nil
+}
+
+// EncodeGrpcRespRouteList encodes GRC response
+func EncodeGrpcRespRouteList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespRouteList decodes GRPC response
+func DecodeGrpcRespRouteList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPRouteStatus(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPRouteStatus(_ context.Context, r *http.Request) (interface{}, error) {
+	var req RouteStatus
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqRouteStatus encodes GRPC request
+func EncodeGrpcReqRouteStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteStatus)
+	return req, nil
+}
+
+// DecodeGrpcReqRouteStatus decodes GRPC request
+func DecodeGrpcReqRouteStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*RouteStatus)
+	return req, nil
+}
+
+// EncodeGrpcRespRouteStatus encodes GRC response
+func EncodeGrpcRespRouteStatus(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespRouteStatus decodes GRPC response
+func DecodeGrpcRespRouteStatus(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}

@@ -4,7 +4,7 @@ import { Observable } from '../../../../webapp/node_modules/rxjs';
 import { Injectable } from '../../../../webapp/node_modules/@angular/core';
 import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/utility';
 
-import { IRoutingHealth,RoutingHealth,IRoutingNeighborList,RoutingNeighborList,IRoutingNeighbor,RoutingNeighbor } from '../../models/generated/routing';
+import { IRoutingHealth,RoutingHealth,IRoutingNeighborList,RoutingNeighborList,IRoutingRouteList,RoutingRouteList,RoutingRouteFilter,IRoutingRouteFilter } from '../../models/generated/routing';
 
 @Injectable()
 export class Routingv1Service extends AbstractService {
@@ -44,16 +44,30 @@ export class Routingv1Service extends AbstractService {
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingNeighborList | Error, statusCode: number}>;
   }
   
-  public GetGetNeighbor(Instance,Neighbor, queryParam: any = null):Observable<{body: IRoutingNeighbor | Error, statusCode: number}> {
-    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/neighbors/{Neighbor}';
+  public GetListRoutes_1(Instance, queryParam: any = null):Observable<{body: IRoutingRouteList | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/routes';
     url = url.replace('{Instance}', Instance);
-    url = url.replace('{Neighbor}', Neighbor);
     const opts = {
-      eventID: 'GetGetNeighbor',
-      objType: 'RoutingNeighbor',
+      eventID: 'GetListRoutes_1',
+      objType: 'RoutingRouteList',
       isStaging: false,
     }
-    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingNeighbor | Error, statusCode: number}>;
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingRouteList | Error, statusCode: number}>;
+  }
+  
+  public PostListRoutes(Instance, body: IRoutingRouteFilter, trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: IRoutingRouteList | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/routes';
+    url = url.replace('{Instance}', Instance);
+    const opts = {
+      eventID: 'PostListRoutes',
+      objType: 'RoutingRouteList',
+      isStaging: false,
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new RoutingRouteFilter(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: IRoutingRouteList | Error, statusCode: number}>;
   }
   
 }

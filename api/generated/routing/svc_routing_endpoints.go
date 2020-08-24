@@ -39,9 +39,9 @@ type EndpointsRoutingV1Client struct {
 	Client                        RoutingV1Client
 	AutoWatchSvcRoutingV1Endpoint endpoint.Endpoint
 
-	GetNeighborEndpoint   endpoint.Endpoint
 	HealthZEndpoint       endpoint.Endpoint
 	ListNeighborsEndpoint endpoint.Endpoint
+	ListRoutesEndpoint    endpoint.Endpoint
 }
 
 // EndpointsRoutingV1RestClient is the REST client
@@ -52,9 +52,9 @@ type EndpointsRoutingV1RestClient struct {
 	bufferId string
 
 	AutoWatchSvcRoutingV1Endpoint endpoint.Endpoint
-	GetNeighborEndpoint           endpoint.Endpoint
 	HealthZEndpoint               endpoint.Endpoint
 	ListNeighborsEndpoint         endpoint.Endpoint
+	ListRoutesEndpoint            endpoint.Endpoint
 }
 
 // MiddlewareRoutingV1Server adds middle ware to the server
@@ -64,23 +64,9 @@ type MiddlewareRoutingV1Server func(ServiceRoutingV1Server) ServiceRoutingV1Serv
 type EndpointsRoutingV1Server struct {
 	svcWatchHandlerRoutingV1 func(options *api.AggWatchOptions, stream grpc.ServerStream) error
 
-	GetNeighborEndpoint   endpoint.Endpoint
 	HealthZEndpoint       endpoint.Endpoint
 	ListNeighborsEndpoint endpoint.Endpoint
-}
-
-// GetNeighbor is endpoint for GetNeighbor
-func (e EndpointsRoutingV1Client) GetNeighbor(ctx context.Context, in *NeighborFilter) (*Neighbor, error) {
-	resp, err := e.GetNeighborEndpoint(ctx, in)
-	if err != nil {
-		return &Neighbor{}, err
-	}
-	return resp.(*Neighbor), nil
-}
-
-type respRoutingV1GetNeighbor struct {
-	V   Neighbor
-	Err error
+	ListRoutesEndpoint    endpoint.Endpoint
 }
 
 // HealthZ is endpoint for HealthZ
@@ -111,30 +97,22 @@ type respRoutingV1ListNeighbors struct {
 	Err error
 }
 
+// ListRoutes is endpoint for ListRoutes
+func (e EndpointsRoutingV1Client) ListRoutes(ctx context.Context, in *RouteFilter) (*RouteList, error) {
+	resp, err := e.ListRoutesEndpoint(ctx, in)
+	if err != nil {
+		return &RouteList{}, err
+	}
+	return resp.(*RouteList), nil
+}
+
+type respRoutingV1ListRoutes struct {
+	V   RouteList
+	Err error
+}
+
 func (e EndpointsRoutingV1Client) AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions) (RoutingV1_AutoWatchSvcRoutingV1Client, error) {
 	return e.Client.AutoWatchSvcRoutingV1(ctx, in)
-}
-
-// GetNeighbor implementation on server Endpoint
-func (e EndpointsRoutingV1Server) GetNeighbor(ctx context.Context, in NeighborFilter) (Neighbor, error) {
-	resp, err := e.GetNeighborEndpoint(ctx, in)
-	if err != nil {
-		return Neighbor{}, err
-	}
-	return *resp.(*Neighbor), nil
-}
-
-// MakeRoutingV1GetNeighborEndpoint creates  GetNeighbor endpoints for the service
-func MakeRoutingV1GetNeighborEndpoint(s ServiceRoutingV1Server, logger log.Logger) endpoint.Endpoint {
-	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(*NeighborFilter)
-		v, err := s.GetNeighbor(ctx, *req)
-		return respRoutingV1GetNeighbor{
-			V:   v,
-			Err: err,
-		}, nil
-	}
-	return trace.ServerEndpoint("RoutingV1:GetNeighbor")(f)
 }
 
 // HealthZ implementation on server Endpoint
@@ -181,6 +159,28 @@ func MakeRoutingV1ListNeighborsEndpoint(s ServiceRoutingV1Server, logger log.Log
 	return trace.ServerEndpoint("RoutingV1:ListNeighbors")(f)
 }
 
+// ListRoutes implementation on server Endpoint
+func (e EndpointsRoutingV1Server) ListRoutes(ctx context.Context, in RouteFilter) (RouteList, error) {
+	resp, err := e.ListRoutesEndpoint(ctx, in)
+	if err != nil {
+		return RouteList{}, err
+	}
+	return *resp.(*RouteList), nil
+}
+
+// MakeRoutingV1ListRoutesEndpoint creates  ListRoutes endpoints for the service
+func MakeRoutingV1ListRoutesEndpoint(s ServiceRoutingV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*RouteFilter)
+		v, err := s.ListRoutes(ctx, *req)
+		return respRoutingV1ListRoutes{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("RoutingV1:ListRoutes")(f)
+}
+
 func (e EndpointsRoutingV1Server) AutoWatchSvcRoutingV1(in *api.AggWatchOptions, stream RoutingV1_AutoWatchSvcRoutingV1Server) error {
 	return e.svcWatchHandlerRoutingV1(in, stream)
 }
@@ -198,9 +198,9 @@ func MakeRoutingV1ServerEndpoints(s ServiceRoutingV1Server, logger log.Logger) E
 	return EndpointsRoutingV1Server{
 		svcWatchHandlerRoutingV1: MakeAutoWatchSvcRoutingV1Endpoint(s, logger),
 
-		GetNeighborEndpoint:   MakeRoutingV1GetNeighborEndpoint(s, logger),
 		HealthZEndpoint:       MakeRoutingV1HealthZEndpoint(s, logger),
 		ListNeighborsEndpoint: MakeRoutingV1ListNeighborsEndpoint(s, logger),
+		ListRoutesEndpoint:    MakeRoutingV1ListRoutesEndpoint(s, logger),
 	}
 }
 
@@ -234,19 +234,6 @@ type loggingRoutingV1MiddlewareServer struct {
 	next   ServiceRoutingV1Server
 }
 
-func (m loggingRoutingV1MiddlewareClient) GetNeighbor(ctx context.Context, in *NeighborFilter) (resp *Neighbor, err error) {
-	defer func(begin time.Time) {
-		var rslt string
-		if err == nil {
-			rslt = "Success"
-		} else {
-			rslt = err.Error()
-		}
-		m.logger.Audit(ctx, "service", "RoutingV1", "method", "GetNeighbor", "result", rslt, "duration", time.Since(begin), "error", err)
-	}(time.Now())
-	resp, err = m.next.GetNeighbor(ctx, in)
-	return
-}
 func (m loggingRoutingV1MiddlewareClient) HealthZ(ctx context.Context, in *EmptyReq) (resp *Health, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -273,6 +260,19 @@ func (m loggingRoutingV1MiddlewareClient) ListNeighbors(ctx context.Context, in 
 	resp, err = m.next.ListNeighbors(ctx, in)
 	return
 }
+func (m loggingRoutingV1MiddlewareClient) ListRoutes(ctx context.Context, in *RouteFilter) (resp *RouteList, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "RoutingV1", "method", "ListRoutes", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.ListRoutes(ctx, in)
+	return
+}
 
 func (m loggingRoutingV1MiddlewareClient) AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions) (resp RoutingV1_AutoWatchSvcRoutingV1Client, err error) {
 	defer func(begin time.Time) {
@@ -288,19 +288,6 @@ func (m loggingRoutingV1MiddlewareClient) AutoWatchSvcRoutingV1(ctx context.Cont
 	return
 }
 
-func (m loggingRoutingV1MiddlewareServer) GetNeighbor(ctx context.Context, in NeighborFilter) (resp Neighbor, err error) {
-	defer func(begin time.Time) {
-		var rslt string
-		if err == nil {
-			rslt = "Success"
-		} else {
-			rslt = err.Error()
-		}
-		m.logger.Audit(ctx, "service", "RoutingV1", "method", "GetNeighbor", "result", rslt, "duration", time.Since(begin))
-	}(time.Now())
-	resp, err = m.next.GetNeighbor(ctx, in)
-	return
-}
 func (m loggingRoutingV1MiddlewareServer) HealthZ(ctx context.Context, in EmptyReq) (resp Health, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -325,6 +312,19 @@ func (m loggingRoutingV1MiddlewareServer) ListNeighbors(ctx context.Context, in 
 		m.logger.Audit(ctx, "service", "RoutingV1", "method", "ListNeighbors", "result", rslt, "duration", time.Since(begin))
 	}(time.Now())
 	resp, err = m.next.ListNeighbors(ctx, in)
+	return
+}
+func (m loggingRoutingV1MiddlewareServer) ListRoutes(ctx context.Context, in RouteFilter) (resp RouteList, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "RoutingV1", "method", "ListRoutes", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.ListRoutes(ctx, in)
 	return
 }
 
@@ -375,15 +375,15 @@ func makeURIRoutingV1AutoWatchSvcRoutingV1WatchOper(in *api.AggWatchOptions) str
 
 }
 
-func (r *EndpointsRoutingV1RestClient) RoutingV1GetNeighborEndpoint(ctx context.Context, in *NeighborFilter) (*Neighbor, error) {
-	return nil, errors.New("not allowed")
-}
-
 func (r *EndpointsRoutingV1RestClient) RoutingV1HealthZEndpoint(ctx context.Context, in *EmptyReq) (*Health, error) {
 	return nil, errors.New("not allowed")
 }
 
 func (r *EndpointsRoutingV1RestClient) RoutingV1ListNeighborsEndpoint(ctx context.Context, in *NeighborFilter) (*NeighborList, error) {
+	return nil, errors.New("not allowed")
+}
+
+func (r *EndpointsRoutingV1RestClient) RoutingV1ListRoutesEndpoint(ctx context.Context, in *RouteFilter) (*RouteList, error) {
 	return nil, errors.New("not allowed")
 }
 

@@ -19,16 +19,16 @@ var _ api.ObjectMeta
 type ServiceRoutingV1Client interface {
 	AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions) (RoutingV1_AutoWatchSvcRoutingV1Client, error)
 
-	GetNeighbor(ctx context.Context, t *NeighborFilter) (*Neighbor, error)
 	HealthZ(ctx context.Context, t *EmptyReq) (*Health, error)
 	ListNeighbors(ctx context.Context, t *NeighborFilter) (*NeighborList, error)
+	ListRoutes(ctx context.Context, t *RouteFilter) (*RouteList, error)
 }
 
 // ServiceRoutingV1Server is the server interface for the service.
 type ServiceRoutingV1Server interface {
 	AutoWatchSvcRoutingV1(in *api.AggWatchOptions, stream RoutingV1_AutoWatchSvcRoutingV1Server) error
 
-	GetNeighbor(ctx context.Context, t NeighborFilter) (Neighbor, error)
 	HealthZ(ctx context.Context, t EmptyReq) (Health, error)
 	ListNeighbors(ctx context.Context, t NeighborFilter) (NeighborList, error)
+	ListRoutes(ctx context.Context, t RouteFilter) (RouteList, error)
 }
