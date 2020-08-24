@@ -98,14 +98,15 @@ struct gpiohandle_data {
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 
 static const char spidev0_path[] = "/dev/spidev0.0";
-static const char spidev1_path[] = "/dev/spidev0.1";
+//static const char spidev1_path[] = "/dev/spidev0.1";
 void
 cpld_upgrade_status_cb_default(pal_cpld_status_t status, int percentage, void *ctxt)
 {
     return;
 }
 
-static cpld_upgrade_status_cb_t g_cpld_upgrade_status_cb = cpld_upgrade_status_cb_default;
+// Elba: TODO
+//static cpld_upgrade_status_cb_t g_cpld_upgrade_status_cb = cpld_upgrade_status_cb_default;
 
 static int
 write_gpios(int gpio, uint32_t data)
@@ -194,112 +195,48 @@ read_gpios(int d, uint32_t mask)
 #endif
 
 static int
-cpld_read(uint8_t addr)
+cpid_spi_issue(const char *path, const uint8_t *txbuf, int txlen,
+        uint8_t *rxbuf, int rxlen)
 {
     struct spi_ioc_transfer msg[2];
-    uint8_t txbuf[4];
-    uint8_t rxbuf[1];
-    int fd;
-
-    txbuf[0] = 0x0b;
-    txbuf[1] = addr;
-    txbuf[2] = 0x00;
-    rxbuf[0] = 0x00;
+    int fd, nmsgs, r;
 
     memset(msg, 0, sizeof (msg));
+    nmsgs = 1;
     msg[0].tx_buf = (intptr_t)txbuf;
-    msg[0].len = 3;
-    msg[1].rx_buf = (intptr_t)rxbuf;
-    msg[1].len = 1;
-
-    if ((fd = open(spidev0_path, O_RDWR, 0)) < 0) {
+    msg[0].len = txlen;
+    if (rxlen > 0) {
+        msg[1].rx_buf = (intptr_t)rxbuf;
+        msg[1].len = rxlen;
+        ++nmsgs;
+    }
+    if ((fd = open(path, O_RDWR, 0)) < 0) {
         return -30;
     }
-    if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
-        close(fd);
-        return -31;
-    }
-
+    r = ioctl(fd, SPI_IOC_MESSAGE(nmsgs), msg);
     close(fd);
-    return rxbuf[0];
+    return (r < 0) ? -31 : 0;
+}
+
+static int
+cpld_read(uint8_t addr)
+{
+    uint8_t txbuf[] = { 0x0b, addr, 0x00 };
+    uint8_t rxbuf[1];
+    int r;
+
+    r = cpid_spi_issue(spidev0_path, txbuf, sizeof (txbuf),
+            rxbuf, sizeof (rxbuf));
+    return (r < 0) ? r : rxbuf[0];
 }
 
 static int
 cpld_write(uint8_t addr, uint8_t data)
 {
-    struct spi_ioc_transfer msg[1];
-    uint8_t txbuf[3];
-    int fd;
-    txbuf[0] = 0x02;
-    txbuf[1] = addr;
-    txbuf[2] = data;
-
-    memset(msg, 0, sizeof (msg));
-    msg[0].tx_buf = (intptr_t)txbuf;
-    msg[0].len = 3;
-
-    if ((fd = open(spidev0_path, O_RDWR, 0)) < 0) {
-        return -40;
-    }
-
-    if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
-        close(fd);
-        return -41;
-    }
-
-    close(fd);
-    return 0;
+    uint8_t txbuf[] = { 0x02, addr, data, 0x00 };
+    return cpid_spi_issue(spidev0_path, txbuf, sizeof (txbuf), NULL, 0);
 }
 
-static int
-cpld_send_cmd_spi(int fd, const uint8_t* data, uint32_t size)
-{
-    struct spi_ioc_transfer msg[1];
-    memset(msg, 0, sizeof (msg));
-    msg[0].tx_buf = (intptr_t)data;
-    msg[0].len = size;
-    msg[0].speed_hz = 12000000;
-    int rc = 0;
-    if (!pal_wr_lock(CPLDLOCK)) {
-        pal_mem_trace("Could not lock pal.lck\n");
-        return -50;
-    }
-    if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
-        rc = -51;
-    }
-    if (!pal_wr_unlock(CPLDLOCK)) {
-        pal_mem_trace("Failed to unlock.\n");
-        return -52;
-    }
-    return rc;
-}
-
-static int
-cpld_send_cmd_spi_rx(int fd, const uint8_t* data, uint32_t size,
-                     uint8_t *rx_data, uint32_t rx_size)
-{
-    int rc = 0;
-    struct spi_ioc_transfer msg[2];
-    memset(msg, 0, sizeof (msg));
-    msg[0].tx_buf = (intptr_t)data;
-    msg[0].len = size;
-    msg[0].speed_hz = 12000000;
-    msg[1].rx_buf = (intptr_t)rx_data;
-    msg[1].len = rx_size;
-
-    if (!pal_wr_lock(CPLDLOCK)) {
-        pal_mem_trace("Could not lock pal.lck\n");
-        return -60;
-    }
-    if (ioctl(fd, SPI_IOC_MESSAGE(2), msg) < 0) {
-        rc = -61;
-    }
-    if (!pal_wr_unlock(CPLDLOCK)) {
-        pal_mem_trace("Failed to unlock.\n");
-        return -62;
-    }
-    return rc;
-}
 /* Public APIs */
 int
 cpld_reg_bit_set(int reg, int bit)
@@ -472,393 +409,34 @@ pal_write_gpios(int gpio, uint32_t data)
 void
 cpld_reload_reset(void)
 {
-    int fd;
-    static const uint8_t lsc_refresh_cmd[] = {0x79, 0x0, 0x0};
-
-    // Open the spi device.
-    if ((fd = open(spidev1_path, O_RDWR, 0)) < 0) {
-        return;
-    }
-    cpld_send_cmd_spi(fd, lsc_refresh_cmd, sizeof(lsc_refresh_cmd));
-    close(fd);
-}
-
-static int
-busy_check_bit(int fd)
-{
-    uint8_t completion_status[4];
-    unsigned char lsc_completion_status[] = {0xF0, 0x0, 0x0, 0x0};
-
-    for (int counter = 0; counter < CPLD_MAX_RETRY; counter++) {
-        if (cpld_send_cmd_spi(fd, lsc_completion_status, sizeof(lsc_completion_status)) == 0) {
-            // Delay tempw(50ms)
-            usleep(50000);
-            for (int i = 0; i < ARRAY_SIZE(completion_status); i++) {
-                completion_status[i] = cpld_reg_rd(CPLD_CONF_FLASH_READ_BYTE + ARRAY_SIZE(completion_status) - (i + 1));
-            }
-            if ((completion_status[0] & CPLD_COMPLETION_STATUS_BIT1) == 0) {
-                // command completed
-                return 0;
-            }
-        }
-    }
-    return -1;
+    // TODO for Elba FPGA update
 }
 
 bool
 cpld_verify_idcode(void)
 {
-    int fd;
-    int idcode[4];
-    unsigned char lsc_idcode_cmd[] = {0xE0, 0x0, 0x0, 0x0};
-
-    // Open the spi device.
-    if ((fd = open(spidev1_path, O_RDWR, 0)) < 0) {
-        return false;
-    }
-
-    if (cpld_send_cmd_spi(fd, lsc_idcode_cmd, sizeof(lsc_idcode_cmd)) == 0) {
-        for (int i = 0; i < ARRAY_SIZE(idcode); i++) {
-            idcode[i] = cpld_reg_rd(CPLD_CONF_FLASH_READ_BYTE + ARRAY_SIZE(idcode) - (i + 1));
-        }
-        if (idcode[3] == 0x43 &&
-            (idcode[2] == 0xb0 || idcode[2] == 0xc0)) {
-            pal_mem_trace("Id verified\n");
-            close(fd);
-            return true;
-        }
-    }
-    pal_mem_trace("Unable to verify id\n");
-    close(fd);
+    // TODO for Elba FPGA update
     return false;
-}
-
-static int
-cpld_erase_flash_cmd(int fd)
-{
-    uint8_t read_status[4];
-    static const uint8_t lsc_erase_cmd[]  = {0x0E, 0x4, 0x0, 0x0};
-    static const uint8_t lsc_status_cmd[] = {0x3C, 0x0, 0x0, 0x0};
-
-    // Erase the flash
-    if (cpld_send_cmd_spi(fd, lsc_erase_cmd, sizeof(lsc_erase_cmd)) == 0) {
-        // Delay 1ms
-        usleep(1000);
-        // Check for busy bit.
-        if (busy_check_bit(fd) == -1) {
-            pal_mem_trace("cpld_erase_flash_cmd::busy bit check failed\n");
-            return -1;
-        }
-        // Verify if erase actually happened
-        if (cpld_send_cmd_spi(fd, lsc_status_cmd, sizeof(lsc_status_cmd)) == 0) {
-            for (int i = 0; i < ARRAY_SIZE(read_status); i++) {
-                read_status[i] = cpld_reg_rd(CPLD_CONF_FLASH_READ_BYTE + ARRAY_SIZE(read_status) - (i + 1));
-            }
-            if ((read_status[1] & CPLD_READ_STATUS_MASK) == 0) {
-                pal_mem_trace("cpld_erase_flash_cmd::erase done\n");
-                return 0;
-            }
-        }
-    }
-    pal_mem_trace("cpld_erase_flash_cmd::erase failed\n");
-    return -1;
 }
 
 int
 cpld_erase(void)
 {
-    int fd;
-    static const uint8_t lsc_enable_cmd[]    = {0x74, 0x8, 0x0, 0x0};
-    static const uint8_t lsc_disable_cmd[]   = {0x26, 0x0, 0x0};
-    static const uint8_t lsc_no_op_cmd[]     = {0xFF, 0xFF, 0xFF, 0xFF};
-
-    //verify device id
-    if (cpld_verify_idcode() == false) {
-        pal_mem_trace("cpld_erase::verify idcode failed\n");
-        return -1;
-    }
-
-    // Open the spi device.
-    if ((fd = open(spidev1_path, O_RDWR, 0)) < 0) {
-        pal_mem_trace("cpld_erase::unable to open the spi dev\n");
-        return -1;
-    }
-    pal_mem_trace("Trying to initialize the device\n");
-    // Put the device in ISC_ACCESSED mode
-    if (cpld_send_cmd_spi(fd, lsc_enable_cmd, sizeof(lsc_enable_cmd)) == -1) {
-        goto error;
-    }
-    // Delay 1ms
-    usleep(1000);
-    pal_mem_trace("Device initialized\n");
-
-    // Erase the flash
-    if (cpld_erase_flash_cmd(fd) == -1) {
-        pal_mem_trace("Error erasing flash\n");
-        goto error;
-    }
-
-    // Leaving the ISC_Accessed mode
-    if (cpld_send_cmd_spi(fd, lsc_disable_cmd, sizeof(lsc_disable_cmd)) == 0) {
-        // Delay 2ms
-        usleep(2000);
-        cpld_send_cmd_spi(fd, lsc_no_op_cmd, sizeof(lsc_no_op_cmd));
-        close(fd);
-        pal_mem_trace("Device uninitialized\n");
-        return 0;
-    }
-
-error:
-    close(fd);
-    return -1;
-}
-
-static int
-cpld_read_flash_cmd(int fd, uint8_t *buf, uint32_t len)
-{
-    static const uint8_t lsc_init_cmd[] = {0x46, 0x0, 0x0, 0x0};
-    static const uint8_t lsc_read_cmd[] = {0x73, 0x0, 0x0, 0x0, 0x0,
-                                    0x0, 0x0, 0x0, 0x0, 0x0};
-    uint32_t count = 0;
-    uint8_t rx_data[CPLD_FLASH_TRANS_SIZE];
-
-    memset(rx_data, 0, sizeof(rx_data));
-
-    // Set the initial address for the flash
-    if (cpld_send_cmd_spi(fd, lsc_init_cmd, sizeof(lsc_init_cmd)) == 0) {
-        // Do the read
-        do {
-            if (cpld_send_cmd_spi_rx(fd, lsc_read_cmd, sizeof(lsc_read_cmd), rx_data, sizeof(rx_data)) == 0) {
-                for (int i = 0; i < CPLD_FLASH_TRANS_SIZE; i++) {
-                    buf[i + count] = cpld_reg_rd(CPLD_DATA_CACHE_END_ADDR - i);
-                }
-            } else {
-                // error reading file
-                return -1;
-            }
-            usleep(1000);
-            count += CPLD_FLASH_TRANS_SIZE;
-        } while(count < len);
-        return 0;
-    }
-    pal_mem_trace("cpld_read_flash_cmd::read flash failed\n");
+    // TODO for Elba FPGA update
     return -1;
 }
 
 int
 cpld_read_flash(uint8_t *buf, uint32_t len)
 {
-    int fd;
-    static const uint8_t lsc_enable_cmd[]    = {0x74, 0x8, 0x0, 0x0};
-    static const uint8_t lsc_disable_cmd[]   = {0x26, 0x0, 0x0};
-    static const uint8_t lsc_no_op_cmd[]     = {0xFF, 0xFF, 0xFF, 0xFF};
-
-    //verify device id
-    if (cpld_verify_idcode() == false) {
-        pal_mem_trace("cpld_read_flash::cannot verify id\n");
-        return -1;
-    }
-
-    // Open the spi device.
-    if ((fd = open(spidev1_path, O_RDWR, 0)) < 0) {
-        pal_mem_trace("cpld_read_flash::failed to open the spi dev\n");
-        return -1;
-    }
-    // Put the device in ISC_ACCESSED mode
-    if (cpld_send_cmd_spi(fd, lsc_enable_cmd, sizeof(lsc_enable_cmd)) == -1) {
-        pal_mem_trace("cpld_read_flash::cannot put it in the isc accessed mode\n");
-        goto error;
-    }
-    // Delay 1ms
-    usleep(1000);
-    pal_mem_trace("Device initialized\n");
-
-    // Read CFG Flash area
-    if (cpld_read_flash_cmd(fd, buf, len) == -1) {
-        pal_mem_trace("Error reading flash read command failed\n");
-        goto error;
-    }
-
-    // Leaving the ISC_Accessed mode
-    if (cpld_send_cmd_spi(fd, lsc_disable_cmd, sizeof(lsc_disable_cmd)) == 0) {
-        // Delay 2ms
-        usleep(2000);
-        cpld_send_cmd_spi(fd, lsc_no_op_cmd, sizeof(lsc_no_op_cmd));
-        close(fd);
-        pal_mem_trace("Device uninitialized\n");
-        return 0;
-    }
-
-error:
-    close(fd);
-    return -1;
-}
-
-static int
-cpld_write_flash_cmd(int fd, const uint8_t *buf, uint32_t len, void *arg)
-{
-    static const uint8_t lsc_init_cmd[] = {0x46, 0x0, 0x0, 0x0};
-    uint8_t wr_buf[20] = {0x70, 0x0, 0x0, 0x0, 0x0};
-    const uint8_t *buffer;
-    uint32_t count = len;
-    uint32_t tot_percent;
-    uint32_t cur_percent = 0;
-
-    if (len % CPLD_FLASH_TRANS_SIZE == 0) {
-        tot_percent = len / CPLD_FLASH_TRANS_SIZE;
-    } else {
-        tot_percent = len / CPLD_FLASH_TRANS_SIZE + 1;
-    }
-    buffer = buf;
-    // Set the initial address for the flash
-    if (cpld_send_cmd_spi(fd, lsc_init_cmd, sizeof(lsc_init_cmd)) == 0) {
-        // Do the write
-        do {
-            if (count / CPLD_FLASH_TRANS_SIZE == 0) {
-                if (count) {
-                    memset(wr_buf, 0, sizeof(wr_buf));
-                    wr_buf[0] = 0x70;
-                    memcpy(wr_buf + 4, buffer, count);
-                    buffer = buffer + count;
-                }
-            } else {
-                memcpy(wr_buf + 4, buffer, CPLD_FLASH_TRANS_SIZE);
-                buffer = buffer + CPLD_FLASH_TRANS_SIZE;
-            }
-            if (cpld_send_cmd_spi(fd, wr_buf, sizeof(wr_buf)) != 0) {
-                // error writing to the cpld
-                goto error;
-            }
-            // Check for busy bit.
-            if (busy_check_bit(fd) == -1) {
-                goto error;
-            }
-            count -= CPLD_FLASH_TRANS_SIZE;
-            if ((cur_percent * 100)/tot_percent) {
-                g_cpld_upgrade_status_cb(PAL_UPGRADE_WRITE_DONE, (cur_percent * 100)/tot_percent, arg);
-            }
-            cur_percent++;
-        } while(count > 0);
-        return 0;
-    }
-error:
-    return -1;
-}
-
-static int
-cpld_program_done_bit_cmd(int fd)
-{
-    uint8_t read_status[4];
-    static const uint8_t lsc_prog_done_cmd[]  = {0x5E, 0x0, 0x0, 0x0};
-    static const uint8_t lsc_status_cmd[] = {0x3C, 0x0, 0x0, 0x0};
-
-    // Send program done bit
-    if (cpld_send_cmd_spi(fd, lsc_prog_done_cmd, sizeof(lsc_prog_done_cmd)) == 0) {
-        // Delay 1ms
-        usleep(1000);
-        // Check for busy bit.
-        if (busy_check_bit(fd) == -1) {
-            pal_mem_trace("cpld_program_done_bit_cmd::busy bit check failed\n");
-            return -1;
-        }
-        // Verify if programmed happened actually happened
-        if (cpld_send_cmd_spi(fd, lsc_status_cmd, sizeof(lsc_status_cmd)) == 0) {
-            for (int i = 0; i < ARRAY_SIZE(read_status); i++) {
-                read_status[i] = cpld_reg_rd(CPLD_CONF_FLASH_READ_BYTE + ARRAY_SIZE(read_status) - (i + 1));
-            }
-            if ((read_status[1] & CPLD_READ_STATUS_MASK) == 0) {
-                pal_mem_trace("cpld_program_done_bit_cmd::program done\n");
-                return 0;
-            }
-        }
-    }
+    // TODO for Elba FPGA update
     return -1;
 }
 
 int
 cpld_write_flash(const uint8_t *buf, uint32_t len, cpld_upgrade_status_cb_t cpld_upgrade_status_cb, void *arg)
 {
-    int fd;
-    uint8_t *readbuf;
-    static const uint8_t lsc_enable_cmd[]    = {0x74, 0x8, 0x0, 0x0};
-    static const uint8_t lsc_disable_cmd[]   = {0x26, 0x0, 0x0};
-    static const uint8_t lsc_no_op_cmd[]     = {0xFF, 0xFF, 0xFF, 0xFF};
-
-    if (cpld_upgrade_status_cb != NULL) {
-        // since no callback provided init the cb to dummy function
-        g_cpld_upgrade_status_cb = cpld_upgrade_status_cb;
-    }
-
-    //verify device id
-    if (cpld_verify_idcode() == false) {
-        pal_mem_trace("cpld_write_flash::verify id failed\n");
-        return -1;
-    }
-
-    // Open the spi device.
-    if ((fd = open(spidev1_path, O_RDWR, 0)) < 0) {
-        pal_mem_trace("cpld_write_flash::failed to open the spi dev\n");
-        return -1;
-    }
-    // Put the device in ISC_ACCESSED mode
-    if (cpld_send_cmd_spi(fd, lsc_enable_cmd, sizeof(lsc_enable_cmd)) == -1) {
-        pal_mem_trace("cpld_write_flash::unable to set isc accessed mode\n");
-        goto error;
-    }
-    // Delay 1ms
-    usleep(1000);
-    pal_mem_trace("Device initialized\n");
-
-    // Erase the flash
-    if (cpld_erase_flash_cmd(fd) == -1) {
-        pal_mem_trace("Error erasing flash\n");
-        goto error;
-    }
-    pal_mem_trace("Device Erased\n");
-    g_cpld_upgrade_status_cb(PAL_UPGRADE_ERASED_DONE, 100, arg);
-
-    // Write the cpld
-    if (cpld_write_flash_cmd(fd, buf, len, arg) == -1) {
-        pal_mem_trace("Error writing flash\n");
-        goto error;
-    }
-    pal_mem_trace("Device written\n");
-    g_cpld_upgrade_status_cb(PAL_UPGRADE_WRITE_DONE, 100, arg);
-
-    // Program done bit
-    if (cpld_program_done_bit_cmd(fd) == -1) {
-        pal_mem_trace("Error writing program done bit\n");
-        goto error;
-    }
-    pal_mem_trace("Programmed done bit written\n");
-
-    // verify flash
-    readbuf = (uint8_t*)calloc(len, sizeof(uint8_t));
-    // Read CFG Flash area
-    if (cpld_read_flash_cmd(fd, readbuf, len) == -1) {
-        pal_mem_trace("Error reading flash read command failed\n");
-        goto error;
-    }
-    if (memcmp(buf, readbuf, len) != 0) {
-        pal_mem_trace("Error verifying flash\n");
-        goto error;
-    }
-    pal_mem_trace("flash verified\n");
-    g_cpld_upgrade_status_cb(PAL_UPGRADE_VERIFY_DONE, 100, arg);
-
-    // Leaving the ISC_Accessed mode
-    if (cpld_send_cmd_spi(fd, lsc_disable_cmd, sizeof(lsc_disable_cmd)) == 0) {
-        // Delay 2ms
-        usleep(2000);
-        cpld_send_cmd_spi(fd, lsc_no_op_cmd, sizeof(lsc_no_op_cmd));
-        close(fd);
-        pal_mem_trace("Device uninitialized\n");
-        g_cpld_upgrade_status_cb(PAL_UPGRADE_COMPLETED, 100, arg);
-        return 0;
-    }
-
-error:
-    close(fd);
+    // TODO for Elba FPGA update
     return -1;
 }
 #endif
