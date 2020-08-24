@@ -85,21 +85,16 @@ function dockerSettings() {
     mkdir -p /etc/docker
     if [ ! -f /etc/docker/daemon.json ] ; then
         systemctl stop docker || :
-        printf "{\n\t\"default-ipc-mode\": \"shareable\",\n\t\"log-driver\": \"journald\"\n}" > /etc/docker/daemon.json
-        systemctl start docker || :
-    elif ! grep 'default-ipc-mode' /etc/docker/daemon.json && ! grep 'log-driver' /etc/docker/daemon.json; then
-        systemctl stop docker || :
-        sed -i -e "s{{\n\t\"default-ipc-mode\": \"shareable\",\n\t\"log-driver\": \"journald\",\n" /etc/docker/daemon.json
-        systemctl start docker || :
-    elif ! grep 'default-ipc-mode' /etc/docker/daemon.json ; then
-        systemctl stop docker || :
-        sed -i -e "s{{\n\t\"default-ipc-mode\": \"shareable\",\n" /etc/docker/daemon.json
-        systemctl start docker || :
-    elif ! grep 'log-driver' /etc/docker/daemon.json ; then
-        systemctl stop docker || :
-        sed -i -e "s{{\n\t\"log-driver\": \"journald\",\n" /etc/docker/daemon.json
-        systemctl start docker || :
+        printf "{}" > /etc/docker/daemon.json
     fi
+    # The dns address must be kept in sync with the content of pen-dnsmasq.service
+    cat /etc/docker/daemon.json | \
+        jq '."default-ipc-mode" = "shareable" | ."log-driver" = "journald" | ."dns" = ["127.0.0.53"]' > \
+        /tmp/docker-daemon.json && mv /tmp/docker-daemon.json /etc/docker/daemon.json
+    # start dnsmasq before starting docker daemon
+    systemctl enable pen-dnsmasq || :
+    systemctl start pen-dnsmasq || :
+    systemctl start docker || :
 }
 
 if [ "$1" == "--clean" ]

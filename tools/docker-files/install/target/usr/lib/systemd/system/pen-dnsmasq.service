@@ -1,0 +1,17 @@
+[Unit]
+Description=dnsmasq instance for PSM services
+
+# This dnsmasq instance intercepts all DNS queries coming from PSM microservices and
+# resolves them according to the current content of /etc/resolv.conf
+# This is needed to be able to change the DNS config of a PSM node while services are running.
+# Normally the docker daemon reads the content of /etc/resolv.conf at startup time and uses it
+# for all containers. Subsequent changes to /etc/resolv.conf are not picked up.
+[Service]
+SyslogIdentifier=pen-dnsmasq
+User=root
+# --listen-address IP must be kept in sync with the value specified in scripts/INSTALL.sh
+# --bind-interfaces prevents dnsmasq from binding to interfaces other than loopback
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --cache-size=0 --bind-interfaces --listen-address 127.0.0.53
+
+Restart=always
+RestartSec=1s
