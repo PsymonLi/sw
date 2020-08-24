@@ -1,0 +1,20 @@
+---
+version: 2.0
+image:
+  bind_dir: "/sw"
+  work_dir:
+targets:
+  coverity:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw && asset-pull coverity 0.0.1 /dev/stdout | tar xz &&
+          sudo mv coverity / && mkdir cov && cd nic && export PATH=/coverity/bin:$PATH &&
+          cov-build --config /coverity/aarch64.xml --dir ../cov make PIPELINE=iris ARCH=aarch64 PLATFORM=hw firmware &&
+          cov-analyze --dir ../cov --all --strip-path /usr/src/github.com/pensando/sw/nic &&
+          cd .. && tar zcf coverity.tar.gz cov && cp cov/output/summary.txt . && cat cov/output/summary.txt"]
+    owners: ["email:jason@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+logfiles:
+  - /sw/coverity.tar.gz
+  - /sw/summary.txt

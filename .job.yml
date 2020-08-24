@@ -426,6 +426,8 @@ jobs:
   # this is one dummy job only for verify some folder change not impact iris build
   # no label is required
   test/verify-build:
+  tools/coverity:
+    labels: ["CI-Regression"]
   venice:
     labels: ["CI-Sim-UnitTest-Ent"]
   venice/ui:
