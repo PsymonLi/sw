@@ -52,6 +52,10 @@ using sys::FTEInfo;
 using sys::QCtr;
 using sys::QGlobalInfo;
 using sys::QInfo;
+using sys::FTEDebugStats;
+using sys::FTEInstDebugStats;
+using sys::FTEDebugStatsInfo;
+using sys::FTEDebugStatsType;
 
 using namespace sdk::lib;
 
@@ -2820,7 +2824,11 @@ session_update(const session_args_t *args, session_t *session)
 
     if (args->vrf_handle) {
         vrf = vrf_lookup_by_handle(args->vrf_handle);
-        SDK_ASSERT_RETURN((vrf != NULL), HAL_RET_INVALID_ARG);
+
+        if (vrf == NULL) {
+            hal::g_hal_state->incr_fte_debug_stats(fte::fte_id(), sys::INVALID_DVRF);
+            return HAL_RET_INVALID_ARG;
+        }
     }
 
     // fetch the security profile, if any
@@ -4478,6 +4486,34 @@ system_session_summary_get(SystemResponse *rsp)
     session_stats->set_icmp_session_drop_count(session_summary.icmp_session_drop_count);
     session_stats->set_other_session_drop_count(session_summary.other_session_drop_count);
     session_stats->set_dsc_session_limit_drop_count(session_summary.dsc_session_limit_drop_count);
+
+    return HAL_RET_OK;
+}
+
+hal_ret_t
+system_fte_debug_stats_get (SystemResponse *rsp)
+{
+    FTEDebugStats              *fte_dbg_stats = NULL;
+    FTEInstDebugStats          *fte_inst_dbg_stats = NULL;
+    FTEDebugStatsInfo          *fte_dbg_stats_info = NULL;
+    hal::hal_fte_dbg_stats_t    per_fte_debug_stats = {0};
+
+    HAL_TRACE_DEBUG("Gathering fte debug stats ");
+    fte_dbg_stats = rsp->mutable_stats()->mutable_fte_debug_stats();
+    for (uint8_t i = 0; i < hal::g_hal_cfg.num_data_cores; i++) {
+        per_fte_debug_stats = hal::g_hal_state->get_fte_debug_stats(i);
+
+        fte_inst_dbg_stats = fte_dbg_stats->add_fte_inst_debug_stats();
+        fte_inst_dbg_stats->set_instance(i);
+
+        for (uint32_t idx = (uint32_t) sys::FTEDebugStatsType_MIN;
+             idx <= (uint32_t) sys::FTEDebugStatsType_MAX; idx++) {
+            fte_dbg_stats_info = fte_inst_dbg_stats->add_fte_debug_stats_info();
+
+            fte_dbg_stats_info->set_type(FTEDebugStatsType(idx));
+            fte_dbg_stats_info->set_count(per_fte_debug_stats.stats_count[idx]);
+        }
+    }
 
     return HAL_RET_OK;
 }

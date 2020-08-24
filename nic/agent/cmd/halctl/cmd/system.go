@@ -147,6 +147,20 @@ var systemStatsTableShowCmd = &cobra.Command{
 	Run:   tableInfoShowCmdHandler,
 }
 
+var systemDebugStatsShowCmd = &cobra.Command{
+	Use:   "debug",
+	Short: "show system statistics debug [fte] (Default: all)",
+	Long:  "show system statistics debug [fte] (Default: all)",
+	Run:   systemDebugStatsShowCmdHandler,
+}
+
+var systemDebugFteStatsShowCmd = &cobra.Command{
+	Use:   "fte",
+	Short: "show system statistics debug fte",
+	Long:  "show system statistics debug fte",
+	Run:   systemDebugFteStatsShowCmdHandler,
+}
+
 var threadShowCmd = &cobra.Command{
 	Use:   "thread",
 	Short: "show system threads",
@@ -200,6 +214,10 @@ func init() {
 	systemPbStatsShowCmd.AddCommand(systemQueueCreditsShowCmd)
 	// systemPbStatsShowCmd.AddCommand(systemPbIQStatsShowCmd)
 	// systemPbStatsShowCmd.AddCommand(systemPbOQStatsShowCmd)
+
+	// Debug Stats
+	systemStatsShowCmd.AddCommand(systemDebugStatsShowCmd)
+	systemDebugStatsShowCmd.AddCommand(systemDebugFteStatsShowCmd)
 
 	// System mode show cmd
 	systemModeShowCmd.Flags().Bool("yaml", false, "Output in yaml")
@@ -1714,6 +1732,94 @@ func systemStatsShowCmdHandler(cmd *cobra.Command, args []string) {
 
 }
 
+func fteDebugStatsTypeToString(statstype halproto.FTEDebugStatsType) string {
+	str := strings.ToLower(strings.Replace(statstype.String(), "_", " ", -1))
+	return str
+}
+
+func fteDebugStatsShow(stats *halproto.Stats) {
+	var ftedebugstats *halproto.FTEDebugStats
+
+	ftedebugstats = stats.GetFteDebugStats()
+
+	fmt.Printf("\nFTE Debug Stats:\n")
+	hdrLine := strings.Repeat("-", 60)
+	fmt.Println(hdrLine)
+
+	if ftedebugstats == nil {
+		return
+	}
+
+	for _, instdebugstats := range ftedebugstats.FteInstDebugStats {
+		fmt.Printf("%s%-3d\n", "FTE ID   : ", instdebugstats.GetInstance())
+		fmt.Printf("%-40s%20s\n", "Stats Type", "Count")
+		fmt.Println(hdrLine)
+		for _, debugstatsinfo := range instdebugstats.FteDebugStatsInfo {
+			count := debugstatsinfo.GetCount()
+			if count != 0 {
+				str := fteDebugStatsTypeToString(debugstatsinfo.GetType())
+				if strings.Compare(str, "Invalid") == 0 {
+					continue
+				}
+				fmt.Printf("%-40s%20d\n", str, count)
+			}
+		}
+	}
+}
+
+func systemDebugStatsShow(cmd *cobra.Command, args []string, statstype halproto.SystemGetType) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+
+	fte := false
+	typestr := "all"
+
+	var req *halproto.SystemGetRequest
+
+	if statstype == halproto.SystemGetType_SYSTEM_GET_FTE_DBG_STATS {
+		fte = true
+		typestr = "fte"
+	} else {
+		// Get All Debug Stats
+		fte = true
+		statstype = halproto.SystemGetType_SYSTEM_GET_ALL_DBG_STATS
+	}
+
+	req = &halproto.SystemGetRequest{
+		Request: statstype,
+	}
+
+	client := halproto.NewSystemClient(c)
+
+	// HAL call
+	resp, err := client.SystemGet(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Getting Debug %v statistics failed. %v\n", typestr, err)
+		return
+	}
+
+	if resp.GetApiStatus() != halproto.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", resp.GetApiStatus())
+		return
+	}
+
+	if fte {
+		fteDebugStatsShow(resp.GetStats())
+	}
+}
+
+func systemDebugStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	systemDebugStatsShow(cmd, args, halproto.SystemGetType_SYSTEM_GET_ALL_DBG_STATS)
+}
+func systemDebugFteStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	systemDebugStatsShow(cmd, args, halproto.SystemGetType_SYSTEM_GET_FTE_DBG_STATS)
+}
+
 func systemClockShowCmdHandler(cmd *cobra.Command, args []string) {
 	// Connect to HAL
 	c, err := utils.CreateNewGRPCClient()
@@ -2267,39 +2373,39 @@ func fteTxRxStatsShow(stats *halproto.Stats) {
 				qinfo.GetPcIndexAddr(), qinfo.GetValidBitValue())
 			fmt.Printf("%s\n", strings.Repeat("-", 125))
 			ctr := qinfo.GetCtr()
-			fmt.Printf("%s%-15d\n", "Tx pkts                                 : ", ctr.GetSendPkts())
-			fmt.Printf("%s%-15d\n", "Rx pkts                                 : ", ctr.GetRecvPkts())
-			fmt.Printf("%s%-15d\n", "Rx semaphore write errors               : ", ctr.GetRxSemWrErr())
-			fmt.Printf("%s%-15d\n", "Rx slot value read errors               : ", ctr.GetRxSlotValueReadErr())
-			fmt.Printf("%s%-15d\n", "Rx descriptor read errors               : ", ctr.GetRxDescrReadErr())
-			fmt.Printf("%s%-15d\n", "Rx descriptor to header errors          : ", ctr.GetRxDescrToHdrErr())
-			fmt.Printf("%s%-15d\n", "Rx descriptor free errors               : ", ctr.GetRxDescrFreeErr())
-			fmt.Printf("%s%-15d\n", "Tx descriptor free errors               : ", ctr.GetTxDescrFreeErr())
-			fmt.Printf("%s%-15d\n", "Tx page allocation errors               : ", ctr.GetTxPageAllocErr())
-			fmt.Printf("%s%-15d\n", "Tx page copy errors                     : ", ctr.GetTxPageCopyErr())
-			fmt.Printf("%s%-15d\n", "Tx descriptor programming errors        : ", ctr.GetTxDescrPgmErr())
-			fmt.Printf("%s%-15d\n", "Tx send errors                          : ", ctr.GetTxSendErr())
-			fmt.Printf("%s%-15d\n", "Poll count                              : ", ctr.GetPollCount())
-			fmt.Printf("%s%-15d\n", "Rx descriptor out of bound errors       : ", ctr.GetRxDescrAddrOob())
-			fmt.Printf("%s%-15d\n", "Tx doorbell errors                      : ", ctr.GetTxDoorbellErr())
+			fmt.Printf("%-40s:%15d\n", "Tx pkts", ctr.GetSendPkts())
+			fmt.Printf("%-40s:%15d\n", "Rx pkts", ctr.GetRecvPkts())
+			fmt.Printf("%-40s:%15d\n", "Rx semaphore write errors", ctr.GetRxSemWrErr())
+			fmt.Printf("%-40s:%15d\n", "Rx slot value read errors", ctr.GetRxSlotValueReadErr())
+			fmt.Printf("%-40s:%15d\n", "Rx descriptor read errors", ctr.GetRxDescrReadErr())
+			fmt.Printf("%-40s:%15d\n", "Rx descriptor to header errors", ctr.GetRxDescrToHdrErr())
+			fmt.Printf("%-40s:%15d\n", "Rx descriptor free errors", ctr.GetRxDescrFreeErr())
+			fmt.Printf("%-40s:%15d\n", "Tx descriptor free errors", ctr.GetTxDescrFreeErr())
+			fmt.Printf("%-40s:%15d\n", "Tx page allocation errors", ctr.GetTxPageAllocErr())
+			fmt.Printf("%-40s:%15d\n", "Tx page copy errors", ctr.GetTxPageCopyErr())
+			fmt.Printf("%-40s:%15d\n", "Tx descriptor programming errors", ctr.GetTxDescrPgmErr())
+			fmt.Printf("%-40s:%15d\n", "Tx send errors", ctr.GetTxSendErr())
+			fmt.Printf("%-40s:%15d\n", "Poll count", ctr.GetPollCount())
+			fmt.Printf("%-40s:%15d\n", "Rx descriptor out of bound errors", ctr.GetRxDescrAddrOob())
+			fmt.Printf("%-40s:%15d\n", "Tx doorbell errors", ctr.GetTxDoorbellErr())
 
 			fmt.Printf("\n")
 		}
 		fmt.Printf("\n")
 		fmt.Printf("FTE Local\n")
 		glbl := fteinfo.GetGlbal()
-		fmt.Printf("%s%-15d\n", "GC pindex           : ", glbl.GetGcPindex())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Page Pindex  : ", glbl.GetCpuTxPagePindex())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Page Cindex  : ", glbl.GetCpuTxPageCindex())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Page Full Errors  : ", glbl.GetCpuTxPageFullErr())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Descr Pindex : ", glbl.GetCpuTxDescrPindex())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Descr Cindex : ", glbl.GetCpuTxDescrCindex())
-		fmt.Printf("%s%-15d\n", "Cpu Tx Descr Full Errors  : ", glbl.GetCpuTxDescrFullErr())
-		fmt.Printf("%s%-15d\n", "Cpu Rx DPR Cindex   : ", glbl.GetCpuRxDprCindex())
-		fmt.Printf("%s%-15d\n", "Cpu Rx DPR SEM Cindex   : ", glbl.GetCpuRxDprSemCindex())
-		fmt.Printf("%s%-15d\n", "Cpu Rx DPR Descr Free Errors : ", glbl.GetCpuRxDprDescrFreeErr())
-		fmt.Printf("%s%-15d\n", "Cpu Rx DPR SEM Free Errors : ", glbl.GetCpuRxDprSemFreeErr())
-		fmt.Printf("%s%-15d\n", "Cpu Rx DPR Descr Invalid Free Errors : ", glbl.GetCpuRxDprDescrInvalidFreeErr())
+		fmt.Printf("%-40s:%15d\n", "GC pindex", glbl.GetGcPindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Page Pindex", glbl.GetCpuTxPagePindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Page Cindex", glbl.GetCpuTxPageCindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Page Full Errors", glbl.GetCpuTxPageFullErr())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Descr Pindex", glbl.GetCpuTxDescrPindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Descr Cindex", glbl.GetCpuTxDescrCindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Tx Descr Full Errors", glbl.GetCpuTxDescrFullErr())
+		fmt.Printf("%-40s:%15d\n", "Cpu Rx DPR Cindex", glbl.GetCpuRxDprCindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Rx DPR SEM Cindex", glbl.GetCpuRxDprSemCindex())
+		fmt.Printf("%-40s:%15d\n", "Cpu Rx DPR Descr Free Errors", glbl.GetCpuRxDprDescrFreeErr())
+		fmt.Printf("%-40s:%15d\n", "Cpu Rx DPR SEM Free Errors", glbl.GetCpuRxDprSemFreeErr())
+		fmt.Printf("%-40s:%15d\n", "Cpu Rx DPR Descr Invalid Free Errors", glbl.GetCpuRxDprDescrInvalidFreeErr())
 
 		fteid++
 	}
@@ -2320,47 +2426,48 @@ func fteStatsShow(stats *halproto.Stats) {
 		fmt.Printf("\n%s\n", strings.Repeat("-", 15))
 		fmt.Printf("%s%-3d\n", "FTE ID   : ", fteid)
 		fmt.Printf("%s\n", strings.Repeat("-", 15))
-		fmt.Printf("\n%s%-15d\n", "Connection per-second          :", ftestatsinfo.GetConnPerSecond())
-		fmt.Printf("%s%-15d\n", "Max. Connection per-second     :", ftestatsinfo.GetMaxConnPerSecond())
-		fmt.Printf("%s%-15d\n", "Packets per-second            :", ftestatsinfo.GetPacketsPerSecond())
-		fmt.Printf("%s%-15d\n", "Max. Packets per-second     :", ftestatsinfo.GetMaxPacketsPerSecond())
-		fmt.Printf("%s%-15d\n", "Flow-miss Packets		:", ftestatsinfo.GetFlowMissPkts())
-		fmt.Printf("%s%-15d\n", "Retransmit Packets             :", ftestatsinfo.GetRetransmitPkts())
-		fmt.Printf("%s%-15d\n", "Redir Packets			:", ftestatsinfo.GetRedirPkts())
-		fmt.Printf("%s%-15d\n", "Cflow Packets			:", ftestatsinfo.GetCflowPkts())
-		fmt.Printf("%s%-15d\n", "TCP Close Packets		:", ftestatsinfo.GetTcpClosePkts())
-		fmt.Printf("%s%-15d\n", "TLS Proxy Packets		:", ftestatsinfo.GetTlsProxyPkts())
-		fmt.Printf("%s%-15d\n", "Softq Reqs			:", ftestatsinfo.GetSoftqReqs())
-		fmt.Printf("%s%-15d\n", "Queued Tx Packets		:", ftestatsinfo.GetQueuedTxPkts())
-		fmt.Printf("%s%-15d\n", "Softq length           :", ftestatsinfo.GetSoftqLen())
-		fmt.Printf("%s%-20d\n", "Max. Session drop pkts :", ftestatsinfo.GetMaxSessionPktDrops())
+		fmt.Printf("\n%-40s%20d\n", "Connection per-second", ftestatsinfo.GetConnPerSecond())
+		fmt.Printf("%-40s%20d\n", "Max. Connection per-second", ftestatsinfo.GetMaxConnPerSecond())
+		fmt.Printf("%-40s%20d\n", "Packets per-second", ftestatsinfo.GetPacketsPerSecond())
+		fmt.Printf("%-40s%20d\n", "Max. Packets per-second", ftestatsinfo.GetMaxPacketsPerSecond())
+		fmt.Printf("%-40s%20d\n", "Flow-miss Packets", ftestatsinfo.GetFlowMissPkts())
+		fmt.Printf("%-40s%20d\n", "Retransmit Packets", ftestatsinfo.GetRetransmitPkts())
+		fmt.Printf("%-40s%20d\n", "Redir Packets", ftestatsinfo.GetRedirPkts())
+		fmt.Printf("%-40s%20d\n", "Cflow Packets", ftestatsinfo.GetCflowPkts())
+		fmt.Printf("%-40s%20d\n", "TCP Close Packets", ftestatsinfo.GetTcpClosePkts())
+		fmt.Printf("%-40s%20d\n", "TLS Proxy Packets", ftestatsinfo.GetTlsProxyPkts())
+		fmt.Printf("%-40s%20d\n", "Softq Reqs", ftestatsinfo.GetSoftqReqs())
+		fmt.Printf("%-40s%20d\n", "Queued Tx Packets", ftestatsinfo.GetQueuedTxPkts())
+		fmt.Printf("%-40s%20d\n", "Softq length", ftestatsinfo.GetSoftqLen())
+		fmt.Printf("%-40s%20d\n", "Max. Session drop pkts", ftestatsinfo.GetMaxSessionPktDrops())
 		fmt.Printf("\n%s\n", "FTE Error Count: ")
-		hdrLine := strings.Repeat("-", 56)
+		hdrLine := strings.Repeat("-", 60)
 		fmt.Println(hdrLine)
-		fmt.Printf("%25s%25s\n", "Error Type", "Drop Count")
+		fmt.Printf("%-40s%20s\n", "Error Type", "Drop Count")
 		fmt.Println(hdrLine)
 		if ftestatsinfo.FteErrors != nil {
 			for _, fteerr := range ftestatsinfo.FteErrors {
 				if fteerr != nil {
 					if fteerr.GetCount() != 0 {
-						fmt.Printf("%25s%25d\n", fteerr.GetFteError(), fteerr.GetCount())
+						fmt.Printf("%-40s%20d\n", fteerr.GetFteError(), fteerr.GetCount())
 					}
 				}
 			}
 		}
 
 		fmt.Printf("\n%s\n", "FTE Feature Stats:")
-		hdrLines := strings.Repeat("-", 100)
+		hdrLines := strings.Repeat("-", 55)
 		fmt.Println(hdrLines)
-		fmt.Printf("%25s%25s%25s%25s\n", "Feature Name", "Drop Count", "Drop Reason", "Drops per-reason")
+		fmt.Printf("%-25s%20s\n", "Feature Name", "Drop Count")
+		fmt.Printf("%10s%-25s%20s\n", " ", "Drop Reason", "Drops per-reason")
 		fmt.Println(hdrLines)
 		if ftestatsinfo.FeatureStats != nil {
 			for _, featurestats := range ftestatsinfo.FeatureStats {
 				if featurestats != nil {
-					fmt.Printf("%25s%25d", featurestats.GetFeatureName(), featurestats.GetDropPkts())
+					fmt.Printf("%-25s%20d", featurestats.GetFeatureName(), featurestats.GetDropPkts())
 					for _, fteerr := range featurestats.DropReason {
 						if fteerr.GetCount() != 0 {
-							fmt.Printf("%25s%25d\n", fteerr.GetFteError(), fteerr.GetCount())
+							fmt.Printf("%10s%-25s%20d\n", " ", fteerr.GetFteError(), fteerr.GetCount())
 						}
 					}
 				}
@@ -2377,28 +2484,28 @@ func sessionSummaryStatsShow(stats *halproto.Stats) {
 
 	sessstats = stats.GetSessionStats()
 
-	hdrLine := strings.Repeat("-", 56)
+	hdrLine := strings.Repeat("-", 50)
 	fmt.Println(hdrLine)
-	fmt.Printf("%25s%25s\n", "Session Type", "Count")
+	fmt.Printf("%-25s%25s\n", "Session Type", "Count")
 	fmt.Println(hdrLine)
-	fmt.Printf("%25s%25d\n", "Total Active", sessstats.GetTotalActiveSessions())
-	fmt.Printf("%25s%25d\n", "L2", sessstats.GetL2Sessions())
-	fmt.Printf("%25s%25d\n", "TCP", sessstats.GetTcpSessions())
-	fmt.Printf("%25s%25d\n", "UDP", sessstats.GetUdpSessions())
-	fmt.Printf("%25s%25d\n", "ICMP", sessstats.GetIcmpSessions())
-	fmt.Printf("%25s%25d\n", "Security Policy DROP", sessstats.GetDropSessions())
-	fmt.Printf("%25s%25d\n", "AGED", sessstats.GetAgedSessions())
-	fmt.Printf("%25s%25d\n", "TCP connection timeouts", sessstats.GetNumConnectionTimeoutSessions())
-	fmt.Printf("%25s%25d\n", "TCP Resets on SFW Reject", sessstats.GetNumTcpResetSent())
-	fmt.Printf("%25s%25d\n", "ICMP Errors on SFW Reject", sessstats.GetNumIcmpErrorSent())
-	fmt.Printf("%25s%25d\n", "Session create failures", sessstats.GetNumSessionCreateErrors())
-	fmt.Printf("%25s%25d\n", "TCP Half-Open Sessions", sessstats.GetTcpHalfOpenSessions())
-	fmt.Printf("%25s%25d\n", "Other Active Sessions", sessstats.GetOtherActiveSessions())
-	fmt.Printf("%25s%25d\n", "TCP Session Limit Drops", sessstats.GetTcpSessionDropCount())
-	fmt.Printf("%25s%25d\n", "UDP Session Limit Drops", sessstats.GetUdpSessionDropCount())
-	fmt.Printf("%25s%25d\n", "ICMP Session Limit Drops", sessstats.GetIcmpSessionDropCount())
-	fmt.Printf("%25s%25d\n", "Other Session Limit Drops", sessstats.GetOtherSessionDropCount())
-	fmt.Printf("%25s%25d\n", "DSC Session Limit Drops", sessstats.GetDscSessionLimitDropCount())
+	fmt.Printf("%-25s%25d\n", "Total Active", sessstats.GetTotalActiveSessions())
+	fmt.Printf("%-25s%25d\n", "L2", sessstats.GetL2Sessions())
+	fmt.Printf("%-25s%25d\n", "TCP", sessstats.GetTcpSessions())
+	fmt.Printf("%-25s%25d\n", "UDP", sessstats.GetUdpSessions())
+	fmt.Printf("%-25s%25d\n", "ICMP", sessstats.GetIcmpSessions())
+	fmt.Printf("%-25s%25d\n", "Security Policy DROP", sessstats.GetDropSessions())
+	fmt.Printf("%-25s%25d\n", "AGED", sessstats.GetAgedSessions())
+	fmt.Printf("%-25s%25d\n", "TCP connection timeouts", sessstats.GetNumConnectionTimeoutSessions())
+	fmt.Printf("%-25s%25d\n", "TCP Resets on SFW Reject", sessstats.GetNumTcpResetSent())
+	fmt.Printf("%-25s%25d\n", "ICMP Errors on SFW Reject", sessstats.GetNumIcmpErrorSent())
+	fmt.Printf("%-25s%25d\n", "Session create failures", sessstats.GetNumSessionCreateErrors())
+	fmt.Printf("%-25s%25d\n", "TCP Half-Open Sessions", sessstats.GetTcpHalfOpenSessions())
+	fmt.Printf("%-25s%25d\n", "Other Active Sessions", sessstats.GetOtherActiveSessions())
+	fmt.Printf("%-25s%25d\n", "TCP Session Limit Drops", sessstats.GetTcpSessionDropCount())
+	fmt.Printf("%-25s%25d\n", "UDP Session Limit Drops", sessstats.GetUdpSessionDropCount())
+	fmt.Printf("%-25s%25d\n", "ICMP Session Limit Drops", sessstats.GetIcmpSessionDropCount())
+	fmt.Printf("%-25s%25d\n", "Other Session Limit Drops", sessstats.GetOtherSessionDropCount())
+	fmt.Printf("%-25s%25d\n", "DSC Session Limit Drops", sessstats.GetDscSessionLimitDropCount())
 }
 
 func apiStatsShowHeader() {

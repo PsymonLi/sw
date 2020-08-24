@@ -127,6 +127,7 @@ ctx_t::extract_flow_key()
         break;
 
     default:
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::UNSUPPORTED_PACKET_LOOKUP_TYPE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unsupported lkp_type {}", cpu_rxhdr_->lkp_type);
         return HAL_RET_INVALID_ARG;
     }
@@ -444,11 +445,13 @@ static inline void fw_log(ipc_logger *logger, fwlog::FWEvent ev)
 {
     uint8_t *buf = logger->get_buffer(LOG_SIZE(ev));
     if (buf == NULL) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::LOGGER_BUFFER_FAILURE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Null buffer return");
         return;
     }
 
     if (!ev.SerializeToArray(buf, LOG_SIZE(ev))) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::LOGGER_BUFFER_SERIALIZATION_FAILURE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unable to serialize");
         return;
     }
@@ -799,6 +802,9 @@ ctx_t::update_flow_table()
         if (session_) {
             update_type = "delete";
             ret = hal::session_delete(&session_args, session_);
+            if (ret != HAL_RET_OK) {
+                hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::SESSION_DELETE_FAILURE);
+            }
         }
     } else if (session_) {
         if (update_session_) {
@@ -806,6 +812,10 @@ ctx_t::update_flow_table()
             update_type = "update";
             // Update session if it already exists
             ret = hal::session_update(&session_args, session_);
+
+            if (ret != HAL_RET_OK) {
+                hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::SESSION_UPDATE_FAILURE);
+            }
         }
     } else {
         // Create a new HAL session
@@ -821,6 +831,8 @@ ctx_t::update_flow_table()
                                            &state->session_feature_lentry);
                 }
             }
+        } else {
+            hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::SESSION_CREATE_FAILURE);
         }
     }
 
@@ -873,6 +885,7 @@ ctx_t::update_for_dnat(hal::flow_role_t role, const header_rewrite_info_t& heade
     dvrf_ =  hal::vrf_lookup_by_id(key->dvrf_id);
 
     if (dvrf_ == NULL) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::INVALID_DVRF);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "DNAT vrf not found vrf={}", key->dvrf_id);
         return HAL_RET_VRF_NOT_FOUND;
     }
@@ -963,6 +976,7 @@ ctx_t::update_for_snat(hal::flow_role_t role, const header_rewrite_info_t& heade
         svrf_ =  hal::vrf_lookup_by_id(key->svrf_id);
 
         if (svrf_ == NULL) {
+            hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::INVALID_SVRF);
             HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "SNAT vrf not found vrf={}", key->svrf_id);
             return HAL_RET_VRF_NOT_FOUND;
         }
@@ -1165,6 +1179,7 @@ ctx_t::send_queued_pkts(hal::pd::cpupkt_ctxt_t* arm_ctx)
         pd_func_args.pd_cpupkt_send = &args;
         ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_SEND, &pd_func_args);
         if (ret != HAL_RET_OK) {
+            hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::PACKET_SEND_FAILURE);
             HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to transmit pkt, ret={}", ret);
         }
         incr_inst_fte_tx_stats(pkt_info->pkt_len);
@@ -1220,6 +1235,7 @@ ctx_t::send_queued_pkts_new (hal::pd::cpupkt_ctxt_t* arm_ctx)
     pd_func_args.pd_cpupkt_send_new = &args;
     ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_SEND_NEW, &pd_func_args);
     if (ret != HAL_RET_OK) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::PACKET_SEND_FAILURE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to transmit pkt, ret={}", ret);
     }
 

@@ -1619,6 +1619,14 @@ hal_state::cleanup(void) {
             HAL_FREE(HAL_MEM_ALLOC_API_STATS, api_stats_);
         }
     }
+    if (fte_inst_debug_stats_) {
+        if (mmgr_) {
+            mmgr_->free(fte_inst_debug_stats_);
+        } else {
+            HAL_FREE(HAL_MEM_ALLOC_FTE_DEBUG_STATS, fte_inst_debug_stats_);
+        }
+        fte_inst_debug_stats_ = NULL;
+    }
     mmgr_ = NULL;
     obj_meta_ = NULL;
 }
@@ -1632,6 +1640,7 @@ hal_state::hal_state(hal_obj_meta **obj_meta, hal_cfg_t *hal_cfg, shmmgr *mmgr)
     cfg_db_ = NULL;
     oper_db_ = NULL;
     api_stats_ = NULL;
+    fte_inst_debug_stats_ = NULL;
     catalog_ = NULL;
     obj_meta_ = obj_meta;
 
@@ -1645,12 +1654,18 @@ hal_state::hal_state(hal_obj_meta **obj_meta, hal_cfg_t *hal_cfg, shmmgr *mmgr)
         api_stats_ =
             (hal_stats_t *)mmgr->alloc(sizeof(hal_stats_t) * HAL_API_MAX,
                                        4, true);
+        fte_inst_debug_stats_ =
+            (hal_fte_dbg_stats_t *)mmgr->alloc(sizeof(hal_fte_dbg_stats_t) * hal::g_hal_cfg.num_data_cores,
+                                       4, true);
     } else {
         api_stats_ = (hal_stats_t *)HAL_CALLOC(HAL_MEM_ALLOC_API_STATS,
                                         sizeof(hal_stats_t) * HAL_API_MAX);
+        fte_inst_debug_stats_ = (hal_fte_dbg_stats_t *)HAL_CALLOC(HAL_MEM_ALLOC_FTE_DEBUG_STATS,
+                                        sizeof(hal_fte_dbg_stats_t) * hal::g_hal_cfg.num_data_cores);
     }
     platform_ = hal_cfg->platform;
     SDK_ASSERT_GOTO(api_stats_, error);
+    SDK_ASSERT_GOTO(fte_inst_debug_stats_, error);
     return;
 
 error:

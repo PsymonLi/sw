@@ -1366,6 +1366,9 @@ It has these top-level messages:
 	QInfo
 	FTEInfo
 	PMDStats
+	FTEDebugStatsInfo
+	FTEInstDebugStats
+	FTEDebugStats
 	FeatureProfileResponse
 	MicroSegEvent
 	MicroSegSpec

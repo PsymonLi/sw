@@ -280,6 +280,7 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
              (packet_parse_result_t)parse_packet(packet, pkt_len, PACKET_LAYER_2_ETHERNET,
                                                  &error);
          if (result != PACKET_OK || error != NULL) {
+             hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::PACKET_PARSING_ERROR);
              HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unable to parse packet. result: {}, error: {}",
                                result, error);
              packet_free(packet);

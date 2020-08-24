@@ -542,7 +542,6 @@ void incr_inst_fte_error(hal_ret_t rc)
     t_inst->incr_fte_error(rc);
 }
 
-
 //----------------------------------------------------------------------------
 // Increment fte tx stats
 //----------------------------------------------------------------------------
@@ -802,6 +801,7 @@ void inst_t::process_arq()
     }
 
     if (ret != HAL_RET_OK) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::CPU_PACKET_RX_FAILURE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: arm rx failed, ret={}", ret);
         return;
     }
@@ -917,6 +917,7 @@ void inst_t::process_arq_new ()
     }
 
     if (ret != HAL_RET_OK) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::CPU_PACKET_RX_FAILURE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: arm rx failed, ret={}", ret);
         return;
     }

@@ -92,6 +92,7 @@ flow_t::merge_header_rewrite_with_push(header_push_info_t &dst,
 hal_ret_t flow_t::header_pop(const header_pop_info_t &header_pop)
 {
     if (num_header_updates_ >= MAX_HEADER_UPDATES) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::MAX_HEADER_UPDATES_EXCEEDED);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
         return HAL_RET_ERR;
     }
@@ -110,6 +111,7 @@ hal_ret_t flow_t::header_push(const header_push_info_t &header_push)
     }
 
     if (num_header_updates_ >= MAX_HEADER_UPDATES) {
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::MAX_HEADER_UPDATES_EXCEEDED);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
         return HAL_RET_ERR;
     }
@@ -145,6 +147,7 @@ hal_ret_t flow_t::header_rewrite(const header_rewrite_info_t &header_rewrite)
     case HEADER_POP:
         // Allocate new update entry
         if (num_header_updates_ >= MAX_HEADER_UPDATES) {
+            hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::MAX_HEADER_UPDATES_EXCEEDED);
             HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
             ret = HAL_RET_ERR;
             break;
@@ -401,6 +404,7 @@ hal_ret_t flow_t::build_push_header_config(hal::flow_pgm_attrs_t &attrs,
         break;
 #endif /* PHASE2 */
     default:
+        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::INVALID_ENCAP_MODE_IN_HEADER_UPDATE);
         HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: invalid encap");
         return HAL_RET_ERR;
     }

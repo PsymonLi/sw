@@ -592,7 +592,7 @@ system_get (const SystemGetRequest *req, SystemResponse *rsp)
             // FTE stats get
             system_fte_stats_get(rsp);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("Failed to get drop stats, err : {}", ret);
+                HAL_TRACE_ERR("Failed to get fte stats, err : {}", ret);
                 rsp->set_api_status(types::API_STATUS_ERR);
                 goto end;
             }
@@ -610,7 +610,17 @@ system_get (const SystemGetRequest *req, SystemResponse *rsp)
             (req_type == sys::SYSTEM_GET_ALL_STATS)) {
             system_fte_txrx_stats_get(rsp);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("Failed to get drop stats, err : {}", ret);
+                HAL_TRACE_ERR("Failed to get fte-txrx stats, err : {}", ret);
+                rsp->set_api_status(types::API_STATUS_ERR);
+                goto end;
+            }
+        }
+
+        if ((req_type == sys::SYSTEM_GET_FTE_DBG_STATS) ||
+            (req_type == sys::SYSTEM_GET_ALL_DBG_STATS)) {
+            system_fte_debug_stats_get(rsp);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to get fte debug stats, err : {}", ret);
                 rsp->set_api_status(types::API_STATUS_ERR);
                 goto end;
             }

@@ -11,6 +11,7 @@
 #include "nic/include/app_redir_headers.hpp"
 #include "nic/include/app_redir_shared.h"
 #include "gen/proto/fwlog.pb.h"
+#include "gen/proto/system.pb.h"
 #include "nic/utils/agent_api/agent_api.hpp"
 #include "nic/fte/fte_core.hpp"
 #include "gen/proto/vmotion.grpc.pb.h"

@@ -268,6 +268,8 @@ enum SystemGetType {
   SYSTEM_GET_DROP_STATS     = 4;
   SYSTEM_GET_ALL_STATS      = 5;
   SYSTEM_GET_INB_MGMT_IF    = 6;
+  SYSTEM_GET_FTE_DBG_STATS  = 7;
+  SYSTEM_GET_ALL_DBG_STATS  = 8;
 }
 
 message SystemGetRequest {
@@ -292,6 +294,7 @@ message Stats {
   FTEStats             fte_stats           = 5;    // FTE Stats
   SessionSummaryStats  session_stats       = 6;    // Session Stats Summary
   PMDStats             pmd_stats           = 7;    // Poll mode driver stats
+  FTEDebugStats        fte_debug_stats     = 8;    // FTE Debug stats
 }
 
 // Drop Stats object
@@ -415,6 +418,38 @@ message FTEInfo {
 
 message PMDStats {
   repeated FTEInfo  fte_info = 1;
+}
+
+enum FTEDebugStatsType {
+  PACKET_PARSING_ERROR                          = 0;        // Failed to parse the packet
+  SESSION_ALREADY_EXISTS                        = 1;        // Session already exists failure
+  MAX_HEADER_UPDATES_EXCEEDED                   = 2;        // Number of header updates (pop/push) exceeded max headers that can be updated
+  INVALID_ENCAP_MODE_IN_HEADER_UPDATE           = 3;        // Invalid Encap mode during header update
+  CPU_PACKET_RX_FAILURE                         = 4;        // Failure during CPU packet receive
+  PACKET_SEND_FAILURE                           = 5;        // Failure in sending packet to queue
+  FLOW_LOOKUP_FAILURE                           = 6;        // Failed to find flow object id from flow id
+  UNSUPPORTED_PACKET_LOOKUP_TYPE                = 7;        // Unsupported packet lookup type
+  LOGGER_BUFFER_FAILURE                         = 8;        // Failure in logger buffer get
+  LOGGER_BUFFER_SERIALIZATION_FAILURE           = 9;        // Failure in serialization of logger buffer
+  SESSION_CREATE_FAILURE                        = 10;       // Failure during session create
+  SESSION_UPDATE_FAILURE                        = 11;       // Failure during session update
+  SESSION_DELETE_FAILURE                        = 12;       // Failure during session delete
+  INVALID_DVRF                                  = 13;       // Failure during Dest VRF lookup
+  INVALID_SVRF                                  = 14;       // Failure during Src VRF lookup
+}
+
+message FTEDebugStatsInfo {
+  FTEDebugStatsType            type              = 1;    // FTE debug stats type
+  uint64                       count             = 2;    // count for the stats type
+}
+
+message FTEInstDebugStats {
+  uint32                           instance               = 1;    // FTE instance id
+  repeated FTEDebugStatsInfo       fte_debug_stats_info   = 2;    // Statistics info
+}
+
+message FTEDebugStats {
+  repeated FTEInstDebugStats   fte_inst_debug_stats       = 2;    // Statistics info
 }
 
 enum ForwardingMode {

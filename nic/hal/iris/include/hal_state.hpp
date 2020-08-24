@@ -58,6 +58,7 @@ using acl::acl_config_t;
 using acl::ref_t;
 using sys::ForwardMode;
 using sys::PolicyMode;
+using sys::FTEDebugStatsType;
 
 enum {
     HAL_TIMER_ID_CLOCK_SYNC               = HAL_TIMER_ID_INFRA_MAX + 1,
@@ -108,6 +109,11 @@ typedef struct hal_slab_args_
     bool        grow_on_demand;
     bool        zero_on_alloc;
 } hal_slab_args_t;
+
+typedef struct hal_fte_dbg_stats_s {
+    uint64_t    stats_count[sys::FTEDebugStatsType_ARRAYSIZE];
+} __PACK__ hal_fte_dbg_stats_t;
+
 
 // forward declaration
 class hal_handle;
@@ -999,11 +1005,21 @@ public:
         return oper_db_->set_max_sessions(max_sessions);
     }
 
+    hal_fte_dbg_stats_t get_fte_debug_stats(uint8_t fte_id) const { return fte_inst_debug_stats_[fte_id]; }
+    void incr_fte_debug_stats(uint8_t fte_id, FTEDebugStatsType type) {
+        if (type > sys::FTEDebugStatsType_MAX ||
+            fte_id >= hal::g_hal_cfg.num_data_cores) {
+            return;
+        } 
+        fte_inst_debug_stats_[fte_id].stats_count[type]++;
+    }
+
 private:
     // following come from shared memory or non-linux HBM memory
     hal_cfg_db           *cfg_db_;
     hal_oper_db          *oper_db_;
     hal_stats_t          *api_stats_;
+    hal_fte_dbg_stats_t  *fte_inst_debug_stats_;
 
     // following come from linux process virtual memory
     shmmgr               *mmgr_;

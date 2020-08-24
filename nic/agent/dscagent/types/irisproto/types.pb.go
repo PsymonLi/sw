@@ -458,6 +458,9 @@
 		QInfo
 		FTEInfo
 		PMDStats
+		FTEDebugStatsInfo
+		FTEInstDebugStats
+		FTEDebugStats
 		FeatureProfileResponse
 		MicroSegEvent
 		MicroSegSpec
