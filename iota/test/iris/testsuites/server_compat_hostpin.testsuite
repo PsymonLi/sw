@@ -17,10 +17,13 @@ setup:
     topology: test/iris/topologies/1Naples_VM/1Naples.topology
     config  :
         - step : utils.cleanup
+        - step : testcases.penctl.install
+        - step : testcases.penctl.enable_ssh
+#        - step : config.netagent.mode_switch
 
 common:
     verifs:
-        # N/A
+        -   step    : verif.utils.verify_interrupts
     debugs:
         # N/A
     setup:

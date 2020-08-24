@@ -642,13 +642,22 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 	case "windows":
 		name, ok := WindowsPortNameMapping[spec.Parent]["Name"]
 		if !ok {
+			app.logger.Errorf("Missing Name-Mapping for :%v", spec.Parent)
 			break
 		}
-		cmd := []string{Common.WindowsPowerShell, "Enable-NetAdapter \"" + name + "\" -Confirm:$false"}
+		cmd := []string{Common.WindowsPowerShell, "Enable-NetAdapter -Name \"" + name + "\" -Confirm:$false"}
+		app.logger.Printf("Executing cmd :%v\n", cmd)
 		if retCode, stdout, _ := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
 			return "", errors.Errorf("Could not bring up parent interface %s with command %v: %s", spec.Parent, cmd, stdout)
 		}
 
+		// Disable DHCP
+		//  Set-NetIPInterface -InterfaceAlias "Ethernet 4" -Dhcp Disabled -Confirm:$false
+		cmd = []string{Common.WindowsPowerShell, "Set-NetIPInterface -InterfaceAlias \"" + name + "\" -Dhcp Disabled -Confirm:$false"}
+		app.logger.Printf("Executing cmd :%v\n", cmd)
+		if retCode, stdout, _ := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
+			return "", errors.Errorf("Could not disable DHCP on parent interface %s with command %v: %s", spec.Parent, cmd, stdout)
+		}
 	}
 	intfToAttach := spec.Name
 

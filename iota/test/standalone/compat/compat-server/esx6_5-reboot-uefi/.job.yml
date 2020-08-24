@@ -9,7 +9,7 @@ queue_name: compat
 # e2e-targets is the scheduler for CI runs to specify baremetal or virtual machine. 
 e2e-targets:
 # SuperMicro.1114S:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
 #   owners: ["email:dbarsky@pensando.io"]
 #   area:
 #   sub-area:
@@ -32,7 +32,7 @@ e2e-targets:
 #          BmOs: linux
 #
  ucs220_cascade:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -55,7 +55,7 @@ e2e-targets:
           BmOs: linux
        
  Dell_R6525:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -80,7 +80,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Dell_R6415:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -105,7 +105,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Dell_R6515:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -130,7 +130,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Dell_R740:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -155,7 +155,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Dell_R640:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -180,7 +180,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Hpe_DL325:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -205,7 +205,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Hpe_DL360:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -230,7 +230,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Hpe_DL380:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:

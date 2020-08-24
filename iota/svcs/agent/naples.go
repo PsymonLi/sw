@@ -1147,6 +1147,37 @@ func (naples *naplesHwNode) initNaplesMgmtInterface(nodeOs iota.TestBedNodeOs, n
 					naples.logger.Error(msg)
 					//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
 				}
+				// Check if ip-address is already assigned
+				cmd = []string{Common.WindowsPowerShell, "Get-NetIPAddress -InterfaceAlias \"" + ifName + "\" -AddressFamily IPv4 | Select-Object IPAddress | ConvertTo-Json"}
+				if _, stdout, err := Utils.Run(cmd, 0, false, false, nil); err == nil {
+					var ipJSON map[string]interface{}
+					if err := json.Unmarshal([]byte(stdout), &ipJSON); err == nil {
+						if val, ok := ipJSON["IPAddress"]; ok {
+							if val.(string) == intfIP {
+								naples.logger.Infof("MgmtIf: %v already has assigned ip-address :%v", naplesMgmtIntf, val)
+								naplesConfig.HostIntfs = append(naplesConfig.HostIntfs,
+									&iota.Interfaces{
+										Type:       iota.InterfaceType_INTERFACE_TYPE_MGMT,
+										Interfaces: []string{naplesMgmtIntf},
+									})
+								return nil
+							} else {
+								naples.logger.Infof("MgmtIf: %v has different ip-address :%v", naplesMgmtIntf, val)
+							}
+						}
+					}
+				} else {
+					msg := fmt.Sprintf("Failed to retrieve mgmt interface ip-address %s err : %s", naplesMgmtIntf, stdout)
+					naples.logger.Error(msg)
+				}
+
+				cmd = []string{Common.WindowsPowerShell, "New-NetIPAddress -InterfaceAlias '" + ifName + "' -IPAddress " + intfIP + " -PrefixLength 24"}
+				if _, stdout, err := Utils.Run(cmd, 0, false, false, nil); err != nil {
+					msg := fmt.Sprintf("Failed to configure IP for mgmt interface %s err : %s", naplesMgmtIntf, stdout)
+					naples.logger.Error(msg)
+					//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+				}
+
 				cmd = []string{Common.WindowsPowerShell, "Set-NetIPAddress -InterfaceAlias '" + ifName + "' -IPAddress " + intfIP + " -PrefixLength 24"}
 				if _, stdout, err := Utils.Run(cmd, 0, false, false, nil); err != nil {
 					msg := fmt.Sprintf("Failed to configure IP for mgmt interface %s err : %s", naplesMgmtIntf, stdout)

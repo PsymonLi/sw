@@ -7,11 +7,7 @@ import iota.test.iris.testcases.penctl.common as common
 from iota.harness.infra.glopts import GlobalOptions as GlobalOptions
 from iota.test.iris.testcases.penctl.common import GetNaplesUUID
 
-def Main(step):
-    if GlobalOptions.skip_setup:
-        #No mode switch required for skeip setup
-        return api.types.status.SUCCESS
-
+def Run():
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     for n in api.GetNaplesHostnames():
         enable_sshd = " -a " + common.PENCTL_TOKEN[n] +  " system enable-sshd"
@@ -34,3 +30,10 @@ def Main(step):
         api.SetNaplesNodeUuid(n, uuid)
 
     return api.types.status.SUCCESS
+
+def Main(step):
+    if GlobalOptions.skip_setup:
+        #No mode switch required for skeip setup
+        return api.types.status.SUCCESS
+
+    return Run()

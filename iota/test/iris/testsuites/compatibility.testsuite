@@ -24,7 +24,7 @@ setup:
 
 common:
     verifs:
-        # N/A
+        -   step    : verif.utils.verify_interrupts
     debugs:
         # N/A
     setup:

@@ -173,8 +173,8 @@ e2e-targets:
           BmOs: windows
 
 
- Hpe_El8000:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite  compatibility_windows--skip-switch-init --enable-multi-naples --enable-multi-naples"]
+ Hpe_EL8000:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite  compatibility_windows --skip-switch-init --enable-multi-naples --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:

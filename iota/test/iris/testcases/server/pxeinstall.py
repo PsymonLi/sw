@@ -6,8 +6,7 @@ from iota.harness.infra.exceptions import *
 import iota.test.iris.testcases.penctl.install as install_penctl
 import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 import iota.test.iris.config.workload.api as wl_api
-
-
+import iota.test.iris.testcases.server.reboot as reboot
 
 def waitforssh(ipaddr, port=22):
 
@@ -35,11 +34,7 @@ def Setup(tc):
     tc.test_node_name = tc.test_node.Name()
 
 #    if len(tc.test_node) == 0:
-#        api.Logger.error("No naples node found")
-#        return api.types.status.FAILURE
-#
-#    if len(tc.test_node) > 1:
-#        api.Logger.info(f"Expecting one node setup, this testbed has {len(tc.nodes)}")
+#        api.Logger.error("Did not find Naples Nodes")
 #        return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
@@ -55,6 +50,11 @@ def Trigger(tc):
 
     host_ipaddr = api.GetMgmtIPAddress(tc.test_node_name)
 
+
+    if reboot.checkLinks(tc, tc.test_node_name) is  api.types.status.FAILURE:
+        api.Logger.error("Error verifying uplink interfaces")
+        return api.types.status.FAILURE
+
     for install in range(tc.args.install_iterations):
 
         # save
@@ -65,11 +65,12 @@ def Trigger(tc):
         # touch the file on server to ensure this instance of OS is gone later
 
         req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddHostCommand(req, tc.test_node_name, "touch /naples/oldfs")
+        touch_file_cmd = "touch /naples/oldfs"
+        api.Trigger_AddHostCommand(req, tc.test_node_name, touch_file_cmd)
         resp = api.Trigger(req)
 
         if api.Trigger_IsSuccess(resp) is not True:
-            api.Logger.error(f"Failed to run command on host {tc.test_node_name}")
+            api.Logger.error(f"Failed to run command on host {tc.test_node_name}, {touch_file_cmd}")
             return api.types.status.FAILURE
 
         # Boot from PXE to intall an OS
@@ -104,6 +105,7 @@ def Trigger(tc):
 
         api.Logger.info(f"Waiting for host to come up: {host_ipaddr}")
         time.sleep(180)
+
         if not waitforssh(host_ipaddr):
             raise OfflineTestbedException
 
@@ -119,31 +121,21 @@ def Trigger(tc):
             api.Logger.error(f"Failed to restore agent state after PXE install")
             raise OfflineTestbedException
         api.Logger.info(f"PXE install iteration #{install} - SUCCESS")
-        wl_api.ReAddWorkloads(tc.test_node_name)
+
+        try:
+            wl_api.ReAddWorkloads(tc.test_node_name)
+        except:
+            api.Logger.error(f"ReaddWorkloads failed with exception - See logs for details")
+            return api.types.status.FAILURE
 
         # check touched file is not present, to ensure this is a new OS instance
+        oldfs_command = "ls /naples/oldfs"
         req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddHostCommand(req, tc.test_node_name, "ls /naples/oldfs")
+        api.Trigger_AddHostCommand(req, tc.test_node_name, oldfs_command)
         resp = api.Trigger(req)
 
         if api.IsApiResponseOk(resp) is not True:
-            api.Logger.error(f"Failed to run command on host {tc.test_node_name}")
-            return api.types.status.FAILURE
-
-        cmd = resp.commands.pop()
-        if cmd.exit_code == 0:
-            api.Logger.error(f"Old file is present in FS after PXE install")
-            return api.types.status.FAILURE
-
-        api.Logger.info("PXE boot completed! Host is up.")
-
-        # check touched file is not present, to ensure this is a new OS instance
-        req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddHostCommand(req, tc.test_node_name, "ls /naples/oldfs")
-        resp = api.Trigger(req)
-
-        if api.IsApiResponseOk(resp) is not True:
-            api.Logger.error(f"Failed to run command on host {tc.test_node_name}")
+            api.Logger.error(f"Failed to run command on host {tc.test_node_name} {oldfs_command}")
             return api.types.status.FAILURE
 
         cmd = resp.commands.pop()
@@ -160,7 +152,6 @@ def Verify(tc):
     if install_penctl.Main(None) != api.types.status.SUCCESS:
         api.Logger.info("Installing PenCtl failed after pxe install")
         return api.types.status.FAILURE
-
 
     if enable_ssh.Main(None) != api.types.status.SUCCESS:
         api.Logger.info("Enabling SSH failed after pxe install")

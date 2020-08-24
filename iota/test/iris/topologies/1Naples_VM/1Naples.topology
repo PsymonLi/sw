@@ -4,7 +4,7 @@ meta:
 
 nodes:
     - node: node1
-      name: naples1
+      name: node1
       role: PERSONALITY_NAPLES
       workloads:
         esx:
