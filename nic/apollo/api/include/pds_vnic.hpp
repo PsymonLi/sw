@@ -96,9 +96,12 @@ typedef struct pds_vnic_spec_s {
     /// host to another (e.g., as part of vmotion event)
     bool movable;
     /// enable or disable connection tracking on the vnic
-    /// NOTE: connection tracking is enabled on vnic, if conn_track_en is set to
-    ///       on the vnic object or corresponding host interface object or
-    ///       security profile object
+    /// NOTE:
+    /// 1. connection tracking is enabled on vnic, if conn_track_en is set to
+    ///    on the vnic object or corresponding host interface object or security
+    ///    profile object
+    /// 2. if conn_track_en is modified on the fly, it will take affect only on
+    ///    sessions created thereafter and doesn't affect existing sessions
     bool  conn_track_en;
 } __PACK__ pds_vnic_spec_t;
 

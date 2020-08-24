@@ -286,7 +286,9 @@ sdk_ret_t pds_policy_rule_delete(pds_policy_rule_key_t *key,
 /// \brief security profile spec
 typedef struct pds_security_profile_spec_s {
     pds_obj_key_t         key;                   ///< id
-    bool                  conn_track_en;         ///< connection tracking enabled
+    // NOTE: if conn_track_en is modified on the fly, it will take affect only
+    //       on sessions created thereafter and doesn't affect existing sessions
+    bool                  conn_track_en;         ///< connection tracking on/off
     rule_action_data_t    default_action;        ///< action and related information
     uint32_t              tcp_idle_timeout;      ///< TCP idle timeout
     uint32_t              udp_idle_timeout;      ///< UDP idle timeout

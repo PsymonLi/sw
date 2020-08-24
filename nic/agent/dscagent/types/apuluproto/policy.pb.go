@@ -1018,6 +1018,8 @@ type SecurityProfileSpec struct {
 	// unique identifier of security profile
 	Id []byte `protobuf:"bytes,1,opt,name=Id,proto3" json:"Id,omitempty" meta:mandatory`
 	// ConnTrackEn, if set to true, will enable full connection tracking
+	// NOTE: if ConnTrackEn is modified on the fly, it will take affect only on
+	//       sessions created thereafter and doesn't affect existing sessions
 	ConnTrackEn bool `protobuf:"varint,2,opt,name=ConnTrackEn,proto3" json:"ConnTrackEn,omitempty" meta:default=false`
 	// DefaultFWAction is the action taken by the smartnic when policies are
 	// configured on the subnet or vnic, no rule matches and default action for policy is none

@@ -212,6 +212,8 @@ typedef struct pds_host_if_info_s {
     ///    attribute is set to false in BOTH HostIfSpec and
     ///    pds_security_profile_spec_t and enabled if either of these objects
     ///    have conn_track_en set to true
+    /// 3. if conn_track_en is modified on the fly, it will take affect only on
+    ///    sessions created thereafter and doesn't affect existing sessions
     bool  conn_track_en;
     /// tx policer bound to the host interface
     pds_obj_key_t tx_policer;

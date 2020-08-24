@@ -300,6 +300,8 @@ message SecurityProfileSpec {
   bytes               Id                   = 1 [(gogoproto.moretags) = "meta:mandatory"];
 
   // ConnTrackEn, if set to true, will enable full connection tracking
+  // NOTE: if ConnTrackEn is modified on the fly, it will take affect only on
+  //       sessions created thereafter and doesn't affect existing sessions
   bool                ConnTrackEn          = 2 [(gogoproto.moretags) = "meta:default=false"];
 
   // DefaultFWAction is the action taken by the smartnic when policies are

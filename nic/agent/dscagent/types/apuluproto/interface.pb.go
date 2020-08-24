@@ -574,6 +574,8 @@ type HostIfSpec struct {
 	//    In other words, connection tracking is disabled only if ConnTrackEn
 	//    attribute is set to false in BOTH HostIfSpec and SecurityProfileSpec
 	//    and enabled if either of these objects have ConnTrackEn set to true
+	// 3. if ConnTrackEn is modified on the fly, it will take affect only on
+	//    sessions created thereafter and doesn't affect existing sessions
 	ConnTrackEn bool `protobuf:"varint,1,opt,name=ConnTrackEn,proto3" json:"ConnTrackEn,omitempty" meta:default=false`
 	// Tx policer uuid
 	TxPolicer []byte `protobuf:"bytes,2,opt,name=TxPolicer,proto3" json:"TxPolicer,omitempty"`
