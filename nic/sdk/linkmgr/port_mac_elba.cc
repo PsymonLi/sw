@@ -792,8 +792,10 @@ static bool
 mac_faults_get_hw (uint32_t inst_id, uint32_t mac_ch)
 {
     int chip_id = 0;
-    uint64_t ber_err_cnt = elb_mx_read_stats(chip_id, inst_id, mac_ch, 96);
-    uint64_t err_blocks_cnt = elb_mx_read_stats(chip_id, inst_id, mac_ch, 97);
+    uint64_t ber_err_cnt = elb_mx_read_stats(chip_id, inst_id, mac_ch, 96,
+                                             true);
+    uint64_t err_blocks_cnt = elb_mx_read_stats(chip_id, inst_id, mac_ch, 97,
+                                                true);
     return (ber_err_cnt > 0) || (err_blocks_cnt > 0);
 }
 

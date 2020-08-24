@@ -1127,8 +1127,35 @@ elb_mx_get_ch_pcs_err(int chip_id, int inst_id, int ch)
 uint64_t
 elb_mx_read_stats(int chip_id, int inst_id, int ch, int index, bool clear_on_read)
 {
+    bool     statscor_zero = false;
+    uint64_t orig_appcfg0  = 0;
+
+    if (clear_on_read) {
+        orig_appcfg0 = elb_mx_apb_read(chip_id, inst_id,
+                                       elb_mx_mac_t::ELB_MX_MAC_APPCFG0_ADDR);
+        if (elb_mx_get_field(orig_appcfg0,
+                             elb_mx_mac_t::ELB_MX_MAC_APPCFG0_FLD_STATSCOR_POS,
+                             elb_mx_mac_t::ELB_MX_MAC_APPCFG0_FLD_STATSCOR_SZ)
+            == 0) {
+            statscor_zero = true;
+            uint64_t data = orig_appcfg0;
+            elb_mx_set_field(&data,
+                             elb_mx_mac_t::ELB_MX_MAC_APPCFG0_FLD_STATSCOR_POS,
+                             elb_mx_mac_t::ELB_MX_MAC_APPCFG0_FLD_STATSCOR_SZ,
+                             1);
+            elb_mx_apb_write(chip_id, inst_id, elb_mx_mac_t::ELB_MX_MAC_APPCFG0_ADDR, data);
+        }
+    }
+
     int addr = 0x400*ch + index*8 + 0xc000;
-    return elb_mx_apb_read(chip_id, inst_id, addr);
+    uint64_t data = elb_mx_apb_read(chip_id, inst_id, addr);
+
+    if (statscor_zero) {
+        elb_mx_apb_write(chip_id, inst_id, elb_mx_mac_t::ELB_MX_MAC_APPCFG0_ADDR,
+                         orig_appcfg0);
+    }
+
+    return data;
 }
 
 void

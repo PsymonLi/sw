@@ -548,6 +548,10 @@ port::port_serdes_dfe_complete(void)
 
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
+        if (sbus_addr == 0) {
+            // invalid config. fail dfe complete
+            return false;
+        }
         if (serdes_fns()->serdes_dfe_status(sbus_addr) != 1) {
             return false;
         }
@@ -1304,6 +1308,8 @@ port::port_link_sm_process(bool start_en_timer)
                     break;
                 }
 
+                // reset sig_detect_retries counter on signal detect
+                set_num_sig_detect_retries(0);
                 // transition to DFE tuning stage
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_DFE_TUNING);
 
@@ -1998,6 +2004,15 @@ port::timers_init(void) {
 
 uint32_t
 port::port_max_ical_cmplt_retries (void) {
+    uint32_t retries;
+
+    if (get_file_value(ICAL_CMPLT_RETRIES_FILE, &retries) == true) {
+        if (retries > 0 && retries < MAX_ICAL_CMPLT_RETRIES) {
+            SDK_PORT_SM_DEBUG(this, "%s retries %u", ICAL_CMPLT_RETRIES_FILE,
+                              retries);
+            return retries;
+        }
+    }
     return MAX_PORT_SERDES_DFE_ICAL_CMPLT_RETRIES;
 }
 

@@ -32,8 +32,10 @@
 
 #define MAC_SYNC_ICAL_FILE    "/obfl/.mac_sync_ical"
 #define ICAL_EYE_RETRIES_FILE "/obfl/.ical_eye_retries"
+#define ICAL_CMPLT_RETRIES_FILE "/obfl/.ical_complt_retries"
 #define MAX_MAC_SYNC_ICAL_TIMEOUT 5000
 #define MAX_ICAL_EYE_RETRIES      100
+#define MAX_ICAL_CMPLT_RETRIES    100
 
 #define PORT_IN_MEM_LOGGER_CAPACITY                64
 
