@@ -376,11 +376,28 @@ typedef union module_version_s {
         };
 } module_version_t;
 
+/// \brief driver status type i.e. indicates UP/DOWN
+typedef enum eth_driver_status_type_s {
+    ETH_DRIVER_STATUS_UP,
+    ETH_DRIVER_STATUS_DOWN,
+} eth_driver_status_type_t;
+
+
+/// \brief eth driver status event
+typedef struct eth_driver_status_event_s {
+#define ETH_DRIVER_STATUS_DEV_NAME_SZ   16
+#define ETH_DRIVER_STATUS_VER_SZ        128
+    int         type;
+    char dev_name[ETH_DRIVER_STATUS_DEV_NAME_SZ];
+    char driver_ver_str[ETH_DRIVER_STATUS_VER_SZ];
+} eth_driver_status_event_t;
+
 /// \brief event definition for sdk
 typedef struct sdk_event_s {
     sdk_ipc_event_id_t event_id;
     union {
         xcvr_event_info_t xcvr_event_info;  ///< transceiver event info
+        eth_driver_status_event_t driver_status_info;  ///< driver status event
     };
 } sdk_event_t;
 
@@ -420,6 +437,8 @@ using sdk::types::pkt_type_t;
 using sdk::types::monitor_type_t;
 using sdk::types::module_version_t;
 using sdk::types::xcvr_temperature_t;
+using sdk::types::eth_driver_status_type_t;
+using sdk::types::eth_driver_status_event_t;
 
 #endif    // __SDK_TYPES_HPP__
 

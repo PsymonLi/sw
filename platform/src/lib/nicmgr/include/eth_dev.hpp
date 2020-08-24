@@ -284,6 +284,7 @@ private:
     void LifIDReserve(void);
     void IntrMemAlloc(void);
     void IntrMemReserve(void);
+    void NotifyDriverStatus(int status, char *driver_ver_str);
 
     /* Command Handlers */
     static void DevcmdPreparePoll(EV_P_ ev_prepare *w, int events);

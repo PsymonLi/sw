@@ -25,6 +25,7 @@
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/include/sdk/port_utils.hpp"
+#include "nic/sdk/lib/ipc/ipc.hpp"
 
 #include "dev.hpp"
 #include "edmaq.hpp"
@@ -1591,6 +1592,10 @@ Eth::_CmdIdentify(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_INFO("    driver: {}",
                  drvid->driver_ver_str);
 
+    if (spec->eth_type == ETH_HOST) {
+        NotifyDriverStatus(ETH_DRIVER_STATUS_UP, drvid->driver_ver_str);
+    }
+
     memset(ident, 0, sizeof(union ionic_dev_identity));
 
     intr_coal_get_params(&mul, &div);
@@ -3137,6 +3142,10 @@ Eth::Reset()
         is_device_upgrade = false;
     }
 
+    if (spec->eth_type == ETH_HOST) {
+        NotifyDriverStatus(ETH_DRIVER_STATUS_DOWN, NULL);
+    }
+
     NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, dev_pstate->n_active_lif);
 
     return (IONIC_RC_SUCCESS);
@@ -3427,4 +3436,28 @@ Eth::GetPeerLifId()
         return peer_lif ? peer_lif->GetLifId() : (-1);
     }
     return (-1);
+}
+
+void
+Eth::NotifyDriverStatus(int status, char *driver_ver_str)
+{
+    sdk::types::sdk_event_t sdk_event;
+    eth_driver_status_event_t *event_info;
+
+    memset(&sdk_event, 0, sizeof(sdk_event));
+    event_info = &sdk_event.driver_status_info;
+    sdk_event.event_id = sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_DRIVER_STATUS;
+    event_info->type = status;
+    strncpy0(event_info->dev_name, spec->name.c_str(), sizeof(event_info->dev_name));
+    if (driver_ver_str) {
+        strncpy0(event_info->driver_ver_str, driver_ver_str,
+                 sizeof(event_info->driver_ver_str));
+    }
+
+
+    NIC_LOG_DEBUG("{}: Notifying driver status: {} version: {}", spec->name,
+                  status == ETH_DRIVER_STATUS_UP ? "UP" : "DOWN",
+                  event_info->driver_ver_str);
+    sdk::ipc::broadcast(sdk_event.event_id, &sdk_event,
+                        sizeof(sdk_event));
 }

@@ -41,7 +41,8 @@ typedef enum sdk_ipc_event_id_s {
     SDK_IPC_EVENT_ID_XCVR_STATUS     = SDK_IPC_EVENT_ID_MIN + 27,
     SDK_IPC_EVENT_ID_XCVR_DOM_STATUS = SDK_IPC_EVENT_ID_MIN + 28,
     SDK_IPC_EVENT_ID_HII_UPDATE      = SDK_IPC_EVENT_ID_MIN + 29,    // Event from BIOS Setup Human Interface Infrastructure
-    SDK_IPC_EVENT_ID_MAX             = SDK_IPC_EVENT_ID_XCVR_DOM_STATUS,
+    SDK_IPC_EVENT_ID_DRIVER_STATUS   = SDK_IPC_EVENT_ID_MIN + 30,    // Event indicating current driver status
+    SDK_IPC_EVENT_ID_MAX             = SDK_IPC_EVENT_ID_DRIVER_STATUS,
 } sdk_ipc_event_id_t;
 
 /// \brief ipc unicast event ids reserved for sdk processes
