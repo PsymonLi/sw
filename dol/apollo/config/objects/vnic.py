@@ -144,10 +144,10 @@ class VnicObject(base.ConfigObjectBase):
         ################# PRIVATE ATTRIBUTES OF VNIC OBJECT #####################
         vnicPolicySpec = getattr(spec, 'policy', None)
         if vnicPolicySpec and utils.IsVnicPolicySupported():
-            self.IngV4SecurityPolicyIds = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V4", "ingress", False)
-            self.IngV6SecurityPolicyIds = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V6", "ingress", False)
-            self.EgV4SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V4", "egress", False)
-            self.EgV6SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V6", "egress", False)
+            self.IngV4SecurityPolicyIds = utils.GetPolicies(self, vnicPolicySpec, node, "V4", "ingress", False)
+            self.IngV6SecurityPolicyIds = utils.GetPolicies(self, vnicPolicySpec, node, "V6", "ingress", False)
+            self.EgV4SecurityPolicyIds  = utils.GetPolicies(self, vnicPolicySpec, node, "V4", "egress", False)
+            self.EgV6SecurityPolicyIds  = utils.GetPolicies(self, vnicPolicySpec, node, "V6", "egress", False)
 
         self.DeriveOperInfo(node)
         self.Mutable = True if (utils.IsUpdateSupported() and self.IsOriginFixed()) else False

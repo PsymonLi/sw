@@ -31,7 +31,6 @@ modules:
     - module:
         name    : NH_IPV4_TCP_DOT1Q_TAG
         spec    : network2host.testspec
-        iterate :
         args    :
             input_pkt : SWITCH_PKT 
         iterate :
