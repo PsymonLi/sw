@@ -18,12 +18,13 @@ import { MonitoringAlert, MonitoringAlertStatus_severity } from '@sdk/v1/models/
 import { ISecurityNetworkSecurityPolicyList, ISecuritySGRule, SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { FwlogFwLogQuery, FwlogFwLogQuery_sort_order, FwlogFwLogList } from '@sdk/v1/models/generated/fwlog';
+import { FwlogFwLogQuery, FwlogFwLogQuery_sort_order, FwlogFwLogList, FwlogFwLog } from '@sdk/v1/models/generated/fwlog';
 import { FwlogService } from '@app/services/generated/fwlog.service';
 import { interval } from 'rxjs';
 import { RuleHitCount } from './widgets/firewalltopten/TopRulesUtil';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { SecurityService } from '@app/services/generated/security.service';
+import { ConnectionNode, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
 
 
 /**
@@ -240,12 +241,55 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
         }
         if (logs != null) {
           this.processLogs(logs);
+          if (this.uiconfigsService.isFeatureEnabled('troubleshooting')) {
+              this.proecessLogGraph(logs);
+          }
         }
       },
       (error) => {
       }
     );
     this.subscriptions.push(searchSubscription);
+  }
+
+  proecessLogGraph(logs: FwlogFwLog[]) {
+    const connections: ConnectionNode[] = [];
+    logs.forEach( (log: FwlogFwLog) => {
+        const connNode: ConnectionNode = {
+        source : log['source-ip'],
+        destination : log['destination-ip']
+        };
+        connections.push(connNode);
+    });
+    const compressedConns = ObjectsRelationsUtility.compressConnections(connections);
+    const graph = ObjectsRelationsUtility.buildGraphFromConnections(compressedConns);
+    const nodes = Object.keys(graph);
+    const connAllGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(graph, nodes);
+    console.log('Dashboard.proecessLogGraph()', graph, nodes, connAllGraphPaths);
+
+    const apps = nodes.map( (ip: string) => {
+       const appname =   ObjectsRelationsUtility.findAppNameFromWorkloadsByIp(ip, this.workloads as WorkloadWorkload []);
+       return (appname) ? appname : ip;
+    });
+    console.log('Dashboard.proecessLogGraph() apps', apps);
+    const appnameTest =   ObjectsRelationsUtility.findAppNameFromWorkloadsByIp( '20.0.1.23', this.workloads as WorkloadWorkload []);
+    console.log('Dashboard.proecessLogGraph() apps', appnameTest); // should match orch2--vm-169 of 10.30.1.173 server
+
+    const randomIdxDst  = Utility.getRandomInt(0, nodes.length - 1 );
+    const pickedDstNode = nodes[randomIdxDst];
+    const dstNodes  = ObjectsRelationsUtility.findAllNodeDestinationsFromAllpaths(pickedDstNode, connAllGraphPaths);
+    console.log ('Dashboard.proecessLogGraph() Destinations Nodes of ',  pickedDstNode, dstNodes);
+
+    const randomIdxSrc  = Utility.getRandomInt(0, nodes.length - 1 );
+    const pickedSrcNode = nodes[randomIdxSrc];
+    const srcNodes  = ObjectsRelationsUtility.findAllNodesCanReachMeFromAllpaths(pickedSrcNode, connAllGraphPaths);
+    console.log ('Dashboard.proecessLogGraph() Nodes coming to ',  pickedSrcNode, srcNodes);
+    // TODO:
+    /*
+       By looking into compressedConns,  you can see which path give visited most
+
+       From logs/connections, we can find whice top N (N=5) IPs are busiest to send rearch.  Which top N IPs are busiest to receive connections
+    */
   }
 
   processLogs(logs) {

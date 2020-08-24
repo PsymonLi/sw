@@ -234,21 +234,36 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
     protected fwlogService: FwlogService
   ) { super(controllerService, uiconfigsService); }
 
+  testGraphCode() {
+    ObjectsRelationsUtility.testGraphCode();
+  }
+
   ngOnInit() {
     this.tableLoading = true;
     this.showNetworkGraph = true;
     let buttons = [];
-    buttons = [{
-      cssClass: 'global-button-primary troubleshooting-techsupportrequests-toolbar-button troubleshooting-techsupportrequests-toolbar-button-ADD',
-      text: 'ADD TECH-SUPPORT REQUEST',
-      computeClass: () => this.showTechSupport ? '' : 'global-button-disabled',
-      callback: () => { this.createNewTechSupportRequest(); }
-    },
-    {
-      cssClass: 'global-button-primary troubleshooting-techsupportrequests-toolbar-button troubleshooting-techsupportrequests-toolbar-button-ADD',
-      text: 'EXPORT REPORT',
-      callback: () => { this.exportJSON(); },
-    }];
+    buttons = [
+      {
+        cssClass: 'global-button-primary troubleshooting-techsupportrequests-toolbar-button troubleshooting-techsupportrequests-toolbar-button-ADD',
+        text: 'ADD TECH-SUPPORT REQUEST',
+        computeClass: () => this.showTechSupport ? '' : 'global-button-disabled',
+        callback: () => { this.createNewTechSupportRequest(); }
+      },
+      {
+        cssClass: 'global-button-primary troubleshooting-techsupportrequests-toolbar-button troubleshooting-techsupportrequests-toolbar-button-ADD',
+        text: 'EXPORT REPORT',
+        callback: () => { this.exportJSON(); },
+      }
+    ];
+    if (this.uiconfigsService.isFeatureEnabled('troubleshooting')) {
+      buttons.push(
+        {
+          cssClass: 'global-button-primary troubleshooting-techsupportrequests-toolbar-button troubleshooting-techsupportrequests-toolbar-button-ADD',
+          text: 'Test Graph Paths',
+          callback: () => { this.testGraphCode(); },
+        }
+      );
+    }
 
     this.controllerService.setToolbarData({
       buttons: buttons,
@@ -962,7 +977,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
 
       // TEST1 for Source DSC Health
       this.sourceDSCisAdmitted = this.sourceDSC.spec.admit;
-      this.sourceDSCCondition = this.sourceDSC.status.conditions[0].type;
+      this.sourceDSCCondition =  Utility.getNaplesCondition(this.sourceDSC); // this.sourceDSC.status.conditions[0].type;
       this.sourceDSCPhase = this.sourceDSC.status['admission-phase'];
       if (this.sourceDSCisAdmitted && this.sourceDSCCondition === 'healthy' && this.sourceDSCPhase === 'admitted') {
         this.srcTest1Passed = true;
@@ -990,7 +1005,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
         }
       });
 
-      if (this.policies[0].status['propagation-status']['generation-id'] === this.policies[0].meta['generation-id'] && this.policies[0].status['propagation-status'].pending === 0) {
+      if (this.policies[0] && this.policies[0].status['propagation-status']['generation-id'] === this.policies[0].meta['generation-id'] && this.policies[0].status['propagation-status'].pending === 0) {
         this.sourcePolicyPropagatedPolicy = true;
       } else {
         this.sourcePolicyPropagatedPolicy = false;
@@ -1038,7 +1053,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
         }
       });
 
-      if (this.policies[0].status['propagation-status']['generation-id'] === this.policies[0].meta['generation-id'] && this.policies[0].status['propagation-status'].pending === 0) {
+      if (this.policies[0] && this.policies[0].status['propagation-status']['generation-id'] === this.policies[0].meta['generation-id'] && this.policies[0].status['propagation-status'].pending === 0) {
         this.destPolicyPropagatedPolicy = true;
       } else {
         this.destPolicyPropagatedPolicy = false;
@@ -1402,7 +1417,8 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
         const sub = this.metricsqueryService.pollMetrics('topologyInterfaces', queryList, MetricsUtility.THIRTYFIVE_SECONDS).subscribe(
           (data: ITelemetry_queryMetricsQueryResponse) => {
             this.srcDropData = [];
-            if (data && data.results && data.results.length === queryList.queries.length) {
+            const hasData = (data && data.results && data.results.length === queryList.queries.length && data.results[0].series[0]);
+            if ( hasData) {
               data.results[0].series[0].values[0].forEach((dropvalue, index) => {
                 if (dropvalue !== 0 && index !== 0) {
                   this.srcDropData.push({ column: displayColumns[index], value: dropvalue });
@@ -1434,7 +1450,8 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
         const sub = this.metricsqueryService.pollMetrics('topologyInterfaces', queryList, MetricsUtility.THIRTYFIVE_SECONDS).subscribe(
           (data: ITelemetry_queryMetricsQueryResponse) => {
             this.destDropData = [];
-            if (data && data.results && data.results.length === queryList.queries.length) {
+            const hasData = (data && data.results && data.results.length === queryList.queries.length && data.results[0].series[0]);
+            if ( hasData) {
               data.results[0].series[0].values[0].forEach((dropvalue, index) => {
                 if (dropvalue !== 0 && index !== 0) {
                   this.destDropData.push({ column: displayColumns[index], value: dropvalue });

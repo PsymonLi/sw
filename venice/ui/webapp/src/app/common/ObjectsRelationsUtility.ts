@@ -5,7 +5,24 @@ import { SecuritySecurityGroup, SecurityNetworkSecurityPolicy } from '@sdk/v1/mo
 import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
 import { NetworkNetwork, NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
 import { EventTypes } from '@sdk/v1/services/generated/abstract.service';
+import value from '*.json';
+import { config } from 'rxjs/internal/config';
 
+export interface ConnectionNode {
+    source: any;
+    destination: any;
+    frequency?: number;
+    payloadsum?: number;
+}
+
+export interface SimpleGraph {
+    [kind: string]: any[];
+}
+
+export interface IPrange {
+    start: string;
+    end: string;
+}
 
 export interface SecuritygroupWorkloadPolicyTuple {
     securitygroup: SecuritySecurityGroup;
@@ -257,14 +274,14 @@ export class ObjectsRelationsUtility {
         return dscWorkloadsTuple;
     }
 
-        /**
-     * Build a map key=dsc.meta.name, value = 'DSCWorkloadsTuple' object
-     *
-     * dsc -- 1:1 --> host
-     * host -- 1:m --> workloads
-     * @param workloads
-     * @param naples
-     */
+    /**
+ * Build a map key=dsc.meta.name, value = 'DSCWorkloadsTuple' object
+ *
+ * dsc -- 1:1 --> host
+ * host -- 1:m --> workloads
+ * @param workloads
+ * @param naples
+ */
     public static buildDscWorkloadMaps(workloads: ReadonlyArray<WorkloadWorkload> | WorkloadWorkload[], naples: ReadonlyArray<ClusterDistributedServiceCard> | ClusterDistributedServiceCard[])
         : any[] {
         const dscWorkloadMap = [];
@@ -729,25 +746,25 @@ export class ObjectsRelationsUtility {
             // NI-name is 00ae.cd01.0ed8-uplink129 where NI.status.dsc is missing.
             dscname = myDSCnameToMacMap.macToNameMap[macPart];
             if (!dscname) {
-            // NI-name is 00aecd0115e0-pf-70
-            dscname = myDSCnameToMacMap.macToNameMap[Utility.chunk(macPart, 4).join('.')];
+                // NI-name is 00aecd0115e0-pf-70
+                dscname = myDSCnameToMacMap.macToNameMap[Utility.chunk(macPart, 4).join('.')];
             }
         }
         return dscname ? dscname + '-' + typePart : niName;
     }
 
     public static getDSCFromNetworkinterface(selectedNetworkInterface: NetworkNetworkInterface, naplesList: ClusterDistributedServiceCard[]): ClusterDistributedServiceCard {
-       const dscMac = selectedNetworkInterface.status.dsc;
-       return naplesList.find( (dsc: ClusterDistributedServiceCard) => dsc.meta.name === dscMac);
+        const dscMac = selectedNetworkInterface.status.dsc;
+        return naplesList.find((dsc: ClusterDistributedServiceCard) => dsc.meta.name === dscMac);
     }
 
-    public static getDSCProfileFromDSC(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[] ): ClusterDSCProfile {
+    public static getDSCProfileFromDSC(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[]): ClusterDSCProfile {
         const dscProfilenameFromDSC = dsc.spec.dscprofile;
-        const dscProfile = dscprofiles.find( (profile: ClusterDSCProfile ) => profile.meta.name === dscProfilenameFromDSC);
+        const dscProfile = dscprofiles.find((profile: ClusterDSCProfile) => profile.meta.name === dscProfilenameFromDSC);
         return dscProfile;
     }
 
-    public static isDSCInDSCProfileFeatureSet(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[], featureSet: ClusterDSCProfileSpec_feature_set ): boolean {
+    public static isDSCInDSCProfileFeatureSet(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[], featureSet: ClusterDSCProfileSpec_feature_set): boolean {
         const profile: ClusterDSCProfile = this.getDSCProfileFromDSC(dsc, dscprofiles);
         if (!profile) {
             return false;
@@ -772,9 +789,9 @@ export class ObjectsRelationsUtility {
      * @param dscprofiles
      * @param featureSet
      */
-    public static isDSCInFlowawareOrFallwallMode(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[] ): boolean {
+    public static isDSCInFlowawareOrFallwallMode(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[]): boolean {
         return (this.isDSCInDSCProfileFeatureSet(dsc, dscprofiles, ClusterDSCProfileSpec_feature_set.flowaware) ||
-               this.isDSCInDSCProfileFeatureSet(dsc, dscprofiles, ClusterDSCProfileSpec_feature_set.flowaware_firewall) );
+            this.isDSCInDSCProfileFeatureSet(dsc, dscprofiles, ClusterDSCProfileSpec_feature_set.flowaware_firewall));
     }
 
     /**
@@ -785,8 +802,8 @@ export class ObjectsRelationsUtility {
      * @param dscs
      * @param dscprofiles
      */
-    public static isNetworkInterfaceInFlowawareOrFallwallMode(selectedNetworkInterface: NetworkNetworkInterface, dscs: ClusterDistributedServiceCard[], dscprofiles: ClusterDSCProfile[] ): boolean {
-        const  dsc: ClusterDistributedServiceCard = this.getDSCFromNetworkinterface(selectedNetworkInterface, dscs);
+    public static isNetworkInterfaceInFlowawareOrFallwallMode(selectedNetworkInterface: NetworkNetworkInterface, dscs: ClusterDistributedServiceCard[], dscprofiles: ClusterDSCProfile[]): boolean {
+        const dsc: ClusterDistributedServiceCard = this.getDSCFromNetworkinterface(selectedNetworkInterface, dscs);
         return this.isDSCInFlowawareOrFallwallMode(dsc, dscprofiles);
     }
 
@@ -809,8 +826,8 @@ export class ObjectsRelationsUtility {
         workload.spec.interfaces.map((interfaceObj, index) => {
             if (interfaceObj['micro-seg-vlan']) {
                 // We try to make "config.app.0": "App-1034";
-                const labelValue = 'App-' +  interfaceObj['micro-seg-vlan'];
-                const labelKey = ObjectsRelationsUtility.WORKLOAD_APP_LABEL_KEY_PREFIX +  index;
+                const labelValue = 'App-' + interfaceObj['micro-seg-vlan'];
+                const labelKey = ObjectsRelationsUtility.WORKLOAD_APP_LABEL_KEY_PREFIX + index;
                 // If key config.app.# does not exist, we add to workload.meta.labels
                 if (!workload.meta.labels) {
                     workload.meta.labels = {};
@@ -836,5 +853,403 @@ export class ObjectsRelationsUtility {
             delete workload.meta.labels[appName];
         });
         return workload;
+    }
+
+    /**
+     * A helper function to compute paths for two nodes in a graph
+     * @param inputgraph
+     * @param startNode
+     * @param end
+     * @param currentPath
+     * @param allpaths
+     * graph  as
+     * {"A":["B","C"],"B":["C","D"],"C":["D"],"D":["C"],"E":["F"],"F":["C"]}
+     * findAllPathsFor2Nodes(graph, 'A', 'D', [], validPaths)
+     * [['A', 'B', 'C', 'D'], ['A', 'B', 'D'], ['A', 'C', 'D']]
+     *
+     * reference: https://www.python.org/doc/essays/graphs/
+     */
+    public static findAllPathsFor2NodesInGraphHelper(graph, startNode, endNode, currentPath, validPaths: any[]) {
+        if (!currentPath) {
+            currentPath = [];
+        }
+        currentPath.push(startNode);
+        if (startNode === endNode) {
+            validPaths.push([...currentPath]);
+            return;
+        }
+        const adjacencyList = graph[startNode];
+        for (let i = 0; adjacencyList && i < adjacencyList.length; i++) {
+            const node = adjacencyList[i];
+            if (!currentPath.includes(node)) {
+                const newPath = Utility.getLodash().cloneDeepWith(currentPath); // must clone currentPath to avoid value being overwritten
+                this.findAllPathsFor2NodesInGraphHelper(graph, node, endNode, newPath, validPaths);
+            }
+        }
+    }
+
+    /**
+     * Compute paths for two nodes in a graph.
+     * const allpathsAD =  ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'A', 'D');
+     * @param graph
+     * @param startNode
+     * @param endNode
+     */
+    public static findAllPathsFor2NodesInGraph(graph, startNode, endNode): any[] {
+        const allpaths = [];
+        ObjectsRelationsUtility.findAllPathsFor2NodesInGraphHelper(graph, startNode, endNode, [], allpaths);
+        return allpaths;
+    }
+
+    /**
+     * Find all paths of a given graph
+     * @param graph
+     * @param nodes
+     * graph  as
+     * {"A":["B","C"],"B":["C","D"],"C":["D"],"D":["C"],"E":["F"],"F":["C"]}
+     * nodes is Objects.key(graph)
+     *
+     */
+    public static findAllGraphPaths(graph: SimpleGraph | any, nodes: any[]): any[] {
+        const allPaths = [];
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const ijAllpaths = [];
+                if (nodes[i] !== nodes[j]) {
+                    this.findAllPathsFor2NodesInGraphHelper(graph, nodes[i], nodes[j], [], ijAllpaths);
+                    if (ijAllpaths.length) {
+                        allPaths.push(ijAllpaths);
+                    }
+                }
+            }
+        }
+        return allPaths;
+    }
+
+    /**
+     * Given a node, this API finds all the nodes that this reference node can reerch to
+     * @param refNode
+     * @param allPaths
+     */
+    public static findAllNodeDestinationsFromAllpaths(refNode, allPaths: any[]) {
+        const endWithmes = [];
+        for (let i = 0; i < allPaths.length; i++) {
+            const iThPath = allPaths[i][0];
+            const startElem = iThPath[0];
+            if (startElem === refNode) {
+                const lastElem = iThPath[iThPath.length - 1];
+                if (!endWithmes.includes(lastElem)) {
+                    endWithmes.push(lastElem);
+                }
+            }
+        }
+        return endWithmes;
+    }
+
+    /**
+     * Given a node, the API finds all other nodes that can reach to this reference node.
+     * @param refNode
+     * @param allPaths
+     */
+    public static findAllNodesCanReachMeFromAllpaths(refNode, allPaths: any[]) {
+        const canReachmeNodes = [];
+        for (let i = 0; i < allPaths.length; i++) {
+            const iThPath = allPaths[i][0];
+            const lastElem = iThPath[iThPath.length - 1];
+            if (lastElem === refNode) {
+                const startElem = iThPath[0];
+                if (!canReachmeNodes.includes(startElem)) {
+                    canReachmeNodes.push(startElem);
+                }
+            }
+        }
+        return canReachmeNodes;
+    }
+
+    public static findAllSourcesByConnections(inputNode, connections: ConnectionNode[], nodes: any[]): any[] {
+        const allPaths = this.findAllGraphPathsWithConnections(connections, nodes);
+        return this.findAllNodesCanReachMeFromAllpaths(inputNode, allPaths);
+    }
+
+
+    public static findAllDestionationsByConnections(inputNode, connections: ConnectionNode[], nodes: any[]): any[] {
+        const allPaths = this.findAllGraphPathsWithConnections(connections, nodes);
+        return this.findAllNodeDestinationsFromAllpaths(inputNode, allPaths);
+    }
+
+    /**
+     * Connvience API to build paths from connections.
+     * Internally, convert connections to graph
+     * @param connections
+     * @param nodes
+     */
+    public static findAllGraphPathsWithConnections(connections: ConnectionNode[], nodes: any[]): any[] {
+        const graph: SimpleGraph = this.buildGraphFromConnections(connections);
+        return this.findAllGraphPaths(graph, nodes);
+    }
+
+    /**
+    * Connvience API to build paths from connections, given startNode and endNode
+    * Internally, convert connections to graph
+    * @param connections
+    * @param nodes
+    */
+    public static findAllPathsFor2NodesFromConnections(connections: ConnectionNode[], startNode, endNode): any[] {
+        const graph: SimpleGraph = this.buildGraphFromConnections(connections);
+        return ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, startNode, endNode);
+    }
+
+    /**
+     *
+     * @param connections
+     */
+    public static buildGraphFromConnections(connections: ConnectionNode[]): SimpleGraph {
+        const graph: SimpleGraph = {};
+        for (let i = 0; i < connections.length; i++) {
+            const node = connections[i];
+            if (!graph[node.source]) {
+                graph[node.source] = [];
+            }
+            const list = graph[node.source];
+            if (!list.includes(node.destination)) {
+                list.push(node.destination);
+            }
+        }
+        return graph;
+    }
+
+    /**
+     * Compress connections list which has duplicated entries to histogram.
+     * From
+     * [{"source":"C","target":"D"},{"source":"D","target":"C"},{"source":"E","target":"F"},{"source":"F","target":"C"},{"source":"C","target":"D"},{"source":"D","target":"C"}]
+     * to (add frequecy and payloadsum)
+     * [{"source":"C","target":"D","frequency":2,"payloadsum":0},{"source":"D","target":"C","frequency":2,"payloadsum":0},{"source":"E","target":"F","frequency":1,"payloadsum":0},{"source":"F","target":"C","frequency":1,"payloadsum":0}]
+     * @param connections
+     */
+    public static compressConnections(connections: ConnectionNode[],
+        makeKay: (node: ConnectionNode) => string = (node: ConnectionNode) => {
+            return node.source + '__' + node.destination;
+        }): ConnectionNode[] {
+        const newconnections: ConnectionNode[] = [];
+        const graph: { [key: string]: ConnectionNode } = {};
+        for (let i = 0; i < connections.length; i++) {
+            const node = connections[i];
+            const key = makeKay(node);
+            if (!graph[key]) {
+                const newNode = Utility.getLodash().cloneDeep(node);
+                if (!newNode.frequency) {
+                    newNode.frequency = 1;
+                }
+                if (!newNode.payloadsum) {
+                    newNode.payloadsum = 0;
+                }
+                graph[key] = newNode;
+                newconnections.push(newNode);
+            } else {
+                graph[key].frequency += 1;
+                if (node.payloadsum) {
+                    graph[key].payloadsum += node.payloadsum;
+                }
+            }
+        }
+        return newconnections;
+    }
+
+    /**
+     * Given a ip string and a workload, find the application that use this IP
+     * @param ip
+     * @param workload
+     */
+    public static findWorkloadApplicationFromIp(ip: string, workload: WorkloadWorkload): string {
+        let index = -1;
+        const interfaces: WorkloadWorkloadIntfSpec[] = workload.spec.interfaces;
+        for (let i = 0; i < interfaces.length; i++) {
+            const wlInterface = interfaces[i];
+            const matchedIps = wlInterface['ip-addresses'].find((ipAddress) => {
+                return (ip === ipAddress);
+            });
+            if (matchedIps) {
+                index = i;
+                break;
+            }
+        }
+        if (index >= 0) {
+            const keys = Object.keys(workload.meta.labels).filter(label => label.includes(ObjectsRelationsUtility.WORKLOAD_APP_LABEL_KEY_PREFIX + index));
+            const key = keys[0];
+            const appName = workload.meta.labels[key];
+            // the current format is config.app.# = appname. In the future will have
+            // config.app.0 = {name}__{type}__{ip}__{protocol/port}
+            // for example:
+            // config.app.0 = nginx__webserver__10.1.10.7__tcp/80
+            // Other option?
+            // Other o{name}__{ip}__{protocol/port}
+            return appName;
+        }
+        return null;
+    }
+
+    /**
+     * Given a ip, try to find application associated with thi IP
+     * @param ip
+     * @param workloads
+     */
+    public static findAppNameFromWorkloadsByIp(ip: string, workloads: WorkloadWorkload[]): string {
+        const workload = this.getWorkloadFromIPAddress(workloads, ip);
+        if (workload && workload.length > 0) {
+            return this.findWorkloadApplicationFromIp(ip, workload[0]);
+        }
+        return null;
+    }
+
+    /**
+     * Utility function to compute the ip range
+     * @param ipAddress
+     * For example: input '152.2.136.0/26' ==> '152.2.136.0 - '152.2.136.63
+     */
+    public static getIpRangeFromAddressAndNetmask(ipAddress: string): IPrange {
+        const part = ipAddress.split('/'); // part[0] = base address, part[1] = netmask
+        const ipaddress = part[0].split('.');
+        let netmaskblocks: any = ['0', '0', '0', '0'];
+        if ( !/\d+\.\d+\.\d+\.\d+/.test(part[1])) {
+          // part[1] has to be between 0 and 32
+          netmaskblocks = ('1'.repeat(parseInt(part[1], 10)) + '0'.repeat(32 - parseInt(part[1], 10))).match(/.{1,8}/g);
+          netmaskblocks = netmaskblocks.map((el) => parseInt(el, 2));
+        } else {
+          // xxx.xxx.xxx.xxx
+          netmaskblocks = part[1].split('.').map((el) => parseInt(el, 10) );
+        }
+        // invert for creating broadcast address (highest address)
+        // tslint:disable-next-line: no-bitwise
+        const invertedNetmaskblocks = netmaskblocks.map(( el: any ) => el ^ 255);
+        // tslint:disable-next-line: no-bitwise
+        const baseAddress = ipaddress.map((block: any, idx) => block & netmaskblocks[idx]);
+        // tslint:disable-next-line: no-bitwise
+        const broadcastaddress = baseAddress.map(function(block, idx) { return block | invertedNetmaskblocks[idx]; });
+        const ipRange: IPrange = {
+            start: baseAddress.join('.'),
+            end: broadcastaddress.join('.')
+        };
+        return ipRange;
+        // return [baseAddress.join('.'), broadcastaddress.join('.')];
+    }
+
+    /**
+     * Check if input ip address fall into a range of [start -  end]
+     * For example: '152.2.136.24'  is in range of  '152.2.136.0 - '152.2.136.63
+     * @param ipaddr
+     * @param start
+     * @param end
+     */
+    public static checkIpaddrInRange(ipaddr: string, start: string, end: string ) {
+        const IPtoNum: (ip: string ) => Number = (ip) => {
+            return Number(
+              ip.split('.')
+                .map(d => ('000' + d).substr(-3) )
+                .join('')
+            );
+          };
+        return ( IPtoNum(start) < IPtoNum(ipaddr) &&    IPtoNum(end) > IPtoNum(ipaddr) ) ;
+    }
+
+    /**
+     * Check if '152.2.136.24'  is in range of '152.2.136.0/26'
+     * @param ipaddress
+     * @param ipWithMask
+     */
+    public static checkIpAddressInRangeWithIPMask(ipaddress: string , ipWithMask: string): boolean {
+        const range = this.getIpRangeFromAddressAndNetmask(ipWithMask );
+        return  this.checkIpaddrInRange(ipaddress, range.start, range.end);
+    }
+
+    public static testGraphCode() {
+        const myIp = '152.2.136.0/26';
+        const range = this.getIpRangeFromAddressAndNetmask(myIp);
+
+        const testInRangeIP = '152.2.136.24' ;
+        const isInRange = this.checkIpaddrInRange(testInRangeIP, range.start, range.end);
+        console.log( myIp + ' is in range: ['  + range.start + ' , ' +  range.end  + '] ' + testInRangeIP +  ' is in range? ' +  isInRange);
+
+        const graph: SimpleGraph = {
+            'A': ['B', 'C'],
+            'B': ['C', 'D'],
+            'C': ['D'],
+            'D': ['C'],
+            'E': ['F'],
+            'F': ['C']
+        };
+
+        const connections: ConnectionNode[] = [
+            {
+                source: 'A',
+                destination: 'B'
+            },
+            {
+                source: 'A',
+                destination: 'C'
+            },
+            {
+                source: 'B',
+                destination: 'C'
+            },
+            {
+                source: 'B',
+                destination: 'D'
+            },
+            {
+                source: 'C',
+                destination: 'D'
+            },
+            {
+                source: 'D',
+                destination: 'C'
+            },
+            {
+                source: 'E',
+                destination: 'F'
+            },
+            {
+                source: 'F',
+                destination: 'C'
+            }
+            ,
+            // purposely duplicate entries
+            {
+                source: 'C',
+                destination: 'D'
+            },
+            {
+                source: 'D',
+                destination: 'C'
+            },
+        ];
+        const allpathsAD = ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'A', 'D');
+        console.log('A-D All Paths', allpathsAD);
+        const allpathsBF = ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'B', 'F');
+        console.log('B-F All Paths', allpathsBF);
+        const allpathsEC = ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'E', 'C');
+        console.log('E-C All Paths', allpathsEC);
+
+        const allGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(graph, Object.keys(graph));
+        console.log('All Graph Paths', allGraphPaths);
+
+        const myGraph = ObjectsRelationsUtility.buildGraphFromConnections(connections);
+        const connAllGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(myGraph, Object.keys(myGraph));
+        console.log('All Connection Graph Paths', connAllGraphPaths);
+
+        const testfindAllGraphPathsWithConnections = this.findAllGraphPathsWithConnections(connections, Object.keys(myGraph));
+        console.log('testfindAllGraphPathsWithConnections', testfindAllGraphPathsWithConnections);
+
+        const testfindAllPathsFor2NodesFromConnections = this.findAllPathsFor2NodesFromConnections(connections, 'E', 'C');
+        console.log('testfindAllPathsFor2NodesFromConnections', testfindAllPathsFor2NodesFromConnections);
+
+        const testcompressConnections = this.compressConnections(connections);
+        console.log('testcompressConnections', testcompressConnections);
+
+        const testFindAllSourcesByConnections  = this.findAllSourcesByConnections('D', connections, Object.keys(myGraph));
+        console.log('testFindAllSourcesByConnections. Nodes can go to D ', testFindAllSourcesByConnections);
+
+        const testFindAllDestionationsByConnections  = this.findAllDestionationsByConnections('A', connections, Object.keys(myGraph));
+        console.log('testFindAllDestionationsByConnections. Nodes A can rearch out to', testFindAllDestionationsByConnections);
+
     }
 }
