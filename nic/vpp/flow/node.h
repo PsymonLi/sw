@@ -5,7 +5,9 @@
 #ifndef __VPP_FLOW_NODE_H__
 #define __VPP_FLOW_NODE_H__
 
+#include <assert.h>
 #include <vlib/vlib.h>
+
 #undef TCP_FLAG_CWR
 #undef TCP_FLAG_ECE
 #undef TCP_FLAG_URG
@@ -674,6 +676,15 @@ always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
 extern void pds_flow_expired_timers_dispatch(u32 * expired_timers);
 extern void pds_flow_delete_session(u32 session_id);
 
+#define PDS_SESSION_POOL_ALLOC(FM)                              \
+{                                                               \
+    pool_alloc_aligned((FM)->session_index_pool,                \
+                       (FM)->max_sessions,                      \
+                       sizeof((FM)->session_index_pool[0]));    \
+    assert((((uintptr_t) ((FM)->session_index_pool)) %          \
+           sizeof((FM)->session_index_pool[0])) == 0);          \
+}
+
 always_inline void pds_session_id_flush(void)
 {
     pds_flow_main_t *fm = &pds_flow_main;
@@ -693,7 +704,7 @@ always_inline void pds_session_id_flush(void)
     pds_flow_prog_lock();
     pool_free(fm->session_index_pool);
     fm->session_index_pool = NULL;
-    pool_init_fixed(fm->session_index_pool, fm->max_sessions);
+    PDS_SESSION_POOL_ALLOC(fm);
     clib_memset(fm->session_index_pool, 0,
                 fm->max_sessions * sizeof(pds_flow_hw_ctx_t));
     for (u32 i = 0; i < vec_len(fm->session_id_thr_local_pool); i++) {

@@ -1945,7 +1945,7 @@ pds_flow_init (vlib_main_t * vm)
 
     pds_vpp_flow_log_init();
     fm->max_sessions = pds_session_get_max();
-    pool_init_fixed(fm->session_index_pool, fm->max_sessions);
+    PDS_SESSION_POOL_ALLOC(fm);
     vec_validate(fm->session_lock, fm->max_sessions);
     clib_memset(fm->session_index_pool, 0,
                 fm->max_sessions * sizeof(pds_flow_hw_ctx_t));
