@@ -29,6 +29,7 @@
 #include "platform/elba/elba_barco_sym_apis.hpp"
 #include "platform/elba/elba_barco_asym_apis.hpp"
 #include "platform/elba/elba_barco_crypto.hpp"
+#include "third-party/asic/elba/verif/apis/elb_freq_sw_api.h"
 // TODO: move out pipeline related code out of sdk
 #if defined(APOLLO) || defined(ARTEMIS) || defined(APULU) || defined(ATHENA)
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
@@ -611,13 +612,13 @@ asicpd_p4plus_invalidate_cache (mpartition_region_t *reg, uint64_t q_addr,
 uint32_t
 asicpd_clock_freq_get (void)
 {
-    return 0;   /* ASIC yet to implement */
+    return elb_top_sbus_get_core_freq(0,0);
 }
 
 uint32_t
 asicpd_get_core_freq (void)
 {
-    return 0; /* ASIC yet to implement */
+    return elb_top_sbus_get_core_freq(0,0);
 }
 
 sdk_ret_t

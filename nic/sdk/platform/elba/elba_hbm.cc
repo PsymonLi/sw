@@ -24,6 +24,7 @@
 #include "third-party/asic/elba/model/elb_pic/elb_pics_csr.h"
 #include "third-party/asic/elba/model/elb_ms/elb_ms_csr.h"
 #include "third-party/asic/elba/model/elb_pcie/elb_pxb_csr.h"
+#include "third-party/asic/elba/verif/apis/elb_freq_sw_api.h"
 
 namespace sdk {
 namespace platform {
@@ -287,7 +288,11 @@ elba_hbm_cache_regions_init (void)
 uint64_t
 elba_hbm_timestamp_get (void)
 {
-    return 0;
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_pf_csr_t &pf_csr = elb0.pf.pf;
+
+    pf_csr.sta_hbm_timestamp.read();
+    return (uint64_t)pf_csr.sta_hbm_timestamp.value().convert_to<uint64_t>();
 }
 
 sdk_ret_t
@@ -358,15 +363,7 @@ populate_hbm_bw (uint64_t max_rd, uint64_t max_wr,
 uint32_t
 elba_freq_get (void)
 {
-    uint64_t prev_ts     = 0;
-    uint64_t cur_ts      = 0;
-    int      delay       = 5000;
-
-    prev_ts = elba_hbm_timestamp_get();
-    usleep(delay * 1000);
-    cur_ts  = elba_hbm_timestamp_get();
-
-    return ((((cur_ts - prev_ts) * 1.0) / delay) * 1000) / 1000000.0;
+    return elb_top_sbus_get_core_freq(0,0);
 }
 
 static inline uint64_t

@@ -4,7 +4,7 @@
 
 #include "sysmon_internal.hpp"
 #include "asic/pd/pd.hpp"
-#include "third-party/asic/capri/verif/apis/cap_freq_api.h"
+#include "third-party/asic/elba/verif/apis/elb_freq_sw_api.h"
 
 using namespace sdk::asic::pd;
 
@@ -28,12 +28,7 @@ checkfrequency(void)
     int chip_id = 0;
     int inst_id = 0;
 
-#if 0
-// TBD-ELBA-REBASE
-    uint32_t frequency = cap_top_sbus_get_core_freq(chip_id, inst_id);
-#else 
-    uint32_t frequency = 0;
-#endif
+    uint32_t frequency = elb_top_sbus_get_core_freq(chip_id, inst_id);
     if (frequency != db.frequency) {
         db.frequency = frequency;
         if (g_sysmon_cfg.frequency_change_event_cb) {
@@ -68,6 +63,9 @@ checkcattrip(void)
 void
 checkliveness(void)
 {
+    // update cpld health reg0
+    pal_cpld_increment_liveness();
+
     if (g_sysmon_cfg.liveness_event_cb) {
         g_sysmon_cfg.liveness_event_cb();
     }
