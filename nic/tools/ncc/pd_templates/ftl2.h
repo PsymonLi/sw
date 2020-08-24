@@ -65,7 +65,7 @@
 //:: # consider it as single table entry.
 //:: action2table = defaultdict(set)
 //:: for table in pddict['tables']:
-//::    if not is_table_ftl_gen(table, pddict):
+//::    if not is_table_ftl2_gen(table, pddict):
 //::        continue
 //::    #endif
 //::    for action in pddict['tables'][table]['actions']:
@@ -77,54 +77,9 @@
 //:: output_h_dir = _context['output_h_dir']
 //:: output_c_dir = _context['output_c_dir']
 //::
-//:: f = open(output_h_dir + '/ftl_table.hpp', "w+")
-//:: f.write("""\
-//:: /*
-//::  * ftl_table.hpp
-//::  * {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-//::  *
-//::  * This file is generated from P4 program. Any changes made to this file will
-//::  * be lost.
-//::  */
-//::
-//:: #include <cstring>
-//:: #include "gen/p4gen/p4/include/ftl.h"
-//:: #include "lib/table/ftl/ftl_base.hpp"
-//::
-//:: #define FTL_MAX_RECIRCS 8
-//::
-//:: #ifndef __FTL_SDK_TABLE_HPP__
-//:: #define __FTL_SDK_TABLE_HPP__
-//::
-//:: namespace sdk {
-//:: namespace table {
-//::
-//:: """)
-//:: f.close()
-//::
-//:: f = open(output_c_dir + '/ftl.cc', "w+")
-//:: f.write("""\
-//:: /*
-//::  * ftl.cc
-//::  * {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-//::  *
-//::  * This file is generated from P4 program. Any changes made to this file will
-//::  * be lost.
-//::  */
-//::
-//:: """)
-//:: f.write('#include "gen/p4gen/p4/include/ftl_table.hpp"\n')
-//:: f.write('#include "gen/p4gen/p4/include/ftl.h"\n')
-//:: f.write('#include "gen/p4gen/p4/include/p4pd.h"\n')
-//:: f.write('#include "nic/sdk/include/sdk/mem.hpp"\n')
-//:: f.write('#include "nic/sdk/lib/table/ftl/ftl_utils.hpp"\n')
-//:: f.write('#include "nic/sdk/lib/utils/utils.hpp"\n')
-//:: f.write('\n')
-//:: f.close()
-//::
 /*
- * ftl.h
- * {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+ * ftl2.h
+ * {C} Copyright 2020 Pensando Systems Inc. All rights reserved
  *
  * This file is generated from P4 program. Any changes made to this file will
  * be lost.
@@ -151,7 +106,7 @@
 //::     structs_gen_dict = {}
 //::
 //::     for table in pddict['tables']:
-//::        if not is_table_ftl_gen(table, pddict):
+//::        if not is_table_ftl2_gen(table, pddict):
 //::            continue
 //::        #endif
 //::        if pddict['tables'][table]['hash_overflow'] and not pddict['tables'][table]['otcam']:
@@ -629,11 +584,9 @@
 //::                            key_entry_gen_done = True
 //::                        #endif
 struct __attribute__((__packed__)) ${struct_name}_key_entry_t {
-//::                        for key_field in key_fields_list:
-//::                            ftl_field_str_list = ftl_process_field(key_field)
-//::                            for ftl_field_str in ftl_field_str_list:
+//::                        ftl_field_str_list = ftl_process_fields_non_bitfield(key_fields_list)
+//::                        for ftl_field_str in ftl_field_str_list:
     ${ftl_field_str}
-//::                            #endfor
 //::                        #endfor
 //::                        if is_table_tcam_based(table, pddict):
 //::                            getters_gen_str = getters_gen(False, key_fields_list)
@@ -664,21 +617,9 @@ struct __attribute__((__packed__)) ${struct_full_name} {
 #ifdef __cplusplus
 struct __attribute__((__packed__)) ${struct_full_name} : base_table_entry_t {
 //::                #endif
-//::                for data_field in data_fields_list:
-//::                    # TODO remove once key is expanded for Apollo
-//::                    if data_field.name() == '__pad_key_bits':
-//::                        for key_field in key_fields_list:
-//::                            ftl_field_str_list = ftl_process_field(key_field)
-//::                            for ftl_field_str in ftl_field_str_list:
+//::                ftl_field_str_list = ftl_process_fields_non_bitfield(data_fields_list, key_fields_list)
+//::                for ftl_field_str in ftl_field_str_list:
     ${ftl_field_str}
-//::                            #endfor
-//::                        #endfor
-//::                    else:
-//::                        ftl_field_str_list = ftl_process_field(data_field)
-//::                        for ftl_field_str in ftl_field_str_list:
-    ${ftl_field_str}
-//::                        #endfor
-//::                    #endif
 //::                #endfor
 //::                if gen_actionid == True:
 //::                #TODO use define for actionid type
@@ -704,10 +645,13 @@ public:
 //::                    field_width = data_field.width()
 //::                    # skip over non-user data
 //::                    if data_field.is_key_appdata_field():
-//::                        field_set_str_list = data_field.set_field_str('s->' + field_name, False)
-//::                        for field_set_str in field_set_str_list:
-        ${field_set_str}
-//::                        #endfor
+//::                        if field_width > get_field_bit_unit():
+//::                            arr_len = get_bit_arr_length(field_width)
+//::                            field_set_str = field_name + ' = s->' + field_name + ';'
+        memcpy(${field_name}, s->${field_name}, ${arr_len});
+//::                        else:
+        set_${field_name}(s->get_${field_name}());
+//::                        #endif
 //::                    #endif
 //::                #endfor
     }
@@ -722,10 +666,13 @@ public:
 //::                    field_width = data_field.width()
 //::                    # skip over non-user data
 //::                    if data_field.is_key_appdata_field():
-//::                        field_set_str_list = data_field.set_field_str('0', False)
-//::                        for field_set_str in field_set_str_list:
+//::                        if field_width > get_field_bit_unit():
+//::                            arr_len = get_bit_arr_length(field_width)
+        memset(${field_name}, 0, ${arr_len});
+//::                        else:
+//::                            field_set_str = data_field.setter_str('0')
         ${field_set_str}
-//::                        #endfor
+//::                        #endif
 //::                    #endif
 //::                #endfor
     }
@@ -822,20 +769,25 @@ public:
 //::                    for key_field in key_fields_list:
 //::                        field_name = key_field.name()
 //::                        field_width = key_field.width()
-//::                        field_set_str_list = key_field.set_field_str('s->' + field_name, False)
-//::                        for field_set_str in field_set_str_list:
+//::                    if field_width > get_field_bit_unit():
+//::                        arr_len = get_bit_arr_length(field_width)
+//::                        field_set_str = field_name + ' = s->' + field_name + ';'
+        memcpy(${field_name}, s->${field_name}, ${arr_len});
+//::                    else:
+//::                        field_set_str = key_field.setter_str('s->get_' + field_name + '()')
         ${field_set_str}
-//::                        #endfor
+//::                    #endif
 //::                    #endfor
     }
 
-    uint8_t get_entry_valid (void) {
-        return entry_valid;
-    }
+    //uint8_t get_entry_valid (void) {
+        //return entry_valid;
+    //}
 
-    void set_entry_valid (uint8_t _entry_valid) {
-        base_table_entry_t::entry_valid = entry_valid = _entry_valid;
-    }
+    //void set_entry_valid (uint8_t _entry_valid) {
+        //base_table_entry_t::entry_valid = entry_valid = _entry_valid;
+        // TODO : use a different name for this generated function
+    //}
 
     void build_key(void *_s) {
         ${struct_full_name} *s = (${struct_full_name} *)_s;
@@ -848,12 +800,19 @@ public:
 
     void clear_key(void) {
 //::                    for key_field in key_fields_list:
+//::                        if is_pad_field(key_field.name()):
+//::                            continue
+//::                        #endif
 //::                        field_name = key_field.name()
 //::                        field_width = key_field.width()
-//::                        field_set_str_list = key_field.set_field_str('0', False)
-//::                        for field_set_str in field_set_str_list:
+//::                        field_set_str = key_field.setter_str('0')
+//::                        if field_width > get_field_bit_unit():
+//::                            arr_len = get_bit_arr_length(field_width)
+        memset(${field_name}, 0, ${arr_len});
+//::                        else:
+//::                            field_set_str = key_field.setter_str('0')
         ${field_set_str}
-//::                        #endfor
+//::                        #endif
 //::                    #endfor
     }
 
@@ -886,7 +845,7 @@ public:
 //::                        arr_len = get_bit_arr_length(field_width)
         if (memcmp(${field_name}, s->${field_name}, ${arr_len})) return false;
 //::                        else:
-        if (${field_name} != s->${field_name}) return false;
+        if (get_${field_name}() != s->get_${field_name}()) return false;
 //::                    #endif
 //::                 #endfor
         return true;
@@ -902,7 +861,7 @@ public:
 //::                            arr_len = get_bit_arr_length(field_width)
         if (memcmp(${field_name}, s->${field_name}, ${arr_len})) return false;
 //::                        else:
-        if (${field_name} != s->${field_name}) return false;
+        if (get_${field_name}() != s->get_${field_name}()) return false;
 //::                        #endif
 //::                    #endfor
         return true;
@@ -936,6 +895,9 @@ public:
     void clear_hints(void) {
 //::                    # TODO use setters
 //::                    for data_field in data_fields_list:
+//::                        if is_pad_field(data_field.name()):
+//::                            continue
+//::                        #endif
 //::                        field_name = data_field.name()
 //::                        field_width = data_field.width()
 //::                        if field_name == '__pad_to_512b':
@@ -943,11 +905,13 @@ public:
 //::                                arr_len = get_bit_arr_length(field_width)
         memset(${field_name}, 0, ${arr_len});
 //::                            else:
-        ${field_name} = 0;
+//::                                field_set_str = data_field.setter_str('0')
+        ${field_set_str}
 //::                            #endif
 //::                        #endif
 //::                        if data_field.is_hash_hint_field():
-        ${field_name} = 0;
+//::                            field_set_str = data_field.setter_str('0')
+        ${field_set_str}
 //::                        #endif
 //::                    #endfor
     }
@@ -978,20 +942,18 @@ public:
 //::                                if field.width() > hash_field_size:
 //::                                    hash_field_size = field.width()
 //::                                #endif
-//::                                field_set_str_list = field.set_field_str('hash')
+//::                                field_set_str = field.setter_str('hash')
 //::                            else:
 //::                                if field.width() > hint_field_size:
 //::                                    hint_field_size = field.width()
 //::                                #endif
-//::                                field_set_str_list = field.set_field_str('hint')
+//::                                field_set_str = field.setter_str('hint')
 //::                            #endif
-//::                            for field_set_str in field_set_str_list:
                 ${field_set_str}
-//::                            #endfor
 //::                        #endfor
                 break;
 //::                    #endfor
-            default: more_hints = hint; more_hashes = 1; break;
+            default: set_more_hints(hint); set_more_hashes(1); break;
         }
     }
 
@@ -1018,17 +980,15 @@ public:
 //::                                split_field_dict[split_field_name] = 1
 //::                            #endif
 //::                            if field.is_hash_field():
-//::                                field_get_str_list = field.get_field_str('hash')
+//::                                getter_str = field.getter_str_val('hash')
 //::                            else:
-//::                                field_get_str_list = field.get_field_str('hint')
+//::                                getter_str = field.getter_str_val('hint')
 //::                            #endif
-//::                            for field_get_str in field_get_str_list:
-                ${field_get_str}
-//::                            #endfor
+                ${getter_str}
 //::                        #endfor
                 break;
 //::                    #endfor
-            default: hint = more_hints; hash = more_hashes; break;
+            default: hint = get_more_hints(); hash = get_more_hashes(); break;
         }
     }
 
@@ -1057,13 +1017,12 @@ public:
 //::                                #endif
 //::                                field_get_str_list = field.get_field_str('hint')
 //::                            #endif
-//::                            for field_get_str in field_get_str_list:
-                ${field_get_str}
-//::                            #endfor
+//::                            getter_str = field.getter_str_val('hint')
+                ${getter_str}
 //::                        #endfor
                 break;
 //::                    #endfor
-            default: hint = more_hints; break;
+            default: hint = get_more_hints(); break;
         }
     }
 
@@ -1084,7 +1043,7 @@ public:
     }
 
     uint32_t find_last_hint(void) {
-        if (more_hints && more_hashes) {
+        if (get_more_hints() && get_more_hashes()) {
             return get_more_hint_slot();
 //::                    hash_field_cnt = ftl_hash_field_cnt()
 //::                    for hash_field in range(hash_field_cnt-1, 0, -1):
@@ -1098,10 +1057,11 @@ public:
 //::                            for field in fields:
 //::                                if field.is_hint_field():
 //::                                    field_name = field.name()
+//::                                    getter_str = field.getter_str()
 //::                                #endif
 //::                            #endfor
 //::                        #endif
-        } else if (${field_name}) {
+        } else if (${getter_str}) {
             return ${hash_field};
 //::                    #endfor
         }
@@ -1158,8 +1118,8 @@ public:
 //::                #endif
 //::
 //::                for key_data_field in key_data_chain:
-//::                    # ignore if field is hash/hint/padding
-//::                    if not key_data_field.is_key_appdata_field():
+//::                    # ignore if field is padding
+//::                    if is_pad_field(key_data_field.name()):
 //::                        continue
 //::                    #endif
 //::                    field_name = key_data_field.name()
@@ -1174,7 +1134,7 @@ public:
 //::                        #endif
 //::
 //::                        split_field_dict[split_field_name] = 1
-//::                        field_set_str_list = key_data_field.set_field_str('_' + split_field_name)
+//::                        field_set_str_list = key_data_field.set_fn_field_str('_' + split_field_name)
 //::                        split_field_width = get_split_field_width(split_field_name)
 //::                        if split_field_width > 64:
     void set_${split_field_name}(uint8_t *_${split_field_name}) {
@@ -1182,7 +1142,7 @@ public:
     void set_${split_field_name}(${field_type_str} _${split_field_name}) {
 //::                        #endif
 //::                    else:
-//::                        field_set_str_list = key_data_field.set_field_str('_' + field_name)
+//::                        field_set_str_list = key_data_field.set_fn_field_str('_' + field_name)
     void set_${field_name}(${field_type_str} _${field_name}) {
 //::                    #endif
 //::                    for field_set_str in field_set_str_list:
@@ -1210,8 +1170,8 @@ public:
 //::                    key_data_chain = itertools.chain(data_fields_list)
 //::                #endif
 //::                for key_data_field in key_data_chain:
-//::                    # ignore if field is hash/hint/padding
-//::                    if not key_data_field.is_key_appdata_field():
+//::                    # ignore if field is padding
+//::                    if is_pad_field(key_data_field.name()):
 //::                        continue
 //::                    #endif
 //::                    field_name = key_data_field.name()
@@ -1226,7 +1186,7 @@ public:
 //::                        #endif
 //::
 //::                        split_field_dict[split_field_name] = 1
-//::                        field_get_str_list = key_data_field.get_field_str(split_field_name)
+//::                        field_get_str_list = key_data_field.get_fn_field_str(split_field_name)
 //::                        split_field_width = get_split_field_width(split_field_name)
 //::                        if split_field_width > 64:
     void get_${split_field_name}(uint8_t *${split_field_name}) {
@@ -1250,7 +1210,10 @@ public:
         return;
 //::                        else:
     ${field_type_str} get_${field_name}(void) {
-        return ${field_name};
+//::                            field_get_str_list = key_data_field.get_fn_field_str(field_name)
+//::                            for field_get_str in field_get_str_list:
+        ${field_get_str}
+//::                            #endfor
 //::                        #endif
 //::                    #endif
     }
@@ -1261,13 +1224,6 @@ public:
 //::                if not is_table_gen_c_compatible(table, pddict):
 //::                    # enclose c++ class in ifdef
 #endif
-//::                #endif
-//::
-//::                # dont generate derived class methods for index tables
-//::                if not is_table_index_based(table, pddict):
-//::                    num_hints = ftl_hash_field_cnt()-1
-//::                    ftl_table_using_str += 'using sdk::table::' + struct_name + ';\n'
-//::                    ftl_table_gen(output_h_dir, output_c_dir, tableid, num_hints, struct_name, struct_full_name)
 //::                #endif
 //::
 //::            else:
@@ -1318,13 +1274,4 @@ public:
 //::        #endif
 //::     #endfor
 //::
-//:: f = open(output_h_dir + '/ftl_table.hpp', "a+")
-//:: f.write("""\
-//:: }   // namespace table
-//:: }   // namespace sdk
-//::
-//:: """)
-//:: f.write(ftl_table_using_str)
-//:: f.write('#endif   // __FTL_SDK_TABLE_HPP__')
-//:: f.close()
 #endif    // ${header_define}

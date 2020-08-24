@@ -58,6 +58,13 @@ def is_table_ftl_gen(table, pddict):
             return True
     return False
 
+def is_table_ftl2_gen(table, pddict):
+    # split fields not yet supported for ftl2, so restrict to a narrow set of tables
+    # TODO : better to add a pragma for these tables
+    if pddict['pipeline'] == 'apulu' and is_table_hbm_table(table, pddict) and not pddict['p4plus']:
+        return True
+    return False
+
 # hbm based table
 def is_table_hbm_table(table, pddict):
     if pddict['tables'][table]['location'] == 'HBM':
@@ -163,6 +170,9 @@ def is_key_appdata_field(field_name):
         if field in field_name:
             return False
     return True
+
+def is_pad_field(field_name):
+    return field_name.startswith("__pad")
 
 def hash_hint_field_slot(field_name):
     _list = re.findall(r'[0-9]+', field_name)
@@ -300,6 +310,8 @@ class Field:
         self._name = name
         self._width = width
         self._little_str = little_str
+        self._is_aggregate = False
+        self._is_bitfield_struct = True
 
     def name(self):
         return self._name
@@ -307,18 +319,37 @@ class Field:
     def width(self):
         return self._width
 
+    def set_aggregate(self):
+        assert(self._is_bitfield_struct == False)
+        self._is_aggregate = True
+
+    def is_aggregate(self):
+        return self._is_aggregate
+
+    def set_is_bitfield_struct(self, val):
+        self._is_bitfield_struct = val
+
+    def is_bitfield_struct(self):
+        return self._is_bitfield_struct
+
     def little_str(self):
         return self._little_str
 
-    def field_type_str(self):
+    def field_type_len(self):
         field_width = self.width()
         if field_width > get_field_bit_unit():
-            return 'uint' + str(get_field_bit_arr_unit()) + "_t *"
+            return get_field_bit_arr_unit()
         else:
             bit_len = next_pow_2(field_width)
             if bit_len < 8:
                 bit_len = 8
-            return 'uint' + str(bit_len) + '_t'
+            return bit_len
+
+    def field_type_str(self):
+        if self.width() > get_field_bit_unit():
+            return 'uint' + str(self.field_type_len()) + '_t *'
+        else:
+            return 'uint' + str(self.field_type_len()) + '_t'
 
     def is_hash_hint_field(self):
         return is_hash_hint_field(self.name())
@@ -337,6 +368,21 @@ class Field:
 
     def is_field_split(self):
         return is_field_split(self.name())
+
+    def getter_str(self):
+        if self._is_aggregate:
+            return 'get_' + self.name() + '()'
+        else:
+            return self.name()
+
+    def getter_str_val(self, val):
+        if self._is_aggregate:
+            return val + ' = get_' + self.name() + '();'
+        else:
+            return val + ' = ' + self.name() + ';'
+
+    def setter_str(self, val):
+        return 'set_' + self.name() + '(' + str(val) + ');'
 
     def set_field_str(self, field_arg, handle_split = True):
         field_name = self.name()
@@ -404,6 +450,48 @@ class Field:
                 field_str_list.append(field_name + ' = ' + field_arg + ';')
         return field_str_list
 
+    def set_fn_field_str(self, field_arg, handle_split = True):
+        if not self._is_aggregate:
+            return self.set_field_str(field_arg, handle_split)
+        else:
+            field_str_list = []
+            width = self.width()
+            pos = self.aggregate_byte_pos
+            agg_field_name = self.aggregate_field_name
+            bit_pos = self.aggregate_bit_pos
+            field_str_list.append('uint8_t *ptr = &' + agg_field_name + '[' + str(pos) + '];');
+            i = 0;
+            if width < 8 or bit_pos != 0:
+                bits_in_first_byte = min(width, 8 - bit_pos)
+                width -= bits_in_first_byte
+                mask = (1 << bits_in_first_byte) - 1
+                shift = 8 - bit_pos - bits_in_first_byte
+                or_mask = ~(mask << shift) & 0xff
+                if width:
+                    if shift:
+                        field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '(((' + field_arg + ' >> ' + str(width) + ')' + ' & ' + hex(mask) + ')' + ' << ' + str(shift) + ') | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+                    else:
+                        field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '((' + field_arg + ' >> ' + str(width) + ')' + ' & ' + hex(mask) + ') | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+                else:
+                    if shift:
+                        field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '(((' + field_arg + ')' + ' & ' + hex(mask) + ')' + ' << ' + str(shift) + ') | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+                    else:
+                        field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '((' + field_arg + ')' + ' & ' + hex(mask) + ') | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+                i += 1
+            while width > 8:
+                width -= 8
+                field_str_list.append('ptr[' + str(i) + ']' + '  = ' + '(' + field_arg + ' >> ' + str(width) + ')' + ' & 0xff;')
+                i += 1
+            if width > 0:
+                mask = (1 << width) - 1
+                shift = 8 - width;
+                or_mask = ~(mask << shift) & 0xff
+                if shift:
+                    field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '((' + field_arg + ' & ' + hex(mask) + ') << ' + str(shift) + ') | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+                else:
+                    field_str_list.append('ptr[' + str(i) + ']' + ' = ' + '((' + field_arg + ' & ' + hex(mask) + ')) | (ptr[' + str(i) + '] & ' + hex(or_mask) + ');')
+        return field_str_list
+
     def get_field_str(self, field_arg, handle_split = True):
         field_name = self.name()
         field_width = self.width()
@@ -467,6 +555,57 @@ class Field:
                 field_str_list.append(field_arg + ' = ' + field_name + ';')
         return field_str_list
 
+    def get_fn_field_str(self, field_arg):
+        field_str_list = []
+        if not self._is_aggregate:
+            field_str_list.append('return ' + field_arg + ';');
+        else:
+            width = self.width()
+            pos = self.aggregate_byte_pos
+            agg_field_name = self.aggregate_field_name
+            bit_pos = self.aggregate_bit_pos
+            field_str_list.append(self.field_type_str() + " val;");
+            field_str_list.append('uint8_t *ptr = &' + agg_field_name + '[' + str(pos) + '];');
+
+            i = 0;
+            bits_in_first_byte = min(width, 8 - bit_pos)
+            width -= bits_in_first_byte
+            mask = (1 << bits_in_first_byte) - 1
+            shift = 8 - bit_pos - bits_in_first_byte
+            if width:
+                if width > 32:
+                    cast = "(uint64_t)"
+                else:
+                    cast = ""
+                if shift:
+                    field_str_list.append('val  = ' + cast + '((ptr[' + str(i) + '] >> ' + str(shift) + ') & ' + hex(mask) + ') << ' + str(width) + ';')
+                else:
+                    field_str_list.append('val  = ' + cast + '((ptr[' + str(i) + ']) & ' + hex(mask) + ') << ' + str(width) + ';')
+            else:
+                if shift:
+                    field_str_list.append('val  = ((ptr[' + str(i) + '] >> ' + str(shift) + ') & ' + hex(mask) + ');')
+                else:
+                    field_str_list.append('val  =  (ptr[' + str(i) + '] & ' + hex(mask) + ');')
+
+            i += 1
+            while width > 8:
+                width -= 8
+                if width > 32:
+                    cast = "(uint64_t)"
+                else:
+                    cast = ""
+                field_str_list.append('val |=   ' + cast + 'ptr[' + str(i) + '] << ' + str(width) + ';')
+                i += 1
+            if width > 0:
+                mask = (1 << width) - 1
+                shift = 8 - width;
+                if shift:
+                    field_str_list.append('val |=  (ptr[' + str(i) + '] >> ' + str(shift) + ') & ' + hex(mask) + ';')
+                else:
+                    field_str_list.append('val |=   ptr[' + str(i) + '] & ' + hex(mask) + ';')
+            field_str_list.append('return val;')
+        return field_str_list
+
 ###################
 # SplitField class
 ###################
@@ -515,14 +654,21 @@ def ftl_field_print_str(field_obj):
             args_list.append(field_name + '[' + str(i) + ']')
         return (field_name + ':%02x' * arr_len, args_list)
     else:
-        return (field_name + ': %lu', [field_name])
+        if field_obj.is_bitfield_struct():
+            return (field_name + ': %lu', [field_name])
+        else:
+            getter_str = field_obj.getter_str()
+            if field_width > 32:
+                return (field_name + ': %lu', [getter_str])
+            else:
+                return (field_name + ': %u', [getter_str])
 
 def ftl_field_print(fields_list):
     format_list = []
     args_list = []
     for field_obj in fields_list:
         field_name = field_obj.name()
-        if field_name == '__pad_key_bits' or field_name == '__pad_to_512b':
+        if is_pad_field(field_name):
             continue
         format_str, _args_list = ftl_field_print_str(field_obj)
         format_list.append(format_str)
@@ -607,6 +753,65 @@ def ftl_process_field(field_obj):
         width = str(field_width) + little_str
         field_str_list.append("uint" + str(get_field_bit_unit()) + "_t " + field_name + " : " + width + ";")
     return field_str_list
+
+def __add_field_name(field_str_list, field_name, field_width):
+    if field_width == 8:
+        field_str_list.append("uint8_t " + field_name + ";")
+    elif field_width == 16:
+        field_str_list.append("uint16_t " + field_name + ";")
+    elif field_width == 32:
+        field_str_list.append("uint32_t " + field_name + ";")
+    elif field_width == 64:
+        field_str_list.append("uint64_t " + field_name + ";")
+    elif field_width % 8 == 0:
+        field_str_list.append("uint8_t " + field_name + "[" + str(field_width/8) + "]" + ";")
+    return field_str_list
+
+def ftl_process_fields_non_bitfield(data_fields_list, key_fields_list=[]):
+    fields_list = []
+    for field_obj in data_fields_list:
+        if field_obj.name() == '__pad_key_bits':
+            for key_field_obj in key_fields_list:
+                fields_list.append(key_field_obj)
+        else:
+            fields_list.append(field_obj)
+    field_str_list = []
+    total_bits = 0
+    for field_obj in fields_list:
+        if field_obj.is_field_split():
+            # not handled yet
+            assert(0)
+        field_obj.set_is_bitfield_struct(False)
+        field_name = field_obj.name()
+        field_width = field_obj.width()
+        if total_bits or field_width % 8:
+            if total_bits:
+                aggregate_field_name += "_" + field_name
+            else:
+                aggregate_field_name = field_name
+                fields_in_aggregate = []
+            fields_in_aggregate.append(field_obj)
+            field_obj.set_aggregate()
+            field_obj.aggregate_byte_pos = total_bits / 8
+            field_obj.aggregate_bit_pos = total_bits % 8
+            total_bits += field_width
+            if (total_bits % 8 == 0):
+                field_str_list.append("uint8_t " + aggregate_field_name + "[" + str(total_bits/8) + "]" + ";")
+                for f1 in fields_in_aggregate:
+                    f1.aggregate_field_name = aggregate_field_name
+                    f1.aggregate_bytes = total_bits / 8
+                total_bits = 0
+        else:
+            field_str_list = __add_field_name(field_str_list, field_name, field_width)
+    # check if we have leftover fields
+    if (total_bits):
+        field_str_list.append("uint8_t " + aggregate_field_name + "[" + str(total_bits/8+1) + "]" + ";")
+        for f1 in fields_in_aggregate:
+            f1.aggregate_field_name = aggregate_field_name
+            f1.aggregate_bytes = total_bits / 8 + 1
+        total_bits = 0
+    return field_str_list
+
 
 ftl_table_template_hpp = Template(
 """\
