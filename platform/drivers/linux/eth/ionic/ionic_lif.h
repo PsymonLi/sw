@@ -59,13 +59,13 @@ struct ionic_napi_stats {
 
 struct ionic_qcq {
 	void *q_base;
-	dma_addr_t q_base_pa;
+	dma_addr_t q_base_pa;	/* might not be page aligned */
 	u32 q_size;
 	void *cq_base;
-	dma_addr_t cq_base_pa;
+	dma_addr_t cq_base_pa;	/* might not be page aligned */
 	u32 cq_size;
 	void *sg_base;
-	dma_addr_t sg_base_pa;
+	dma_addr_t sg_base_pa;	/* might not be page aligned */
 	u32 sg_size;
 	bool armed;
 	struct ionic_queue q;
@@ -75,7 +75,6 @@ struct ionic_qcq {
 	struct ionic_napi_stats napi_stats;
 	unsigned int flags;
 	struct dentry *dentry;
-	unsigned int parent_slot;
 };
 
 #define q_to_qcq(q)		container_of(q, struct ionic_qcq, q)
@@ -223,13 +222,21 @@ struct ionic_lif {
 	struct dentry *dentry;
 };
 
-#define lif_to_txqcq(lif, i)	((lif)->txqcqs[i])
-#define lif_to_rxqcq(lif, i)	((lif)->rxqcqs[i])
-#define lif_to_txstats(lif, i)	(&(lif)->txqstats[i])
-#define lif_to_rxstats(lif, i)	(&(lif)->rxqstats[i])
-#define lif_to_txq(lif, i)	(&lif_to_txqcq((lif), i)->q)
-#define lif_to_rxq(lif, i)	(&lif_to_txqcq((lif), i)->q)
-#define is_parent_lif(lif)	((lif)->index == 0)
+struct ionic_queue_params {
+	unsigned int nxqs;
+	unsigned int ntxq_descs;
+	unsigned int nrxq_descs;
+	unsigned int intr_split;
+};
+
+static inline void ionic_init_queue_params(struct ionic_lif *lif,
+					   struct ionic_queue_params *qparam)
+{
+	qparam->nxqs = lif->nxqs;
+	qparam->ntxq_descs = lif->ntxq_descs;
+	qparam->nrxq_descs = lif->nrxq_descs;
+	qparam->intr_split = test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
+}
 
 static inline u32 ionic_coal_usec_to_hw(struct ionic *ionic, u32 usecs)
 {
@@ -306,9 +313,9 @@ int ionic_lif_rss_config(struct ionic_lif *lif, u16 types,
 
 int ionic_intr_alloc(struct ionic *ionic, struct ionic_intr_info *intr);
 void ionic_intr_free(struct ionic *ionic, int index);
-int ionic_open(struct net_device *netdev);
-int ionic_stop(struct net_device *netdev);
 void ionic_set_rx_mode(struct net_device *netdev);
+int ionic_reconfigure_queues(struct ionic_lif *lif,
+			     struct ionic_queue_params *qparam);
 int ionic_reset_queues(struct ionic_lif *lif, ionic_reset_cb cb, void *arg);
 int ionic_lif_alloc(struct ionic *ionic);
 int ionic_lif_init(struct ionic_lif *lif);
@@ -317,9 +324,8 @@ void ionic_lif_deinit(struct ionic_lif *lif);
 
 struct ionic_lif *ionic_netdev_lif(struct net_device *netdev);
 
-static inline void debug_stats_txq_post(struct ionic_qcq *qcq, bool dbell)
+static inline void debug_stats_txq_post(struct ionic_queue *q, bool dbell)
 {
-	struct ionic_queue *q = &qcq->q;
 	struct ionic_txq_desc *desc = &q->txq[q->head_idx];
 	u8 num_sg_elems = ((le64_to_cpu(desc->cmd) >> IONIC_TXQ_DESC_NSGE_SHIFT)
 						& IONIC_TXQ_DESC_NSGE_MASK);
@@ -329,7 +335,7 @@ static inline void debug_stats_txq_post(struct ionic_qcq *qcq, bool dbell)
 	if (num_sg_elems > (IONIC_MAX_NUM_SG_CNTR - 1))
 		num_sg_elems = IONIC_MAX_NUM_SG_CNTR - 1;
 
-	q->lif->txqstats->sg_cntr[num_sg_elems]++;
+	q->lif->txqstats[q->index].sg_cntr[num_sg_elems]++;
 }
 
 static inline void debug_stats_napi_poll(struct ionic_qcq *qcq,
@@ -347,15 +353,15 @@ static inline void debug_stats_napi_poll(struct ionic_qcq *qcq,
 #define DEBUG_STATS_CQE_CNT(cq)		((cq)->compl_count++)
 #define DEBUG_STATS_RX_BUFF_CNT(lif)	((lif)->rxqstats->buffers_posted++)
 #define DEBUG_STATS_INTR_REARM(intr)	((intr)->rearm_count++)
-#define DEBUG_STATS_TXQ_POST(qcq, dbell) \
-	debug_stats_txq_post(qcq, dbell)
+#define DEBUG_STATS_TXQ_POST(q, dbell) \
+	debug_stats_txq_post(q, dbell)
 #define DEBUG_STATS_NAPI_POLL(qcq, work_done) \
 	debug_stats_napi_poll(qcq, work_done)
 #else
 #define DEBUG_STATS_CQE_CNT(cq)
 #define DEBUG_STATS_RX_BUFF_CNT(qcq)
 #define DEBUG_STATS_INTR_REARM(intr)
-#define DEBUG_STATS_TXQ_POST(qcq, dbell)
+#define DEBUG_STATS_TXQ_POST(q, dbell)
 #define DEBUG_STATS_NAPI_POLL(qcq, work_done)
 #endif
 

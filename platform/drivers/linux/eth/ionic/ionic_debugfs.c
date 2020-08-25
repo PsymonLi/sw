@@ -274,7 +274,7 @@ void ionic_debugfs_add_qcq(struct ionic_lif *lif, struct ionic_qcq *qcq)
 		stats_dentry = debugfs_create_dir("tx_stats", q_dentry);
 		if (IS_ERR_OR_NULL(stats_dentry))
 			return;
-		txqstats = lif_to_txstats(lif, q->index);
+		txqstats = &lif->txqstats[q->index];
 
 		debugfs_create_u64("dma_map_err", 0400, stats_dentry,
 				   &txqstats[q->index].dma_map_err);
@@ -302,7 +302,7 @@ void ionic_debugfs_add_qcq(struct ionic_lif *lif, struct ionic_qcq *qcq)
 		stats_dentry = debugfs_create_dir("rx_stats", q_dentry);
 		if (IS_ERR_OR_NULL(stats_dentry))
 			return;
-		rxqstats = lif_to_rxstats(lif, q->index);
+		rxqstats = &lif->rxqstats[q->index];
 
 		debugfs_create_u64("dma_map_err", 0400, stats_dentry,
 				   &rxqstats[q->index].dma_map_err);

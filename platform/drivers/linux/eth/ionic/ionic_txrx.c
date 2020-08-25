@@ -22,7 +22,7 @@ static bool ionic_tx_service(struct ionic_cq *cq,
 static inline void ionic_txq_post(struct ionic_queue *q, bool ring_dbell,
 				  ionic_desc_cb cb_func, void *cb_arg)
 {
-	DEBUG_STATS_TXQ_POST(q_to_qcq(q), ring_dbell);
+	DEBUG_STATS_TXQ_POST(q, ring_dbell);
 
 	ionic_q_post(q, ring_dbell, cb_func, cb_arg);
 }
@@ -1293,9 +1293,9 @@ netdev_tx_t ionic_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 		return NETDEV_TX_OK;
 	}
 
-	if (unlikely(!lif_to_txqcq(lif, queue_index)))
+	if (unlikely(queue_index >= lif->nxqs))
 		queue_index = 0;
-	q = lif_to_txq(lif, queue_index);
+	q = &lif->txqcqs[queue_index]->q;
 
 	ndescs = ionic_tx_descs_needed(q, skb);
 	if (ndescs < 0)

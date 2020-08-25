@@ -27,9 +27,7 @@ enum {
 static const char ionic_priv_flags_strings[][ETH_GSTRING_LEN] = {
 #define IONIC_PRIV_F_RDMA_SNIFFER	BIT(0)
 	"rdma-sniffer",
-#define IONIC_PRIV_F_SPLIT_INTR		BIT(1)
-	"split-q-intr",
-#define IONIC_PRIV_F_SW_DBG_STATS	BIT(2)
+#define IONIC_PRIV_F_SW_DBG_STATS	BIT(1)
 #ifdef IONIC_DEBUG_STATS
 	"sw-dbg-stats",
 #endif
@@ -602,20 +600,14 @@ static void ionic_get_ringparam(struct net_device *netdev,
 	ring->rx_pending = lif->nrxq_descs;
 }
 
-static void ionic_set_ringsize(struct ionic_lif *lif, void *arg)
-{
-	struct ethtool_ringparam *ring = arg;
-
-	lif->ntxq_descs = ring->tx_pending;
-	lif->nrxq_descs = ring->rx_pending;
-}
-
 static int ionic_set_ringparam(struct net_device *netdev,
 			       struct ethtool_ringparam *ring)
 {
 	struct ionic_lif *lif = netdev_priv(netdev);
-	int tx_start, rx_start;
+	struct ionic_queue_params qparam;
 	int err;
+
+	ionic_init_queue_params(lif, &qparam);
 
 	if (ring->rx_mini_pending || ring->rx_jumbo_pending) {
 		netdev_info(netdev, "Changing jumbo or mini descriptors not supported\n");
@@ -647,8 +639,6 @@ static int ionic_set_ringparam(struct net_device *netdev,
 	    ring->rx_pending == lif->nrxq_descs)
 		return 0;
 
-	tx_start = lif->ntxq_descs;
-	rx_start = lif->nrxq_descs;
 	if (ring->tx_pending != lif->ntxq_descs)
 		netdev_info(netdev, "Changing Tx ring size from %d to %d\n",
 			    lif->ntxq_descs, ring->tx_pending);
@@ -657,21 +647,18 @@ static int ionic_set_ringparam(struct net_device *netdev,
 		netdev_info(netdev, "Changing Rx ring size from %d to %d\n",
 			    lif->nrxq_descs, ring->rx_pending);
 
-	err = ionic_reset_queues(lif, ionic_set_ringsize, ring);
-
-	if (err) {
-		int my_err;
-
-		netdev_warn(netdev, "Ringsize change failed, restoring ring sizes\n");
-		ring->tx_pending = tx_start;
-		ring->rx_pending = rx_start;
-		my_err = ionic_reset_queues(lif, ionic_set_ringsize, ring);
-
-		if (my_err) {
-			netdev_err(netdev, "Ringsize restore failed\n");
-			err = my_err;
-		}
+	/* if we're not running, just set the values and return */
+	if (!netif_running(lif->netdev)) {
+		lif->ntxq_descs = ring->tx_pending;
+		lif->nrxq_descs = ring->rx_pending;
+		return 0;
 	}
+
+	qparam.ntxq_descs = ring->tx_pending;
+	qparam.nrxq_descs = ring->rx_pending;
+	err = ionic_reconfigure_queues(lif, &qparam);
+	if (err)
+		netdev_info(netdev, "Ring reconfiguration failed, changes canceled: %d\n", err);
 
 	return err;
 }
@@ -697,32 +684,15 @@ static void ionic_get_channels(struct net_device *netdev,
 	}
 }
 
-static void ionic_set_queuecount(struct ionic_lif *lif, void *arg)
-{
-	struct ethtool_channels *ch = arg;
-
-	if (ch->combined_count) {
-		lif->nxqs = ch->combined_count;
-		if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state)) {
-			clear_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
-			lif->tx_coalesce_usecs = lif->rx_coalesce_usecs;
-			lif->tx_coalesce_hw = lif->rx_coalesce_hw;
-			netdev_info(lif->netdev, "Sharing queue interrupts\n");
-		}
-	} else {
-		lif->nxqs = ch->rx_count;
-		if (!test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state)) {
-			set_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
-			netdev_info(lif->netdev, "Splitting queue interrupts\n");
-		}
-	}
-}
-
 static int ionic_set_channels(struct net_device *netdev,
 			      struct ethtool_channels *ch)
 {
 	struct ionic_lif *lif = netdev_priv(netdev);
+	struct ionic_queue_params qp;
 	int max_cnt;
+	int err;
+
+	ionic_init_queue_params(lif, &qp);
 
 	/* Valid cases
 	 *  Combined (default):
@@ -749,11 +719,6 @@ static int ionic_set_channels(struct net_device *netdev,
 		return -EINVAL;
 	}
 
-	if (!(ch->combined_count || ch->rx_count)) {
-		netdev_info(netdev, "Please specify either combined or rx and tx\n");
-		return -EINVAL;
-	}
-
 	if (ch->combined_count && ch->rx_count) {
 		netdev_info(netdev, "Use either combined or rx and tx, not both\n");
 		return -EINVAL;
@@ -764,28 +729,54 @@ static int ionic_set_channels(struct net_device *netdev,
 		if (ch->combined_count > max_cnt)
 			return -EINVAL;
 
-		if (!test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state) &&
-		    (ch->combined_count == lif->nxqs))
+		if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state))
+			netdev_info(lif->netdev, "Sharing queue interrupts\n");
+		else if (ch->combined_count == lif->nxqs)
 			return 0;
 
 		if (lif->nxqs != ch->combined_count)
 			netdev_info(netdev, "Changing queue count from %d to %d\n",
 				    lif->nxqs, ch->combined_count);
+
+		qp.nxqs = ch->combined_count;
+		qp.intr_split = 0;
 	} else {
 		max_cnt /= 2;
 		if (ch->rx_count > max_cnt)
 			return -EINVAL;
 
-		if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state) &&
-		    (ch->rx_count == lif->nxqs))
+		if (!test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state))
+			netdev_info(lif->netdev, "Splitting queue interrupts\n");
+		else if (ch->rx_count == lif->nxqs)
 			return 0;
 
 		if (lif->nxqs != ch->rx_count)
 			netdev_info(netdev, "Changing queue count from %d to %d\n",
 				    lif->nxqs, ch->rx_count);
+
+		qp.nxqs = ch->rx_count;
+		qp.intr_split = 1;
 	}
 
-	return ionic_reset_queues(lif, ionic_set_queuecount, ch);
+	/* if we're not running, just set the values and return */
+	if (!netif_running(lif->netdev)) {
+		lif->nxqs = qp.nxqs;
+
+		if (qp.intr_split) {
+			set_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
+		} else {
+			clear_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
+			lif->tx_coalesce_usecs = lif->rx_coalesce_usecs;
+			lif->tx_coalesce_hw = lif->rx_coalesce_hw;
+		}
+		return 0;
+	}
+
+	err = ionic_reconfigure_queues(lif, &qp);
+	if (err)
+		netdev_info(netdev, "Queue reconfiguration failed, changes canceled: %d\n", err);
+
+	return err;
 }
 
 static u32 ionic_get_priv_flags(struct net_device *netdev)
@@ -799,37 +790,12 @@ static u32 ionic_get_priv_flags(struct net_device *netdev)
 	if (test_bit(IONIC_LIF_F_RDMA_SNIFFER, lif->state))
 		priv_flags |= IONIC_PRIV_F_RDMA_SNIFFER;
 
-	if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state))
-		priv_flags |= IONIC_PRIV_F_SPLIT_INTR;
-
 	return priv_flags;
-}
-
-static void ionic_set_split_intr(struct ionic_lif *lif, void *arg)
-{
-	int old_nxqs = lif->nxqs;
-	int new_sqintr = !!arg;
-
-	if (new_sqintr) {
-		/* split the queues across the interrupts */
-		lif->nxqs /= 2;
-		set_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
-	} else {
-		/* combine Tx and Rx queues on the interrupts */
-		lif->nxqs *= 2;
-		clear_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
-		lif->tx_coalesce_usecs = lif->rx_coalesce_usecs;
-		lif->tx_coalesce_hw = lif->rx_coalesce_hw;
-	}
-
-	netdev_info(lif->netdev, "%s queue interrupts and changing queue count from %d to %d\n",
-		    new_sqintr ? "Splitting" : "Sharing", old_nxqs, lif->nxqs);
 }
 
 static int ionic_set_priv_flags(struct net_device *netdev, u32 priv_flags)
 {
 	struct ionic_lif *lif = netdev_priv(netdev);
-	int sqintr, new_sqintr;
 	int rdma;
 
 	clear_bit(IONIC_LIF_F_SW_DEBUG_STATS, lif->state);
@@ -843,21 +809,6 @@ static int ionic_set_priv_flags(struct net_device *netdev, u32 priv_flags)
 
 	if (rdma != test_bit(IONIC_LIF_F_RDMA_SNIFFER, lif->state))
 		ionic_set_rx_mode(netdev);
-
-	sqintr = test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
-	new_sqintr = !!(priv_flags & IONIC_PRIV_F_SPLIT_INTR);
-	if (sqintr != new_sqintr) {
-		void *arg = 0;
-
-		if (ionic_use_eqs(lif)) {
-			netdev_err(netdev, "Split interrupts is not supported when using EventQueues\n");
-			return -EINVAL;
-		}
-
-		if (new_sqintr)
-			arg = (void *)1;
-		ionic_reset_queues(lif, ionic_set_split_intr, arg);
-	}
 
 	return 0;
 }

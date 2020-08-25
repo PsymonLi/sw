@@ -432,8 +432,8 @@ static void ionic_sw_stats_get_values(struct ionic_lif *lif, u64 **buf)
 	}
 
 	for (q_num = 0; q_num < MAX_Q(lif); q_num++) {
-		txqcq = lif_to_txqcq(lif, q_num);
-		txstats = lif_to_txstats(lif, q_num);
+		txqcq = lif->txqcqs[q_num];
+		txstats = &lif->txqstats[q_num];
 
 		for (i = 0; i < IONIC_NUM_TX_STATS; i++) {
 			**buf = IONIC_READ_STAT64(txstats,
@@ -475,8 +475,8 @@ static void ionic_sw_stats_get_values(struct ionic_lif *lif, u64 **buf)
 	}
 
 	for (q_num = 0; q_num < MAX_Q(lif); q_num++) {
-		rxqcq = lif_to_rxqcq(lif, q_num);
-		rxstats = lif_to_rxstats(lif, q_num);
+		rxqcq = lif->rxqcqs[q_num];
+		rxstats = &lif->rxqstats[q_num];
 
 		for (i = 0; i < IONIC_NUM_RX_STATS; i++) {
 			**buf = IONIC_READ_STAT64(rxstats,

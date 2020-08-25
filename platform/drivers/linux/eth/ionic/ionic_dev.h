@@ -241,8 +241,8 @@ struct ionic_queue {
 		struct ionic_txq_sg_desc *txq_sgl;
 		struct ionic_rxq_sg_desc *rxq_sgl;
 	};
-	dma_addr_t base_pa;
-	dma_addr_t sg_base_pa;
+	dma_addr_t base_pa;	/* must be page aligned */
+	dma_addr_t sg_base_pa;	/* must be page aligned */
 	unsigned int desc_size;
 	unsigned int sg_desc_size;
 	unsigned int pid;
@@ -272,7 +272,7 @@ struct ionic_cq {
 	unsigned int desc_size;
 	u64 compl_count;
 	void *base;
-	dma_addr_t base_pa;
+	dma_addr_t base_pa;	/* must be page aligned */
 } ____cacheline_aligned_in_smp;
 
 struct ionic_eq_ring {
