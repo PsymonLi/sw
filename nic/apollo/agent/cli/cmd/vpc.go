@@ -32,8 +32,16 @@ var vpcShowCmd = &cobra.Command{
 	Run:   vpcShowCmdHandler,
 }
 
+var vpcInternalShowCmd = &cobra.Command{
+	Use:   "internal",
+	Short: "show VPC internal information",
+	Long:  "show VPC internal object information",
+	Run:   cmdMapCmdHandler,
+}
+
 func init() {
 	showCmd.AddCommand(vpcShowCmd)
+	vpcShowCmd.AddCommand(vpcInternalShowCmd)
 	vpcShowCmd.Flags().Bool("yaml", false, "Output in yaml")
 	vpcShowCmd.Flags().Bool("summary", false, "Display number of objects")
 	vpcShowCmd.Flags().StringVarP(&transport, "transport", "t", "grpc",
@@ -63,8 +71,8 @@ func vpcShowCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if AgentTransport == AGENT_TRANSPORT_UDS {
-		err = HandleSvcReqConfigMsg(pds.ServiceRequestOp_SERVICE_OP_READ,
-			req, respMsg)
+		err = HandleSvcReqConfigMsg(
+			pds.ServiceRequestOp_SERVICE_OP_READ, req, respMsg)
 	} else {
 		// Connect to PDS
 		var c *grpc.ClientConn
