@@ -21,10 +21,10 @@
 /// Transistion states during the config operations
 enum eth_lif_state {
     LIF_STATE_NONE = 0,
-    LIF_STATE_RESETTING,
-    LIF_STATE_RESET,
     LIF_STATE_CREATING,
     LIF_STATE_CREATED,
+    LIF_STATE_RESETTING,
+    LIF_STATE_RESET,
     LIF_STATE_INITING,
     LIF_STATE_INIT,
     // LIF LINK STATES

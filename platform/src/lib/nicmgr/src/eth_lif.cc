@@ -214,10 +214,6 @@ EthLif::Init(void)
 
     // init Queues and FW buffer memory
     LifQInit(true);
-
-    if (dev_api != NULL) {
-        Create();
-    }
 }
 
 void
@@ -300,10 +296,6 @@ EthLif::UpgradeGracefulInit(void)
 
     // init Queues and FW buffer memory
     LifQInit(false);
-
-    if (dev_api != NULL) {
-        Create();
-    }
 }
 
 void
@@ -413,11 +405,6 @@ EthLif::UpgradeHitlessInit(void)
 
     // init Queues and FW buffer memory
     LifQInit(false);
-
-    if (dev_api != NULL) {
-        Create();
-    }
-
 }
 
 /// This function is called in the hitless upgrade context. This function
@@ -709,10 +696,6 @@ EthLif::Create()
 {
     sdk_ret_t rs;
 
-    if (lif_pstate->state < LIF_STATE_CREATING) {
-        return;
-    }
-
     hal_lif_info_.lif_state = ConvertEthLifStateToLifState(lif_pstate->state);
     rs = dev_api->lif_create(&hal_lif_info_);
     if (rs != SDK_RET_OK) {
@@ -720,7 +703,7 @@ EthLif::Create()
         return;
     }
 
-    if (lif_pstate->state < LIF_STATE_INIT)  {
+    if (!IsLifInitialized()) {
         lif_pstate->state = LIF_STATE_CREATED;
     }
 
