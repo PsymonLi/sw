@@ -29,10 +29,11 @@ var (
 )
 
 var vnicShowCmd = &cobra.Command{
-	Use:   "vnic",
-	Short: "show vnic information",
-	Long:  "show vnic object information",
-	Run:   vnicShowCmdHandler,
+	Use:          "vnic",
+	Short:        "show vnic information",
+	Long:         "show vnic object information",
+	RunE:         vnicShowCmdHandler,
+	SilenceUsage: true,
 }
 
 var vnicShowStatisticsCmd = &cobra.Command{
@@ -226,7 +227,7 @@ func vnicClearStatsCmdHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
+func vnicShowCmdHandler(cmd *cobra.Command, args []string) error {
 	respMsg := &pds.VnicGetResponse{}
 
 	var req *pds.VnicGetRequest
@@ -244,8 +245,7 @@ func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
 
 	AgentTransport, err := GetAgentTransport(cmd)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+		return fmt.Errorf("Failed to get transport, err %v", err)
 	}
 
 	if AgentTransport == AGENT_TRANSPORT_UDS {
@@ -256,14 +256,12 @@ func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
 		var c *grpc.ClientConn
 		c, err = utils.CreateNewGRPCClient()
 		if err != nil {
-			fmt.Printf("Could not connect to the PDS, is PDS running?\n")
-			return
+			return fmt.Errorf("Could not connect to the PDS, is PDS running?")
 		}
 		defer c.Close()
 
 		if len(args) > 0 {
-			fmt.Printf("Invalid argument\n")
-			return
+			return fmt.Errorf("Invalid argument")
 		}
 
 		client := pds.NewVnicSvcClient(c)
@@ -273,13 +271,11 @@ func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		fmt.Printf("Getting Vnic failed, err %v\n", err)
-		return
+		return fmt.Errorf("Getting Vnic failed, err %v", err)
 	}
 
 	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
-		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
-		return
+		return fmt.Errorf("Operation failed with %v error", respMsg.ApiStatus)
 	}
 
 	// Print Vnics
@@ -304,6 +300,7 @@ func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
 		}
 		printVnicSummary(len(respMsg.Response))
 	}
+	return nil
 }
 
 func printVnicSummary(count int) {
