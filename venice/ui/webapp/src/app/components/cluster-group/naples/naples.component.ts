@@ -1283,6 +1283,9 @@ export class NaplesComponent extends DataComponent implements OnInit {
   }
 
   showAdmissionButton(rowData: ClusterDistributedServiceCard): boolean {
+    if (rowData.status['admission-phase'] === ClusterDistributedServiceCardStatus_admission_phase.rejected) {
+      return false;   // VS-2187
+    }
     return !rowData.spec.admit;
   }
 

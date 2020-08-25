@@ -5,12 +5,12 @@ import { NodeConsts } from './networkgraph/networkgraph.component';
 import { FormControl } from '@angular/forms';
 import { NetworkgraphComponent } from './networkgraph/networkgraph.component';
 import { ControllerService } from '@app/services/controller.service';
-import { DSCWorkloadsTuple, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
+import { DSCWorkloadsTuple, ObjectsRelationsUtility, ConnectionNode } from '@app/common/ObjectsRelationsUtility';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { SecurityService } from '@app/services/generated/security.service';
-import { ISecuritySGRule, SecuritySGRule, SecurityNetworkSecurityPolicy, SecuritySGRule_action_uihint, ISecurityNetworkSecurityPolicy, SecurityApp } from '@sdk/v1/models/generated/security';
+import { ISecuritySGRule, SecuritySGRule, SecurityNetworkSecurityPolicy, SecuritySGRule_action_uihint, ISecurityNetworkSecurityPolicy, SecurityApp, SecurityNetworkSecurityPolicySpec, SecuritySGRule_action } from '@sdk/v1/models/generated/security';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { SelectItem } from 'primeng/api';
@@ -37,6 +37,7 @@ import { IMonitoringTechSupportRequest, MonitoringTechSupportRequest, IApiStatus
 import { TechSupport } from '../../../../../e2e/page-objects/techsupport.po';
 import { formatDate } from '@angular/common';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
+import { join } from 'lodash';
 
 export enum TabShown {
   Topology,
@@ -409,6 +410,9 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
           this.policies[0].status['rule-status'].forEach((rule, index) => {
             this.ruleHashMap[index] = rule['rule-hash'];
           });
+          if (this.uiconfigsService.isFeatureEnabled('troubleshooting')) {
+            this.processPolicyRulesGraph(this.policies[0] as SecurityNetworkSecurityPolicy);
+          }
         }
         this.getPolicyMetrics();
       },
@@ -416,6 +420,44 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
         this.controllerService.invokeRESTErrorToaster('Failed to get network security policies', error);
       }
     );
+  }
+
+  processPolicyRulesGraph(policy: SecurityNetworkSecurityPolicy) {
+    // let count = 0;
+    const connections: ConnectionNode[] = [];
+    for (let i = 0; i < policy.spec.rules.length; i++) {
+      const rule: SecuritySGRule = policy.spec.rules[i];
+      if (rule.action === SecuritySGRule_action.permit) {
+        const lenFrom = rule['from-ip-addresses'].length;
+        const lenTo = rule['to-ip-addresses'].length;
+        for (let j = 0; j < rule['from-ip-addresses'].length; j++) {
+          if (rule['from-ip-addresses'][j] && rule['to-ip-addresses'][j]) {
+            if (rule['from-ip-addresses'][j] !== 'any' && rule['to-ip-addresses'][j] !== 'any') {
+              if (rule['from-ip-addresses'][j] !== rule['to-ip-addresses'][j]) {
+                const connNode: ConnectionNode = {
+                  source: rule['from-ip-addresses'][j],
+                  destination: rule['to-ip-addresses'][j]
+                };
+                // debug only --  console.log('processPolicyRulesGraph', i, j, ++count, connNode.source, connNode.destination);
+                connections.push(connNode);
+              }
+            }
+          }
+        }
+      }
+    }
+    const compressedConns = ObjectsRelationsUtility.compressConnections(connections);
+    const graph = ObjectsRelationsUtility.buildGraphFromConnections(compressedConns);
+    const nodes = Object.keys(graph);
+    // It will take very long time to compute. Browser will be frozen
+    // const connAllGraphMatrix = ObjectsRelationsUtility.findRearchablePathMatrix(graph, nodes);
+    // console.log('TroubleshootingComponent.processPolicyRulesGraph()', graph, nodes, connAllGraphMatrix);
+
+    // test in .173 box. It should return  ["2.101.0.21/32", "2.110.0.36/32", "2.114.0.27/32"]
+    const startNode = '2.101.0.21/32';
+    const endNode = '2.114.0.27/32';
+    const nodes2Paths = ObjectsRelationsUtility.findReachablePath(graph, startNode, endNode);
+    console.log('TroubleshootingComponent.processPolicyRulesGraph()', nodes2Paths);
   }
 
   getSelectedDataObjects(): any[] {
@@ -828,15 +870,15 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
     }
 
     if (this.sourceSubmitted && this.destSubmitted) {
-      if (this.tabShown === TabShown.Topology ) {
+      if (this.tabShown === TabShown.Topology) {
         this.showTabs = true;
         this.positionNodesTopology();
         this.runTests();
-    } else if (this.tabShown === TabShown.Policies) {
-      this.invokePolicySearch();
-    }
-    if (this.portSubmitted) {
-     // changes the route without moving from the current view or
+      } else if (this.tabShown === TabShown.Policies) {
+        this.invokePolicySearch();
+      }
+      if (this.portSubmitted) {
+        // changes the route without moving from the current view or
         // triggering a navigation event,
         url = this._router.createUrlTree([], {
           relativeTo: this._route, queryParams: {
@@ -845,8 +887,8 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
             port: this.destPort
           }
         }).toString();
-    } else {
-      // changes the route without moving from the current view or
+      } else {
+        // changes the route without moving from the current view or
         // triggering a navigation event,
         url = this._router.createUrlTree([], {
           relativeTo: this._route, queryParams: {
@@ -854,9 +896,9 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
             destIP: this.destIP
           }
         }).toString();
+      }
+      this.location.go(url);
     }
-    this.location.go(url);
-  }
   }
 
   /**
@@ -977,7 +1019,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
 
       // TEST1 for Source DSC Health
       this.sourceDSCisAdmitted = this.sourceDSC.spec.admit;
-      this.sourceDSCCondition =  Utility.getNaplesCondition(this.sourceDSC); // this.sourceDSC.status.conditions[0].type;
+      this.sourceDSCCondition = Utility.getNaplesCondition(this.sourceDSC); // this.sourceDSC.status.conditions[0].type;
       this.sourceDSCPhase = this.sourceDSC.status['admission-phase'];
       if (this.sourceDSCisAdmitted && this.sourceDSCCondition === 'healthy' && this.sourceDSCPhase === 'admitted') {
         this.srcTest1Passed = true;
@@ -1418,7 +1460,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
           (data: ITelemetry_queryMetricsQueryResponse) => {
             this.srcDropData = [];
             const hasData = (data && data.results && data.results.length === queryList.queries.length && data.results[0].series[0]);
-            if ( hasData) {
+            if (hasData) {
               data.results[0].series[0].values[0].forEach((dropvalue, index) => {
                 if (dropvalue !== 0 && index !== 0) {
                   this.srcDropData.push({ column: displayColumns[index], value: dropvalue });
@@ -1451,7 +1493,7 @@ export class TroubleshootingComponent extends DataComponent implements OnInit {
           (data: ITelemetry_queryMetricsQueryResponse) => {
             this.destDropData = [];
             const hasData = (data && data.results && data.results.length === queryList.queries.length && data.results[0].series[0]);
-            if ( hasData) {
+            if (hasData) {
               data.results[0].series[0].values[0].forEach((dropvalue, index) => {
                 if (dropvalue !== 0 && index !== 0) {
                   this.destDropData.push({ column: displayColumns[index], value: dropvalue });

@@ -1,12 +1,10 @@
-import { WorkloadWorkload, IWorkloadWorkload, IApiStatus, WorkloadWorkloadIntfSpec, IWorkloadAutoMsgWorkloadWatchHelper } from '@sdk/v1/models/generated/workload';
-import { ClusterDistributedServiceCard, ClusterHost, IClusterDistributedServiceCardID, IClusterAutoMsgHostWatchHelper, ClusterDSCProfile, ClusterDSCProfileSpec_feature_set, ClusterDSCProfileSpec_deployment_target } from '@sdk/v1/models/generated/cluster';
 import { Utility } from '@app/common/Utility';
-import { SecuritySecurityGroup, SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
-import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
+import { ClusterDistributedServiceCard, ClusterDSCProfile, ClusterDSCProfileSpec_deployment_target, ClusterDSCProfileSpec_feature_set, ClusterHost, IClusterAutoMsgHostWatchHelper, IClusterDistributedServiceCardID } from '@sdk/v1/models/generated/cluster';
 import { NetworkNetwork, NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
+import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
+import { SecurityNetworkSecurityPolicy, SecuritySecurityGroup } from '@sdk/v1/models/generated/security';
+import { IWorkloadAutoMsgWorkloadWatchHelper, WorkloadWorkload, WorkloadWorkloadIntfSpec } from '@sdk/v1/models/generated/workload';
 import { EventTypes } from '@sdk/v1/services/generated/abstract.service';
-import value from '*.json';
-import { config } from 'rxjs/internal/config';
 
 export interface ConnectionNode {
     source: any;
@@ -856,6 +854,78 @@ export class ObjectsRelationsUtility {
     }
 
     /**
+     * This API is convienence function to check if node-start can reach node-end
+     * @param graph
+     * @param start
+     * @param end
+     */
+    public static isNodeReachable(graph: SimpleGraph, start, end): boolean {
+        const pathOne = this.findReachablePath(graph, start, end);
+        return (!!pathOne); // pathOne can be undefind.  use "!!" trick to return boolean
+    }
+
+    /**
+     * This API returns the first rearch-able path from "start" to "end" node
+     * It uses BSF . O(n) is linear
+     * @param graph
+     * @param start
+     * @param end
+     */
+    public static findReachablePath(graph: SimpleGraph, start, end): any {
+        const deque = [];
+        const dist = {};
+        dist[start] = [start];
+        deque.push(start);
+        while (deque.length > 0) {
+            const at = Utility.getLodash().cloneDeep(deque[0]); // have to clone "at" as next line is going to remove it.
+            deque.shift();
+            if (graph[at]) {
+                for (const next of graph[at]) {
+                    if (!dist[next]) {
+                        dist[next] = dist[at].concat(next);
+                        deque.push(next);
+                    }
+                    if (next === end) {
+                        return dist[end];
+                    }
+                }
+            }
+        }
+        return dist[end];
+    }
+
+    /**
+     * This API builds a matrix reachable path bewteen two nodes
+     * @param graph
+     * @param nodes
+     *
+     * output (notice: A-B-D)
+     * "{"A":{"B":["A","B"],"C":["A","C"],"D":["A","B","D"]},"B":{"C":["B","C"],"D":["B","D"]},"C":{"D":["C","D"]},"E":{"F":["E","F"]}}"
+     */
+    public static findReachablePathMatrix(graph: SimpleGraph, nodes: any[]) {
+        const allPaths = [];
+        const matrix = {};
+        for (let i = 0; i < nodes.length; i++) {
+            let iObj = null;
+            for (let j = i + 1; j < nodes.length; j++) {
+                console.log ('findRearchablePathMatrix()', i, j, nodes[i], nodes[j]);
+                if (nodes[i] !== nodes[j]) {
+                    const ijPath = this.findReachablePath(graph, nodes[i], nodes[j]);
+                    if (!!ijPath) {
+                        iObj = (iObj) ? iObj : {};
+                        allPaths.push(ijPath);
+                        iObj[nodes[j]] = ijPath;
+                    }
+                }
+            }
+            if (iObj) {
+                matrix[nodes[i]] = iObj;
+            }
+        }
+        return matrix;
+    }
+
+    /**
      * A helper function to compute paths for two nodes in a graph
      * @param inputgraph
      * @param startNode
@@ -868,6 +938,7 @@ export class ObjectsRelationsUtility {
      * [['A', 'B', 'C', 'D'], ['A', 'B', 'D'], ['A', 'C', 'D']]
      *
      * reference: https://www.python.org/doc/essays/graphs/
+     * Time complexity is O(n!).  Be careful !!!!
      */
     public static findAllPathsFor2NodesInGraphHelper(graph, startNode, endNode, currentPath, validPaths: any[]) {
         if (!currentPath) {
@@ -972,7 +1043,7 @@ export class ObjectsRelationsUtility {
     }
 
 
-    public static findAllDestionationsByConnections(inputNode, connections: ConnectionNode[], nodes: any[]): any[] {
+    public static findAllDestinationsByConnections(inputNode, connections: ConnectionNode[], nodes: any[]): any[] {
         const allPaths = this.findAllGraphPathsWithConnections(connections, nodes);
         return this.findAllNodeDestinationsFromAllpaths(inputNode, allPaths);
     }
@@ -1110,21 +1181,21 @@ export class ObjectsRelationsUtility {
         const part = ipAddress.split('/'); // part[0] = base address, part[1] = netmask
         const ipaddress = part[0].split('.');
         let netmaskblocks: any = ['0', '0', '0', '0'];
-        if ( !/\d+\.\d+\.\d+\.\d+/.test(part[1])) {
-          // part[1] has to be between 0 and 32
-          netmaskblocks = ('1'.repeat(parseInt(part[1], 10)) + '0'.repeat(32 - parseInt(part[1], 10))).match(/.{1,8}/g);
-          netmaskblocks = netmaskblocks.map((el) => parseInt(el, 2));
+        if (!/\d+\.\d+\.\d+\.\d+/.test(part[1])) {
+            // part[1] has to be between 0 and 32
+            netmaskblocks = ('1'.repeat(parseInt(part[1], 10)) + '0'.repeat(32 - parseInt(part[1], 10))).match(/.{1,8}/g);
+            netmaskblocks = netmaskblocks.map((el) => parseInt(el, 2));
         } else {
-          // xxx.xxx.xxx.xxx
-          netmaskblocks = part[1].split('.').map((el) => parseInt(el, 10) );
+            // xxx.xxx.xxx.xxx
+            netmaskblocks = part[1].split('.').map((el) => parseInt(el, 10));
         }
         // invert for creating broadcast address (highest address)
         // tslint:disable-next-line: no-bitwise
-        const invertedNetmaskblocks = netmaskblocks.map(( el: any ) => el ^ 255);
+        const invertedNetmaskblocks = netmaskblocks.map((el: any) => el ^ 255);
         // tslint:disable-next-line: no-bitwise
         const baseAddress = ipaddress.map((block: any, idx) => block & netmaskblocks[idx]);
         // tslint:disable-next-line: no-bitwise
-        const broadcastaddress = baseAddress.map(function(block, idx) { return block | invertedNetmaskblocks[idx]; });
+        const broadcastaddress = baseAddress.map(function (block, idx) { return block | invertedNetmaskblocks[idx]; });
         const ipRange: IPrange = {
             start: baseAddress.join('.'),
             end: broadcastaddress.join('.')
@@ -1140,15 +1211,15 @@ export class ObjectsRelationsUtility {
      * @param start
      * @param end
      */
-    public static checkIpaddrInRange(ipaddr: string, start: string, end: string ) {
-        const IPtoNum: (ip: string ) => Number = (ip) => {
+    public static checkIpaddrInRange(ipaddr: string, start: string, end: string) {
+        const IPtoNum: (ip: string) => Number = (ip) => {
             return Number(
-              ip.split('.')
-                .map(d => ('000' + d).substr(-3) )
-                .join('')
+                ip.split('.')
+                    .map(d => ('000' + d).substr(-3))
+                    .join('')
             );
-          };
-        return ( IPtoNum(start) < IPtoNum(ipaddr) &&    IPtoNum(end) > IPtoNum(ipaddr) ) ;
+        };
+        return (IPtoNum(start) < IPtoNum(ipaddr) && IPtoNum(end) > IPtoNum(ipaddr));
     }
 
     /**
@@ -1156,18 +1227,18 @@ export class ObjectsRelationsUtility {
      * @param ipaddress
      * @param ipWithMask
      */
-    public static checkIpAddressInRangeWithIPMask(ipaddress: string , ipWithMask: string): boolean {
-        const range = this.getIpRangeFromAddressAndNetmask(ipWithMask );
-        return  this.checkIpaddrInRange(ipaddress, range.start, range.end);
+    public static checkIpAddressInRangeWithIPMask(ipaddress: string, ipWithMask: string): boolean {
+        const range = this.getIpRangeFromAddressAndNetmask(ipWithMask);
+        return this.checkIpaddrInRange(ipaddress, range.start, range.end);
     }
 
     public static testGraphCode() {
         const myIp = '152.2.136.0/26';
         const range = this.getIpRangeFromAddressAndNetmask(myIp);
 
-        const testInRangeIP = '152.2.136.24' ;
+        const testInRangeIP = '152.2.136.24';
         const isInRange = this.checkIpaddrInRange(testInRangeIP, range.start, range.end);
-        console.log( myIp + ' is in range: ['  + range.start + ' , ' +  range.end  + '] ' + testInRangeIP +  ' is in range? ' +  isInRange);
+        console.log(myIp + ' is in range: [' + range.start + ' , ' + range.end + '] ' + testInRangeIP + ' is in range? ' + isInRange);
 
         const graph: SimpleGraph = {
             'A': ['B', 'C'],
@@ -1222,6 +1293,15 @@ export class ObjectsRelationsUtility {
                 destination: 'C'
             },
         ];
+
+        const pathAD = ObjectsRelationsUtility.findReachablePath(graph, 'A', 'D');
+        const pathCD = ObjectsRelationsUtility.findReachablePath(graph, 'C', 'D');
+        const isRearchableAE = ObjectsRelationsUtility.isNodeReachable(graph, 'A', 'E');
+        console.log('A-D is reachable', pathAD, pathCD, isRearchableAE);
+
+        const matrix = ObjectsRelationsUtility.findReachablePathMatrix(graph, Object.keys(graph));
+        console.log('Graph matrix', matrix);
+
         const allpathsAD = ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'A', 'D');
         console.log('A-D All Paths', allpathsAD);
         const allpathsBF = ObjectsRelationsUtility.findAllPathsFor2NodesInGraph(graph, 'B', 'F');
@@ -1245,10 +1325,10 @@ export class ObjectsRelationsUtility {
         const testcompressConnections = this.compressConnections(connections);
         console.log('testcompressConnections', testcompressConnections);
 
-        const testFindAllSourcesByConnections  = this.findAllSourcesByConnections('D', connections, Object.keys(myGraph));
+        const testFindAllSourcesByConnections = this.findAllSourcesByConnections('D', connections, Object.keys(myGraph));
         console.log('testFindAllSourcesByConnections. Nodes can go to D ', testFindAllSourcesByConnections);
 
-        const testFindAllDestionationsByConnections  = this.findAllDestionationsByConnections('A', connections, Object.keys(myGraph));
+        const testFindAllDestionationsByConnections = this.findAllDestinationsByConnections('A', connections, Object.keys(myGraph));
         console.log('testFindAllDestionationsByConnections. Nodes A can rearch out to', testFindAllDestionationsByConnections);
 
     }
