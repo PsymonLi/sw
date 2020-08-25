@@ -150,6 +150,7 @@ const (
 	ErrFwlogPolicyWatch                                  = Error("ErrFwlogPolicyWatch")
 	ErrFwlogPolicyWatchExited                            = Error("ErrFwlogPolicyWatchExited")
 	ErrFwlogPolicyConfig                                 = Error("ErrFwlogPolicyConfig")
+	ErrObjectNotCreated                                  = Error("ErrObjectNotCreated")
 )
 
 // Const Info

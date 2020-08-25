@@ -1224,6 +1224,7 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 		return
 	}
 
+	var existingMirrorSession netproto.InterfaceMirrorSession
 	// Handle Get and LIST. This doesn't need any pipeline specific APIs
 	switch oper {
 	case types.Get:
@@ -1269,7 +1270,6 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 
 	case types.Update:
 		// Get to ensure that the object exists
-		var existingMirrorSession netproto.InterfaceMirrorSession
 		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrBadRequest, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
@@ -1288,7 +1288,6 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 		}
 
 	case types.Delete:
-		var existingMirrorSession netproto.InterfaceMirrorSession
 		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
 		if err != nil {
 			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
@@ -1301,7 +1300,18 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 		}
 		mirror = existingMirrorSession
 	case types.Purge:
+		existingMirrorSession = mirror
 	}
+
+	if oper != types.Create {
+		mirrorKey := fmt.Sprintf("%s/%s", existingMirrorSession.Kind, existingMirrorSession.GetKey())
+		sessionIDs := iris.MirrorDestToIDMapping[mirrorKey]
+		if len(sessionIDs) != len(existingMirrorSession.Spec.Collectors) {
+			log.Error(errors.Wrapf(types.ErrObjectNotCreated, "InterfaceMirrorSession: %s", existingMirrorSession.GetKey()))
+			return nil, errors.Wrapf(types.ErrObjectNotCreated, "InterfaceMirrorSession: %s", existingMirrorSession.GetKey())
+		}
+	}
+
 	log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
 
@@ -1355,6 +1365,7 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 		return
 	}
 
+	var existingMirrorSession netproto.MirrorSession
 	// Handle Get and LIST. This doesn't need any pipeline specific APIs
 	switch oper {
 	case types.Get:
@@ -1400,7 +1411,6 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 
 	case types.Update:
 		// Get to ensure that the object exists
-		var existingMirrorSession netproto.MirrorSession
 		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
@@ -1419,7 +1429,6 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 		}
 
 	case types.Delete:
-		var existingMirrorSession netproto.MirrorSession
 		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
 		if err != nil {
 			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
@@ -1432,7 +1441,18 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 		}
 		mirror = existingMirrorSession
 	case types.Purge:
+		existingMirrorSession = mirror
 	}
+
+	if oper != types.Create {
+		mirrorKey := fmt.Sprintf("%s/%s", existingMirrorSession.Kind, existingMirrorSession.GetKey())
+		sessionIDs := iris.MirrorDestToIDMapping[mirrorKey]
+		if len(sessionIDs) != len(existingMirrorSession.Spec.Collectors) {
+			log.Error(errors.Wrapf(types.ErrObjectNotCreated, "MirrorSession: %s", existingMirrorSession.GetKey()))
+			return nil, errors.Wrapf(types.ErrObjectNotCreated, "MirrorSession: %s", existingMirrorSession.GetKey())
+		}
+	}
+
 	log.Infof("MirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("MirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
 
@@ -1486,6 +1506,7 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 		return
 	}
 
+	var existingFlowExportPolicy netproto.FlowExportPolicy
 	// Handle Get and LIST. This doesn't need any pipeline specific APIs
 	switch oper {
 	case types.Get:
@@ -1531,7 +1552,6 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 
 	case types.Update:
 		// Get to ensure that the object exists
-		var existingFlowExportPolicy netproto.FlowExportPolicy
 		dat, err := i.InfraAPI.Read(netflow.Kind, netflow.GetKey())
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrBadRequest, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), types.ErrObjNotFound))
@@ -1549,7 +1569,6 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 			return nil, nil
 		}
 	case types.Delete:
-		var existingFlowExportPolicy netproto.FlowExportPolicy
 		dat, err := i.InfraAPI.Read(netflow.Kind, netflow.GetKey())
 		if err != nil {
 			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
@@ -1562,7 +1581,18 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 		}
 		netflow = existingFlowExportPolicy
 	case types.Purge:
+		existingFlowExportPolicy = netflow
 	}
+
+	if oper != types.Create {
+		netflowKey := fmt.Sprintf("%s/%s", existingFlowExportPolicy.Kind, existingFlowExportPolicy.GetKey())
+		collectorIDs := iris.NetflowDestToIDMapping[netflowKey]
+		if len(collectorIDs) != len(existingFlowExportPolicy.Spec.Exports) {
+			log.Error(errors.Wrapf(types.ErrObjectNotCreated, "FlowExportPolicy: %s", existingFlowExportPolicy.GetKey()))
+			return nil, errors.Wrapf(types.ErrObjectNotCreated, "FlowExportPolicy: %s", existingFlowExportPolicy.GetKey())
+		}
+	}
+
 	log.Infof("FlowExportPolicy: %s | Op: %s | %s", netflow.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("FlowExportPolicy: %s | Op: %s | %s", netflow.GetKey(), oper, types.InfoHandleObjEnd)
 
