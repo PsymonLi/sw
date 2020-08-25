@@ -2,16 +2,12 @@
 
 import json
 import os
+import sys
 import time
 import logging
 import re
-import tarfile
-from scapy.all import *
-from scapy.contrib.mpls import MPLS
-from scapy.contrib.geneve import GENEVE
 from enum import Enum
 from ipaddress import ip_address
-import copy 
 
 import iota.harness.api as api
 import iota.harness.infra.store as store
@@ -19,7 +15,7 @@ import iota.protos.pygen.iota_types_pb2 as types_pb2
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 DTS_LOG_TAR_FILE = 'iota_dts_log.tar.gz'
-DTS_OUTPUT_PATH = '../Setup_Dts_1/test/dts-19.02/' # Relative path to DTS output directory 
+DTS_OUTPUT_PATH = '../Setup_Dts_1/dts/' # Relative path to DTS output directory
 
 SNIFF_TIMEOUT = 3
 
@@ -46,7 +42,7 @@ def Setup(tc):
 
     # init response list
     tc.resp = []
-    
+
     workloads = api.GetWorkloads()
     if len(workloads) == 0:
         api.Logger.error('No workloads available')
@@ -64,7 +60,7 @@ def Setup(tc):
             tc.dut_node = node
             tc.dut_node_mgmt_ip = api.GetMgmtIPAddress(node.Name())
             api.Logger.info('dut node: %s mgmt IP: %s' % (node.Name(), tc.dut_node_mgmt_ip))
-    
+
     return api.types.status.SUCCESS
 
 
@@ -79,7 +75,7 @@ def Trigger(tc):
     api.Trigger_AddHostCommand(req, tc.tester_node.Name(), trig_cmd1, timeout=60)
     trig_resp = api.Trigger(req)
     tc.resp.append(trig_resp)
-    
+
     tc_dir = tc.GetLogsDir()
     api.Logger.info("Dest dir is %s: Src is %s" % (tc_dir, DTS_OUTPUT_PATH + DTS_LOG_TAR_FILE))
     resp = api.CopyFromHost(tc.tester_node_name, [DTS_OUTPUT_PATH + DTS_LOG_TAR_FILE], tc_dir)
@@ -105,7 +101,7 @@ def Verify(tc):
             if cmd.exit_code != 0:
                 api.Logger.error("DTS shutdown failed")
 
-    
+
     api.Logger.info('DTS shutdown successful!!')
 
     return api.types.status.SUCCESS
@@ -117,4 +113,3 @@ def Teardown(tc):
         return api.types.status.SUCCESS
 
     return api.types.status.SUCCESS
-

@@ -2,23 +2,20 @@
 
 import json
 import os
+import sys
 import time
 import logging
 import re
 import tarfile
-from scapy.all import *
-from scapy.contrib.mpls import MPLS
-from scapy.contrib.geneve import GENEVE
 from enum import Enum
 from ipaddress import ip_address
-import copy 
 
 import iota.harness.api as api
 import iota.harness.infra.store as store
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-PEN_DPDK_SRC_PATH = '/nic/sdk/pen-dpdk'
-PEN_DPDK_TAR_FILE = '/pen-dpdk.tar.gz'
+SDK_SRC_PATH = '/nic/sdk/'
+DPDK_TAR_FILE = '/dpdk-test.tar.gz'
 HELLO_WORLD_CONFIG_FILE = 'hello_world_execution.cfg'
 
 SNIFF_TIMEOUT = 3
@@ -46,7 +43,7 @@ def Setup(tc):
 
     # init response list
     tc.resp = []
-    
+
     workloads = api.GetWorkloads()
     if len(workloads) == 0:
         api.Logger.error('No workloads available')
@@ -64,28 +61,29 @@ def Setup(tc):
             tc.dut_node = node
             tc.dut_node_mgmt_ip = api.GetMgmtIPAddress(node.Name())
             api.Logger.info('dut node: %s mgmt IP: %s' % (node.Name(), tc.dut_node_mgmt_ip))
-    
-    # create tar.gz file of pen-dpdk src
-    pen_dpdk_fullpath = api.GetTopDir() + PEN_DPDK_SRC_PATH
-    pen_dpdk_tar_path = api.GetTopDir() + PEN_DPDK_TAR_FILE
 
-    tar = tarfile.open(pen_dpdk_tar_path, "w:gz")
-    os.chdir(pen_dpdk_fullpath)
+    # create tar.gz file of dpdk and dpdk-test
+    sdk_fullpath = api.GetTopDir() + SDK_SRC_PATH
+    dpdk_tar_path = api.GetTopDir() + DPDK_TAR_FILE
+
+    tar = tarfile.open(dpdk_tar_path, "w:gz")
+    os.chdir(sdk_fullpath)
+    tar.add("dpdk")
+    os.chdir("dpdk-test")
     for name in os.listdir("."):
         tar.add(name)
     tar.close()
 
-    api.Logger.info("fullpath for pen-dpdk: " + pen_dpdk_fullpath + 
-                    " tarfile location is: " + pen_dpdk_tar_path)
+    api.Logger.info("dpdk-test tarfile location is: " + dpdk_tar_path)
 
     api.Logger.info("Configuring DTS on " + tc.tester_node_mgmt_ip)
 
-    # copy pen-dpdk.tar.gz to tester node.
-    api.CopyToHost(tc.tester_node.Name(), [pen_dpdk_tar_path], "")
+    # copy dpdk-test.tar.gz to tester node.
+    api.CopyToHost(tc.tester_node.Name(), [dpdk_tar_path], "")
 
-    # untar pen-dpdk.tar.gz and configure tester to run DTS
+    # untar dpdk-test.tar.gz and configure tester to run DTS
     req = api.Trigger_CreateExecuteCommandsRequest()
-    trig_cmd1 = "tar -xzvf pen-dpdk.tar.gz"
+    trig_cmd1 = "tar -xzvf dpdk-test.tar.gz"
     trig_cmd2 = "scripts/config_tester.sh %s %s" % (tc.dut_node_mgmt_ip, tc.tester_node_mgmt_ip)
     api.Trigger_AddHostCommand(req, tc.tester_node.Name(), trig_cmd1, timeout=60)
     api.Trigger_AddHostCommand(req, tc.tester_node.Name(), trig_cmd2, timeout=60)
@@ -106,16 +104,16 @@ def Trigger(tc):
         return api.types.status.SUCCESS
 
     api.Logger.info("Running Hello World!!")
- 
+
     req = api.Trigger_CreateExecuteCommandsRequest()
 
-    trig_cmd = "cd test; ./run.sh --config-file " + HELLO_WORLD_CONFIG_FILE
+    trig_cmd = "./run.sh --config-file " + HELLO_WORLD_CONFIG_FILE
 
     api.Trigger_AddHostCommand(req, tc.tester_node.Name(), trig_cmd, timeout=1200)
 
     trig_resp = api.Trigger(req)
     tc.resp.append(trig_resp)
- 
+
     return api.types.status.SUCCESS
 
 def Verify(tc):
@@ -158,7 +156,7 @@ def Verify(tc):
                 if 'run' in cmd.command:
                     api.Logger.error("DTS setup failed!")
                 return api.types.status.FAILURE
-   
+
     if skipped_run == True:
         api.Logger.error("DTS setup failed!")
         return api.types.status.FAILURE
@@ -174,4 +172,3 @@ def Teardown(tc):
         return api.types.status.SUCCESS
 
     return api.types.status.SUCCESS
-

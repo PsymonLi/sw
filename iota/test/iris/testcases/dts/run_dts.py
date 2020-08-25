@@ -2,25 +2,19 @@
 
 import json
 import os
+import sys
 import time
 import logging
 import re
-import tarfile
-from scapy.all import *
-from scapy.contrib.mpls import MPLS
-from scapy.contrib.geneve import GENEVE
 from enum import Enum
 from ipaddress import ip_address
-import copy 
 
 import iota.harness.api as api
 import iota.harness.infra.store as store
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-PEN_DPDK_SRC_PATH = '/nic/sdk/pen-dpdk'
-PEN_DPDK_TAR_FILE = '/pen-dpdk.tar.gz'
 DEFAULT_CONFIG_FILE = 'execution.cfg'
-DTS_TEST_PATH = '../Setup_Dts_1/test' # Relative path to DTS test directory 
+DTS_TEST_PATH = '../Setup_Dts_1/' # Relative path to DTS test directory
 SNIFF_TIMEOUT = 3
 
 
@@ -46,7 +40,7 @@ def Setup(tc):
 
     # init response list
     tc.resp = []
-    
+
     workloads = api.GetWorkloads()
     if len(workloads) == 0:
         api.Logger.error('No workloads available')
@@ -64,7 +58,7 @@ def Setup(tc):
             tc.dut_node = node
             tc.dut_node_mgmt_ip = api.GetMgmtIPAddress(node.Name())
             api.Logger.info('dut node is %s mgmt IP is %s' % (node.Name(), tc.dut_node_mgmt_ip))
-    
+
     return api.types.status.SUCCESS
 
 
@@ -83,13 +77,13 @@ def Trigger(tc):
 
     req = api.Trigger_CreateExecuteCommandsRequest()
 
-    trig_cmd = "cd %s; ./run.sh --skip-setup --config-file %s" %(DTS_TEST_PATH, config_file)
+    trig_cmd = "cd %s; ./run.sh --skip-setup --config-file %s" % (DTS_TEST_PATH, config_file)
 
     api.Trigger_AddHostCommand(req, tc.tester_node.Name(), trig_cmd, timeout=7200)
 
     trig_resp = api.Trigger(req)
     tc.resp.append(trig_resp)
- 
+
     return api.types.status.SUCCESS
 
 def Verify(tc):
@@ -132,11 +126,11 @@ def Verify(tc):
                 if 'run' in cmd.command:
                     api.Logger.error("DTS script failed")
                 return api.types.status.FAILURE
-   
+
     if skipped_run == True:
         api.Logger.error("DTS setup failed!")
         return api.types.status.FAILURE
- 
+
     api.Logger.info('DTS test passed')
 
     return api.types.status.SUCCESS
@@ -148,4 +142,3 @@ def Teardown(tc):
         return api.types.status.SUCCESS
 
     return api.types.status.SUCCESS
-

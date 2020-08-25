@@ -31,7 +31,12 @@
 [submodule "nic/third-party/metaswitch"]
 	path = nic/third-party/metaswitch
 	url = git@github.com:pensando/metaswitch.git
-[submodule "nic/sdk/pen-dpdk"]
-	path = nic/sdk/pen-dpdk
-	url = git@github.com:/pensando/pen-dpdk.git
-
+[submodule "nic/sdk/dpdk"]
+	path = nic/sdk/dpdk
+	url = git@github.com:pensando/dpdk.git
+[submodule "nic/sdk/dpdk-test/dts"]
+	path = nic/sdk/dpdk-test/dts
+	url = git@github.com:pensando/dts.git
+[submodule "nic/sdk/dpdk-test/scapy"]
+	path = nic/sdk/dpdk-test/scapy
+	url = git@github.com:secdev/scapy.git

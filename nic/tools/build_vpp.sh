@@ -15,8 +15,6 @@
 # Build failed because libnuma wasn't found?
 # - Make sure the asset pull has completed; consider using -w option
 #
-# Build failed because dpdk-sim patch wouldn't apply?
-# - Make sure to checkout/clean your pen-dpdk/dpdk submodule
 
 #Uncomment for debugging script
 #set -e
@@ -209,7 +207,7 @@ build_vpp() {
     BUILDTYPE="vpp_build_$1"
     echo "Building VPP - $1, check $BUILDTYPE.log"
 
-    CONFIG="ARCH=$1 SDKDIR=$DOCKER_SDK_DIR DPDK_PATH=$DOCKER_SDK_DIR/build/$1/capri/out/pen_dpdk_submake"
+    CONFIG="ARCH=$1 SDKDIR=$DOCKER_SDK_DIR DPDK_PATH=$DOCKER_SDK_DIR/build/$1/capri/out/dpdk_submake"
     if [[ $1 == "x86_64" ]]; then
         CONFIG+=" V=1"
     else

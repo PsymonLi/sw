@@ -155,7 +155,7 @@
 /sw/nic/sdk/model_sim/src/client
 /sw/nic/sdk/nvme
 /sw/nic/sdk/p4/loader
-/sw/nic/sdk/pen-dpdk
+/sw/nic/sdk/dpdk
 /sw/nic/sdk/platform/asicerror
 /sw/nic/sdk/platform/capri
 /sw/nic/sdk/platform/capmon

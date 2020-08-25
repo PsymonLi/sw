@@ -5,10 +5,8 @@
 include ${MKINFRA}/config_${ARCH}.mk
 
 NUMAROOT        := ${SDKDIR}/third-party/libnuma
-PATCHROOT       := ${SDKDIR}/pen-dpdk/
-PATCHPATH       := ${SDKDIR}/lib/dpdk/patch
-DPDKROOT        := ${SDKDIR}/pen-dpdk/dpdk
-OUT_DIR         := ${BLD_OUT_DIR}/pen_dpdk_submake
+DPDKROOT        := ${SDKDIR}/dpdk
+OUT_DIR         := ${BLD_OUT_DIR}/dpdk_submake
 
 ifeq ($(ARCH), aarch64)
     ifeq ($(ANE), y)
