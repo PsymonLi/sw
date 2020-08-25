@@ -215,7 +215,6 @@ egress_recirc:
     phvwr.e         p.egress_recirc_valid, TRUE
     phvwr.f         p.capri_intrinsic_tm_oport, TM_PORT_EGRESS
 
-.align
 p4e_app_ipsec:
     phvwr           p.capri_txdma_intrinsic_valid, 0
     phvwrmi.!c1     p.{p4e_i2e_valid, \
@@ -224,13 +223,16 @@ p4e_app_ipsec:
                         egress_recirc_valid}, 0x0, 0xB
     phvwr           p.ctag_0_valid, 0
     phvwr           p.capri_rxdma_intrinsic_valid, TRUE
-    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_start, 14
     phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_end, k.capri_p4_intrinsic_packet_len
     add             r4, k.key_metadata_parsed_dport, k.key_metadata_parsed_sport, 16
     phvwr           p.p4e_to_p4plus_ipsec_spi, r4
-    phvwr           p.p4e_to_p4plus_ipsec_l4_protocol, k.ipv4_1_protocol
+    // p4e_to_p4plus_ipsec_l4_protocol is used by ipsec p4+ in transport mode
+    // encrypt path to store as next header. Right now ipsec is the outer header,
+    // so set l4_proto to the inner tunnel l4 protocol (UDP)
+    phvwr           p.p4e_to_p4plus_ipsec_l4_protocol, k.ipv4_0_protocol
     sll             r2, k.ipv4_1_ihl, 2
-    seq             c3, k.udp_1_valid, TRUE
+    seq             c3, k.esp_valid, TRUE
+    seq.c3          c3, k.udp_1_valid, TRUE
     add.c3          r2, r2, 8
     phvwr           p.p4e_to_p4plus_ipsec_ip_hdr_size, r2
     phvwr.e         p.p4e_to_p4plus_ipsec_valid, TRUE
@@ -239,6 +241,21 @@ p4e_app_ipsec:
                         (ASICPD_GLOBAL_INTRINSIC_HDR_SZ + \
                          ASICPD_RXDMA_INTRINSIC_HDR_SZ + \
                          P4PLUS_IPSEC_HDR_SZ)
+
+.align
+p4e_app_ipsec_tunnel:
+    b               p4e_app_ipsec
+    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_start, 14
+
+.align
+p4e_app_ipsec_transport:
+    // In transport mode ipsec p4+ DMAs outer ip from incoming packet directly.
+    // Since ip protocol in outer header has to be changed to ESP, do it here
+    // so p4+ doesn't have to do it.
+    phvwr           p.ipv4_0_protocol, IP_PROTO_IPSEC_ESP
+    add             r2, 14, k.ipv4_1_ihl, 2
+    b               p4e_app_ipsec
+    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_start, r2
 
 /*****************************************************************************/
 /* error function                                                            */

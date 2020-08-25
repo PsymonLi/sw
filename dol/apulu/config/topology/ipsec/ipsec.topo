@@ -14,10 +14,18 @@ node:
         gateway     : None # Taken from resmgr
         encap       : vxlan # vxlan or mplsodup
         tunnel      :
-            - count : 16
-              type  : underlay
-            - count : 16
-              type  : underlay-ecmp
+            - count     : 4
+              nhtype    : underlay
+            - count     : 4
+              nhtype    : underlay-ecmp
+            - count     : 4
+              nhtype    : underlay
+              ipsecmode : transport # tunnel has ipsec sa attributes
+            - count     : 4
+              ipsecmode : tunnel # nh is tunnel id of tunnel with type TUNNEL_TYPE_IPSEC
+            - count     : 4
+              type      : ipsec # TunnelType = TUNNEL_TYPE_IPSEC
+              nhtype    : underlay
         ipsec:
             - count      : 32
               salt       : 0xbbbbbbbb
@@ -132,6 +140,9 @@ node:
                   maxsessions: 1000
               rmap:                       # Remote IP mappings per subnet
                 - count : 4
+                  tunneltype : ipsec-tunnel
+                - count : 4
+                  tunneltype : ipsec-transport
             - count     : 1
               v4prefixlen : 28
               v6prefixlen : 96
@@ -160,7 +171,10 @@ node:
                   rxpolicer: 5
                   txpolicer: 6
               rmap:
-                - count : 3
+                - count : 1
+                  tunneltype : ipsec-tunnel
+                - count : 1
+                  tunneltype : ipsec-transport
             - count     : 1
               v4prefixlen : 28
               v6prefixlen : 96
@@ -189,6 +203,9 @@ node:
 
               rmap:
                 - count : 2
+                  tunneltype : ipsec-tunnel
+                - count : 2
+                  tunneltype : ipsec-transport
           nexthop:
             - type : overlay
               count : 8

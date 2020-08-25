@@ -63,7 +63,8 @@ class TunnelObject(base.ConfigObjectBase):
             self.RemoteIPAddr = self.LocalIPAddr
             self.Type = tunnel_pb2.TUNNEL_TYPE_NONE
         else:
-            self.Type = utils.GetTunnelType(spec.type)
+            tunnel_type = getattr(spec, "type", None)
+            self.Type = utils.GetTunnelType(tunnel_type)
             if self.Type == tunnel_pb2.TUNNEL_TYPE_WORKLOAD:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpAddressAllocator)
                 self.RemoteVnicMplsSlotIdAllocator = ResmgrClient[node].CreateRemoteVnicMplsSlotAllocator()
@@ -95,14 +96,20 @@ class TunnelObject(base.ConfigObjectBase):
                 else:
                     self.RemoteIPAddr = next(ResmgrClient[node].TepIpv6AddressAllocator)
                 # nexthop / nh_group association happens later
-                if spec.type == 'underlay':
+                if hasattr(spec, 'nhtype'):
+                    nhtype = spec.nhtype
+                elif hasattr(spec, 'type'):
+                    nhtype = spec.type
+                else:
+                    nhtype = None
+                if nhtype == 'underlay':
                     self.__nhtype = topo.NhType.UNDERLAY
                     self.NEXTHOP = None
                     if hasattr(spec, 'nhid'):
                         self.NexthopId = spec.nhid
                     else:
                         self.NexthopId = None
-                elif spec.type == 'underlay-ecmp':
+                elif nhtype == 'underlay-ecmp':
                     self.__nhtype = topo.NhType.UNDERLAY_ECMP
                     self.NEXTHOPGROUP = None
 
@@ -120,6 +127,12 @@ class TunnelObject(base.ConfigObjectBase):
                 self.MACAddr = spec.macaddress
             else:
                 self.MACAddr = ResmgrClient[node].TepMacAllocator.get()
+
+        self.IpsecMode = getattr(spec, 'ipsecmode', None)
+        if self.IsIpsec():
+            # no macaddress for ipsec tunnels
+            self.MACAddr = MacAddressBase(string='0000.0000.0000')
+
         self.Mutable = utils.IsUpdateSupported()
 
         ################# PRIVATE ATTRIBUTES OF TUNNEL OBJECT #####################
@@ -142,10 +155,12 @@ class TunnelObject(base.ConfigObjectBase):
         if hasattr(self, "Remote") and self.Remote is True:
             remote = " Remote:%s"% (self.Remote)
         return "TEP: %s |LocalIPAddr:%s|RemoteIPAddr:%s|TunnelType:%s%s|" \
-               "EncapValue:%d|Nat:%s|Mac:%s|NhType:%s|NexthopId:%d" % \
+               "EncapValue:%d|Nat:%s|Mac:%s|NhType:%s|NexthopId:%d|" \
+               "IpsecMode:%s" % \
                (self.UUID, self.LocalIPAddr, self.RemoteIPAddr,
                utils.GetTunnelTypeString(self.Type), remote, self.Encap.GetValue(),
-               self.Nat, self.MACAddr, self.__nhtype, (self.NexthopId if self.NexthopId else 0))
+               self.Nat, self.MACAddr, self.__nhtype, (self.NexthopId if self.NexthopId else 0),
+               self.IpsecMode)
 
     def Show(self):
         logger.info("Tunnel Object: %s" % self)
@@ -185,7 +200,7 @@ class TunnelObject(base.ConfigObjectBase):
         utils.GetRpcIPAddr(self.RemoteIPAddr, spec.RemoteIP)
         spec.Nat = self.Nat
         # TODO: Fix mac addr in testspec
-        if not utils.IsPipelineApollo():
+        if not utils.IsPipelineApollo() and not self.IsIpsec():
             spec.MACAddress = self.MACAddr.getnum()
         if utils.IsServiceTunnelSupported():
             if self.Type is tunnel_pb2.TUNNEL_TYPE_SERVICE and self.Remote is True:
@@ -199,6 +214,8 @@ class TunnelObject(base.ConfigObjectBase):
                 spec.NexthopId = utils.PdsUuid.GetUUIDfromId(self.NexthopId, ObjectTypes.NEXTHOP)
             elif self.IsUnderlayEcmp():
                 spec.NexthopGroupId = utils.PdsUuid.GetUUIDfromId(self.NexthopGroupId, ObjectTypes.NEXTHOPGROUP)
+        if self.IsIpsecNexthop():
+            spec.TunnelId = utils.PdsUuid.GetUUIDfromId(self.NexthopTunId, ObjectTypes.TUNNEL)
         if self.IPSEC_ENCRYPT_SA:
             spec.IpsecEncryptSAId = self.IPSEC_ENCRYPT_SA.GetKey()
         if self.IPSEC_DECRYPT_SA:
@@ -331,6 +348,22 @@ class TunnelObject(base.ConfigObjectBase):
             return True
         return False
 
+    def IsIpsec(self):
+        return self.Type == tunnel_pb2.TUNNEL_TYPE_IPSEC
+
+    def HasIpsecSA(self):
+        return self.Type == tunnel_pb2.TUNNEL_TYPE_IPSEC or \
+               self.IpsecMode == "transport"
+
+    def IsIpsecNexthop(self):
+        return self.IpsecMode == "tunnel"
+
+    def IsIpsecTunnelMode(self):
+        return self.IpsecMode == "tunnel"
+
+    def IsIpsecTransportMode(self):
+        return self.IpsecMode == "transport"
+
 class TunnelObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(ObjectTypes.TUNNEL, Resmgr.MAX_TUNNEL)
@@ -362,6 +395,12 @@ class TunnelObjectClient(base.ConfigClientBase):
                                 (tun.Id, tun.NexthopId))
                     tun.NEXTHOP = NhClient.GetNexthopObject(node, tun.NexthopId)
                     tun.NEXTHOP.AddDependent(tun)
+            if tun.IsIpsecNexthop():
+                tunObj = ResmgrClient[node].IpsecTunAllocator.rrnext()
+                tun.NEXTHOPTUN = tunObj
+                tun.NexthopTunId = tunObj.Id
+                logger.info("Linking Tunnel%d with IPSEC Tunnel%d" %
+                            (tun.Id, tun.NexthopTunId))
         return
 
     def FillUnderlayNhGroups(self, node):
@@ -378,12 +417,13 @@ class TunnelObjectClient(base.ConfigClientBase):
     def FillIpsecObjects(self, node):
         logger.info("Filling ipsec groups")
         for tun in self.Objects(node):
-            if ResmgrClient[node].IpsecEncryptSAAllocator:
-                tun.IPSEC_ENCRYPT_SA = ResmgrClient[node].IpsecEncryptSAAllocator.rrnext()
-                logger.info("Linking %s - %s" % (tun, tun.IPSEC_ENCRYPT_SA))
-            if ResmgrClient[node].IpsecDecryptSAAllocator:
-                tun.IPSEC_DECRYPT_SA = ResmgrClient[node].IpsecDecryptSAAllocator.rrnext()
-                logger.info("Linking %s - %s" % (tun, tun.IPSEC_DECRYPT_SA))
+            if tun.HasIpsecSA():
+                if ResmgrClient[node].IpsecEncryptSAAllocator:
+                    tun.IPSEC_ENCRYPT_SA = ResmgrClient[node].IpsecEncryptSAAllocator.rrnext()
+                    logger.info("Linking %s - %s" % (tun, tun.IPSEC_ENCRYPT_SA))
+                if ResmgrClient[node].IpsecDecryptSAAllocator:
+                    tun.IPSEC_DECRYPT_SA = ResmgrClient[node].IpsecDecryptSAAllocator.rrnext()
+                    logger.info("Linking %s - %s" % (tun, tun.IPSEC_DECRYPT_SA))
         return
 
     def AddObjToDict(self, obj):
@@ -434,7 +474,11 @@ class TunnelObjectClient(base.ConfigClientBase):
 
     def GenerateObjects(self, node, parent, tunnelspec):
         def __isTunFeatureSupported(tunnel_type):
-            if tunnel_type == 'service':
+            if not tunnel_type:
+                return utils.IsUnderlayTunnelSupported()
+            elif tunnel_type == 'ipsec':
+                return utils.IsIpsecTunnelSupported()
+            elif tunnel_type == 'service':
                 return utils.IsServiceTunnelSupported()
             elif tunnel_type == 'underlay' or tunnel_type == 'underlay-ecmp':
                 return utils.IsUnderlayTunnelSupported()
@@ -454,7 +498,8 @@ class TunnelObjectClient(base.ConfigClientBase):
                 self.DiscoveredObjs.update({node: {}})
                 discoveredObjs = self.DiscoveredObjs[node]
         for t in tunnelspec:
-            if not __isTunFeatureSupported(t.type):
+            tunnel_type = getattr(t, "type", None)
+            if not __isTunFeatureSupported(tunnel_type):
                 continue
             for c in range(t.count):
                 obj = TunnelObject(node, parent, t, False)
@@ -469,6 +514,9 @@ class TunnelObjectClient(base.ConfigClientBase):
         ResmgrClient[node].CreateVnicTunnels()
         ResmgrClient[node].CollectSvcTunnels()
         ResmgrClient[node].CreateUnderlayTunnels()
+        ResmgrClient[node].CreateIpsecTunnels()
+        ResmgrClient[node].CreateIpsecTunnelModeTunnels()
+        ResmgrClient[node].CreateIpsecTransportModeTunnels()
         return
 
     def GetNumHwObjects(self, node):

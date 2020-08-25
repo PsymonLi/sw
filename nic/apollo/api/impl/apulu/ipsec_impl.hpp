@@ -207,6 +207,8 @@ public:
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
 
+    sdk_ret_t program_tunnel(pds_tep_spec_t *spec);
+
 private:
     /// \brief constructor
     ipsec_sa_encrypt_impl() {}

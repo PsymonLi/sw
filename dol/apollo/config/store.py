@@ -171,6 +171,27 @@ class EzAccessStore:
                 tunnels.append(tun)
         return tunnels
 
+    def GetIpsecTunnels(self):
+        tunnels = []
+        for tun in self.tunnels.GetAllInList():
+            if tun.IsIpsec():
+                tunnels.append(tun)
+        return tunnels
+
+    def GetIpsecTunnelModeTunnels(self):
+        tunnels = []
+        for tun in self.tunnels.GetAllInList():
+            if tun.IsIpsecTunnelMode():
+                tunnels.append(tun)
+        return tunnels
+
+    def GetIpsecTransportModeTunnels(self):
+        tunnels = []
+        for tun in self.tunnels.GetAllInList():
+            if tun.IsIpsecTransportMode():
+                tunnels.append(tun)
+        return tunnels
+
     def GetUnderlayTunnels(self, ecmp=False):
         tunnels = []
         for tun in self.tunnels.GetAllInList():

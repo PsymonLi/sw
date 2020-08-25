@@ -1,4 +1,5 @@
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 #include "../ipsec_common_headers.p4"
 
 header_type ipsec_cb_metadata_t {

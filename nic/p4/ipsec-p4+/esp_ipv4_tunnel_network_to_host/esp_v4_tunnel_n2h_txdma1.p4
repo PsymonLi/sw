@@ -16,6 +16,7 @@
 
 #include "../../common-p4+/common_txdma.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 #include "esp_v4_tunnel_n2h_headers.p4"
 
 header_type ipsec_txdma1_global_t {

@@ -4,6 +4,7 @@ MODULE_TARGET       = esp_ipv4_tunnel_h2n_txdma2.asmbin
 MODULE_PREREQS      = ipsec_p4plus_esp_v4_tun_hton.p4bin
 MODULE_PIPELINE     = iris gft
 MODULE_INCS         = ${BLD_P4GEN_DIR}/esp_ipv4_tunnel_h2n_txdma2/asm_out \
+                      ${BLD_P4GEN_DIR}/esp_ipv4_tunnel_h2n_txdma2/alt_asm_out \
                       ${MODULE_DIR}/../../include \
                       ${MODULE_DIR}/../../../common-p4+/include \
                       ${TOPDIR}/nic/p4/ipsec-p4+ \

@@ -57,7 +57,10 @@ esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table2:
     phvwrpair p.ipsec_to_stage3_pad_size, r5, p.ipsec_to_stage3_iv_size, d.iv_size
     phvwr p.ipsec_int_header_payload_size, r3
     phvwr p.ipsec_int_header_pad_size, r5
-    phvwri  p.ipsec_int_header_l4_protocol, IPSEC_PROTO_IP
+    smeqb c2, d.flags, IPSEC_FLAGS_MODE_TRANSPORT, IPSEC_FLAGS_MODE_TRANSPORT
+    cmov r5, c2, k.p42p4plus_hdr_l4_protocol, IPSEC_PROTO_IP
+    phvwrpair p.ipsec_int_header_l4_protocol, r5, \
+                p.ipsec_int_header_ip_hdr_size, k.p42p4plus_hdr_ip_hdr_size
     add  r1, r0, k.p42p4plus_hdr_ipsec_payload_end
     add.c1 r1, r1, IPV6_HDR_SIZE
     phvwr p.ipsec_to_stage3_packet_len, r1

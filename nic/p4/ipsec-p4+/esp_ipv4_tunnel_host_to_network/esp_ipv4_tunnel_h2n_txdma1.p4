@@ -18,6 +18,7 @@
 #include "../../common-p4+/common_txdma.p4"
 #include "esp_ipv4_tunnel_h2n_headers.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 
 
 header_type ipsec_txdma1_global_t {
@@ -149,6 +150,7 @@ metadata ipsec_table3_s2s t3_s2s;
 //TXDMA - IPsec feature specific scratch
 @pragma dont_trim
 metadata ipsec_int_header_t ipsec_int_header;
+@pragma pa_align 64
 @pragma dont_trim
 metadata barco_dbell_t barco_dbell; 
 @pragma dont_trim
@@ -162,6 +164,7 @@ metadata barco_zero_content_t barco_zero;
 @pragma dont_trim
 metadata doorbell_data_t db_data;
 
+@pragma pa_align 128
 @pragma dont_trim
 metadata dma_cmd_phv2mem_t brq_in_desc_zero;
 @pragma dont_trim
@@ -318,7 +321,8 @@ action ipsec_encap_txdma_load_head_desc_int_header2(in_desc, out_desc, in_page, 
                                                    ipsec_cb_index, headroom, 
                                                    tailroom, headroom_offset,
                                                    tailroom_offset, payload_start,
-                                                   buf_size, payload_size, pad_size, l4_protocol)
+                                                   buf_size, payload_size, pad_size,
+                                                   l4_protocol, ip_hdr_size)
 {
     IPSEC_INT_HDR_SCRATCH
     IPSEC_TXDMA1_S2S1_SCRATCH_INIT
@@ -340,7 +344,8 @@ action ipsec_encap_txdma_load_head_desc_int_header(in_desc, out_desc, in_page, o
                                                    ipsec_cb_index, headroom, 
                                                    tailroom, headroom_offset,
                                                    tailroom_offset, payload_start,
-                                                   buf_size, payload_size, pad_size, l4_protocol)
+                                                   buf_size, payload_size, pad_size,
+                                                   l4_protocol, ip_hdr_size)
 {
     IPSEC_INT_HDR_SCRATCH
     IPSEC_TXDMA1_S2S0_SCRATCH_INIT

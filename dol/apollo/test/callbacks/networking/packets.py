@@ -975,6 +975,8 @@ def __get_expected_nexthop(cfg):
         pass
     elif tunnel.IsUnderlay():
         nh = tunnel.NEXTHOP
+    elif tunnel.IsIpsecNexthop():
+        nh = tunnel.NEXTHOPTUN.NEXTHOP
     return nh
 
 def GetExpectedEgressUplinkPort(testcase, args=None):

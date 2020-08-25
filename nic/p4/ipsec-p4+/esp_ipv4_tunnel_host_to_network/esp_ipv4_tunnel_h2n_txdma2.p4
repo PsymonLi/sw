@@ -21,6 +21,7 @@
 #include "../../common-p4+/common_txdma.p4"
 #include "esp_ipv4_tunnel_h2n_headers.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 #include "../ipsec_txdma_common.p4"
 
 header_type ipsec_txdma2_global_t {
@@ -95,8 +96,10 @@ header_type ipsec_to_stage4_t {
         is_v6         : 1;
         is_vlan_encap : 1;
         barco_error   : 8;
-        stage3_pad1     : 15;
-        pad             : 32;
+        is_transport  : 1;
+        payload_start : 16;
+        ip_hdr_size   : 8;
+        pad           : 22;
     }
 }
 
@@ -142,6 +145,7 @@ metadata ipsec_table3_s2s t3_s2s;
 @pragma dont_trim
 metadata ipsec_int_header_t ipsec_int_header;
 
+@pragma pa_align 128
 @pragma dont_trim
 metadata dma_cmd_phv2pkt_t intrinsic_app_hdr;
 @pragma dont_trim
@@ -279,6 +283,9 @@ action ipsec_build_encap_packet2()
     modify_field(ipsec_to_stage4_scratch.is_nat_t, ipsec_to_stage4.is_nat_t);
     modify_field(ipsec_to_stage4_scratch.flags, ipsec_to_stage4.flags);
     modify_field(ipsec_to_stage4_scratch.barco_error, ipsec_to_stage4.barco_error);
+    modify_field(ipsec_to_stage4_scratch.is_transport, ipsec_to_stage4.is_transport);
+    modify_field(ipsec_to_stage4_scratch.payload_start, ipsec_to_stage4.payload_start);
+    modify_field(ipsec_to_stage4_scratch.ip_hdr_size, ipsec_to_stage4.ip_hdr_size);
 }
 
 //stage 4
@@ -293,6 +300,9 @@ action ipsec_build_encap_packet()
     modify_field(ipsec_to_stage4_scratch.is_nat_t, ipsec_to_stage4.is_nat_t);
     modify_field(ipsec_to_stage4_scratch.flags, ipsec_to_stage4.flags);
     modify_field(ipsec_to_stage4_scratch.barco_error, ipsec_to_stage4.barco_error);
+    modify_field(ipsec_to_stage4_scratch.is_transport, ipsec_to_stage4.is_transport);
+    modify_field(ipsec_to_stage4_scratch.payload_start, ipsec_to_stage4.payload_start);
+    modify_field(ipsec_to_stage4_scratch.ip_hdr_size, ipsec_to_stage4.ip_hdr_size);
     // Add intrinsic and app header
     DMA_COMMAND_PHV2PKT_FILL(intrinsic_app_hdr, 0, 32, 0)
 
@@ -305,7 +315,8 @@ action ipsec_encap_txdma2_load_ipsec_int(in_desc, out_desc, in_page, out_page,
                                          ipsec_cb_index, headroom, tailroom, 
                                          headroom_offset, tailroom_offset,
                                          payload_start, buf_size,
-                                         payload_size, pad_size, l4_protocol, pad, status)
+                                         payload_size, pad_size, l4_protocol,
+                                         ip_hdr_size, pad, status)
 {
     IPSEC_INT_HDR_SCRATCH
     modify_field(ipsec_int_pad_scratch.ipsec_int_pad, pad);

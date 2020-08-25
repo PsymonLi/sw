@@ -11,8 +11,15 @@ modules:
     # L2 switching based on MAC filtering
     # L2 switching within same subnet
     - module:
-        name    : L2_IPV4_TCP
-        spec    : ipsec_local2remote.testspec
+        name    : L2_IPV4_TCP_TUNNEL_OUTER_IPSEC
+        spec    : ipsec_local2remote_tunnel.testspec
         iterate :
-            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING,IpsecMode=TUNNEL_OUTER_IPSEC
+              vnic : filter://VnicEncapType=none
+
+    - module:
+        name    : L2_IPV4_TCP_TRANSPORT_OUTER_IPSEC
+        spec    : ipsec_local2remote_transport.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING,IpsecMode=TRANSPORT_OUTER_IPSEC
               vnic : filter://VnicEncapType=none

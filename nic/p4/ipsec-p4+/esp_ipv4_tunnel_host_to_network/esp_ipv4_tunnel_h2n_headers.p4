@@ -1,4 +1,5 @@
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 #include "../ipsec_common_headers.p4"
 
 #define IPSEC_BLOCK_SIZE 16
@@ -19,13 +20,14 @@ header_type ipsec_int_header_t {
         payload_size      : 16;
         pad_size          : 8;
         l4_protocol       : 8;
-        //ipsec_int_pad     : 96;
+        ip_hdr_size       : 8;
+        //ipsec_int_pad     : 56;
     }
 }
 
 header_type ipsec_int_pad_t {
     fields {
-        ipsec_int_pad : 64;
+        ipsec_int_pad : 56;
         status : 64;
     }
 }
@@ -45,6 +47,7 @@ header_type ipsec_int_pad_t {
     modify_field(ipsec_int_hdr_scratch.payload_size, payload_size); \ 
     modify_field(ipsec_int_hdr_scratch.pad_size, pad_size); \ 
     modify_field(ipsec_int_hdr_scratch.l4_protocol, l4_protocol); \ 
+    modify_field(ipsec_int_hdr_scratch.ip_hdr_size, ip_hdr_size); \ 
     
 header_type esp_header_t {
     fields {

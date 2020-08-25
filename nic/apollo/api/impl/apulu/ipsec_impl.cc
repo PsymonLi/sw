@@ -203,17 +203,32 @@ ipsec_sa_encrypt_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
 sdk_ret_t
 ipsec_sa_encrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     pds_ipsec_sa_encrypt_spec_t *spec;
-    nexthop_info_entry_t nexthop_info_entry;
-    sdk_ret_t ret;
 
     spec = &obj_ctxt->api_params->ipsec_sa_encrypt_spec;
 
+    ipseccb_encrypt_create(hw_id_, base_pa_, spec);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+ipsec_sa_encrypt_impl::program_tunnel(pds_tep_spec_t *tep_spec) {
+    device_entry *device = device_find();
+    nexthop_info_entry_t nexthop_info_entry = { 0 };
+    sdk_ret_t ret;
+
+    if (tep_spec->type == PDS_TEP_TYPE_IPSEC) {
+        nexthop_info_entry.app_id = P4PLUS_APPTYPE_IPSEC;
+        ipseccb_encrypt_update_tunnel_ip(hw_id_, base_pa_, device->ip_addr(),
+                                         tep_spec->remote_ip);
+    } else {
+        nexthop_info_entry.app_id = P4PLUS_APPTYPE_IPSEC_TRANSPORT;
+        ipseccb_encrypt_set_mode(hw_id_, base_pa_, IPSEC_MODE_TRANSPORT);
+    }
+
     // program the nexthop
     PDS_TRACE_DEBUG("Programming encrypt ipsec nh %u", nh_idx_);
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = APULU_IPSEC_LIF;
     nexthop_info_entry.port = TM_PORT_DMA;
-    nexthop_info_entry.app_id = P4PLUS_APPTYPE_IPSEC;
     nexthop_info_entry.qtype = IPSEC_ENCRYPT_QTYPE;
     nexthop_info_entry.qid = hw_id_;
     ret = nexthop_info_entry.write(nh_idx_);
@@ -223,8 +238,7 @@ ipsec_sa_encrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         return ret;
     }
 
-    ipseccb_encrypt_create(hw_id_, base_pa_, spec);
-    return SDK_RET_OK;
+    return ret;
 }
 
 sdk_ret_t

@@ -169,6 +169,9 @@ class Resmgr(base.ConfigObjectBase):
         self.EvpnEviRtIdAllocator = iter(irange(1, 50))
         self.EvpnIpVrfIdAllocator = iter(irange(1, 50))
         self.EvpnIpVrfRtIdAllocator = iter(irange(1, 50))
+        self.IpsecTunAllocator = None
+        self.IpsecTunnelModeTunAllocator = None
+        self.IpsecTransportModeTunAllocator = None
         self.IpsecEncryptSAIdAllocator = iter(irange(1, 1000))
         self.IpsecDecryptSAIdAllocator = iter(irange(1, 1000))
         self.IpsecTunnelAddressAllocator = ipaddress.IPv4Network('205.10.0.0/16').hosts()
@@ -391,6 +394,21 @@ class Resmgr(base.ConfigObjectBase):
         objs = EzAccessStoreClient[self.Node].GetDhcpProxyObjects()
         if len(objs) != 0:
             self.DhcpProxyAllocator = utils.rrobiniter(objs)
+
+    def CreateIpsecTunnels(self):
+        objs = EzAccessStoreClient[self.Node].GetIpsecTunnels()
+        if len(objs) != 0:
+            self.IpsecTunAllocator = utils.rrobiniter(objs)
+
+    def CreateIpsecTunnelModeTunnels(self):
+        objs = EzAccessStoreClient[self.Node].GetIpsecTunnelModeTunnels()
+        if len(objs) != 0:
+            self.IpsecTunnelModeTunAllocator = utils.rrobiniter(objs)
+
+    def CreateIpsecTransportModeTunnels(self):
+        objs = EzAccessStoreClient[self.Node].GetIpsecTransportModeTunnels()
+        if len(objs) != 0:
+            self.IpsecTransportModeTunAllocator = utils.rrobiniter(objs)
 
     def CreateIpsecEncryptSAAllocator(self):
         objs = EzAccessStoreClient[self.Node].GetIpsecEncryptSAs()

@@ -22,6 +22,7 @@
 #include "../../common-p4+/common_rxdma.p4"
 #include "esp_ipv4_tunnel_h2n_headers.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 
 header_type ipsec_random_number_t {
     fields {

@@ -302,23 +302,19 @@ program_ipsec_flow_table_ (tep_entry *tep, pds_obj_key_t *decrypt_sa_key)
 }
 
 static sdk_ret_t
-program_ipsec_tunnel_ip_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key)
+program_ipsec_tunnel_ (pds_tep_spec_t *spec, pds_obj_key_t *encrypt_sa_key)
 {
-    sdk_table_api_params_t params = { 0 };
     ipsec_sa_entry *ipsec_sa;
-    ipsec_sa_impl *ipsec_impl;
-    device_entry *device = device_find();
+    ipsec_sa_encrypt_impl *ipsec_impl;
 
     ipsec_sa = ipsec_sa_encrypt_find(encrypt_sa_key);
     if (ipsec_sa == NULL) {
         PDS_TRACE_ERR("ipsec encrypt sa %s in TEP %s not found",
-                      encrypt_sa_key->str(), tep->key2str().c_str());
+                      encrypt_sa_key->str(), spec->key.str());
         return SDK_RET_INVALID_ARG;
     }
-    ipsec_impl = (ipsec_sa_impl *)ipsec_sa->impl();
-
-    ipseccb_encrypt_update_tunnel_ip(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
-                                     device->ip_addr(), tep->ip());
+    ipsec_impl = (ipsec_sa_encrypt_impl *)ipsec_sa->impl();
+    ipsec_impl->program_tunnel(spec);
 
     return SDK_RET_OK;
 }
@@ -347,6 +343,8 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
             ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group,
                                                  tep_data);
         } else {
+            // ipsec transport mode
+            // inner vxlan + esp encapsulation
             pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
             ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
                                                   &spec->nh_group, NULL);
@@ -360,6 +358,8 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
         if (!tep->ipsec_encrypt_sa().valid()) {
             ret = fill_p4_tep_data_from_nh_(tep, &spec->nh, tep_data);
         } else {
+            // ipsec transport mode
+            // inner vxlan + esp encapsulation
             pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
             ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
                                                   NULL, &spec->nh);
@@ -379,13 +379,30 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
         }
         if (tep2->nh_type() == PDS_NH_TYPE_UNDERLAY) {
             nh_key = tep2->nh();
-            ret = fill_p4_tep_data_from_nh_(tep, &nh_key, tep_data);
+            if (!tep2->ipsec_encrypt_sa().valid()) {
+                ret = fill_p4_tep_data_from_nh_(tep, &nh_key, tep_data);
+            } else {
+                // ipsec tunnel mode
+                // inner vxlan + outer ipsec encapsulation
+                pds_obj_key_t ipsec_sa_id = tep2->ipsec_encrypt_sa();
+                ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
+                                                      NULL, &nh_key);
+            }
             if (ret != SDK_RET_OK) {
                 return ret;
             }
         } else if (tep2->nh_type() == PDS_NH_TYPE_UNDERLAY_ECMP) {
             nhgroup_key = tep2->nh_group();
-            ret = fill_p4_tep_data_from_nhgroup_(tep, &nhgroup_key, tep_data);
+            if (!tep2->ipsec_encrypt_sa().valid()) {
+                ret = fill_p4_tep_data_from_nhgroup_(tep, &nhgroup_key,
+                                                     tep_data);
+            } else {
+                // ipsec tunnel mode
+                // inner vxlan + outer ipsec encapsulation
+                pds_obj_key_t ipsec_sa_id = tep2->ipsec_encrypt_sa();
+                ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
+                                                      &spec->nh_group, NULL);
+            }
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -456,9 +473,9 @@ tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
                 return ret;
             }
         }
-        if (tep->ipsec_encrypt_sa().valid()) {
-            pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
-            program_ipsec_tunnel_ip_(tep, &ipsec_sa_id);
+        if (spec->encrypt_sa.valid()) {
+            pds_obj_key_t ipsec_sa_id = spec->encrypt_sa;
+            program_ipsec_tunnel_(spec, &ipsec_sa_id);
         }
     } else {
         // do read-modify-write
@@ -469,6 +486,12 @@ tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
                           spec->key.str(), hw_id_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
         }
+    }
+
+    if (tep->type() == PDS_TEP_TYPE_IPSEC) {
+        // tunnel encapsulation for ipsec happens in p4+, so no need to program
+        // p4 tables
+        return SDK_RET_OK;
     }
 
     // fill the nexthop information for this TEP

@@ -17,6 +17,7 @@
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb_internal.hpp"
+#include "nic/p4/ipsec-p4+/ipsec_defines.h"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/esp_ipv4_tunnel_h2n_rxdma/include/esp_ipv4_tunnel_h2n_rxdma_p4plus_ingress.h"
 
@@ -283,6 +284,31 @@ ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, mem_addr_t base_pa,
                     eth_ip_hdr->daddr);
 
     PDS_TRACE_DEBUG("Programming at addr 0x%lx", addr);
+    impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
+                                             sizeof(data),
+                                             P4PLUS_CACHE_ACTION_NONE);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+ipseccb_encrypt_set_mode (uint32_t hw_id, mem_addr_t base_pa,
+                          ipsec_mode_t mode)
+{
+    uint8_t data[CACHE_LINE_SIZE];
+    common_p4plus_stage0_app_header_table_d *cb =
+        (common_p4plus_stage0_app_header_table_d *)data;
+    mem_addr_t addr = base_pa + IPSEC_CB_ENC_QSTATE_0_OFFSET;
+
+    impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
+                                            sizeof(data));
+
+    if (mode == IPSEC_MODE_TRANSPORT) {
+        cb->u.ipsec_encap_rxdma_initial_table_d.flags |= IPSEC_FLAGS_MODE_TRANSPORT;
+    } else {
+        cb->u.ipsec_encap_rxdma_initial_table_d.flags &= ~IPSEC_FLAGS_MODE_TRANSPORT;
+    }
+
+    PDS_TRACE_DEBUG("Programming mode cb %u, mode %u", hw_id, mode);
     impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
                                              sizeof(data),
                                              P4PLUS_CACHE_ACTION_NONE);

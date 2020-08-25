@@ -293,7 +293,16 @@ class RemoteMappingObjectClient(base.MappingClientBase):
     def GenerateObj(self, node, parent, rmap_dict, ipversion, count=0, \
                     l2=False):
         if utils.IsPipelineApulu():
-            tunnelAllocator = ResmgrClient[node].UnderlayTunAllocator
+            if 'tunneltype' in rmap_dict:
+                if rmap_dict['tunneltype'] == "ipsec-tunnel":
+                    tunnelAllocator = ResmgrClient[node].IpsecTunnelModeTunAllocator
+                elif rmap_dict['tunneltype'] == "ipsec-transport":
+                    tunnelAllocator = ResmgrClient[node].IpsecTransportModeTunAllocator
+                else:
+                    # nothing else support yet
+                    assert(0)
+            else:
+                tunnelAllocator = ResmgrClient[node].UnderlayTunAllocator
         else:
             tunnelAllocator = ResmgrClient[node].RemoteMplsVnicTunAllocator
 
@@ -313,7 +322,14 @@ class RemoteMappingObjectClient(base.MappingClientBase):
         isV6Stack = utils.IsV6Stack(parent.VPC.Stack)
         for rmap_spec_obj in subnet_spec_obj.rmap:
             if utils.IsPipelineApulu():
-                if getattr(rmap_spec_obj, 'dual-ecmp', None) == None:
+                if hasattr(rmap_spec_obj, 'tunneltype'):
+                    if rmap_spec_obj.tunneltype == "ipsec-tunnel":
+                        tunnelAllocator = ResmgrClient[node].IpsecTunnelModeTunAllocator
+                    elif rmap_spec_obj.tunneltype == "ipsec-transport":
+                        tunnelAllocator = ResmgrClient[node].IpsecTransportModeTunAllocator
+                    else:
+                        assert(0)
+                elif getattr(rmap_spec_obj, 'dual-ecmp', None) == None:
                     tunnelAllocator = ResmgrClient[node].UnderlayTunAllocator
                 else:    
                     tunnelAllocator = ResmgrClient[node].UnderlayECMPTunAllocator

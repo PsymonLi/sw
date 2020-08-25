@@ -22,6 +22,7 @@
 #include "../../common-p4+/common_rxdma.p4"
 #include "esp_v4_tunnel_n2h_headers.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_dummy_defines.h"
 
 header_type ipsec_to_stage1_t {
     fields {
@@ -352,7 +353,7 @@ action esp_v4_tunnel_n2h_update_input_desc_aol (addr0, offset0, length0,
     modify_field(common_te0_phv.table_pc, 0); 
     modify_field(common_te0_phv.table_raw_table_size, 6);
     modify_field(common_te0_phv.table_lock_en, 0);
-    modify_field(common_te0_phv.table_addr, (ipsec_global.ipsec_cb_index * IPSEC_CB_SIZE));
+    modify_field(common_te0_phv.table_addr, 0);
     IPSEC_SCRATCH_GLOBAL
     IPSEC_SCRATCH_T0_S2S
     // 1. Original pkt to input descriptor pkt2mem 

@@ -51,6 +51,9 @@ pds_tep_api_spec_to_proto (pds::TunnelSpec *proto_spec,
     case PDS_TEP_TYPE_SERVICE:
         proto_spec->set_type(pds::TUNNEL_TYPE_SERVICE);
         break;
+    case PDS_TEP_TYPE_IPSEC:
+        proto_spec->set_type(pds::TUNNEL_TYPE_IPSEC);
+        break;
     case PDS_TEP_TYPE_NONE:
     default:
         proto_spec->set_type(pds::TUNNEL_TYPE_NONE);
@@ -146,6 +149,9 @@ pds_tep_proto_to_api_spec (pds_tep_spec_t *api_spec,
         break;
     case pds::TUNNEL_TYPE_SERVICE:
         api_spec->type = PDS_TEP_TYPE_SERVICE;
+        break;
+    case pds::TUNNEL_TYPE_IPSEC:
+        api_spec->type = PDS_TEP_TYPE_IPSEC;
         break;
     default:
         api_spec->type = PDS_TEP_TYPE_NONE;

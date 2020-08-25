@@ -352,12 +352,24 @@ action p4e_app_ipsec() {
                  key_metadata.parsed_dport));
     // dummy code to force PHV allocation
     modify_field(ipsec_metadata.seq_no, 1);
-    if (udp_1.valid == TRUE) {
+    if ((udp_1.valid == TRUE) and (esp.valid == TRUE)) {
         modify_field(p4e_to_p4plus_ipsec.ip_hdr_size, ipv4_1.ihl << 2 + UDP_HDR_SIZE);
     } else {
         modify_field(p4e_to_p4plus_ipsec.ip_hdr_size, ipv4_1.ihl << 2);
     }
-    modify_field(p4e_to_p4plus_ipsec.l4_protocol, ipv4_1.protocol);
+    modify_field(p4e_to_p4plus_ipsec.l4_protocol, ipv4_0.protocol);
+}
+
+action p4e_app_ipsec_tunnel() {
+    modify_field(p4e_to_p4plus_ipsec.ipsec_payload_start, 14);
+    p4e_app_ipsec();
+}
+
+action p4e_app_ipsec_transport() {
+    modify_field(ipv4_0.protocol, IP_PROTO_IPSEC_ESP);
+    modify_field(p4e_to_p4plus_ipsec.ipsec_payload_start,
+                 14 + ipv4_1.ihl << 2);
+    p4e_app_ipsec();
 }
 
 @pragma stage 5
@@ -369,7 +381,8 @@ table p4e_inter_pipe {
     actions {
         p4e_app_default;
         p4e_app_classic_nic;
-        p4e_app_ipsec;
+        p4e_app_ipsec_tunnel;
+        p4e_app_ipsec_transport;
     }
     size : APP_TABLE_SIZE;
 }

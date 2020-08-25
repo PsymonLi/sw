@@ -777,6 +777,8 @@ def GetTunnelType(e):
         return tunnel_pb2.TUNNEL_TYPE_WORKLOAD
     elif e == 'service' or e == 'remoteservice':
         return tunnel_pb2.TUNNEL_TYPE_SERVICE
+    elif e == 'ipsec':
+        return tunnel_pb2.TUNNEL_TYPE_IPSEC
     else:
         return tunnel_pb2.TUNNEL_TYPE_NONE
 
@@ -787,6 +789,8 @@ def GetTunnelTypeString(e):
         return "workload"
     elif e == tunnel_pb2.TUNNEL_TYPE_SERVICE:
         return "service"
+    elif e == tunnel_pb2.TUNNEL_TYPE_IPSEC:
+        return "ipsec"
     elif e == tunnel_pb2.TUNNEL_TYPE_NONE:
         return "None"
     assert (0), f"ERROR: Invalid/Unknown Tunnel Type: {e}"
@@ -982,6 +986,11 @@ def IsServiceTunnelSupported():
     return False
 
 def IsUnderlayTunnelSupported():
+    if IsPipelineApulu():
+        return True
+    return False
+
+def IsIpsecTunnelSupported():
     if IsPipelineApulu():
         return True
     return False

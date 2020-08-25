@@ -132,6 +132,7 @@ class FlowMapObjectHelper:
     def GetMatchingConfigObjects(self, selectors):
         objs = []
         fwdmode = None
+        ipsecmode = None
         mapsel = copy.deepcopy(selectors)
         key = 'FwdMode'
 
@@ -142,6 +143,10 @@ class FlowMapObjectHelper:
         # Get the forwarding mode, fwdmode is not applicable for local & remote
         fwdmode = mapsel.flow.GetValueByKey(key)
         mapsel.flow.filters.remove((key, fwdmode))
+
+        ipsecmode = mapsel.flow.GetValueByKey('IpsecMode')
+        if ipsecmode:
+            mapsel.flow.filters.remove(('IpsecMode', ipsecmode))
 
         # Get the local2local info.
         key = 'L2LType'
@@ -299,6 +304,13 @@ class FlowMapObjectHelper:
                             continue
                     else:
                         if lobj.VNIC.SUBNET.SubnetId == robj.SUBNET.SubnetId:
+                            continue
+                    if ipsecmode:
+                        if 'TUNNEL' in ipsecmode and \
+                           not robj.TUNNEL.IsIpsecTunnelMode():
+                            continue
+                        elif 'TRANSPORT' in ipsecmode and \
+                           not robj.TUNNEL.IsIpsecTransportMode():
                             continue
                     obj = FlowMapObject(lobj, robj, fwdmode, tunobj=robj.TUNNEL)
                     if IsAlreadySelected(obj, selected_objs): continue

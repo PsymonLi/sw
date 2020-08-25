@@ -1,4 +1,5 @@
 #include "capri-macros.h"
+#include "ipsec_defines.h"
 
 #define IPSEC_BLOCK_SIZE 16
 
@@ -53,8 +54,6 @@
 
 #define IPSEC_DESC_FULL_DESC_ADDR 0xFFFFFFFF
 
-#define RING_INDEX_WIDTH 12
-
 #define IPSEC_PAGE_OFFSET 128
 #define IPSEC_DEFAULT_IV_SIZE 8
 #define IPSEC_DEFAULT_ICV_SIZE 16
@@ -75,7 +74,6 @@
 #define IPSEC_PAD_BYTES_8_15 (0x090a0b0c0d0e0f10)
 
 #define IPSEC_PROTO_IP     4
-#define ESP_FIXED_HDR_SIZE 8
 #define ESP_FIXED_HDR_SIZE_LI 0x08000000 
 #define ETH_FIXED_HDR_SIZE 18
 #define ETH_FIXED_HDR_SIZE_NO_VLAN 14
@@ -260,11 +258,3 @@
 
 #define BRQ_RING_ENTRY_SIZE_SHIFT 7
 
-
-#define IPSEC_WIN_REPLAY_MAX_DIFF 63
-
-#define IPSEC_FLAGS_V6_MASK     0x1
-#define IPSEC_FLAGS_NATT_MASK   0x2
-#define IPSEC_FLAGS_RANDOM_MASK 0x4
-#define IPSEC_FLAGS_EXTRA_PAD   0x8
-#define IPSEC_ENCAP_VLAN_MASK   0x10

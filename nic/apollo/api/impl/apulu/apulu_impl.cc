@@ -588,9 +588,17 @@ apulu_impl::inter_pipe_init_(void) {
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
 
-    data.action_id = P4E_INTER_PIPE_P4E_APP_IPSEC_ID;;
+    data.action_id = P4E_INTER_PIPE_P4E_APP_IPSEC_TUNNEL_ID;
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_INTER_PIPE,
                                        P4PLUS_APPTYPE_IPSEC,
+                                       NULL, NULL, &data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    data.action_id = P4E_INTER_PIPE_P4E_APP_IPSEC_TRANSPORT_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_INTER_PIPE,
+                                       P4PLUS_APPTYPE_IPSEC_TRANSPORT,
                                        NULL, NULL, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
         return sdk::SDK_RET_HW_PROGRAM_ERR;

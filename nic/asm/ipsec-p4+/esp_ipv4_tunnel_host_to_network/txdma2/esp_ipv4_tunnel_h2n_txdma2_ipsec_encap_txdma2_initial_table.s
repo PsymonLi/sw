@@ -34,10 +34,12 @@ esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_initial_table:
     and r2, d.flags, 1
     smeqb c2, d.flags, IPSEC_FLAGS_V6_MASK, IPSEC_FLAGS_V6_MASK 
     phvwr.c2 p.ipsec_to_stage4_is_v6, 1 
-    smeqb c4, d.flags, IPSEC_ENCAP_VLAN_MASK, IPSEC_ENCAP_VLAN_MASK
+    smeqb c4, d.flags, IPSEC_FLAGS_ENCAP_VLAN_MASK, IPSEC_FLAGS_ENCAP_VLAN_MASK
     phvwr.c4 p.ipsec_to_stage4_is_vlan_encap, 1
     smeqb c3, d.flags, IPSEC_FLAGS_NATT_MASK, IPSEC_FLAGS_NATT_MASK 
     phvwr.c3 p.ipsec_to_stage4_is_nat_t, 1
+    smeqb c3, d.flags, IPSEC_FLAGS_MODE_TRANSPORT, IPSEC_FLAGS_MODE_TRANSPORT 
+    phvwr.c3 p.ipsec_to_stage4_is_transport, 1
     phvwr p.p4plus2p4_hdr_nexthop_id, d.{nexthop_id}.hx
     phvwr p.p4plus2p4_hdr_nexthop_type, d.nexthop_type
     CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(0, esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy)

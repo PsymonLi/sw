@@ -29,6 +29,8 @@ enum TunnelType {
   TUNNEL_TYPE_INTER_DC = 3;
   // Tunnel type for provider services
   TUNNEL_TYPE_SERVICE  = 4;
+  // Tunnel type ipsec
+  TUNNEL_TYPE_IPSEC    = 5;
 }
 
 // tunnel configuration
@@ -58,8 +60,10 @@ message TunnelSpec {
     bytes         NexthopGroupId        = 9;
     // a tunnel can point to another tunnel for double encap
     // NOTE:
-    // 1. currently the 2nd tunnel is expected to be MPLSoUDP only
+    // 1. currently the 2nd tunnel is expected to be MPLSoUDP or IPSEC
     // 2. more than 2 tunnels can't be supported in a chain
+    // 3. when tunnel points to another tunnel of type IPSEC, outer
+    //    encapsulation is IPSEC. This is IPSEC tunnel mode.
     bytes         TunnelId              = 10;
     // DropNexthop is used to explicity drop traffic destined to this tunnel
     // (even when there is reachability), administratively
@@ -88,6 +92,13 @@ message TunnelSpec {
   // be written as-is (i.e., not interpreted) during encap time by the dataplane
   uint32           ToS                  = 16;
 
+  // currently ipsec sa can be present in the following cases
+  // 1. single tunnel (nexthop is none) : implies ipsec transport mode - inner
+  //    vxlan encapsulation followed by esp header addition on the outer
+  // 2. tunnel pointing to tunnel (nexthop is tunnel), and second tunnel has
+  //    ipsec sa attributes present : implies ipsec tunnel mode - inner vxlan
+  //    encapsulation, followed by a second ipsec tunnel encapsulation
+  //    including esp header.
   bytes            IpsecEncryptSAId     = 17;
   bytes            IpsecDecryptSAId     = 18;
 }

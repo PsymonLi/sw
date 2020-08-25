@@ -44,13 +44,14 @@ packets:
                 dst     : callback://networking/packets/GetUnderlayRemoteMac
             ipv4:
                 src     : ref://testcase/config/devicecfg/IP
-                dst     : callback://networking/packets/GetTunnelIPFromMapping
+                #dst     : callback://networking/packets/GetTunnelIPFromMapping
+                dst     : 172.16.0.20
                 ttl     : 255
                 tos     : ref://testcase/config/localmapping/VNIC/SUBNET/ToS
                 id      : 0
                 len     : 212
             esp:   
-                spi     : 7
+                spi     : 6
                 seq     : 0
             payload:
                 data    :   0xaa 0xaa 0xaa 0xaa 0xaa 0xaa
@@ -74,9 +75,9 @@ packets:
                             0x88 0x03 0xde 0x3b 0x48 0x50 0x02 0xab
                             0x10 0xaf 0x45 0xdb 0x11 0x04 0x49 0x3c
                             0x46 0x5c 0xdf 0x3d 0xce 0x42 0x41 0x2d
-                            0xfa 0x49 0x30 0x98 0x8d 0xbe 0x8d 0xbc
-                            0x8b 0xe5 0xf1 0x59 0xfa 0x4f 0xf3 0x56
-                            0x76 0x9e
+                            0xfa 0x49 0x3f 0x19 0xc3 0x98 0x8b 0xe8
+                            0x6a 0xd9 0x3b 0x44 0x05 0x12 0x03 0xc7
+                            0xab 0xa7
 
 buffers:
     - buffer:

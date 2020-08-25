@@ -30,6 +30,7 @@ typedef enum pds_tep_type_e {
                                   ///< workloads
     PDS_TEP_TYPE_INTER_DC = 3,    ///< TEP for inter-DC traffic
     PDS_TEP_TYPE_SERVICE  = 4,    ///< service tunnel
+    PDS_TEP_TYPE_IPSEC    = 5,    ///< ipsec tunnel
 } pds_tep_type_t;
 
 /// \brief TEP specification
