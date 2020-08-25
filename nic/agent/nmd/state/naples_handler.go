@@ -898,10 +898,12 @@ func (n *NMD) AdmitNaples() {
 					nic, _ = n.GetSmartNIC()
 					recorder.Event(eventtypes.DSC_ADMITTED, fmt.Sprintf("DSC %s(%s) admitted to the cluster", nic.Spec.ID, nic.Name), nic)
 
-					if !isInbandIPValid() {
-						recorder.Event(eventtypes.BOND0_NO_IP,
-							fmt.Sprintf("IPFIX/ERSPAN features will not work unless IP address is assigned to datapath bond0 interface on DSC %s using DHCP or Static Method using Penctl", nic.Spec.ID),
-							nic)
+					if n.Pipeline != nil && n.Pipeline.GetPipelineType() == globals.NaplesPipelineIris {
+						if !isInbandIPValid() {
+							recorder.Event(eventtypes.BOND0_NO_IP,
+								fmt.Sprintf("IPFIX/ERSPAN features will not work unless IP address is assigned to datapath bond0 interface on DSC %s using DHCP or Static Method using Penctl", nic.Spec.ID),
+								nic)
+						}
 					}
 					//// Transition to reboot pending only on successful admission only if reboot has not been done.
 					//if n.rebootNeeded {
