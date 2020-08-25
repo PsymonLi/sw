@@ -1805,7 +1805,7 @@ class PenOrchestrator:
                 if fwType != FIRMWARE_TYPE_GOLD or self.__host.RebootRequiredOnDriverInstall():
                     naples_inst.InitForUpgrade(goldfw = True)
                     self.__host.InitForUpgrade()
-                    naples_inst.IpmiResetAndWait()
+                    self.__host.IpmiResetAndWait()
                     self.__ipmi_reboot_allowed = False
 
                 try:
