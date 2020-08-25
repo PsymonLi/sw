@@ -1123,8 +1123,8 @@ func portInternalStatsCmdHandler(cmd *cobra.Command, args []string) {
 	// Print Result
 	for _, resp := range respMsg.Response {
 		fmt.Printf("\nstats for port : %v\n\n", resp.GetPortNumber())
-		status := resp.GetInternalStatus()
-		respVal := reflect.ValueOf(status).Elem()
+		stats := resp.GetStats()
+		respVal := reflect.ValueOf(stats).Elem()
 		respType := respVal.Type()
 		for i := 0; i < respType.NumField(); i++ {
 			fmt.Printf("%-15s: %-20v\n", respType.Field(i).Name, respVal.Field(i).Interface())
