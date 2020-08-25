@@ -962,6 +962,20 @@ class Encap():
     def VlanId(self):
         return self.Value if self.Type == 'dot1q' else 0
 
+    def GetType(self):
+        return self.Type
+
+    def GetValue(self):
+        return self.Value
+
+    def SetMplsTag(self, value):
+        self.Type  = 'mpls'
+        self.Value = value
+
+    def SetVnid(self, value):
+        self.Type  = 'vxlan'
+        self.Value = value
+
     @staticmethod
     def ParseFromSpec(spec, attr, defEncapType='none', defEncapVal=0):
         encapType = defEncapType

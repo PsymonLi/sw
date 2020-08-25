@@ -148,7 +148,8 @@ vpc:
           count            : 1
           v4prefix         : '10.1.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type  : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -171,7 +172,8 @@ vpc:
           count            : 1
           v4prefix         : '10.2.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -194,7 +196,8 @@ vpc:
           count            : 1
           v4prefix         : '10.3.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -217,7 +220,8 @@ vpc:
           count            : 1
           v4prefix         : '10.4.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -239,7 +243,8 @@ vpc:
           count            : 1
           v4prefix         : '10.5.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -261,7 +266,8 @@ vpc:
           count            : 1
           v4prefix         : '10.6.0.0\24'
           v4prefixlen      : 24
-          fabricencap      : vxlan
+          fabricencap:
+            type : vxlan
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1

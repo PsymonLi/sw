@@ -43,7 +43,7 @@ packets:
                 tos     : 0
                 id      : 0
             vxlan:
-                vni     : ref://testcase/config/localmapping/VNIC/SUBNET/Vnid
+                vni     : callback://networking/packets/GetSubnetVnid/subnetType=local
 
     - packet:
         id          : TO_HOST_PKT # Expected packet

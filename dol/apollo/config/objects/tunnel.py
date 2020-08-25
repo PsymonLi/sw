@@ -46,8 +46,7 @@ class TunnelObject(base.ConfigObjectBase):
                self.LocalIPAddr = ipaddress.IPv4Address(spec.srcaddr)
            else:
                self.LocalIPAddr = self.DEVICE.IPAddr
-        self.EncapType = base.Encap.GetRpcEncapType('vxlan')
-        self.EncapValue = 0
+        self.Encap = base.Encap('vxlan', 0)
         self.Nat = False
         self.NexthopId = 0
         self.NEXTHOP = None
@@ -72,11 +71,9 @@ class TunnelObject(base.ConfigObjectBase):
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_IGW:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpAddressAllocator)
                 if self.DEVICE.IsEncapTypeMPLS():
-                    self.EncapType = base.Encap.GetRpcEncapType('mpls')
-                    self.EncapValue = next(ResmgrClient[node].IGWMplsSlotIdAllocator)
+                    self.Encap.SetMplsTag(next(ResmgrClient[node].IGWMplsSlotIdAllocator))
                 else:
-                    self.EncapType = base.Encap.GetRpcEncapType('vxlan')
-                    self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
+                    self.Encap.SetVnid(next(ResmgrClient[node].IGWVxlanIdAllocator))
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_SERVICE:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpv6AddressAllocator)
                 if hasattr(spec, "remote") and spec.remote is True:
@@ -86,8 +83,7 @@ class TunnelObject(base.ConfigObjectBase):
                     self.RemoteServiceEncap = next(ResmgrClient[node].IGWVxlanIdAllocator)
                 else:
                     self.Remote = False
-                self.EncapType = base.Encap.GetRpcEncapType('vxlan')
-                self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
+                self.Encap.SetVnid(next(ResmgrClient[node].IGWVxlanIdAllocator))
             else:
                 if utils.IsV4Stack(self.DEVICE.Stack):
                     self.RemoteIPAddr = utils.GetNodeLoopbackRemoteTEP(node)
@@ -114,7 +110,7 @@ class TunnelObject(base.ConfigObjectBase):
 
         if utils.IsDol() and self.DEVICE.OverlayRoutingEn:
             if hasattr(spec, 'encap'):
-                self.EncapValue = spec.encap
+                self.Encap.SetVnid(spec.encap)  #assuming vxlan always
             if hasattr(spec, 'macaddress'):
                 self.MACAddr = spec.macaddress
             else:
@@ -148,7 +144,7 @@ class TunnelObject(base.ConfigObjectBase):
         return "TEP: %s |LocalIPAddr:%s|RemoteIPAddr:%s|TunnelType:%s%s|" \
                "EncapValue:%d|Nat:%s|Mac:%s|NhType:%s|NexthopId:%d" % \
                (self.UUID, self.LocalIPAddr, self.RemoteIPAddr,
-               utils.GetTunnelTypeString(self.Type), remote, self.EncapValue,
+               utils.GetTunnelTypeString(self.Type), remote, self.Encap.GetValue(),
                self.Nat, self.MACAddr, self.__nhtype, (self.NexthopId if self.NexthopId else 0))
 
     def Show(self):
@@ -183,7 +179,7 @@ class TunnelObject(base.ConfigObjectBase):
         spec.Id = self.GetKey()
         spec.VPCId = utils.PdsUuid.GetUUIDfromId(0, ObjectTypes.VPC) # TODO: Create Underlay VPC
         spec.ToS = self.ToS
-        utils.PopulateRpcEncap(self.EncapType, self.EncapValue, spec.Encap)
+        utils.PopulateRpcEncap(base.Encap.GetRpcEncapType(self.Encap.GetType()), self.Encap.GetValue(), spec.Encap)
         spec.Type = self.Type
         utils.GetRpcIPAddr(self.LocalIPAddr, spec.LocalIP)
         utils.GetRpcIPAddr(self.RemoteIPAddr, spec.RemoteIP)
@@ -224,7 +220,7 @@ class TunnelObject(base.ConfigObjectBase):
 
         if spec.Id != self.GetKey():
             return False
-        if not utils.ValidateRpcEncap(self.EncapType, self.EncapValue, spec.Encap):
+        if not utils.ValidateRpcEncap(base.Encap.GetRpcEncapType(self.Encap.GetType()), self.Encap.GetValue(), spec.Encap):
             return False
         # TODO: LocalIP is optional & unused
         # if utils.ValidateRpcIPAddr(self.LocalIPAddr, spec.LocalIP) == False:
@@ -465,9 +461,9 @@ class TunnelObjectClient(base.ConfigClientBase):
                 self.Objs[node].update({obj.Id: obj})
                 if parent.IsOverlayRoutingEnabled():
                     if obj.RemoteIPAddr in discoveredObjs:
-                        discoveredObjs[obj.RemoteIPAddr].update({obj.EncapValue: obj})
+                        discoveredObjs[obj.RemoteIPAddr].update({obj.Encap.GetValue(): obj})
                     else:
-                        discoveredObjs.update({obj.RemoteIPAddr: {obj.EncapValue: obj}})
+                        discoveredObjs.update({obj.RemoteIPAddr: {obj.Encap.GetValue(): obj}})
         EzAccessStoreClient[node].SetTunnels(self.Objects(node))
         ResmgrClient[node].CreateInternetTunnels()
         ResmgrClient[node].CreateVnicTunnels()

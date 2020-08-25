@@ -95,13 +95,7 @@ class VpcObject(base.ConfigObjectBase):
             self.PfxSel = 1
         else:
             self.PfxSel = 0
-        # TODO: Use Encap Class instead
-        self.FabricEncapType = base.Encap.GetRpcEncapType(getattr(spec, 'fabricencap', 'vxlan'))
-        if getattr(spec, 'fabricencapvalue', None) != None:
-            self.Vnid = spec.fabricencapvalue
-        else:
-            self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
-
+        self.FabricEncap = base.Encap.ParseFromSpec(spec,"fabricencap", 'vxlan', next(ResmgrClient[node].VxlanIdAllocator))
         self.VirtualRouterMACAddr = ResmgrClient[node].VirtualRouterMacAllocator.get()
         self.ToS = getattr(spec, 'tos', 0)
         self.Mutable = utils.IsUpdateSupported()
@@ -180,9 +174,9 @@ class VpcObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("VPC Object:", self)
         logger.info("- %s" % repr(self))
+        logger.info(f"- FabricEncap: {self.FabricEncap}")
         logger.info("- Prefix:%s" % self.IPPrefix)
-        logger.info("- Vnid:%s|VRMac:%s" %\
-                    (self.Vnid, self.VirtualRouterMACAddr))
+        logger.info(f"-VRMac:(self.VirtualRouterMACAddr)")
         logger.info(f"- RouteTableIds V4:{self.V4RouteTableId}|V6:{self.V6RouteTableId}")
         self.Status.Show()
         return
@@ -202,7 +196,7 @@ class VpcObject(base.ConfigObjectBase):
                     self.ObjType)
             ms = getattr(vpcinst['spec'], 'router-mac', '00:00:00:00:00:00')
             self.VirtualRouterMACAddr = objects.MacAddressBase(string=ms)
-            self.Vnid = int(getattr(vpcinst['spec'], 'vxlan-vni', '0'))
+            self.FabricEncap.SetVnid(int(getattr(vpcinst['spec'], 'vxlan-vni', '0')))   #assuming vxlan 
             self.Tenant = vpcinst['meta']['tenant']
             self.Namespace = vpcinst['meta']['namespace']
             self.GID(vpcinst['meta']['name'])
@@ -265,7 +259,7 @@ class VpcObject(base.ConfigObjectBase):
         self.ToS += 1
 
     def RollbackAttributes(self):
-        attrlist = ["VirtualRouterMACAddr", "ToS", "Vnid"]
+        attrlist = ["VirtualRouterMACAddr", "ToS", "FabricEncap"]
         self.RollbackMany(attrlist)
 
     def PopulateKey(self, grpcmsg):
@@ -280,8 +274,7 @@ class VpcObject(base.ConfigObjectBase):
         spec.V6RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, api.ObjectTypes.ROUTE)
         spec.VirtualRouterMac = self.VirtualRouterMACAddr.getnum()
         spec.ToS = self.ToS
-        utils.PopulateRpcEncap(self.FabricEncapType,
-                               self.Vnid, spec.FabricEncap)
+        utils.PopulateRpcEncap(base.Encap.GetRpcEncapType(self.FabricEncap.GetType()), self.FabricEncap.GetValue(), spec.FabricEncap)
         if self.Nat46_pfx is not None:
             utils.GetRpcIPv6Prefix(self.Nat46_pfx, spec.Nat46Prefix)
         return
@@ -316,7 +309,7 @@ class VpcObject(base.ConfigObjectBase):
                     "vrf-type": "CUSTOMER",
                     "v4-route-table": self.V4RouteTableName,
                     "router-mac": str(self.VirtualRouterMACAddr),
-                    "vxlan-vni": self.Vnid,
+                    "vxlan-vni": self.FabricEncap.GetValue(),
                     "route-import-export": {
                         "address-family": "evpn",
                         "rd-auto": True,
@@ -346,7 +339,7 @@ class VpcObject(base.ConfigObjectBase):
             if spec['spec']['vrf-type'] != 'INFRA': return False
         else:
             if spec['spec']['vrf-type'] != 'CUSTOMER': return False
-            if spec['spec']['vxlan-vni'] != self.Vnid: return False
+            if spec['spec']['vxlan-vni'] != self.FabricEncap.GetValue(): return False
             if spec['spec']['router-mac'] != str(self.VirtualRouterMACAddr):
                 return False
             if spec['spec']['v4-route-table'] != self.V4RouteTableName:

@@ -1092,9 +1092,9 @@ def GetVnicQTag(tc, pkt, args=None):
 
 def GetVNId(testcase, args=None):
     if utils.IsBridgingEnabled(testcase.config.localmapping.Node):
-        return testcase.config.localmapping.VNIC.SUBNET.Vnid
+        return testcase.config.localmapping.VNIC.SUBNET.FabricEncap.GetValue()
     else:
-        return testcase.config.localmapping.VNIC.SUBNET.VPC.Vnid
+        return testcase.config.localmapping.VNIC.SUBNET.VPC.FabricEncap.GetValue()
 
 def GetMulticastIP(testcase, packet, args=None):
     iterelem = testcase.module.iterator.Get()
@@ -1144,3 +1144,15 @@ def GetMulticastMacFromIP(testcase, packet):
         return GetMulticastMacFromIPv6(ip)
     else:
         assert(0)
+
+def GetVPCVnid(tc, pkt, args=None):
+    return tc.config.route.VPC.FabricEncap.Value
+
+def GetSubnetVnid(tc, pkt, args=None):
+    tagType = getattr(args, 'subnetType', None)
+    if tagType == "local":
+        return tc.config.localmapping.VNIC.SUBNET.FabricEncap.GetValue()
+    elif tagType == "remote":
+        return tc.config.remotemapping.SUBNET.FabricEncap.GetValue()
+    else:
+       assert(0) 

@@ -222,7 +222,7 @@ class RouteTableObject(base.ConfigObjectBase):
         self.PriorityType = getattr(spec, "priority", None)
         if self.TUNNEL:
             self.TunnelId = self.TUNNEL.Id
-            self.TunEncap = tunobj.EncapValue
+            self.TunEncap = tunobj.Encap
         else:
             self.TunnelId = 0
         self.NexthopId = self.NEXTHOP.NexthopId if self.NEXTHOP else 0

@@ -52,7 +52,7 @@ packets:
                 tos     : 0
                 id      : 0
             vxlan:
-                vni     : ref://testcase/config/route/VPC/Vnid
+                vni     : callback://networking/packets/GetVPCVnid
             eth:
                 src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2N
                 dst     : callback://networking/packets/GetTunnelMacFromRoute/direction=TX,ipkt=FROM_HOST_PKT

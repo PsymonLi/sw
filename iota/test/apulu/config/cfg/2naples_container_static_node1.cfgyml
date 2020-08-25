@@ -124,8 +124,10 @@ vpc:
           v6prefixlen      : 64
           v4prefix         : '2.1.0.0\24'
           hostifidx        : 0xa000004c
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 202
+          fabricencap:
+            type  : vxlan # vxlan or mplsodup
+            value : 
+              vni : 202
           v4routerip       : '2.1.0.0'
           vroutermac       : macaddr/0055.0100.0001
           v4ingrpolicycount: 1

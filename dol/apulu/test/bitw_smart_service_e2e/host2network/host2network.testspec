@@ -53,3 +53,5 @@ session:
                 - packet:
                     object  : ref://testcase/packets/id=TO_SWITCH_PKT
                     port    : callback://common/packets/AnyUplinkPort
+
+

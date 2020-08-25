@@ -66,8 +66,10 @@ node:
               v4prefixlen      : 24
               v6prefixlen      : 64
               v4prefix         : '2.1.0.0\24'
-              fabricencap      : vxlan # vxlan or mplsodup
-              fabricencapvalue : 202
+              fabricencap:
+                type  : vxlan # vxlan or mplsodup
+                value : 
+                  vni : 202
               v4routerip       : '2.1.0.1'
               vroutermac       : macaddr/0055.0100.0001
               dhcppolicy       : 10
@@ -106,8 +108,10 @@ node:
               count            : 1
               v4prefixlen      : 24
               v4prefix         : '9.0.0.0\24'
-              fabricencap      : vxlan # vxlan or mplsodup
-              fabricencapvalue : 902
+              fabricencap:
+                type  : vxlan # vxlan or mplsodup
+                value : 
+                  vni : 902
               v4routerip       : '9.0.0.1'
               vroutermac       : macaddr/0055.0100.0004
               dhcppolicy       : 13

@@ -116,7 +116,7 @@ class VnicObject(base.ConfigObjectBase):
         if utils.IsDol():
             self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
         else:
-            self.Vnid = parent.Vnid
+            self.Vnid = parent.FabricEncap.GetValue()
         self.SourceGuard = getattr(spec, 'srcguard', False)
         self.Primary = getattr(spec, 'primary', False)
         self.HostName = self.Node

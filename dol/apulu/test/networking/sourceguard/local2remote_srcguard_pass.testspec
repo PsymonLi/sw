@@ -47,7 +47,7 @@ packets:
                 tos     : ref://testcase/config/localmapping/VNIC/SUBNET/ToS
                 id      : 0
             vxlan:
-                vni     : ref://testcase/config/remotemapping/SUBNET/Vnid
+                vni     : callback://networking/packets/GetSubnetVnid/subnetType=remote
             eth:
                 src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2R,IsSrcGuardTC=True
             ipv4:

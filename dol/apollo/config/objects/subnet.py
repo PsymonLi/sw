@@ -77,12 +77,7 @@ class SubnetObject(base.ConfigObjectBase):
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
         self.ToS = 0
         self.IPAMname = 'Dhcp1'
-        # TODO: Use Encap Class instead
-        self.FabricEncapType = base.Encap.GetRpcEncapType(getattr(spec, 'fabricencap', 'vxlan'))
-        if getattr(spec, 'fabricencapvalue', None) != None:
-            self.Vnid = spec.fabricencapvalue
-        else:
-            self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
+        self.FabricEncap = base.Encap.ParseFromSpec(spec,"fabricencap", 'vxlan', next(ResmgrClient[node].VxlanIdAllocator))
         # TODO: clean this host if logic
         self.HostIfIdx = []
         if utils.IsDol():
@@ -146,7 +141,8 @@ class SubnetObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("SUBNET object:", self)
         logger.info("- %s" % repr(self))
-        logger.info("- Prefix %s VNI %d" % (self.IPPrefix, self.Vnid))
+        logger.info("- Prefix %s" % (self.IPPrefix))
+        logger.info(f"- FabricEncap: {self.FabricEncap}")
         logger.info("- VirtualRouter IP:%s" % (self.VirtualRouterIPAddr))
         logger.info("- VRMac:%s" % (self.VirtualRouterMACAddr))
         logger.info(f"- DHCPPolicy: {self.DHCPPolicyIds}")
@@ -303,8 +299,8 @@ class SubnetObject(base.ConfigObjectBase):
         else:
             if self.DHCPPolicyIds != None:
                 spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.DHCPPolicyIds, ObjectTypes.DHCP_PROXY))
-        utils.PopulateRpcEncap(self.FabricEncapType,
-                               self.Vnid, spec.FabricEncap)
+        utils.PopulateRpcEncap(base.Encap.GetRpcEncapType(self.FabricEncap.GetType()),
+                               self.FabricEncap.GetValue() , spec.FabricEncap)
         if utils.IsPipelineApulu():
             for uuid in self.HostIfUuid:
                 spec.HostIf.append(uuid.GetUuid())
@@ -335,7 +331,7 @@ class SubnetObject(base.ConfigObjectBase):
                                 }
                             }
                         ],
-                    "vxlan-vni": self.Vnid,
+                    "vxlan-vni": self.FabricEncap.GetValue(),
                     "ipam-policy": self.IPAMname,
                     "ing-v4-sec-policies": [],
                     "ing-v6-sec-policies": [],
@@ -347,15 +343,15 @@ class SubnetObject(base.ConfigObjectBase):
                         "rt-export": [
                             {
                                 "type": "type2",
-                                "admin-value": self.Vnid,
-                                "assigned-value": self.Vnid
+                                "admin-value": self.FabricEncap.GetValue(),
+                                "assigned-value": self.FabricEncap.GetValue()
                                 }
                             ],
                         "rt-import": [
                             {
                                 "type": "type2",
-                                "admin-value": self.Vnid,
-                                "assigned-value": self.Vnid
+                                "admin-value": self.FabricEncap.GetValue(),
+                                "assigned-value": self.FabricEncap.GetValue()
                                 }
                             ]
                         }
@@ -379,7 +375,7 @@ class SubnetObject(base.ConfigObjectBase):
         if spec['kind'] != 'Network': return False
         if spec['meta']['name'] != self.GID(): return False
         if spec['spec']['vrf-name'] != self.VPC.GID(): return False
-        if spec['spec']['vxlan-vni'] != self.Vnid: return False
+        if spec['spec']['vxlan-vni'] != self.FabricEncap.GetValue(): return False
         if spec['spec']['ipam-policy'] != self.IPAMname: return False
         addr = spec['spec']['v4-address'][0]
         if addr['prefix-len'] != self.IPPrefix[1]._prefixlen:
