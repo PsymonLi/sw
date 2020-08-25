@@ -1902,6 +1902,30 @@ func (i *IrisAPI) ReplayConfigs() error {
 		}
 	}
 
+	mirrorEndpoints := []netproto.Endpoint{}
+	epKind := netproto.Endpoint{
+		TypeMeta: api.TypeMeta{Kind: "Endpoint"},
+	}
+	endpoints, _ := i.HandleEndpoint(types.List, epKind)
+	for _, ep := range endpoints {
+		// Defer replay of mirrored endpoints after interface mirror session is replayed
+		if len(ep.Spec.MirrorSessions) != 0 {
+			log.Infof("Waiting for interface mirror session to be replayed. Requeuing endpoint %v", ep.GetKey())
+			mirrorEndpoints = append(mirrorEndpoints, ep)
+			continue
+		}
+		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", ep.Kind, ep.GetKey())
+		i.InfraAPI.Delete(ep.Kind, ep.GetKey())
+
+		creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
+		if ok && creator == "Venice" {
+			log.Infof("Replaying persisted Endpoint Object: %v", ep.GetKey())
+			if _, err := i.HandleEndpoint(types.Create, ep); err != nil {
+				log.Errorf("Failed to recreate Endpoint: %v. Err: %v", ep.GetKey(), err)
+			}
+		}
+	}
+
 	go func() {
 		// Check for interface IP
 		ticker := time.NewTicker(time.Second * 30)
@@ -1975,6 +1999,20 @@ func (i *IrisAPI) ReplayConfigs() error {
 						}
 					}
 				}
+
+				// Replay mirrored endpoints
+				for _, ep := range mirrorEndpoints {
+					log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", ep.Kind, ep.GetKey())
+					i.InfraAPI.Delete(ep.Kind, ep.GetKey())
+
+					creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
+					if ok && creator == "Venice" {
+						log.Infof("Replaying persisted Mirrored Endpoint Object: %v", ep.GetKey())
+						if _, err := i.HandleEndpoint(types.Create, ep); err != nil {
+							log.Errorf("Failed to recreate Endpoint: %v. Err: %v", ep.GetKey(), err)
+						}
+					}
+				}
 				return
 			case <-timeout.C:
 				log.Error("bond0 IP was not present after 5m")
@@ -1982,24 +2020,6 @@ func (i *IrisAPI) ReplayConfigs() error {
 			}
 		}
 	}()
-
-	// Replay Endpoint Object after interface mirror session replay
-	epKind := netproto.Endpoint{
-		TypeMeta: api.TypeMeta{Kind: "Endpoint"},
-	}
-	endpoints, _ := i.HandleEndpoint(types.List, epKind)
-	for _, ep := range endpoints {
-		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", ep.Kind, ep.GetKey())
-		i.InfraAPI.Delete(ep.Kind, ep.GetKey())
-
-		creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
-		if ok && creator == "Venice" {
-			log.Infof("Replaying persisted Network Object: %v", ep.GetKey())
-			if _, err := i.HandleEndpoint(types.Create, ep); err != nil {
-				log.Errorf("Failed to recreate Endpoint: %v. Err: %v", ep.GetKey(), err)
-			}
-		}
-	}
 
 	return nil
 }
