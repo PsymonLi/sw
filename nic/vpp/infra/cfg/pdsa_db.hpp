@@ -10,6 +10,8 @@
 #include <vector>
 #include <list>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/infra/core/event.hpp"
 #include "nic/infra/core/msg.h"
 #include "nic/apollo/api/core/msg.h"
 
@@ -52,10 +54,13 @@ class vpp_config_data {
 #undef _
 
     static vpp_config_data singleton;
-    vpp_config_data() { }
+    vpp_config_data() { };
+
 public:
     // instance accessor
     static vpp_config_data &get(void) { return singleton; }
+    static void vnic_cfg_update(sdk::ipc::ipc_msg_ptr msg, const void *ctx);
+    void init(void);
 
     // constant operations
     int size(obj_id_t obj_id) const;

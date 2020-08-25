@@ -322,7 +322,6 @@ pds_flow_age_setup (vlib_main_t *vm,
                     vlib_frame_t *from_frame)
 {
     u32 counter[FLOW_AGE_SETUP_COUNTER_LAST] = {0};
-    pds_flow_main_t *fm = &pds_flow_main;
 
     PDS_PACKET_LOOP_START {
         PDS_PACKET_DUAL_LOOP_START(LOAD, LOAD) {
@@ -331,6 +330,7 @@ pds_flow_age_setup (vlib_main_t *vm,
             u16 tcp_flags0, tcp_flags1;
             bool rflow0, rflow1;
             pds_flow_hw_ctx_t *ctx0, *ctx1;
+            bool con_track_en;
 
             b0 = PDS_PACKET_BUFFER(0);
             b1 = PDS_PACKET_BUFFER(1);
@@ -341,11 +341,13 @@ pds_flow_age_setup (vlib_main_t *vm,
             ctx1 = pds_flow_get_session(session_id1);
             tcp_flags0 = vnet_buffer(b0)->pds_flow_data.tcp_flags;
             tcp_flags1 = vnet_buffer(b1)->pds_flow_data.tcp_flags;
-            if (!ctx0 || !ctx1 || ctx0->drop || ctx1->drop) {
+            if (!ctx0 || !ctx1 || ctx0->drop || ctx1->drop ||
+                (ctx0->src_vnic_id != ctx1->src_vnic_id)) {
                 goto pak0;
             }
+            con_track_en = pds_flow_con_track_en_get(ctx0->src_vnic_id);
             if (tcp_flags0 == tcp_flags1) {
-                if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
+                if (con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
                     pds_flow_age_setup_syn_x2(ctx0, ctx1,
                                               session_id0, session_id1,
                                               node->thread_index);
@@ -381,11 +383,12 @@ pds_flow_age_setup (vlib_main_t *vm,
                     *PDS_PACKET_NEXT_NODE_PTR(0) = FLOW_AGE_SETUP_NEXT_DROP;
                     goto pak1;
                 }
+                con_track_en = pds_flow_con_track_en_get(ctx0->src_vnic_id);
                 if (PREDICT_FALSE(ctx0->drop)) {
                     pds_flow_age_setup_drop(ctx0, session_id0,
                                             node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
-                } else if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
+                } else if (con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
                     pds_flow_age_setup_syn_x1(ctx0, session_id0,
                                               node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
@@ -413,11 +416,12 @@ pds_flow_age_setup (vlib_main_t *vm,
                     *PDS_PACKET_NEXT_NODE_PTR(1) = FLOW_AGE_SETUP_NEXT_DROP;
                     goto done;
                 }
+                con_track_en = pds_flow_con_track_en_get(ctx1->src_vnic_id);
                 if (PREDICT_FALSE(ctx1->drop)) {
                     pds_flow_age_setup_drop(ctx1, session_id1,
                                             node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
-                } else if (fm->con_track_en && (tcp_flags1 & TCP_FLAG_SYN)) {
+                } else if (con_track_en && (tcp_flags1 & TCP_FLAG_SYN)) {
                     pds_flow_age_setup_syn_x1(ctx1, session_id1,
                                               node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
@@ -452,6 +456,7 @@ pds_flow_age_setup (vlib_main_t *vm,
             u8 tcp_flags0;
             bool rflow0;
             pds_flow_hw_ctx_t *ctx0;
+            bool con_track_en;
 
             b0 = PDS_PACKET_BUFFER(0);
 
@@ -463,11 +468,12 @@ pds_flow_age_setup (vlib_main_t *vm,
                 *PDS_PACKET_NEXT_NODE_PTR(0) = FLOW_AGE_SETUP_NEXT_DROP;
                 goto end;
             }
+            con_track_en = pds_flow_con_track_en_get(ctx0->src_vnic_id);
             if (PREDICT_FALSE(ctx0->drop)) {
                 pds_flow_age_setup_drop(ctx0, session_id0,
                                         node->thread_index);
                 counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
-            } else if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
+            } else if (con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
                 pds_flow_age_setup_syn_x1(ctx0, session_id0,
                                           node->thread_index);
                 counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
@@ -837,7 +843,8 @@ pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 
     session = pds_flow_get_session(ses_id);
     if (pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
-        if (!fm->con_track_en || session->proto != PDS_FLOW_PROTO_TCP) {
+        if (!pds_flow_con_track_en_get(session->src_vnic_id) ||
+            session->proto != PDS_FLOW_PROTO_TCP) {
             pds_flow_delete_session(ses_id);
             return true;
         }

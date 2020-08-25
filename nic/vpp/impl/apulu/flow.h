@@ -181,7 +181,8 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
                 (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) : 0);
         drop = ctx->drop;
     }
-    ses_track_en = fm->con_track_en && (ctx->proto == PDS_FLOW_PROTO_TCP);
+    ses_track_en = pds_flow_con_track_en_get(ctx->src_vnic_id) &&
+                   (ctx->proto == PDS_FLOW_PROTO_TCP);
     actiondata.session_tracking_en = ses_track_en;
     actiondata.drop = ctx->sess_drop = drop;
     actiondata.qid_en = true;
@@ -1096,7 +1097,6 @@ pds_flow_classify_x1 (vlib_buffer_t *p,
                       u32 *counter,
                       bool bitw_svc)
 {
-    pds_flow_main_t *fm = &pds_flow_main;
     p4_rx_cpu_hdr_t *hdr = vlib_buffer_get_current(p);
     u8 flag_orig;
     u32 nexthop;
@@ -1182,7 +1182,8 @@ pds_flow_classify_x1 (vlib_buffer_t *p,
         // then we should go to FLOW_PROG node, so that a session can be
         // created. This is needed for VMotion where non SYN packets should be
         // able to create a flow.
-        if (!fm->con_track_en && !pds_is_flow_session_present(p)) {
+        if (!pds_is_flow_session_present(p) &&
+            !pds_flow_con_track_en_get(hdr->vnic_id)) {
             goto vnic_check;
         }
 
@@ -1663,7 +1664,8 @@ pds_program_cached_sessions(void)
                                       &tx_rewrite_flags, &rx_rewrite_flags);
         actiondata.tx_rewrite_flags = tx_rewrite_flags;
         actiondata.rx_rewrite_flags = rx_rewrite_flags;
-        actiondata.session_tracking_en = fm->con_track_en &&
+        actiondata.session_tracking_en =
+            pds_flow_con_track_en_get(sess->src_vnic_id) &&
             (ctx->proto == PDS_FLOW_PROTO_TCP);
         actiondata.drop = ctx->drop;
         actiondata.qid_en = true;

@@ -400,5 +400,8 @@ pds_ipc_init (void)
     pds_ipc_register_cmd_callbacks(PDS_CMD_MSG_OBJ_COUNT_GET,
                                    pds_obj_count_get_cb);
 
+    vpp_config_data &config_data = vpp_config_data::get();
+    config_data.init();
+
     ipc_log_notice("Registered callbacks for IPC messages");
 }

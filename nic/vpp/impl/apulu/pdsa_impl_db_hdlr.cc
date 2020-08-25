@@ -65,8 +65,8 @@ pds_cfg_db_vnic_set_cb (const pds_cfg_msg_t *msg)
     int rc;
     uint16_t subnet_hw_id = 0xffff;
     pds_cfg_msg_t subnet_msg;
-    uint8_t dot1q = 0,
-            dot1ad = 0;
+    bool dot1q = false,
+         dot1ad = false;
 
     vpp_config_data &config = vpp_config_data::get();
 
@@ -83,9 +83,9 @@ pds_cfg_db_vnic_set_cb (const pds_cfg_msg_t *msg)
     subnet_hw_id = subnet_msg.subnet.status.hw_id;
 
     if (msg->vnic.spec.vnic_encap.type == PDS_ENCAP_TYPE_DOT1Q) {
-        dot1q = 1;
+        dot1q = true;
     } else if (msg->vnic.spec.vnic_encap.type == PDS_ENCAP_TYPE_QINQ) {
-        dot1ad = 1;
+        dot1ad = true;
     }
     rc = pds_impl_db_vnic_set((uint8_t *)msg->vnic.key.id,
                               (uint8_t *)msg->vnic.spec.mac_addr,
@@ -93,6 +93,7 @@ pds_cfg_db_vnic_set_cb (const pds_cfg_msg_t *msg)
                               msg->vnic.status.hw_id,
                               subnet_hw_id,
                               msg->vnic.spec.flow_learn_en,
+                              msg->vnic.spec.conn_track_en,
                               dot1q, dot1ad,
                               msg->vnic.spec.vnic_encap.val.vlan_tag,
                               msg->vnic.status.nh_hw_id,

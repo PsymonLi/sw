@@ -13,6 +13,37 @@ vpp_config_cb_registry vpp_config_cb_registry::singleton;
 
 // vpp_config_data member functions
 
+void
+vpp_config_data::vnic_cfg_update(sdk::ipc::ipc_msg_ptr msg, const void *ctx) {
+    core::event_t *event = (core::event_t *) msg->data();
+    pds_cfg_msg_t vnic_msg;
+    core::vnic_event_info_t *vnic_update;
+    vpp_config_cb_registry &cb_registry = vpp_config_cb_registry::get();
+    vpp_config_data &config = vpp_config_data::get();
+
+    if (!event) {
+        return;
+    }
+
+    vnic_update = &event->vnic;
+    vnic_msg.obj_id = OBJ_ID_VNIC;
+    vnic_msg.vnic.key = vnic_update->vnic;
+
+    if (!config.get(vnic_msg)) {
+        return;
+    }
+    vnic_msg.vnic.spec.conn_track_en = vnic_update->conn_track_en;
+    config.set(vnic_msg);
+    (void)cb_registry.set(&vnic_msg);
+    return;
+}
+
+void
+vpp_config_data::init(void) {
+    sdk::ipc::subscribe(EVENT_ID_VNIC_UPD, &vnic_cfg_update, NULL);
+    return;
+}
+
 // returns the currently configured number of instances of a specific obj id
 int
 vpp_config_data::size (obj_id_t obj_id) const {

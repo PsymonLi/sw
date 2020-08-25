@@ -70,9 +70,10 @@ pds_impl_db_vnic_set (uint8_t *key,
                       uint32_t max_sessions,
                       uint16_t vnic_hw_id,
                       uint16_t subnet_hw_id,
-                      uint8_t flow_log_en,
-                      uint8_t dot1q,
-                      uint8_t dot1ad,
+                      bool flow_log_en,
+                      bool con_track_en,
+                      bool dot1q,
+                      bool dot1ad,
                       uint16_t vlan_id,
                       uint16_t nh_hw_id,
                       uint16_t host_lif_hw_id)
@@ -100,11 +101,8 @@ pds_impl_db_vnic_set (uint8_t *key,
     vnic_info->subnet_hw_id = subnet_hw_id;
     vnic_info->ses_alert_limit_exceeded = 0; // reset flags on vnic reconfigure
     vnic_info->ses_alert_threshold_exceeded = 0;
-    if (flow_log_en) {
-        vnic_info->flow_log_en = 1;
-    } else {
-        vnic_info->flow_log_en = 0;
-    }
+    vnic_info->flow_log_en = flow_log_en;
+    vnic_info->con_track_en = con_track_en;
     vnic_info->l2_encap_len = sizeof(ethernet_header_t);
     vnic_info->vlan_id = vlan_id;
     if (dot1q) {

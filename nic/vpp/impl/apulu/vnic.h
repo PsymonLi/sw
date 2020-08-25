@@ -155,6 +155,19 @@ pds_vnic_l2_rewrite_info_get (u16 vnic_id, u16 *nh_id)
     return vnic_info->rewrite;
 }
 
+always_inline bool
+pds_vnic_con_track_en_get (u16 vnic_id)
+{
+    pds_impl_db_vnic_entry_t *vnic_info = NULL;
+
+    vnic_info = pds_impl_db_vnic_get(vnic_id);
+    if(vnic_info == NULL) {
+        return false;
+    }
+
+    return vnic_info->con_track_en;
+}
+
 #ifdef __cplusplus
 }
 #endif

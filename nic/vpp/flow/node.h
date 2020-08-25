@@ -21,6 +21,7 @@
 #include <vnet/udp/udp_packet.h>
 #include <nic/p4/common/defines.h>
 #include <ftl_wrapper.h>
+#include <vnic.h>
 #include "pdsa_hdlr.h"
 #include "stats.h"
 
@@ -715,21 +716,32 @@ always_inline void pds_session_id_flush(void)
     return;
 }
 
+always_inline bool
+pds_flow_con_track_en_get (u16 vnic_id)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+
+    // if con-tracking disabled globally then pick from vnic
+    if (fm->con_track_en || pds_vnic_con_track_en_get(vnic_id)) {
+        return true;
+    }
+    return false;
+}
+
 // timer_hdl is 23 bits, so check against 0x7fffff
-#define FLOW_AGE_TIMER_STOP(_tw, _hdl)                              \
+#define FLOW_AGE_TIMER_STOP(TW, HDL)                                \
 {                                                                   \
-    if (_hdl != 0x7fffff) {                                         \
-        tw_timer_stop_16t_2w_4096sl(_tw, _hdl);                     \
-        _hdl = ~0;                                                  \
+    if (HDL != 0x7fffff) {                                          \
+        tw_timer_stop_16t_2w_4096sl(TW, HDL);                       \
+        HDL = ~0;                                                   \
     }                                                               \
 }                                                                   \
 
 // stop the running timer if any and start new timer
-#define FLOW_AGE_TIMER_START(_tw, _hdl, _ses_id, _timer, _timeout)  \
+#define FLOW_AGE_TIMER_START(TW, HDL, SES_ID, TIMER, TIMEOUT)       \
 {                                                                   \
-    FLOW_AGE_TIMER_STOP(_tw, _hdl);                                 \
-    _hdl = tw_timer_start_16t_2w_4096sl(_tw, _ses_id,               \
-                                        _timer, _timeout);          \
+    FLOW_AGE_TIMER_STOP(TW, HDL);                                   \
+    HDL = tw_timer_start_16t_2w_4096sl(TW, SES_ID, TIMER, TIMEOUT); \
 }                                                                   \
 
 void pds_session_update_data(u32 ses_id, u64 new_handle,

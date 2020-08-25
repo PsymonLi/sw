@@ -41,24 +41,29 @@ vnic_impl_db_dump ()
     u16 offset;
     u32 itr;
 
-    PRINT_BUF_LINE(113);
-    vlib_cli_output(vm, "%=5s%=21s%=15s%=17s%=10s%=10s%=10s%=10s%=7s%=8s","HwId",
-                    "MAC", "MaxSessions", "ActiveSesCount", "SubnethwId",
-                    "FlowLogEn", "EncapType", "EncapLen", "VlanId",
-                    "NhHwId");
-    PRINT_BUF_LINE(113);
+    PRINT_BUF_LINE(124);
+    vlib_cli_output(vm,
+                    "%=5s%=21s%=15s%=17s%=10s%=10s%=11s%=10s%=10s%=7s%=8s%=",
+                    "HwId", "MAC", "MaxSessions", "ActiveSesCount",
+                    "SubnethwId", "FlowLogEn", "ConTrackEn", "EncapType",
+                    "EncapLen", "VlanId", "NhHwId");
+    PRINT_BUF_LINE(124);
 
     vec_foreach_index(itr, impl_db_ctx.vnic_pool_idx)
     {
         offset = vec_elt(impl_db_ctx.vnic_pool_idx, itr);
         if (offset != 0xffff) {
             vnic_info = pool_elt_at_index(impl_db_ctx.vnic_pool_base, offset);
-        vlib_cli_output(vm, "%=5d%=21U%=15d%=17d%=10d%=10d%=10d%=10d%=7d%=8d\n",
-                        itr, format_ethernet_address, vnic_info->mac,
-                        vnic_info->max_sessions, vnic_info->active_ses_count,
-                        vnic_info->subnet_hw_id, vnic_info->flow_log_en,
-                        vnic_info->encap_type, vnic_info->l2_encap_len,
-                        vnic_info->vlan_id, vnic_info->nh_hw_id);
+            vlib_cli_output(
+                    vm,
+                    "%=5d%=21U%=15u%=17u%=10u%=10s%=11s%=10u%=10u%=7u%=8u",
+                    itr, format_ethernet_address, vnic_info->mac,
+                    vnic_info->max_sessions, vnic_info->active_ses_count,
+                    vnic_info->subnet_hw_id,
+                    vnic_info->flow_log_en ? "True" : "False",
+                    vnic_info->con_track_en ? "True" : "False",
+                    vnic_info->encap_type, vnic_info->l2_encap_len,
+                    vnic_info->vlan_id, vnic_info->nh_hw_id);
         }
     }
     vlib_cli_output(vm, "VnicCount : %d", pool_elts(impl_db_ctx.vnic_pool_base));

@@ -62,6 +62,13 @@ pds_src_vnic_info_get (uint16_t lkp_id, uint32_t addr, uint8_t **rewrite,
 
 static inline void
 pds_vnic_active_session_clear(void) {
+    return;
+}
+
+static inline bool
+pds_vnic_con_track_en_get (u16 vnic_id)
+{
+    return false;
 }
 
 #ifdef __cplusplus

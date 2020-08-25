@@ -51,13 +51,14 @@ typedef struct {
     u8 flow_log_en : 1;                  // flag indicating flow logging enabled
     u8 ses_alert_limit_exceeded: 1;      // flag to raise session limit alert
     u8 ses_alert_threshold_exceeded : 1; // flag to raise session threshold alert
-    u8 reserve : 5;
+    u8 con_track_en : 1;            // connection tracking enabled or not
+    u8 reserve : 4;
     u8 encap_type;                  // pds_eth_encap_type
     u8 l2_encap_len;                // layer2 encapsulation length
     u16 vlan_id;                    // vlan id if encap type is != no vlan
     u16 nh_hw_id;                   // nexthop id
     u16 host_lif_hw_id;             // host lif id
-    u8 *rewrite;
+    u8 *rewrite;                    // per vnic L2 rewri
 } pds_impl_db_vnic_entry_t;
 
 typedef struct {

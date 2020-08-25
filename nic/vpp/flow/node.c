@@ -946,7 +946,6 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
     u8                  miss_hit = 0;
     u8                  napt = 0;
     pds_flow_hw_ctx_t   *ses = pds_flow_get_session(session_id);
-    pds_flow_main_t     *fm = &pds_flow_main;
     u8                  l2l = 0;
 
     vnet_buffer(p0)->pds_flow_data.ses_id = session_id;
@@ -1078,7 +1077,8 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         pds_flow_info_program(session_id, false, l2l);
 
         if (ip40->protocol == IP_PROTOCOL_TCP) {
-            if (fm->con_track_en) {
+            if (pds_flow_con_track_en_get(
+                vnet_buffer2(p0)->pds_nat_data.vnic_id)) {
                 vnet_buffer(p0)->pds_flow_data.tcp_seq_no =
                     clib_net_to_host_u32(tcp0->seq_number);
                 vnet_buffer(p0)->pds_flow_data.tcp_win_sz =
@@ -1172,7 +1172,8 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             pds_flow_extract_nexthop_info(p0, false, true, bitw_svc, thread_index);
 
             if (ip60->protocol == IP_PROTOCOL_TCP) {
-                if (fm->con_track_en) {
+                if (pds_flow_con_track_en_get(
+                    vnet_buffer2(p0)->pds_nat_data.vnic_id)) {
                     vnet_buffer(p0)->pds_flow_data.tcp_seq_no =
                             clib_net_to_host_u32(tcp0->seq_number);
                     vnet_buffer(p0)->pds_flow_data.tcp_win_sz =

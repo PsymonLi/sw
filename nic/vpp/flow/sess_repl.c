@@ -145,7 +145,8 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
             timeout = fm->idle_timeout[ctx->proto];
             break;
         case PDS_FLOW_STATE_KEEPALIVE_SENT:
-            ASSERT(ctx->proto == PDS_FLOW_PROTO_TCP && fm->con_track_en);
+            ASSERT(ctx->proto == PDS_FLOW_PROTO_TCP &&
+                   pds_flow_con_track_en_get(sess->src_vnic_id));
             // We have sent atleast one keep alive probe. Hence init to 1
             ctx->keep_alive_retry = 1;
             timer = PDS_FLOW_KEEP_ALIVE_TIMER;
