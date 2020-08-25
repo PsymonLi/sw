@@ -1050,12 +1050,11 @@
   revision = "8219919fca892353a082b184bca66db55c55b583"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ac94acc1f38b88bc6731b78fc5bd91d014333513f773cba452ad90f2b746195a"
+  digest = "1:4da59dafd2ee575135b40a3f182e7c21106eecba51599f5b69ac59433e3a7fbe"
   name = "github.com/greenpau/go-cisco-nx-api"
   packages = ["pkg/client"]
   pruneopts = "NUT"
-  revision = "69825780787d208a2f855bfc19e4b6de375ad994"
+  revision = "9c9c382d283ced6d149d4d41a5eb7cccdb2e6fb1"
 
 [[projects]]
   digest = "1:432e8b04365b52add2d6256a42de45cebebf6b7a132d4eacb052602fe199a80a"

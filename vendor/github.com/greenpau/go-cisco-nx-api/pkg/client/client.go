@@ -216,7 +216,10 @@ func callAPI(contentType string, url string, payload []byte, username, password 
 	default:
 		return nil, fmt.Errorf("unsupported content type: %s", contentType)
 	}
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", reqContentType)
 	req.Header.Add("Cache-Control", "no-cache")
 	req.SetBasicAuth(username, password)
@@ -418,6 +421,10 @@ func (cli *Client) GetTransceivers() ([]*Transceiver, error) {
 
 // Configure execute a batch of configuration commands
 func (cli *Client) Configure(cmds []string) ([]JSONRPCResponse, error) {
+	if len(cmds) == 0 {
+		return nil, fmt.Errorf("empty input")
+	}
+
 	url := fmt.Sprintf("%s://%s:%d/ins", cli.protocol, cli.host, cli.port)
 
 	req := NewJSONRPCRequest(cmds)
@@ -432,7 +439,20 @@ func (cli *Client) Configure(cmds []string) ([]JSONRPCResponse, error) {
 	}
 
 	var respJSON []JSONRPCResponse
-	err = json.Unmarshal(resp, &respJSON)
 
-	return respJSON, err
+	if len(cmds) == 1 {
+		var respJSON1 JSONRPCResponse
+		err = json.Unmarshal(resp, &respJSON1)
+		if err != nil {
+			return nil, fmt.Errorf("%s: Input: %v", err.Error(), resp)
+		}
+		respJSON = append(respJSON, respJSON1)
+	} else {
+		err = json.Unmarshal(resp, &respJSON)
+		if err != nil {
+			return nil, fmt.Errorf("%s: Input: %v", err.Error(), resp)
+		}
+	}
+
+	return respJSON, nil
 }

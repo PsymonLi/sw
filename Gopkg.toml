@@ -386,3 +386,7 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
 [[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.15.3"
+
+[[override]]
+  revision = "9c9c382d283ced6d149d4d41a5eb7cccdb2e6fb1"
+  name = "github.com/greenpau/go-cisco-nx-api"
