@@ -81,10 +81,10 @@ def config_node1():
     # create vnics in subnet1
     vpc1_subnet1_vnic1_id = 300
     vpc1_subnet1_vnic1 = create_vnic(vpc1_subnet1_vnic1_id, vpc1_subnet1_id,
-                                     vpc1_id, 'QINQ', 10, 10)
+                                     vpc1_id, 'DOT1Q', 10, None)
     vpc1_subnet1_vnic2_id = 301
     vpc1_subnet1_vnic2 = create_vnic(vpc1_subnet1_vnic2_id, vpc1_subnet1_id,
-                                     vpc1_id, 'QINQ', 11, 11)
+                                     vpc1_id, 'DOT1Q', 11, None)
 
     # create subnet2 in vpc1
     vpc1_subnet2_id = 201
@@ -93,10 +93,10 @@ def config_node1():
     # create vnics in subnet2
     vpc1_subnet2_vnic1_id = 302
     vpc1_subnet2_vnic1 = create_vnic(vpc1_subnet2_vnic1_id, vpc1_subnet2_id,
-                                     vpc1_id, 'QINQ', 12, 12)
+                                     vpc1_id, 'DOT1Q', 12, None)
     vpc1_subnet2_vnic2_id = 303
     vpc1_subnet2_vnic2 = create_vnic(vpc1_subnet2_vnic2_id, vpc1_subnet2_id,
-                                     vpc1_id, 'QINQ', 13, 13)
+                                     vpc1_id, 'DOT1Q', 13, None)
 
     # create vpc2
     vpc2_id = 101
@@ -109,10 +109,10 @@ def config_node1():
     # create vnics in subnet1
     vpc2_subnet1_vnic1_id = 304
     vpc2_subnet1_vnic1 = create_vnic(vpc2_subnet1_vnic1_id, vpc2_subnet1_id,
-                                     vpc2_id, 'QINQ', 14, 14)
+                                     vpc2_id, 'DOT1Q', 14, None)
     vpc2_subnet1_vnic2_id = 305
     vpc2_subnet1_vnic2 = create_vnic(vpc2_subnet1_vnic2_id, vpc2_subnet1_id,
-                                     vpc2_id, 'QINQ', 15, 15)
+                                     vpc2_id, 'DOT1Q', 15, None)
 
     # create subnet2 in vpc2
     vpc2_subnet2_id = 203
@@ -120,10 +120,10 @@ def config_node1():
 
     vpc2_subnet2_vnic1_id = 306
     vpc2_subnet2_vnic1 = create_vnic(vpc2_subnet2_vnic1_id, vpc2_subnet2_id,
-                                     vpc2_id, 'QINQ', 16, 16)
+                                     vpc2_id, 'DOT1Q', 16, None)
     vpc2_subnet2_vnic2_id = 307
     vpc2_subnet2_vnic2 = create_vnic(vpc2_subnet2_vnic2_id, vpc2_subnet2_id,
-                                     vpc2_id, 'QINQ', 17, 17)
+                                     vpc2_id, 'DOT1Q', 17, None)
 
     # start pushing all the configuration now
     api.client.Create(api.ObjectTypes.SWITCH, [device_obj.GetGrpcCreateMessage()])

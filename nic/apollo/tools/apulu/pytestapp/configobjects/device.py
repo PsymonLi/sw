@@ -26,6 +26,7 @@ class DeviceObject():
             grpcmsg.Request.GatewayIP.V4Addr = int(self.gatewayip)
         grpcmsg.Request.DevOperMode = self.deviceopermode
         grpcmsg.Request.DeviceProfile = self.deviceprofile
+        grpcmsg.Request.SymmetricRoutingEn = True
         if self.mac:
             grpcmsg.Request.MACAddr = utils.getmac2num(self.mac)
         return grpcmsg
