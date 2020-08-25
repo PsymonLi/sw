@@ -87,7 +87,7 @@ class _Testbed:
         return
 
     def sshHostCheck(self, ip, username, password):
-        sshPass = "sshpass -p {0} ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ".format(password)
+        sshPass = "sshpass -p {0} timeout 60 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ".format(password)
         sshHost = "{0}@{1}".format(username, ip)
         cmd = "{0} {1} \"date\"".format(sshPass, sshHost)
         subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
@@ -103,15 +103,11 @@ class _Testbed:
                 try:
                     Logger.info("pinging host {0}....".format(ip))
                     subprocess.check_output(["ping","-c","3","-i","0.5",ip],stderr=subprocess.STDOUT)
-                except subprocess.CalledProcessError as e:
-                    Logger.warn("failed to ping host {0}. output was: {1}".format(ip,e.output))
-                    #raise exception to offline testbed
-                Logger.info("ping to host {0} ok. checking ssh....".format(ip))
-                try:
+                    Logger.info("ping to host {0} ok. checking ssh....".format(ip))
                     self.sshHostCheck(ip, username, password)
                     Logger.info("ssh to host {0} ok".format(ip))
-                except:
-                    Logger.warn("failed to ssh to host {0}. output was: {1}".format(ip, traceback.format_exc()))
+                except subprocess.CalledProcessError as e:
+                    Logger.warn("failed to check host {0}".format(ip))
                     #raise exception to offline testbed
 
     def GetInstances(self):

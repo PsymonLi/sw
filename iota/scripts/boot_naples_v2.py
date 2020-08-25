@@ -289,7 +289,9 @@ class EntityManagement:
         print("Waiting for host ssh..")
         self.host.WaitForSsh()
         print("Logging into naples..")
-        for naples_inst in self.naples:
+        if not self.host:
+            raise Exception("host object not set in EntityManagement class")
+        for naples_inst in self.host.naples:
             naples_inst.NaplesWait()
             naples_inst.Close()
 
@@ -1520,14 +1522,14 @@ class PenOrchestrator:
                 try: 
                     naples_inst.Connect(bringup_oob=(naples_inst.IsOOBAvailable() and (not GlobalOptions.auto_discover))) # Make sure it is connected
                     naples_inst.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
-                    naples_inst.SendlineExpect("ifconfig -a", "#", trySync=True)
+                    naples_inst.SendlineExpect("ip link", "#", trySync=True)
                     naples_inst.Close()
                 except: 
                     print("failed to read firmware. error was: {0}".format(traceback.format_exc()))
 
         if self.__host:
             if not isinstance(self.__host, EsxHostManagement): 
-                self.__host.RunSshCmd("ifconfig -a", ignore_failure=True)
+                self.__host.RunSshCmd("ip link", ignore_failure=True)
                 #self.__host.ctrl_vm_run("/usr/sbin/ifconfig -a", ignore_result=True)
             #else:
 

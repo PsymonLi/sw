@@ -8,6 +8,7 @@ import sys
 import time
 import json
 import threading
+import traceback
 from collections import defaultdict
 
 from iota.harness.infra.utils.logger import Logger as Logger
@@ -53,7 +54,8 @@ def Init():
     Logger.info("Creating GRPC Channel to IOTA Service %s" % server)
     gl_iota_svc_channel = grpc.insecure_channel(server,
      options=[('grpc.max_send_message_length', 16 * 1024 * 1024),
-          ('grpc.max_receive_message_length', 16 * 1024 * 1024)])
+          ('grpc.max_receive_message_length', 16 * 1024 * 1024),
+          ('grpc.timeout', 7200)])
     Logger.info("Waiting for IOTA Service to be UP")
     grpc.channel_ready_future(gl_iota_svc_channel).result()
     Logger.info("Connected to IOTA Service")

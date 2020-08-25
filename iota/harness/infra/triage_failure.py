@@ -112,7 +112,13 @@ if __name__ == "__main__":
         logging.basicConfig(handlers=handlers, level=logging.DEBUG)
         log = logging.getLogger()
     core_collector.CollectCores(args.testbed, args.destDir, args.username, args.password, log=log)
-    nodes = buildNodesFromTestbedFile(args.testbed)
+    try:
+        nodes = buildNodesFromTestbedFile(args.testbed)
+    except:
+        msg = "failed to build node list. aborting log collection"
+        log.warn(msg)
+        print(msg)
+        sys.exit(1)
     pool = ThreadPool(len(nodes))
     if not args.logDirs:
         args.logDirs = [
