@@ -17,6 +17,7 @@ required = ["github.com/GeertJohan/go.rice",
             "github.com/golang/protobuf/protoc-gen-go/generator",
             "github.com/golang/protobuf/protoc-gen-go/grpc",
             "github.com/golang/protobuf/ptypes/any",
+            "github.com/golang/protobuf/ptypes/timestamp",
             "github.com/minio/minio-go",
             "github.com/pensando/grpc-gateway/protoc-gen-grpc-gateway",
             "github.com/pensando/grpc-gateway/protoc-gen-swagger/genswagger",
@@ -208,7 +209,7 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
 
 [[override]]
   name = "gopkg.in/olivere/elastic.v5"
-  version = "5.0.58"
+  version = "5.0.80"
 
 # Override here is needed as k8s.io/api repo is not standardized yet. ToDo
 # Move to a released version when we upgrade all k8s packages
@@ -319,7 +320,7 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
 
 [[constraint]]
   name = "github.com/minio/minio"
-  version = "RELEASE.2020-04-23T00-58-49Z"
+  version = "RELEASE.2020-06-12T00-06-19Z"
 
 [[constraint]]
   name = "github.com/docker/docker"

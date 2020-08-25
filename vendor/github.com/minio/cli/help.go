@@ -177,9 +177,30 @@ func ShowCommandHelp(ctx *Context, command string) error {
 	}
 
 	for _, c := range ctx.App.Commands {
+		// If not set, set these values before printing help.
+		if c.Prompt == "" {
+			c.Prompt = defaultPrompt
+		}
+
+		if c.EnvVarSetCommand == "" {
+			c.EnvVarSetCommand = defaultEnvSetCmd
+		}
+
+		if c.AssignmentOperator == "" {
+			c.AssignmentOperator = defaultAssignmentOperator
+		}
+
+		if c.DisableHistory == "" {
+			c.DisableHistory = defaultDisableHistory
+		}
+
+		if c.EnableHistory == "" {
+			c.EnableHistory = defaultEnableHistory
+		}
+
 		if c.HasName(command) {
 			if c.CustomHelpTemplate != "" {
-				HelpPrinter(ctx.App.Writer, c.CustomHelpTemplate, c)
+				HelpPrinterCustom(ctx.App.Writer, c.CustomHelpTemplate, c, nil)
 			} else {
 				HelpPrinter(ctx.App.Writer, CommandHelpTemplate, c)
 			}
@@ -255,8 +276,8 @@ func printHelp(out io.Writer, templ string, data interface{}) {
 
 func checkVersion(c *Context) bool {
 	found := false
-	if VersionFlag.Name != "" {
-		eachName(VersionFlag.Name, func(name string) {
+	if VersionFlag.GetName() != "" {
+		eachName(VersionFlag.GetName(), func(name string) {
 			if c.GlobalBool(name) || c.Bool(name) {
 				found = true
 			}
@@ -267,8 +288,8 @@ func checkVersion(c *Context) bool {
 
 func checkHelp(c *Context) bool {
 	found := false
-	if HelpFlag.Name != "" {
-		eachName(HelpFlag.Name, func(name string) {
+	if HelpFlag.GetName() != "" {
+		eachName(HelpFlag.GetName(), func(name string) {
 			if c.GlobalBool(name) || c.Bool(name) {
 				found = true
 			}
@@ -303,7 +324,7 @@ func checkShellCompleteFlag(a *App, arguments []string) (bool, []string) {
 	pos := len(arguments) - 1
 	lastArg := arguments[pos]
 
-	if lastArg != "--"+BashCompletionFlag.Name {
+	if lastArg != "--"+BashCompletionFlag.GetName() {
 		return false, arguments
 	}
 

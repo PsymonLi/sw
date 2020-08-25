@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -180,6 +181,16 @@ func checkObjectNameForLengthAndSlash(bucket, object string) error {
 		return ObjectNamePrefixAsSlash{
 			Bucket: bucket,
 			Object: object,
+		}
+	}
+	if runtime.GOOS == globalWindowsOSName {
+		// Explicitly disallowed characters on windows.
+		// Avoids most problematic names.
+		if strings.ContainsAny(object, `:*?"|<>`) {
+			return ObjectNameInvalid{
+				Bucket: bucket,
+				Object: object,
+			}
 		}
 	}
 	return nil
@@ -371,17 +382,23 @@ func (o ObjectInfo) IsCompressedOK() (bool, error) {
 	return true, fmt.Errorf("unknown compression scheme: %s", scheme)
 }
 
-// GetActualSize - read the decompressed size from the meta json.
-func (o ObjectInfo) GetActualSize() int64 {
-	metadata := o.UserDefined
-	sizeStr, ok := metadata[ReservedMetadataPrefix+"actual-size"]
-	if ok {
-		size, err := strconv.ParseInt(sizeStr, 10, 64)
-		if err == nil {
-			return size
-		}
+// GetActualSize - returns the actual size of the stored object
+func (o ObjectInfo) GetActualSize() (int64, error) {
+	if crypto.IsEncrypted(o.UserDefined) {
+		return o.DecryptedSize()
 	}
-	return -1
+	if o.IsCompressed() {
+		sizeStr, ok := o.UserDefined[ReservedMetadataPrefix+"actual-size"]
+		if !ok {
+			return -1, errInvalidDecompressedSize
+		}
+		size, err := strconv.ParseInt(sizeStr, 10, 64)
+		if err != nil {
+			return -1, errInvalidDecompressedSize
+		}
+		return size, nil
+	}
+	return o.Size, nil
 }
 
 // Disabling compression for encrypted enabled requests.
@@ -607,9 +624,9 @@ func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cl
 		}
 	case isCompressed:
 		// Read the decompressed size from the meta.json.
-		actualSize := oi.GetActualSize()
-		if actualSize < 0 {
-			return nil, 0, 0, errInvalidDecompressedSize
+		actualSize, err := oi.GetActualSize()
+		if err != nil {
+			return nil, 0, 0, err
 		}
 		off, length = int64(0), oi.Size
 		decOff, decLength := int64(0), actualSize
@@ -842,16 +859,17 @@ func newS2CompressReader(r io.Reader) io.ReadCloser {
 	return pr
 }
 
-// Returns error if the cancelCh has been closed (indicating that S3 client has disconnected)
-type detectDisconnect struct {
+// Returns error if the context is canceled, indicating
+// either client has disconnected
+type contextReader struct {
 	io.ReadCloser
-	cancelCh <-chan struct{}
+	ctx context.Context
 }
 
-func (d *detectDisconnect) Read(p []byte) (int, error) {
+func (d *contextReader) Read(p []byte) (int, error) {
 	select {
-	case <-d.cancelCh:
-		return 0, io.ErrUnexpectedEOF
+	case <-d.ctx.Done():
+		return 0, d.ctx.Err()
 	default:
 		return d.ReadCloser.Read(p)
 	}

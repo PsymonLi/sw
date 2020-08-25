@@ -8,58 +8,103 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
-
-	"github.com/olivere/elastic/uritemplates"
+	"strings"
 )
 
-// XpackWatcherStatsService is documented at http://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-stats.html.
-type XpackWatcherStatsService struct {
-	client          *Client
-	pretty          bool
+// XPackWatcherStatsService returns the current watcher metrics.
+// See https://www.elastic.co/guide/en/elasticsearch/reference/6.8/watcher-api-stats.html.
+type XPackWatcherStatsService struct {
+	client *Client
+
+	pretty     *bool       // pretty format the returned JSON response
+	human      *bool       // return human readable values for statistics
+	errorTrace *bool       // include the stack trace of returned errors
+	filterPath []string    // list of filters used to reduce the response
+	headers    http.Header // custom request-level HTTP headers
+
 	metric          string
 	emitStacktraces *bool
 }
 
-// NewXpackWatcherStatsService creates a new XpackWatcherStatsService.
-func NewXpackWatcherStatsService(client *Client) *XpackWatcherStatsService {
-	return &XpackWatcherStatsService{
+// NewXPackWatcherStatsService creates a new XPackWatcherStatsService.
+func NewXPackWatcherStatsService(client *Client) *XPackWatcherStatsService {
+	return &XPackWatcherStatsService{
 		client: client,
 	}
 }
 
-// Metric is documented as: Controls what additional stat metrics should be include in the response.
-func (s *XpackWatcherStatsService) Metric(metric string) *XpackWatcherStatsService {
+// Pretty tells Elasticsearch whether to return a formatted JSON response.
+func (s *XPackWatcherStatsService) Pretty(pretty bool) *XPackWatcherStatsService {
+	s.pretty = &pretty
+	return s
+}
+
+// Human specifies whether human readable values should be returned in
+// the JSON response, e.g. "7.5mb".
+func (s *XPackWatcherStatsService) Human(human bool) *XPackWatcherStatsService {
+	s.human = &human
+	return s
+}
+
+// ErrorTrace specifies whether to include the stack trace of returned errors.
+func (s *XPackWatcherStatsService) ErrorTrace(errorTrace bool) *XPackWatcherStatsService {
+	s.errorTrace = &errorTrace
+	return s
+}
+
+// FilterPath specifies a list of filters used to reduce the response.
+func (s *XPackWatcherStatsService) FilterPath(filterPath ...string) *XPackWatcherStatsService {
+	s.filterPath = filterPath
+	return s
+}
+
+// Header adds a header to the request.
+func (s *XPackWatcherStatsService) Header(name string, value string) *XPackWatcherStatsService {
+	if s.headers == nil {
+		s.headers = http.Header{}
+	}
+	s.headers.Add(name, value)
+	return s
+}
+
+// Headers specifies the headers of the request.
+func (s *XPackWatcherStatsService) Headers(headers http.Header) *XPackWatcherStatsService {
+	s.headers = headers
+	return s
+}
+
+// Metric controls what additional stat metrics should be include in the response.
+func (s *XPackWatcherStatsService) Metric(metric string) *XPackWatcherStatsService {
 	s.metric = metric
 	return s
 }
 
-// EmitStacktraces is documented as: Emits stack traces of currently running watches.
-func (s *XpackWatcherStatsService) EmitStacktraces(emitStacktraces bool) *XpackWatcherStatsService {
+// EmitStacktraces, if enabled, emits stack traces of currently running watches.
+func (s *XPackWatcherStatsService) EmitStacktraces(emitStacktraces bool) *XPackWatcherStatsService {
 	s.emitStacktraces = &emitStacktraces
 	return s
 }
 
-// Pretty indicates that the JSON response be indented and human readable.
-func (s *XpackWatcherStatsService) Pretty(pretty bool) *XpackWatcherStatsService {
-	s.pretty = pretty
-	return s
-}
-
 // buildURL builds the URL for the operation.
-func (s *XpackWatcherStatsService) buildURL() (string, url.Values, error) {
+func (s *XPackWatcherStatsService) buildURL() (string, url.Values, error) {
 	// Build URL
-	path, err := uritemplates.Expand("/_xpack/watcher/stats", map[string]string{
-		"metric": s.metric,
-	})
-	if err != nil {
-		return "", url.Values{}, err
-	}
+	path := "/_xpack/watcher/stats"
 
 	// Add query string parameters
 	params := url.Values{}
-	if s.pretty {
-		params.Set("pretty", "1")
+	if v := s.pretty; v != nil {
+		params.Set("pretty", fmt.Sprint(*v))
+	}
+	if v := s.human; v != nil {
+		params.Set("human", fmt.Sprint(*v))
+	}
+	if v := s.errorTrace; v != nil {
+		params.Set("error_trace", fmt.Sprint(*v))
+	}
+	if len(s.filterPath) > 0 {
+		params.Set("filter_path", strings.Join(s.filterPath, ","))
 	}
 	if s.emitStacktraces != nil {
 		params.Set("emit_stacktraces", fmt.Sprintf("%v", *s.emitStacktraces))
@@ -71,12 +116,12 @@ func (s *XpackWatcherStatsService) buildURL() (string, url.Values, error) {
 }
 
 // Validate checks if the operation is valid.
-func (s *XpackWatcherStatsService) Validate() error {
+func (s *XPackWatcherStatsService) Validate() error {
 	return nil
 }
 
 // Do executes the operation.
-func (s *XpackWatcherStatsService) Do(ctx context.Context) (*XpackWatcherStatsResponse, error) {
+func (s *XPackWatcherStatsService) Do(ctx context.Context) (*XPackWatcherStatsResponse, error) {
 	// Check pre-conditions
 	if err := s.Validate(); err != nil {
 		return nil, err
@@ -90,28 +135,30 @@ func (s *XpackWatcherStatsService) Do(ctx context.Context) (*XpackWatcherStatsRe
 
 	// Get HTTP response
 	res, err := s.client.PerformRequest(ctx, PerformRequestOptions{
-		Method: "GET",
-		Path:   path,
-		Params: params,
+		Method:  "GET",
+		Path:    path,
+		Params:  params,
+		Headers: s.headers,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Return operation response
-	ret := new(XpackWatcherStatsResponse)
+	ret := new(XPackWatcherStatsResponse)
 	if err := json.Unmarshal(res.Body, ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-// XpackWatcherStatsResponse is the response of XpackWatcherStatsService.Do.
-type XpackWatcherStatsResponse struct {
-	Stats []WatcherStats `json:"stats"`
+// XPackWatcherStatsResponse is the response of XPackWatcherStatsService.Do.
+type XPackWatcherStatsResponse struct {
+	Stats []XPackWatcherStats `json:"stats"`
 }
 
-type WatcherStats struct {
+// XPackWatcherStats represents the stats used in XPackWatcherStatsResponse.
+type XPackWatcherStats struct {
 	WatcherState        string                 `json:"watcher_state"`
 	WatchCount          int                    `json:"watch_count"`
 	ExecutionThreadPool map[string]interface{} `json:"execution_thread_pool"`

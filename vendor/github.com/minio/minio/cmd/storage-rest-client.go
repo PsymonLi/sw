@@ -147,6 +147,10 @@ func (client *storageRESTClient) IsOnline() bool {
 	return atomic.LoadInt32(&client.connected) == 1
 }
 
+func (client *storageRESTClient) IsLocal() bool {
+	return false
+}
+
 func (client *storageRESTClient) Hostname() string {
 	return client.endpoint.Host
 }
@@ -173,6 +177,10 @@ func (client *storageRESTClient) CrawlAndGetDataUsage(ctx context.Context, cache
 }
 
 func (client *storageRESTClient) GetDiskID() (string, error) {
+	// This call should never be over the network, this is always
+	// a cached value - caller should make sure to use this
+	// function on a fresh disk or make sure to look at the error
+	// from a different networked call to validate the GetDiskID()
 	return client.diskID, nil
 }
 

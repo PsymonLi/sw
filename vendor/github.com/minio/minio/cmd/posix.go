@@ -87,7 +87,9 @@ type posix struct {
 	activeIOCount    int32
 
 	diskPath string
-	pool     sync.Pool
+	hostname string
+
+	pool sync.Pool
 
 	diskMount bool // indicates if the path is an actual mount.
 
@@ -108,25 +110,40 @@ func checkPathLength(pathName string) error {
 		return errFileNameTooLong
 	}
 
-	if runtime.GOOS == "windows" {
-		// Convert any '\' to '/'.
-		pathName = filepath.ToSlash(pathName)
+	// Disallow more than 1024 characters on windows, there
+	// are no known name_max limits on Windows.
+	if runtime.GOOS == "windows" && len(pathName) > 1024 {
+		return errFileNameTooLong
 	}
 
-	// Check each path segment length is > 255
-	for len(pathName) > 0 && pathName != "." && pathName != SlashSeparator {
-		dir, file := slashpath.Dir(pathName), slashpath.Base(pathName)
+	// On Unix we reject paths if they are just '.', '..' or '/'
+	if pathName == "." || pathName == ".." || pathName == slashSeparator {
+		return errFileAccessDenied
+	}
 
-		if len(file) > 255 {
-			return errFileNameTooLong
+	// Check each path segment length is > 255 on all Unix
+	// platforms, look for this value as NAME_MAX in
+	// /usr/include/linux/limits.h
+	var count int64
+	for _, p := range pathName {
+		switch p {
+		case '/':
+			count = 0 // Reset
+		case '\\':
+			if runtime.GOOS == globalWindowsOSName {
+				count = 0
+			}
+		default:
+			count++
+			if count > 255 {
+				return errFileNameTooLong
+			}
 		}
-
-		pathName = dir
 	} // Success.
 	return nil
 }
 
-func getValidPath(path string) (string, error) {
+func getValidPath(path string, requireDirectIO bool) (string, error) {
 	if path == "" {
 		return path, errInvalidArgument
 	}
@@ -163,13 +180,27 @@ func getValidPath(path string) (string, error) {
 	// check if backend is writable.
 	var rnd [8]byte
 	_, _ = rand.Read(rnd[:])
+
 	fn := pathJoin(path, ".writable-check-"+hex.EncodeToString(rnd[:])+".tmp")
-	file, err := os.Create(fn)
+	defer os.Remove(fn)
+
+	var file *os.File
+
+	if requireDirectIO {
+		file, err = disk.OpenFileDirectIO(fn, os.O_CREATE|os.O_EXCL, 0666)
+	} else {
+		file, err = os.OpenFile(fn, os.O_CREATE|os.O_EXCL, 0666)
+	}
+
+	// open file in direct I/O and use default umask, this also verifies
+	// if direct i/o failed.
 	if err != nil {
+		if isSysErrInvalidArg(err) {
+			return path, errUnsupportedDisk
+		}
 		return path, err
 	}
 	file.Close()
-	os.Remove(fn)
 
 	return path, nil
 }
@@ -199,9 +230,9 @@ func isDirEmpty(dirname string) bool {
 }
 
 // Initialize a new storage disk.
-func newPosix(path string) (*posix, error) {
+func newPosix(path string, hostname string) (*posix, error) {
 	var err error
-	if path, err = getValidPath(path); err != nil {
+	if path, err = getValidPath(path, true); err != nil {
 		return nil, err
 	}
 	_, err = os.Stat(path)
@@ -210,6 +241,7 @@ func newPosix(path string) (*posix, error) {
 	}
 	p := &posix{
 		diskPath: path,
+		hostname: hostname,
 		pool: sync.Pool{
 			New: func() interface{} {
 				b := disk.AlignedBlock(readBlockSize)
@@ -310,8 +342,8 @@ func (s *posix) String() string {
 	return s.diskPath
 }
 
-func (*posix) Hostname() string {
-	return ""
+func (s *posix) Hostname() string {
+	return s.hostname
 }
 
 func (s *posix) Close() error {
@@ -323,13 +355,8 @@ func (s *posix) IsOnline() bool {
 	return true
 }
 
-func isQuitting(endCh chan struct{}) bool {
-	select {
-	case <-endCh:
-		return true
-	default:
-		return false
-	}
+func (s *posix) IsLocal() bool {
+	return true
 }
 
 func (s *posix) waitForLowActiveIO() {
@@ -356,7 +383,15 @@ func (s *posix) CrawlAndGetDataUsage(ctx context.Context, cache dataUsageCache) 
 			return 0, nil
 		}
 
-		return meta.Stat.Size, nil
+		// we don't necessarily care about the names
+		// of bucket and object, only interested in size.
+		// so use some dummy names.
+		size, err := meta.ToObjectInfo("dummy", "dummy").GetActualSize()
+		if err != nil {
+			return 0, errSkipFile
+		}
+		return size, nil
+
 	})
 	if err != nil {
 		return dataUsageInfo, err
@@ -378,6 +413,7 @@ type DiskInfo struct {
 	Used      uint64
 	RootDisk  bool
 	MountPath string
+	Error     string // reports any error returned by underlying disk
 }
 
 // DiskInfo provides current information about disk space usage,
@@ -485,8 +521,8 @@ func (s *posix) SetDiskID(id string) {
 func (s *posix) MakeVolBulk(volumes ...string) (err error) {
 	for _, volume := range volumes {
 		if err = s.MakeVol(volume); err != nil {
-			if err != errVolumeExists {
-				return err
+			if os.IsPermission(err) {
+				return errVolumeAccessDenied
 			}
 		}
 	}
@@ -1253,6 +1289,9 @@ func (s *posix) CreateFile(volume, path string, fileSize int64, r io.Reader) (er
 	// Create top level directories if they don't exist.
 	// with mode 0777 mkdir honors system umask.
 	if err = mkdirAll(slashpath.Dir(filePath), 0777); err != nil {
+		if errors.Is(err, &os.PathError{}) {
+			return errFileAccessDenied
+		}
 		return err
 	}
 
@@ -1265,6 +1304,8 @@ func (s *posix) CreateFile(volume, path string, fileSize int64, r io.Reader) (er
 			return errFileAccessDenied
 		case isSysErrIO(err):
 			return errFaultyDisk
+		case isSysErrInvalidArg(err):
+			return errUnsupportedDisk
 		default:
 			return err
 		}

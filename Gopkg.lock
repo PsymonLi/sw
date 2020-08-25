@@ -785,12 +785,12 @@
   revision = "84f4bee7c0a6db40e3166044c7983c1c32125429"
 
 [[projects]]
-  digest = "1:747c1fcb10f8f6734551465ab73c6ed9c551aa6e66250fb6683d1624f554546a"
+  digest = "1:24f20a61b3d084137d13cf53aba7365862b850fe4f30b733ed0e3c7ade9ca86d"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "d523deb1b23d913de5bdada721a6071e71283618"
-  version = "v1.4.0"
+  revision = "17ef3dd9d98b69acec3e85878995ada9533a9370"
+  version = "v1.5.0"
 
 [[projects]]
   digest = "1:a1efdbc2762667c8a41cbf02b19a0549c846bf2c1d08cad4f445e3344089f1f0"
@@ -1647,30 +1647,29 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "eda1d775a087f2a96fec7c7876ea94dea43e6027"
-
 [[projects]]
-  digest = "1:6d7feda50f91e427a73ba1d0db703e41d22c49517caea15860d0fdb0cf448b5c"
+  digest = "1:0c8ecbc93cfa04ca9fb5edd6e9b13beec3254b1ed2196e2d027ab6e5dedaa465"
   name = "github.com/minio/cli"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "8683fa7fef37cc8cb092f47bdb6b403e0049f9ee"
-  version = "v1.3.0"
+  revision = "735b30120ed7535d13933b0246f8a75cf80b0f74"
+  version = "v1.22.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:04f992a1bf73fe004e2744f78b23a8b99a49e14b8efe5f60f38ecddba5b708a4"
+  digest = "1:56eaee71300a91f7a2f096b5d1d1d5389ebe8e69c068ec7d84c20459f599ddde"
   name = "github.com/minio/highwayhash"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "85fc8a2dacad36a6beb2865793cd81363a496696"
+  revision = "02ca4b43caa3297fbb615700d8800acc7933be98"
+  version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e8b713218fd5299b54120463cc5fba8ed18d9eaf75866b9ae532c0641969d4ac"
-  name = "github.com/minio/lsync"
+  digest = "1:5cba8ab14573339849f90b0031ddeacec4a22ef42ee7548aa6dabfb0630c3c3a"
+  name = "github.com/minio/md5-simd"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "3474e15702a967f565ffe788088bfd1efc20c4dd"
-  version = "v1.0.1"
+  revision = "d302c3dbe3e6573d7010992e3927355eb0e1ab91"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:6e040f963d1180e606398b332a348527b21679c1718c8d8ae677c787ecccb53a"
@@ -1691,6 +1690,7 @@
     "cmd/config/storageclass",
     "cmd/crypto",
     "cmd/http",
+    "cmd/http/stats",
     "cmd/jwt",
     "cmd/logger",
     "cmd/logger/message/audit",
@@ -1703,7 +1703,6 @@
     "pkg/bucket/encryption",
     "pkg/bucket/lifecycle",
     "pkg/bucket/object/lock",
-    "pkg/bucket/object/tagging",
     "pkg/bucket/policy",
     "pkg/bucket/policy/condition",
     "pkg/certs",
@@ -1722,12 +1721,14 @@
     "pkg/iam/policy",
     "pkg/ioutil",
     "pkg/lock",
+    "pkg/lsync",
     "pkg/madmin",
     "pkg/mimedb",
     "pkg/mountinfo",
     "pkg/net",
     "pkg/pubsub",
     "pkg/quick",
+    "pkg/retry",
     "pkg/s3select",
     "pkg/s3select/csv",
     "pkg/s3select/json",
@@ -1743,16 +1744,16 @@
     "pkg/words",
   ]
   pruneopts = "NUT"
-  revision = "6817c5ea58fbc7975e96d2af7801d358a7d4ede4"
-  version = "RELEASE.2020-04-23T00-58-49Z"
+  revision = "96ed0991b5fe324f502e2e62118c2a706011f2d9"
+  version = "RELEASE.2020-06-12T00-06-19Z"
 
 [[projects]]
-  digest = "1:6111940325131c89c3aabcb694ebd1cb263e35880b5c69c1828791a9cb98bbbc"
+  digest = "1:a83276abd3bd49526fded246288ac8e03a2a6dfbcfc1699551c31030cef93cd0"
   name = "github.com/minio/minio-go"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "eadbcae2a0e66c879f8d1ae54fffbf2ba3c68918"
-  version = "v6.0.51"
+  revision = "4b50466e84d484ec568b7d66a342fc81c614571c"
+  version = "v7.0.5"
 
 [[projects]]
   branch = "master"
@@ -1767,34 +1768,31 @@
     "schema",
   ]
   pruneopts = "NUT"
-  revision = "a1e49702e174177ae14a28b8a82e57e72e990385"
+  revision = "838cfa8aae619160b68f57ae1cdea1c9da1b7525"
 
 [[projects]]
-  branch = "master"
-  digest = "1:cf04232ab92b4e6344c71e8141fd843024a95295993a4dd2e04ef8e4baba2d0b"
+  digest = "1:7052bac104c35a8ce8f0f55885056e3d561ae5a56ca739f7b5427fc685e5a498"
   name = "github.com/minio/sha256-simd"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "ad98a36ba0da87206e3378c556abbfeaeaa98668"
+  revision = "6de4475307716de15b286880ff321c9547086fdd"
+  version = "v0.1.1"
 
 [[projects]]
-  digest = "1:ed2c8efc004de11d90919715eedfe15eeea2d59e129f53e521b516d95dd895e0"
+  digest = "1:828155f6b597f600940337f6eb9208739181dbad72c4bb84d59281c9aa6554d3"
   name = "github.com/minio/simdjson-go"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "781237cf2fbc965f44c4fec9956cabad8053cdd0"
-  version = "v0.1.4"
+  revision = "d0e69ad5cd0b9c24a8adc120a8b72cf26533262a"
+  version = "v0.1.5"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c405d21491d931f018103e2828e86d2133121a38237cb42755510b1530dc3bae"
+  digest = "1:4b3ca15c23874a226779f83f6ef15e371e5b6c4f7f6f0f44a0fb3ce91d7fbcae"
   name = "github.com/minio/sio"
-  packages = [
-    ".",
-    "internal/cpu",
-  ]
+  packages = ["."]
   pruneopts = "NUT"
-  revision = "6a41828a60f0ec95a159ce7921ca3dd566ebd7e3"
+  revision = "035b4ef8c449ba2ba21ec143c91964e76a1fb68c"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -1924,7 +1922,7 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:1207a31f08a3cb94a1b02f03a70c4d2a57ed850d8c30ba85e47f8fa3d0271c90"
+  digest = "1:1872841ce984a96b2a79d51cb77bd8c642f6432426fbcb6af7a4ad68669b0fee"
   name = "github.com/olivere/elastic"
   packages = [
     ".",
@@ -1932,8 +1930,8 @@
     "uritemplates",
   ]
   pruneopts = "NUT"
-  revision = "e6cae211ee802eab70248a68fe2cb03b616744c9"
-  version = "v6.2.5"
+  revision = "a543f6149a34368976908c24f79b570d89ab29f3"
+  version = "v6.2.34"
 
 [[projects]]
   digest = "1:3c46171ee5eee66086897e1efca67b84bf552b1f80039d421068c90684868194"
@@ -2313,6 +2311,14 @@
   version = "v0.1.4"
 
 [[projects]]
+  digest = "1:96ea40e8fab1400b769ff9669dd7f7de613c3a1943dd7f451c4ccbb05115bcaa"
+  name = "github.com/spaolacci/murmur3"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "9f5d223c60793748f04a9d5b4b4eacddfc1f755d"
+  version = "v1.1"
+
+[[projects]]
   digest = "1:b153d42dfdcc5932016372653dba5c317ca24b53fa485eb5af05fffcf6adeec5"
   name = "github.com/spf13/cobra"
   packages = [
@@ -2460,12 +2466,20 @@
   revision = "a9b0a80589c6b412b139f2cec86efff6a40b7ddc"
 
 [[projects]]
-  digest = "1:8dec56eca8bcdce50ea9d4a0a973e941b5178b969d1f1ab9c1aab0102502d33a"
+  digest = "1:099449afdba1970761a06ed3af05421bf66fd6e15563569a76fc1c4d08c75e7c"
   name = "github.com/willf/bitset"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "d860f346b89450988a379d7d705e83c58d1ea227"
-  version = "v1.1.3"
+  revision = "559910e8471e48d76d9e5a1ba15842dee77ad45d"
+  version = "v1.1.11"
+
+[[projects]]
+  digest = "1:8620cb07821e255e2d7c63a4b7877db5bee2b93020bb46292ec40853fa314d00"
+  name = "github.com/willf/bloom"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "54e3b963ee1652b06c4562cb9b6020ebc6e36e59"
+  version = "v2.0.3"
 
 [[projects]]
   branch = "master"
@@ -2897,7 +2911,7 @@
   version = "v2.1"
 
 [[projects]]
-  digest = "1:3ec296779832dfd4cbffbe8a4fc46af6f1ec312a16c48a5c0086777efa80d72d"
+  digest = "1:d4a51f9528bced69a788d9dfa66486c01b6833ae237e999872615b67048b628b"
   name = "gopkg.in/olivere/elastic.v5"
   packages = [
     ".",
@@ -2905,8 +2919,8 @@
     "uritemplates",
   ]
   pruneopts = "NUT"
-  revision = "b423d843ef937586f8ad3142ad4557836817080d"
-  version = "v5.0.59"
+  revision = "423089d8ab13afc03106c217ba1a43d8b8b178c8"
+  version = "v5.0.86"
 
 [[projects]]
   digest = "1:9bee84d2a4f335dfab19b511f62ba917652b38c040878eb480354e5b8cca547c"
@@ -3268,6 +3282,7 @@
     "github.com/golang/protobuf/protoc-gen-go/plugin",
     "github.com/golang/protobuf/ptypes/any",
     "github.com/golang/snappy",
+    "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/gopacket",
     "github.com/google/gopacket/pcap",
     "github.com/google/uuid",

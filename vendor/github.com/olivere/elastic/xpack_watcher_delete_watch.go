@@ -8,46 +8,89 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/olivere/elastic/uritemplates"
 )
 
-// XpackWatcherDeleteWatchService is documented at http://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-delete-watch.html.
-type XpackWatcherDeleteWatchService struct {
-	client        *Client
-	pretty        bool
+// XPackWatcherDeleteWatchService removes a watch.
+// See https://www.elastic.co/guide/en/elasticsearch/reference/6.8/watcher-api-delete-watch.html.
+type XPackWatcherDeleteWatchService struct {
+	client *Client
+
+	pretty     *bool       // pretty format the returned JSON response
+	human      *bool       // return human readable values for statistics
+	errorTrace *bool       // include the stack trace of returned errors
+	filterPath []string    // list of filters used to reduce the response
+	headers    http.Header // custom request-level HTTP headers
+
 	id            string
 	masterTimeout string
 }
 
-// NewXpackWatcherDeleteWatchService creates a new XpackWatcherDeleteWatchService.
-func NewXpackWatcherDeleteWatchService(client *Client) *XpackWatcherDeleteWatchService {
-	return &XpackWatcherDeleteWatchService{
+// NewXPackWatcherDeleteWatchService creates a new XPackWatcherDeleteWatchService.
+func NewXPackWatcherDeleteWatchService(client *Client) *XPackWatcherDeleteWatchService {
+	return &XPackWatcherDeleteWatchService{
 		client: client,
 	}
 }
 
-// Id is documented as: Watch ID.
-func (s *XpackWatcherDeleteWatchService) Id(id string) *XpackWatcherDeleteWatchService {
+// Pretty tells Elasticsearch whether to return a formatted JSON response.
+func (s *XPackWatcherDeleteWatchService) Pretty(pretty bool) *XPackWatcherDeleteWatchService {
+	s.pretty = &pretty
+	return s
+}
+
+// Human specifies whether human readable values should be returned in
+// the JSON response, e.g. "7.5mb".
+func (s *XPackWatcherDeleteWatchService) Human(human bool) *XPackWatcherDeleteWatchService {
+	s.human = &human
+	return s
+}
+
+// ErrorTrace specifies whether to include the stack trace of returned errors.
+func (s *XPackWatcherDeleteWatchService) ErrorTrace(errorTrace bool) *XPackWatcherDeleteWatchService {
+	s.errorTrace = &errorTrace
+	return s
+}
+
+// FilterPath specifies a list of filters used to reduce the response.
+func (s *XPackWatcherDeleteWatchService) FilterPath(filterPath ...string) *XPackWatcherDeleteWatchService {
+	s.filterPath = filterPath
+	return s
+}
+
+// Header adds a header to the request.
+func (s *XPackWatcherDeleteWatchService) Header(name string, value string) *XPackWatcherDeleteWatchService {
+	if s.headers == nil {
+		s.headers = http.Header{}
+	}
+	s.headers.Add(name, value)
+	return s
+}
+
+// Headers specifies the headers of the request.
+func (s *XPackWatcherDeleteWatchService) Headers(headers http.Header) *XPackWatcherDeleteWatchService {
+	s.headers = headers
+	return s
+}
+
+// Id of the watch to delete.
+func (s *XPackWatcherDeleteWatchService) Id(id string) *XPackWatcherDeleteWatchService {
 	s.id = id
 	return s
 }
 
-// MasterTimeout is documented as: Explicit operation timeout for connection to master node.
-func (s *XpackWatcherDeleteWatchService) MasterTimeout(masterTimeout string) *XpackWatcherDeleteWatchService {
+// MasterTimeout specifies an explicit operation timeout for connection to master node.
+func (s *XPackWatcherDeleteWatchService) MasterTimeout(masterTimeout string) *XPackWatcherDeleteWatchService {
 	s.masterTimeout = masterTimeout
 	return s
 }
 
-// Pretty indicates that the JSON response be indented and human readable.
-func (s *XpackWatcherDeleteWatchService) Pretty(pretty bool) *XpackWatcherDeleteWatchService {
-	s.pretty = pretty
-	return s
-}
-
 // buildURL builds the URL for the operation.
-func (s *XpackWatcherDeleteWatchService) buildURL() (string, url.Values, error) {
+func (s *XPackWatcherDeleteWatchService) buildURL() (string, url.Values, error) {
 	// Build URL
 	path, err := uritemplates.Expand("/_xpack/watcher/watch/{id}", map[string]string{
 		"id": s.id,
@@ -58,8 +101,17 @@ func (s *XpackWatcherDeleteWatchService) buildURL() (string, url.Values, error) 
 
 	// Add query string parameters
 	params := url.Values{}
-	if s.pretty {
-		params.Set("pretty", "1")
+	if v := s.pretty; v != nil {
+		params.Set("pretty", fmt.Sprint(*v))
+	}
+	if v := s.human; v != nil {
+		params.Set("human", fmt.Sprint(*v))
+	}
+	if v := s.errorTrace; v != nil {
+		params.Set("error_trace", fmt.Sprint(*v))
+	}
+	if len(s.filterPath) > 0 {
+		params.Set("filter_path", strings.Join(s.filterPath, ","))
 	}
 	if s.masterTimeout != "" {
 		params.Set("master_timeout", s.masterTimeout)
@@ -68,7 +120,7 @@ func (s *XpackWatcherDeleteWatchService) buildURL() (string, url.Values, error) 
 }
 
 // Validate checks if the operation is valid.
-func (s *XpackWatcherDeleteWatchService) Validate() error {
+func (s *XPackWatcherDeleteWatchService) Validate() error {
 	var invalid []string
 	if s.id == "" {
 		invalid = append(invalid, "Id")
@@ -80,7 +132,7 @@ func (s *XpackWatcherDeleteWatchService) Validate() error {
 }
 
 // Do executes the operation.
-func (s *XpackWatcherDeleteWatchService) Do(ctx context.Context) (*XpackWatcherDeleteWatchResponse, error) {
+func (s *XPackWatcherDeleteWatchService) Do(ctx context.Context) (*XPackWatcherDeleteWatchResponse, error) {
 	// Check pre-conditions
 	if err := s.Validate(); err != nil {
 		return nil, err
@@ -94,24 +146,25 @@ func (s *XpackWatcherDeleteWatchService) Do(ctx context.Context) (*XpackWatcherD
 
 	// Get HTTP response
 	res, err := s.client.PerformRequest(ctx, PerformRequestOptions{
-		Method: "DELETE",
-		Path:   path,
-		Params: params,
+		Method:  "DELETE",
+		Path:    path,
+		Params:  params,
+		Headers: s.headers,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Return operation response
-	ret := new(XpackWatcherDeleteWatchResponse)
+	ret := new(XPackWatcherDeleteWatchResponse)
 	if err := json.Unmarshal(res.Body, ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-// XpackWatcherDeleteWatchResponse is the response of XpackWatcherDeleteWatchService.Do.
-type XpackWatcherDeleteWatchResponse struct {
+// XPackWatcherDeleteWatchResponse is the response of XPackWatcherDeleteWatchService.Do.
+type XPackWatcherDeleteWatchResponse struct {
 	Found   bool   `json:"found"`
 	Id      string `json:"_id"`
 	Version int    `json:"_version"`

@@ -75,12 +75,7 @@ func (h *healRoutine) run(ctx context.Context, objAPI ObjectLayer) {
 			}
 
 			// Wait and proceed if there are active requests
-			// Changing tolerance to a random higher number. 
-			// We have sustained http requests above then 6 (number of minio endpoints in the cluster)
-			// Old tolerance value: globalEndpoints.NEndpoints()
-			// Workaround for following Minio issue:
-			// Minio issue opened on 27th May 2020: https://github.com/minio/minio/issues/9717 
-			waitForLowHTTPReq(int32(500))
+			waitForLowHTTPReq(int32(globalEndpoints.NEndpoints()))
 
 			var res madmin.HealResultItem
 			var err error
@@ -93,9 +88,10 @@ func (h *healRoutine) run(ctx context.Context, objAPI ObjectLayer) {
 			case bucket != "" && object != "":
 				res, err = objAPI.HealObject(ctx, bucket, object, task.opts)
 			}
-			if task.responseCh != nil {
-				task.responseCh <- healResult{result: res, err: err}
+			if task.path != slashSeparator && task.path != nopHeal {
+				ObjectPathUpdated(task.path)
 			}
+			task.responseCh <- healResult{result: res, err: err}
 		case <-h.doneCh:
 			return
 		case <-ctx.Done():
@@ -118,8 +114,9 @@ func startBackgroundHealing(ctx context.Context, objAPI ObjectLayer) {
 	go globalBackgroundHealRoutine.run(ctx, objAPI)
 
 	// Launch the background healer sequence to track
-	// background healing operations
-	info := objAPI.StorageInfo(ctx, false)
+	// background healing operations, ignore errors
+	// errors are handled into offline disks already.
+	info, _ := objAPI.StorageInfo(ctx, false)
 	numDisks := info.Backend.OnlineDisks.Sum() + info.Backend.OfflineDisks.Sum()
 	nh := newBgHealSequence(numDisks)
 	globalBackgroundHealState.LaunchNewHealSequence(nh)

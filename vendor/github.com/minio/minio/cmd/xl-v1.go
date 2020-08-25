@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/bpool"
+	"github.com/minio/minio/pkg/color"
 	"github.com/minio/minio/pkg/dsync"
 	"github.com/minio/minio/pkg/madmin"
 	"github.com/minio/minio/pkg/sync/errgroup"
@@ -49,22 +51,23 @@ type partialUpload struct {
 
 // xlObjects - Implements XL object layer.
 type xlObjects struct {
+	GatewayUnsupported
+
 	// getDisks returns list of storageAPIs.
 	getDisks func() []StorageAPI
 
 	// getLockers returns list of remote and local lockers.
 	getLockers func() []dsync.NetLocker
 
-	endpoints Endpoints
+	// getEndpoints returns list of endpoint strings belonging this set.
+	// some may be local and some remote.
+	getEndpoints func() []string
 
 	// Locker mutex map.
 	nsMutex *nsLockMap
 
 	// Byte pools used for temporary i/o buffers.
 	bp *bpool.BytePoolCap
-
-	// TODO: ListObjects pool management, should be removed in future.
-	listPool *TreeWalkPool
 
 	mrfUploadCh chan partialUpload
 }
@@ -91,57 +94,63 @@ func (d byDiskTotal) Less(i, j int) bool {
 }
 
 // getDisksInfo - fetch disks info across all other storage API.
-func getDisksInfo(disks []StorageAPI, endpoints Endpoints) (disksInfo []DiskInfo, onlineDisks, offlineDisks madmin.BackendDisks) {
+func getDisksInfo(disks []StorageAPI, endpoints []string) (disksInfo []DiskInfo, errs []error, onlineDisks, offlineDisks madmin.BackendDisks) {
 	disksInfo = make([]DiskInfo, len(disks))
+	onlineDisks = make(madmin.BackendDisks)
+	offlineDisks = make(madmin.BackendDisks)
+
+	for _, ep := range endpoints {
+		if _, ok := offlineDisks[ep]; !ok {
+			offlineDisks[ep] = 0
+		}
+		if _, ok := onlineDisks[ep]; !ok {
+			onlineDisks[ep] = 0
+		}
+	}
 
 	g := errgroup.WithNErrs(len(disks))
 	for index := range disks {
 		index := index
 		g.Go(func() error {
-			if disks[index] == nil {
+			if disks[index] == OfflineDisk {
 				// Storage disk is empty, perhaps ignored disk or not available.
 				return errDiskNotFound
 			}
 			info, err := disks[index].DiskInfo()
 			if err != nil {
-				if IsErr(err, baseErrs...) {
-					return err
+				if !IsErr(err, baseErrs...) {
+					reqInfo := (&logger.ReqInfo{}).AppendTags("disk", disks[index].String())
+					ctx := logger.SetReqInfo(GlobalContext, reqInfo)
+					logger.LogIf(ctx, err)
 				}
-				reqInfo := (&logger.ReqInfo{}).AppendTags("disk", disks[index].String())
-				ctx := logger.SetReqInfo(GlobalContext, reqInfo)
-				logger.LogIf(ctx, err)
+				return err
 			}
 			disksInfo[index] = info
 			return nil
 		}, index)
 	}
 
-	onlineDisks = make(madmin.BackendDisks)
-	offlineDisks = make(madmin.BackendDisks)
-
+	errs = g.Wait()
 	// Wait for the routines.
-	for i, diskInfoErr := range g.Wait() {
-		peerAddr := endpoints[i].Host
-		if _, ok := offlineDisks[peerAddr]; !ok {
-			offlineDisks[peerAddr] = 0
-		}
-		if _, ok := onlineDisks[peerAddr]; !ok {
-			onlineDisks[peerAddr] = 0
-		}
-		if disks[i] == nil || diskInfoErr != nil {
-			offlineDisks[peerAddr]++
+	for i, diskInfoErr := range errs {
+		if disks[i] == OfflineDisk {
 			continue
 		}
-		onlineDisks[peerAddr]++
+		ep := endpoints[i]
+		if diskInfoErr != nil {
+			offlineDisks[ep]++
+			continue
+		}
+		onlineDisks[ep]++
 	}
 
 	// Success.
-	return disksInfo, onlineDisks, offlineDisks
+	return disksInfo, errs, onlineDisks, offlineDisks
 }
 
 // Get an aggregated storage info across all disks.
-func getStorageInfo(disks []StorageAPI, endpoints Endpoints) StorageInfo {
-	disksInfo, onlineDisks, offlineDisks := getDisksInfo(disks, endpoints)
+func getStorageInfo(disks []StorageAPI, endpoints []string) (StorageInfo, []error) {
+	disksInfo, errs, onlineDisks, offlineDisks := getDisksInfo(disks, endpoints)
 
 	// Sort so that the first element is the smallest.
 	sort.Sort(byDiskTotal(disksInfo))
@@ -170,23 +179,28 @@ func getStorageInfo(disks []StorageAPI, endpoints Endpoints) StorageInfo {
 	storageInfo.Backend.OnlineDisks = onlineDisks
 	storageInfo.Backend.OfflineDisks = offlineDisks
 
-	return storageInfo
+	return storageInfo, errs
 }
 
 // StorageInfo - returns underlying storage statistics.
-func (xl xlObjects) StorageInfo(ctx context.Context, local bool) StorageInfo {
-	var endpoints = xl.endpoints
-	var disks []StorageAPI
+func (xl xlObjects) StorageInfo(ctx context.Context, local bool) (StorageInfo, []error) {
 
-	if !local {
-		disks = xl.getDisks()
-	} else {
-		for i, d := range xl.getDisks() {
-			if endpoints[i].IsLocal && d.Hostname() == "" {
-				// Append this local disk since local flag is true
-				disks = append(disks, d)
+	disks := xl.getDisks()
+	endpoints := xl.getEndpoints()
+	if local {
+		var localDisks []StorageAPI
+		var localEndpoints []string
+		for i, disk := range disks {
+			if disk != nil {
+				if disk.IsLocal() {
+					// Append this local disk since local flag is true
+					localDisks = append(localDisks, disk)
+					localEndpoints = append(localEndpoints, endpoints[i])
+				}
 			}
 		}
+		disks = localDisks
+		endpoints = localEndpoints
 	}
 	return getStorageInfo(disks, endpoints)
 }
@@ -199,24 +213,14 @@ func (xl xlObjects) GetMetrics(ctx context.Context) (*Metrics, error) {
 
 // CrawlAndGetDataUsage will start crawling buckets and send updated totals as they are traversed.
 // Updates are sent on a regular basis and the caller *must* consume them.
-func (xl xlObjects) CrawlAndGetDataUsage(ctx context.Context, updates chan<- DataUsageInfo) error {
-	cache := make(chan dataUsageCache, 1)
-	defer close(cache)
-	buckets, err := xl.ListBuckets(ctx)
-	if err != nil {
-		return err
-	}
-	go func() {
-		for update := range cache {
-			updates <- update.dui(update.Info.Name, buckets)
-		}
-	}()
-	return xl.crawlAndGetDataUsage(ctx, buckets, cache)
+func (xl xlObjects) CrawlAndGetDataUsage(ctx context.Context, bf *bloomFilter, updates chan<- DataUsageInfo) error {
+	// This should only be called from runDataUsageInfo and this setup should not happen (zones).
+	return errors.New("xlObjects CrawlAndGetDataUsage not implemented")
 }
 
 // CrawlAndGetDataUsage will start crawling buckets and send updated totals as they are traversed.
 // Updates are sent on a regular basis and the caller *must* consume them.
-func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketInfo, updates chan<- dataUsageCache) error {
+func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketInfo, bf *bloomFilter, updates chan<- dataUsageCache) error {
 	var disks []StorageAPI
 
 	for _, d := range xl.getLoadBalancedDisks() {
@@ -257,13 +261,18 @@ func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketIn
 	for _, b := range buckets {
 		e := oldCache.find(b.Name)
 		if e != nil {
-			bucketCh <- b
-			cache.replace(b.Name, dataUsageRoot, *e)
+			if bf == nil || bf.containsDir(b.Name) {
+				bucketCh <- b
+				cache.replace(b.Name, dataUsageRoot, *e)
+			} else {
+				if intDataUpdateTracker.debug {
+					logger.Info(color.Green("crawlAndGetDataUsage:")+" Skipping bucket %v, not updated", b.Name)
+				}
+			}
 		}
 	}
 
 	close(bucketCh)
-	buckets = nil
 	bucketResults := make(chan dataUsageEntryInfo, len(disks))
 
 	// Start async collector/saver.
@@ -302,6 +311,9 @@ func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketIn
 		cache.Info.NextCycle++
 		cache.Info.LastUpdate = time.Now()
 		logger.LogIf(ctx, cache.save(ctx, xl, dataUsageCacheName))
+		if intDataUpdateTracker.debug {
+			logger.Info(color.Green("crawlAndGetDataUsage:")+" Cache saved, Next Cycle: %d", cache.Info.NextCycle)
+		}
 		updates <- cache
 	}()
 
@@ -338,7 +350,11 @@ func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketIn
 
 				// Calc usage
 				before := cache.Info.LastUpdate
+				if bf != nil {
+					cache.Info.BloomFilter = bf.bytes()
+				}
 				cache, err = disk.CrawlAndGetDataUsage(ctx, cache)
+				cache.Info.BloomFilter = nil
 				if err != nil {
 					logger.LogIf(ctx, err)
 					if cache.Info.LastUpdate.After(before) {
@@ -368,7 +384,7 @@ func (xl xlObjects) crawlAndGetDataUsage(ctx context.Context, buckets []BucketIn
 	return nil
 }
 
-// IsReady - No Op.
+// IsReady - shouldn't be called will panic.
 func (xl xlObjects) IsReady(ctx context.Context) bool {
 	logger.CriticalIf(ctx, NotImplemented{})
 	return true

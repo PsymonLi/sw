@@ -34,7 +34,6 @@ import (
 	"strings"
 	"time"
 
-	humanize "github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 
 	"github.com/minio/minio/cmd/config"
@@ -44,7 +43,6 @@ import (
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/cmd/logger/message/log"
 	"github.com/minio/minio/pkg/auth"
-	"github.com/minio/minio/pkg/event/target"
 	"github.com/minio/minio/pkg/handlers"
 	iampolicy "github.com/minio/minio/pkg/iam/policy"
 	"github.com/minio/minio/pkg/madmin"
@@ -54,7 +52,6 @@ import (
 
 const (
 	maxEConfigJSONSize = 262272
-	defaultNetPerfSize = 100 * humanize.MiByte
 )
 
 // Type-safe query params.
@@ -102,6 +99,8 @@ func updateServer(updateURL, sha256Hex string, latestReleaseTime time.Time) (us 
 // updates all minio servers and restarts them gracefully.
 func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ServerUpdate")
+
+	defer logger.AuditLog(w, r, "ServerUpdate", mustGetClaimsFromToken(r))
 
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ServerUpdateAdminAction)
 	if objectAPI == nil {
@@ -176,19 +175,16 @@ func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Req
 	}
 }
 
-// ServiceActionHandler - POST /minio/admin/v3/service?action={action}
+// ServiceHandler - POST /minio/admin/v3/service?action={action}
 // ----------
 // restarts/stops minio server gracefully. In a distributed setup,
-func (a adminAPIHandlers) ServiceActionHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "ServiceAction")
+func (a adminAPIHandlers) ServiceHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := newContext(r, w, "Service")
+
+	defer logger.AuditLog(w, r, "Service", mustGetClaimsFromToken(r))
 
 	vars := mux.Vars(r)
 	action := vars["action"]
-
-	objectAPI, _ := validateAdminReq(ctx, w, r, "")
-	if objectAPI == nil {
-		return
-	}
 
 	var serviceSig serviceSignal
 	switch madmin.ServiceAction(action) {
@@ -199,6 +195,16 @@ func (a adminAPIHandlers) ServiceActionHandler(w http.ResponseWriter, r *http.Re
 	default:
 		logger.LogIf(ctx, fmt.Errorf("Unrecognized service action %s requested", action), logger.Application)
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrMalformedPOSTRequest), r.URL)
+		return
+	}
+
+	var objectAPI ObjectLayer
+	if serviceSig == serviceRestart {
+		objectAPI, _ = validateAdminReq(ctx, w, r, iampolicy.ServiceRestartAdminAction)
+	} else {
+		objectAPI, _ = validateAdminReq(ctx, w, r, iampolicy.ServiceStopAdminAction)
+	}
+	if objectAPI == nil {
 		return
 	}
 
@@ -270,12 +276,16 @@ type ServerInfo struct {
 // Get server information
 func (a adminAPIHandlers) StorageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "StorageInfo")
+
+	defer logger.AuditLog(w, r, "StorageInfo", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.StorageInfoAdminAction)
 	if objectAPI == nil {
 		return
 	}
 
-	storageInfo := objectAPI.StorageInfo(ctx, false)
+	// ignores any errors here.
+	storageInfo, _ := objectAPI.StorageInfo(ctx, false)
 
 	// Marshal API response
 	jsonBytes, err := json.Marshal(storageInfo)
@@ -295,6 +305,9 @@ func (a adminAPIHandlers) StorageInfoHandler(w http.ResponseWriter, r *http.Requ
 // Get server/cluster data usage info
 func (a adminAPIHandlers) DataUsageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "DataUsageInfo")
+
+	defer logger.AuditLog(w, r, "DataUsageInfo", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.DataUsageInfoAdminAction)
 	if objectAPI == nil {
 		return
@@ -313,67 +326,6 @@ func (a adminAPIHandlers) DataUsageInfoHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	writeSuccessResponseJSON(w, dataUsageInfoJSON)
-}
-
-func (a adminAPIHandlers) AccountingUsageInfoHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "AccountingUsageInfo")
-	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.AccountingUsageInfoAdminAction)
-	if objectAPI == nil {
-		return
-	}
-
-	var accountingUsageInfo = make(map[string]madmin.BucketAccountingUsage)
-
-	buckets, err := objectAPI.ListBuckets(ctx)
-	if err != nil {
-		// writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrInternalError), r.URL)
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	users, err := globalIAMSys.ListUsers()
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	// Load the latest calculated data usage
-	dataUsageInfo, err := loadDataUsageFromBackend(ctx, objectAPI)
-	if err != nil {
-		logger.LogIf(ctx, err)
-	}
-
-	// Calculate for each bucket, which users are allowed to access to it
-	for _, bucket := range buckets {
-		bucketUsageInfo := madmin.BucketAccountingUsage{}
-
-		// Fetch the data usage of the current bucket
-		if !dataUsageInfo.LastUpdate.IsZero() && dataUsageInfo.BucketsSizes != nil {
-			bucketUsageInfo.Size = dataUsageInfo.BucketsSizes[bucket.Name]
-		}
-
-		for user := range users {
-			rd, wr, custom := globalIAMSys.GetAccountAccess(user, bucket.Name)
-			if rd || wr || custom {
-				bucketUsageInfo.AccessList = append(bucketUsageInfo.AccessList, madmin.AccountAccess{
-					AccountName: user,
-					Read:        rd,
-					Write:       wr,
-					Custom:      custom,
-				})
-			}
-		}
-
-		accountingUsageInfo[bucket.Name] = bucketUsageInfo
-	}
-
-	usageInfoJSON, err := json.Marshal(accountingUsageInfo)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	writeSuccessResponseJSON(w, usageInfoJSON)
 }
 
 func newLockEntry(l lockRequesterInfo, resource, server string) *madmin.LockEntry {
@@ -432,6 +384,8 @@ type PeerLocks struct {
 func (a adminAPIHandlers) TopLocksHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "TopLocks")
 
+	defer logger.AuditLog(w, r, "TopLocks", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.TopLocksAdminAction)
 	if objectAPI == nil {
 		return
@@ -476,6 +430,8 @@ type StartProfilingResult struct {
 // Enable server profiling
 func (a adminAPIHandlers) StartProfilingHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "StartProfiling")
+
+	defer logger.AuditLog(w, r, "StartProfiling", mustGetClaimsFromToken(r))
 
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ProfilingAdminAction)
 	if objectAPI == nil {
@@ -573,6 +529,8 @@ func (f dummyFileInfo) Sys() interface{}   { return f.sys }
 func (a adminAPIHandlers) DownloadProfilingHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "DownloadProfiling")
 
+	defer logger.AuditLog(w, r, "DownloadProfiling", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ProfilingAdminAction)
 	if objectAPI == nil {
 		return
@@ -665,6 +623,8 @@ func extractHealInitParams(vars map[string]string, qParms url.Values, r io.Reade
 func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "Heal")
 
+	defer logger.AuditLog(w, r, "Heal", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.HealAdminAction)
 	if objectAPI == nil {
 		return
@@ -690,13 +650,15 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Define a closure to start sending whitespace to client
 	// after 10s unless a response item comes in
-	keepConnLive := func(w http.ResponseWriter, respCh chan healResp) {
+	keepConnLive := func(w http.ResponseWriter, r *http.Request, respCh chan healResp) {
 		ticker := time.NewTicker(time.Second * 10)
 		defer ticker.Stop()
 		started := false
 	forLoop:
 		for {
 			select {
+			case <-r.Context().Done():
+				return
 			case <-ticker.C:
 				if !started {
 					// Start writing response to client
@@ -746,8 +708,8 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// find number of disks in the setup
-	info := objectAPI.StorageInfo(ctx, false)
+	// find number of disks in the setup, ignore any errors here.
+	info, _ := objectAPI.StorageInfo(ctx, false)
 	numDisks := info.Backend.OfflineDisks.Sum() + info.Backend.OnlineDisks.Sum()
 
 	healPath := pathJoin(hip.bucket, hip.objPrefix)
@@ -792,7 +754,7 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 			respCh <- hr
 		}()
 	case hip.clientToken == "":
-		nh := newHealSequence(hip.bucket, hip.objPrefix, handlers.GetSourceIP(r), numDisks, hip.hs, hip.forceStart)
+		nh := newHealSequence(GlobalContext, hip.bucket, hip.objPrefix, handlers.GetSourceIP(r), numDisks, hip.hs, hip.forceStart)
 		go func() {
 			respBytes, apiErr, errMsg := globalAllHealState.LaunchNewHealSequence(nh)
 			hr := healResp{respBytes, apiErr, errMsg}
@@ -803,11 +765,13 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 	// Due to the force-starting functionality, the Launch
 	// call above can take a long time - to keep the
 	// connection alive, we start sending whitespace
-	keepConnLive(w, respCh)
+	keepConnLive(w, r, respCh)
 }
 
 func (a adminAPIHandlers) BackgroundHealStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "HealBackgroundStatus")
+
+	defer logger.AuditLog(w, r, "HealBackgroundStatus", mustGetClaimsFromToken(r))
 
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.HealAdminAction)
 	if objectAPI == nil {
@@ -935,13 +899,26 @@ func toAdminAPIErr(ctx context.Context, err error) APIError {
 			HTTPStatusCode: e.StatusCode,
 		}
 	default:
-		if err == errConfigNotFound {
+		switch {
+		case errors.Is(err, errConfigNotFound):
 			apiErr = APIError{
 				Code:           "XMinioConfigError",
 				Description:    err.Error(),
 				HTTPStatusCode: http.StatusNotFound,
 			}
-		} else {
+		case errors.Is(err, errIAMActionNotAllowed):
+			apiErr = APIError{
+				Code:           "XMinioIAMActionNotAllowed",
+				Description:    err.Error(),
+				HTTPStatusCode: http.StatusForbidden,
+			}
+		case errors.Is(err, errIAMNotInitialized):
+			apiErr = APIError{
+				Code:           "XMinioIAMNotInitialized",
+				Description:    err.Error(),
+				HTTPStatusCode: http.StatusServiceUnavailable,
+			}
+		default:
 			apiErr = errorCodes.ToAPIErrWithErr(toAdminAPIErrCode(ctx, err), err)
 		}
 	}
@@ -970,6 +947,7 @@ func mustTrace(entry interface{}, trcAll, errOnly bool) bool {
 // The handler sends http trace to the connected HTTP client.
 func (a adminAPIHandlers) TraceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "HTTPTrace")
+
 	trcAll := r.URL.Query().Get("all") == "true"
 	trcErr := r.URL.Query().Get("err") == "true"
 
@@ -1024,6 +1002,8 @@ func (a adminAPIHandlers) TraceHandler(w http.ResponseWriter, r *http.Request) {
 // The handler sends console logs to the connected HTTP client.
 func (a adminAPIHandlers) ConsoleLogHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ConsoleLog")
+
+	defer logger.AuditLog(w, r, "ConsoleLog", mustGetClaimsFromToken(r))
 
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ConsoleLogAdminAction)
 	if objectAPI == nil {
@@ -1092,7 +1072,9 @@ func (a adminAPIHandlers) ConsoleLogHandler(w http.ResponseWriter, r *http.Reque
 
 // KMSKeyStatusHandler - GET /minio/admin/v3/kms/key/status?key-id=<master-key-id>
 func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "KMSKeyStatusHandler")
+	ctx := newContext(r, w, "KMSKeyStatus")
+
+	defer logger.AuditLog(w, r, "KMSKeyStatus", mustGetClaimsFromToken(r))
 
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.KMSKeyStatusAdminAction)
 	if objectAPI == nil {
@@ -1164,6 +1146,9 @@ func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Req
 // Get server on-board diagnostics
 func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "OBDInfo")
+
+	defer logger.AuditLog(w, r, "OBDInfo", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.OBDInfoAdminAction)
 	if objectAPI == nil {
 		return
@@ -1215,7 +1200,7 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 		defer close(obdInfoCh)
 
 		if cpu, ok := vars["syscpu"]; ok && cpu == "true" {
-			cpuInfo := getLocalCPUOBDInfo(deadlinedCtx)
+			cpuInfo := getLocalCPUOBDInfo(deadlinedCtx, r)
 
 			obdInfo.Sys.CPUInfo = append(obdInfo.Sys.CPUInfo, cpuInfo)
 			obdInfo.Sys.CPUInfo = append(obdInfo.Sys.CPUInfo, globalNotificationSys.CPUOBDInfo(deadlinedCtx)...)
@@ -1223,7 +1208,7 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		if diskHw, ok := vars["sysdiskhw"]; ok && diskHw == "true" {
-			diskHwInfo := getLocalDiskHwOBD(deadlinedCtx)
+			diskHwInfo := getLocalDiskHwOBD(deadlinedCtx, r)
 
 			obdInfo.Sys.DiskHwInfo = append(obdInfo.Sys.DiskHwInfo, diskHwInfo)
 			obdInfo.Sys.DiskHwInfo = append(obdInfo.Sys.DiskHwInfo, globalNotificationSys.DiskHwOBDInfo(deadlinedCtx)...)
@@ -1231,7 +1216,7 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		if osInfo, ok := vars["sysosinfo"]; ok && osInfo == "true" {
-			osInfo := getLocalOsInfoOBD(deadlinedCtx)
+			osInfo := getLocalOsInfoOBD(deadlinedCtx, r)
 
 			obdInfo.Sys.OsInfo = append(obdInfo.Sys.OsInfo, osInfo)
 			obdInfo.Sys.OsInfo = append(obdInfo.Sys.OsInfo, globalNotificationSys.OsOBDInfo(deadlinedCtx)...)
@@ -1239,7 +1224,7 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		if mem, ok := vars["sysmem"]; ok && mem == "true" {
-			memInfo := getLocalMemOBD(deadlinedCtx)
+			memInfo := getLocalMemOBD(deadlinedCtx, r)
 
 			obdInfo.Sys.MemInfo = append(obdInfo.Sys.MemInfo, memInfo)
 			obdInfo.Sys.MemInfo = append(obdInfo.Sys.MemInfo, globalNotificationSys.MemOBDInfo(deadlinedCtx)...)
@@ -1247,7 +1232,7 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		if proc, ok := vars["sysprocess"]; ok && proc == "true" {
-			procInfo := getLocalProcOBD(deadlinedCtx)
+			procInfo := getLocalProcOBD(deadlinedCtx, r)
 
 			obdInfo.Sys.ProcInfo = append(obdInfo.Sys.ProcInfo, procInfo)
 			obdInfo.Sys.ProcInfo = append(obdInfo.Sys.ProcInfo, globalNotificationSys.ProcOBDInfo(deadlinedCtx)...)
@@ -1281,17 +1266,28 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 				Error:    errStr,
 			}
 			obdInfo.Perf.DriveInfo = append(obdInfo.Perf.DriveInfo, driveOBD)
+			partialWrite(obdInfo)
 
 			// Notify all other MinIO peers to report drive obd numbers
-			driveOBDs := globalNotificationSys.DriveOBDInfo(deadlinedCtx)
-			obdInfo.Perf.DriveInfo = append(obdInfo.Perf.DriveInfo, driveOBDs...)
-
+			driveOBDs := globalNotificationSys.DriveOBDInfoChan(deadlinedCtx)
+			for obd := range driveOBDs {
+				obdInfo.Perf.DriveInfo = append(obdInfo.Perf.DriveInfo, obd)
+				partialWrite(obdInfo)
+			}
 			partialWrite(obdInfo)
 		}
 
 		if net, ok := vars["perfnet"]; ok && net == "true" && globalIsDistXL {
 			obdInfo.Perf.Net = append(obdInfo.Perf.Net, globalNotificationSys.NetOBDInfo(deadlinedCtx))
-			obdInfo.Perf.Net = append(obdInfo.Perf.Net, globalNotificationSys.DispatchNetOBDInfo(deadlinedCtx)...)
+			partialWrite(obdInfo)
+
+			netOBDs := globalNotificationSys.DispatchNetOBDChan(deadlinedCtx)
+			for obd := range netOBDs {
+				obdInfo.Perf.Net = append(obdInfo.Perf.Net, obd)
+				partialWrite(obdInfo)
+			}
+			partialWrite(obdInfo)
+
 			obdInfo.Perf.NetParallel = globalNotificationSys.NetOBDParallelInfo(deadlinedCtx)
 			partialWrite(obdInfo)
 		}
@@ -1326,6 +1322,9 @@ func (a adminAPIHandlers) OBDInfoHandler(w http.ResponseWriter, r *http.Request)
 // Get server information
 func (a adminAPIHandlers) ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ServerInfo")
+
+	defer logger.AuditLog(w, r, "ServerInfo", mustGetClaimsFromToken(r))
+
 	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ServerInfoAdminAction)
 	if objectAPI == nil {
 		return
@@ -1344,11 +1343,10 @@ func (a adminAPIHandlers) ServerInfoHandler(w http.ResponseWriter, r *http.Reque
 	dataUsageInfo, err := loadDataUsageFromBackend(ctx, objectAPI)
 	if err == nil {
 		buckets = madmin.Buckets{Count: dataUsageInfo.BucketsCount}
-		objects = madmin.Objects{Count: dataUsageInfo.ObjectsCount}
+		objects = madmin.Objects{Count: dataUsageInfo.ObjectsTotalCount}
 		usage = madmin.Usage{Size: dataUsageInfo.ObjectsTotalSize}
 	}
 
-	infoMsg := madmin.InfoMessage{}
 	vault := fetchVaultStatus(cfg)
 
 	ldap := madmin.LDAP{}
@@ -1370,8 +1368,8 @@ func (a adminAPIHandlers) ServerInfoHandler(w http.ResponseWriter, r *http.Reque
 	// Get the notification target info
 	notifyTarget := fetchLambdaInfo(cfg)
 
-	// Fetching the Storage information
-	storageInfo := objectAPI.StorageInfo(ctx, false)
+	// Fetching the Storage information, ignore any errors.
+	storageInfo, _ := objectAPI.StorageInfo(ctx, false)
 
 	var OnDisks int
 	var OffDisks int
@@ -1453,7 +1451,7 @@ func (a adminAPIHandlers) ServerInfoHandler(w http.ResponseWriter, r *http.Reque
 		Notifications: notifyTarget,
 	}
 
-	infoMsg = madmin.InfoMessage{
+	infoMsg := madmin.InfoMessage{
 		Mode:         mode,
 		Domain:       domain,
 		Region:       globalServerRegion,
@@ -1534,7 +1532,6 @@ func fetchVaultStatus(cfg config.Config) madmin.Vault {
 	}
 
 	if err := checkConnection(kmsInfo.Endpoint, 15*time.Second); err != nil {
-
 		vault.Status = "offline"
 	} else {
 		vault.Status = "online"
@@ -1602,21 +1599,23 @@ func fetchLoggerInfo(cfg config.Config) ([]madmin.Logger, []madmin.Audit) {
 
 // checkConnection - ping an endpoint , return err in case of no connection
 func checkConnection(endpointStr string, timeout time.Duration) error {
-	u, pErr := xnet.ParseURL(endpointStr)
-	if pErr != nil {
-		return pErr
-	}
-
 	tr := newCustomHTTPTransport(&tls.Config{RootCAs: globalRootCAs}, timeout)()
 	defer tr.CloseIdleConnections()
-	if dErr := u.DialHTTP(tr); dErr != nil {
-		if urlErr, ok := dErr.(*url.Error); ok {
-			// To treat "connection refused" errors as un reachable endpoint.
-			if target.IsConnRefusedErr(urlErr.Err) {
-				return errors.New("endpoint unreachable, please check your endpoint")
-			}
-		}
-		return dErr
+
+	ctx, cancel := context.WithTimeout(GlobalContext, timeout)
+	defer cancel()
+
+	req, err := http.NewRequest(http.MethodHead, endpointStr, nil)
+	if err != nil {
+		return err
 	}
+
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	defer xhttp.DrainBody(resp.Body)
+	resp.Body.Close()
 	return nil
 }

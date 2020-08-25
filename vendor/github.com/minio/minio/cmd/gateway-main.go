@@ -96,6 +96,10 @@ func ValidateGatewayArguments(serverAddr, endpointAddr string) error {
 
 // StartGateway - handler for 'minio gateway <name>'.
 func StartGateway(ctx *cli.Context, gw Gateway) {
+	// This is only to uniquely identify each gateway deployments.
+	globalDeploymentID = env.Get("MINIO_GATEWAY_DEPLOYMENT_ID", mustGetUUID())
+	logger.SetDeploymentID(globalDeploymentID)
+
 	if gw == nil {
 		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
 	}
@@ -130,6 +134,14 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	// Check and load Root CAs.
 	globalRootCAs, err = config.GetRootCAs(globalCertsCADir.Get())
 	logger.FatalIf(err, "Failed to read root CAs (%v)", err)
+
+	globalMinioEndpoint = func() string {
+		host := globalMinioHost
+		if host == "" {
+			host = sortIPs(localIP4.ToSlice())[0]
+		}
+		return fmt.Sprintf("%s://%s", getURLScheme(globalIsSSL), net.JoinHostPort(host, globalMinioPort))
+	}()
 
 	// Handle gateway specific env
 	gatewayHandleEnvVars()
@@ -191,13 +203,16 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	// Add API router.
 	registerAPIRouter(router, encryptionEnabled, allowSSEKMS)
 
+	// Use all the middlewares
+	router.Use(registerMiddlewares)
+
 	var getCert certs.GetCertificateFunc
 	if globalTLSCerts != nil {
 		getCert = globalTLSCerts.GetCertificate
 	}
 
 	httpServer := xhttp.NewServer([]string{globalCLIContext.Addr},
-		criticalErrorHandler{registerHandlers(router, globalHandlers...)}, getCert)
+		criticalErrorHandler{router}, getCert)
 	httpServer.BaseContext = func(listener net.Listener) context.Context {
 		return GlobalContext
 	}
@@ -251,9 +266,6 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 		// is only enabled for "NAS" gateway.
 		globalConfigSys.WatchConfigNASDisk(GlobalContext, newObject)
 	}
-	// This is only to uniquely identify each gateway deployments.
-	globalDeploymentID = env.Get("MINIO_GATEWAY_DEPLOYMENT_ID", mustGetUUID())
-	logger.SetDeploymentID(globalDeploymentID)
 
 	if globalEtcdClient != nil {
 		// ****  WARNING ****
@@ -265,7 +277,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	if enableIAMOps {
 		// Initialize IAM sys.
-		logger.FatalIf(globalIAMSys.Init(GlobalContext, newObject), "Unable to initialize IAM system")
+		startBackgroundIAMLoad(GlobalContext)
 	}
 
 	if globalCacheConfig.Enabled {

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/minio/minio/cmd/logger"
@@ -38,7 +37,7 @@ var leaderLockTimeout = newDynamicTimeout(time.Minute, time.Minute)
 func newBgHealSequence(numDisks int) *healSequence {
 
 	reqInfo := &logger.ReqInfo{API: "BackgroundHeal"}
-	ctx := logger.SetReqInfo(GlobalContext, reqInfo)
+	ctx, cancelCtx := context.WithCancel(logger.SetReqInfo(GlobalContext, reqInfo))
 
 	hs := madmin.HealOpts{
 		// Remove objects that do not have read-quorum
@@ -48,6 +47,7 @@ func newBgHealSequence(numDisks int) *healSequence {
 
 	return &healSequence{
 		sourceCh:    make(chan healSource),
+		respCh:      make(chan healResult),
 		startTime:   UTCNow(),
 		clientToken: bgHealingUUID,
 		settings:    hs,
@@ -55,15 +55,13 @@ func newBgHealSequence(numDisks int) *healSequence {
 			Summary:      healNotStartedStatus,
 			HealSettings: hs,
 			NumDisks:     numDisks,
-			updateLock:   &sync.RWMutex{},
 		},
-		traverseAndHealDoneCh: make(chan error),
-		stopSignalCh:          make(chan struct{}),
-		ctx:                   ctx,
-		reportProgress:        false,
-		scannedItemsMap:       make(map[madmin.HealItemType]int64),
-		healedItemsMap:        make(map[madmin.HealItemType]int64),
-		healFailedItemsMap:    make(map[string]int64),
+		cancelCtx:          cancelCtx,
+		ctx:                ctx,
+		reportProgress:     false,
+		scannedItemsMap:    make(map[madmin.HealItemType]int64),
+		healedItemsMap:     make(map[madmin.HealItemType]int64),
+		healFailedItemsMap: make(map[string]int64),
 	}
 }
 
@@ -81,7 +79,7 @@ func getLocalBackgroundHealStatus() madmin.BgHealState {
 }
 
 // healErasureSet lists and heals all objects in a specific erasure set
-func healErasureSet(ctx context.Context, setIndex int, xlObj *xlObjects) error {
+func healErasureSet(ctx context.Context, setIndex int, xlObj *xlObjects, drivesPerSet int) error {
 	buckets, err := xlObj.ListBuckets(ctx)
 	if err != nil {
 		return err
@@ -95,7 +93,12 @@ func healErasureSet(ctx context.Context, setIndex int, xlObj *xlObjects) error {
 		if ok {
 			break
 		}
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Second):
+			continue
+		}
 	}
 
 	// Heal all buckets with all objects
@@ -105,12 +108,38 @@ func healErasureSet(ctx context.Context, setIndex int, xlObj *xlObjects) error {
 			path: bucket.Name,
 		}
 
-		// List all objects in the current bucket and heal them
-		listDir := listDirFactory(ctx, xlObj.getLoadBalancedDisks()...)
-		walkResultCh := startTreeWalk(ctx, bucket.Name, "", "", true, listDir, nil)
-		for walkEntry := range walkResultCh {
+		var entryChs []FileInfoCh
+		for _, disk := range xlObj.getLoadBalancedDisks() {
+			if disk == nil {
+				// Disk can be offline
+				continue
+			}
+			entryCh, err := disk.Walk(bucket.Name, "", "", true, xlMetaJSONFile, readMetadata, ctx.Done())
+			if err != nil {
+				// Disk walk returned error, ignore it.
+				continue
+			}
+			entryChs = append(entryChs, FileInfoCh{
+				Ch: entryCh,
+			})
+		}
+
+		entriesValid := make([]bool, len(entryChs))
+		entries := make([]FileInfo, len(entryChs))
+
+		for {
+			entry, quorumCount, ok := lexicallySortedEntry(entryChs, entries, entriesValid)
+			if !ok {
+				return nil
+			}
+
+			if quorumCount == drivesPerSet {
+				// Skip good entries.
+				continue
+			}
+
 			bgSeq.sourceCh <- healSource{
-				path: pathJoin(bucket.Name, walkEntry.entry),
+				path: pathJoin(bucket.Name, entry.Name),
 			}
 		}
 	}
@@ -154,7 +183,12 @@ func execLeaderTasks(ctx context.Context, z *xlZones) {
 		if ok {
 			break
 		}
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Second):
+			continue
+		}
 	}
 	for {
 		select {
@@ -165,7 +199,7 @@ func execLeaderTasks(ctx context.Context, z *xlZones) {
 			for _, zone := range z.zones {
 				// Heal set by set
 				for i, set := range zone.sets {
-					if err := healErasureSet(ctx, i, set); err != nil {
+					if err := healErasureSet(ctx, i, set, zone.drivesPerSet); err != nil {
 						logger.LogIf(ctx, err)
 						continue
 					}

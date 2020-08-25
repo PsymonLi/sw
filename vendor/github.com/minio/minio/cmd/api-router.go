@@ -194,7 +194,7 @@ func registerAPIRouter(router *mux.Router, encryptionEnabled, allowSSEKMS bool) 
 		// GetBucketReplicationHandler - this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
 			maxClients(collectAPIStats("getbucketreplication", httpTraceAll(api.GetBucketReplicationHandler)))).Queries("replication", "")
-		// GetBucketTaggingHandler - this is a dummy call.
+		// GetBucketTaggingHandler
 		bucket.Methods(http.MethodGet).HandlerFunc(
 			maxClients(collectAPIStats("getbuckettagging", httpTraceAll(api.GetBucketTaggingHandler)))).Queries("tagging", "")
 		//DeleteBucketWebsiteHandler
@@ -244,6 +244,9 @@ func registerAPIRouter(router *mux.Router, encryptionEnabled, allowSSEKMS bool) 
 		// PutBucketObjectLockConfig
 		bucket.Methods(http.MethodPut).HandlerFunc(
 			maxClients(collectAPIStats("putbucketobjectlockconfig", httpTraceAll(api.PutBucketObjectLockConfigHandler)))).Queries("object-lock", "")
+		// PutBucketTaggingHandler
+		bucket.Methods(http.MethodPut).HandlerFunc(
+			maxClients(collectAPIStats("putbuckettagging", httpTraceAll(api.PutBucketTaggingHandler)))).Queries("tagging", "")
 		// PutBucketVersioning
 		bucket.Methods(http.MethodPut).HandlerFunc(
 			maxClients(collectAPIStats("putbucketversioning", httpTraceAll(api.PutBucketVersioningHandler)))).Queries("versioning", "")
@@ -280,6 +283,11 @@ func registerAPIRouter(router *mux.Router, encryptionEnabled, allowSSEKMS bool) 
 
 	// ListBuckets
 	apiRouter.Methods(http.MethodGet).Path(SlashSeparator).HandlerFunc(
+		maxClients(collectAPIStats("listbuckets", httpTraceAll(api.ListBucketsHandler))))
+
+	// S3 browser with signature v4 adds '//' for ListBuckets request, so rather
+	// than failing with UnknownAPIRequest we simply handle it for now.
+	apiRouter.Methods(http.MethodGet).Path(SlashSeparator + SlashSeparator).HandlerFunc(
 		maxClients(collectAPIStats("listbuckets", httpTraceAll(api.ListBucketsHandler))))
 
 	// If none of the routes match add default error handler routes

@@ -140,7 +140,7 @@ func (iamOS *IAMObjectStore) migrateUsersConfigToV1(ctx context.Context, isSTS b
 		// then the parsed auth.Credentials will have
 		// the zero value for the struct.
 		var zeroCred auth.Credentials
-		if cred == zeroCred {
+		if cred.Equal(zeroCred) {
 			// nothing to do
 			continue
 		}
@@ -398,7 +398,7 @@ func (iamOS *IAMObjectStore) loadMappedPolicies(ctx context.Context, userType IA
 		policyFile := item.Item
 		userOrGroupName := strings.TrimSuffix(policyFile, ".json")
 		err := iamOS.loadMappedPolicy(userOrGroupName, userType, isGroup, m)
-		if err != nil {
+		if err != nil && err != errNoSuchPolicy {
 			return err
 		}
 	}
@@ -410,31 +410,25 @@ func (iamOS *IAMObjectStore) loadMappedPolicies(ctx context.Context, userType IA
 func (iamOS *IAMObjectStore) loadAll(ctx context.Context, sys *IAMSys) error {
 	iamUsersMap := make(map[string]auth.Credentials)
 	iamGroupsMap := make(map[string]GroupInfo)
-	iamPolicyDocsMap := make(map[string]iampolicy.Policy)
 	iamUserPolicyMap := make(map[string]MappedPolicy)
 	iamGroupPolicyMap := make(map[string]MappedPolicy)
 
-	isMinIOUsersSys := false
 	iamOS.rlock()
-	if sys.usersSysType == MinIOUsersSysType {
-		isMinIOUsersSys = true
-	}
+	isMinIOUsersSys := sys.usersSysType == MinIOUsersSysType
 	iamOS.runlock()
 
-	if err := iamOS.loadPolicyDocs(ctx, iamPolicyDocsMap); err != nil {
+	iamOS.lock()
+	if err := iamOS.loadPolicyDocs(ctx, sys.iamPolicyDocsMap); err != nil {
+		iamOS.unlock()
 		return err
 	}
+	// Sets default canned policies, if none are set.
+	setDefaultCannedPolicies(sys.iamPolicyDocsMap)
 
-	// load STS temp users
-	if err := iamOS.loadUsers(ctx, stsUser, iamUsersMap); err != nil {
-		return err
-	}
+	iamOS.unlock()
 
 	if isMinIOUsersSys {
 		if err := iamOS.loadUsers(ctx, regularUser, iamUsersMap); err != nil {
-			return err
-		}
-		if err := iamOS.loadUsers(ctx, srvAccUser, iamUsersMap); err != nil {
 			return err
 		}
 		if err := iamOS.loadGroups(ctx, iamGroupsMap); err != nil {
@@ -447,28 +441,60 @@ func (iamOS *IAMObjectStore) loadAll(ctx context.Context, sys *IAMSys) error {
 		return err
 	}
 
-	// load STS policy mappings
-	if err := iamOS.loadMappedPolicies(ctx, stsUser, false, iamUserPolicyMap); err != nil {
-		return err
-	}
-
 	// load policies mapped to groups
 	if err := iamOS.loadMappedPolicies(ctx, regularUser, true, iamGroupPolicyMap); err != nil {
 		return err
 	}
 
-	// Sets default canned policies, if none are set.
-	setDefaultCannedPolicies(iamPolicyDocsMap)
+	if err := iamOS.loadUsers(ctx, srvAccUser, iamUsersMap); err != nil {
+		return err
+	}
+
+	// load STS temp users
+	if err := iamOS.loadUsers(ctx, stsUser, iamUsersMap); err != nil {
+		return err
+	}
+
+	// load STS policy mappings
+	if err := iamOS.loadMappedPolicies(ctx, stsUser, false, iamUserPolicyMap); err != nil {
+		return err
+	}
 
 	iamOS.lock()
 	defer iamOS.unlock()
 
-	sys.iamUsersMap = iamUsersMap
-	sys.iamPolicyDocsMap = iamPolicyDocsMap
-	sys.iamUserPolicyMap = iamUserPolicyMap
-	sys.iamGroupPolicyMap = iamGroupPolicyMap
-	sys.iamGroupsMap = iamGroupsMap
+	// Merge the new reloaded entries into global map.
+	// See issue https://github.com/minio/minio/issues/9651
+	// where the present list of entries on disk are not yet
+	// latest, there is a small window where this can make
+	// valid users invalid.
+	for k, v := range iamUsersMap {
+		sys.iamUsersMap[k] = v
+	}
+
+	for k, v := range iamUserPolicyMap {
+		sys.iamUserPolicyMap[k] = v
+	}
+
+	// purge any expired entries which became expired now.
+	for k, v := range sys.iamUsersMap {
+		if v.IsExpired() {
+			delete(sys.iamUsersMap, k)
+			delete(sys.iamUserPolicyMap, k)
+			// Deleting on the disk is taken care of in the next cycle
+		}
+	}
+
+	for k, v := range iamGroupPolicyMap {
+		sys.iamGroupPolicyMap[k] = v
+	}
+
+	for k, v := range iamGroupsMap {
+		sys.iamGroupsMap[k] = v
+	}
+
 	sys.buildUserGroupMemberships()
+	sys.storeFallback = false
 
 	return nil
 }
@@ -557,14 +583,6 @@ func listIAMConfigItems(ctx context.Context, objAPI ObjectLayer, pathPrefix stri
 				case <-ctx.Done():
 				}
 				return
-			}
-
-			// Attempt a slow down load only when server is
-			// active and initialized.
-			if !globalSafeMode {
-				// Slow down listing and loading for config items to
-				// reduce load on the server
-				waitForLowHTTPReq(int32(globalEndpoints.NEndpoints()))
 			}
 
 			marker = lo.NextMarker

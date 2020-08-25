@@ -22,9 +22,9 @@ import (
 
 	"github.com/minio/minio/cmd/logger"
 
+	"github.com/minio/minio-go/v6/pkg/tags"
 	bucketsse "github.com/minio/minio/pkg/bucket/encryption"
 	"github.com/minio/minio/pkg/bucket/lifecycle"
-	"github.com/minio/minio/pkg/bucket/object/tagging"
 	"github.com/minio/minio/pkg/bucket/policy"
 
 	"github.com/minio/minio/pkg/madmin"
@@ -50,7 +50,7 @@ func NewGatewayLayerWithLocker(gwLayer ObjectLayer) ObjectLayer {
 type GatewayUnsupported struct{}
 
 // CrawlAndGetDataUsage - crawl is not implemented for gateway
-func (a GatewayUnsupported) CrawlAndGetDataUsage(ctx context.Context, updates chan<- DataUsageInfo) error {
+func (a GatewayUnsupported) CrawlAndGetDataUsage(ctx context.Context, bf *bloomFilter, updates chan<- DataUsageInfo) error {
 	logger.CriticalIf(ctx, errors.New("not implemented"))
 	return NotImplemented{}
 }
@@ -80,6 +80,12 @@ func (a GatewayUnsupported) CopyObjectPart(ctx context.Context, srcBucket, srcOb
 func (a GatewayUnsupported) PutObjectPart(ctx context.Context, bucket string, object string, uploadID string, partID int, data *PutObjReader, opts ObjectOptions) (pi PartInfo, err error) {
 	logger.LogIf(ctx, NotImplemented{})
 	return pi, NotImplemented{}
+}
+
+// GetMultipartInfo returns metadata associated with the uploadId
+func (a GatewayUnsupported) GetMultipartInfo(ctx context.Context, bucket string, object string, uploadID string, opts ObjectOptions) (MultipartInfo, error) {
+	logger.LogIf(ctx, NotImplemented{})
+	return MultipartInfo{}, NotImplemented{}
 }
 
 // ListObjectParts returns all object parts for specified object in specified bucket
@@ -198,20 +204,20 @@ func (a GatewayUnsupported) GetMetrics(ctx context.Context) (*Metrics, error) {
 	return &Metrics{}, NotImplemented{}
 }
 
-// PutObjectTag - not implemented.
-func (a GatewayUnsupported) PutObjectTag(ctx context.Context, bucket, object string, tags string) error {
+// PutObjectTags - not implemented.
+func (a GatewayUnsupported) PutObjectTags(ctx context.Context, bucket, object string, tags string) error {
 	logger.LogIf(ctx, NotImplemented{})
 	return NotImplemented{}
 }
 
-// GetObjectTag - not implemented.
-func (a GatewayUnsupported) GetObjectTag(ctx context.Context, bucket, object string) (tagging.Tagging, error) {
+// GetObjectTags - not implemented.
+func (a GatewayUnsupported) GetObjectTags(ctx context.Context, bucket, object string) (*tags.Tags, error) {
 	logger.LogIf(ctx, NotImplemented{})
-	return tagging.Tagging{}, NotImplemented{}
+	return nil, NotImplemented{}
 }
 
-// DeleteObjectTag - not implemented.
-func (a GatewayUnsupported) DeleteObjectTag(ctx context.Context, bucket, object string) error {
+// DeleteObjectTags - not implemented.
+func (a GatewayUnsupported) DeleteObjectTags(ctx context.Context, bucket, object string) error {
 	logger.LogIf(ctx, NotImplemented{})
 	return NotImplemented{}
 }
@@ -228,6 +234,11 @@ func (a GatewayUnsupported) IsListenBucketSupported() bool {
 
 // IsEncryptionSupported returns whether server side encryption is implemented for this layer.
 func (a GatewayUnsupported) IsEncryptionSupported() bool {
+	return false
+}
+
+// IsTaggingSupported returns whether object tagging is supported or not for this layer.
+func (a GatewayUnsupported) IsTaggingSupported() bool {
 	return false
 }
 

@@ -7,48 +7,100 @@ package elastic
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/url"
+	"strings"
 )
 
-// XpackWatcherStopService is documented at http://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-stop.html.
-type XpackWatcherStopService struct {
+// XPackWatcherStopService stops the watcher service if it is running.
+// See https://www.elastic.co/guide/en/elasticsearch/reference/6.8/watcher-api-stop.html.
+type XPackWatcherStopService struct {
 	client *Client
-	pretty bool
+
+	pretty     *bool       // pretty format the returned JSON response
+	human      *bool       // return human readable values for statistics
+	errorTrace *bool       // include the stack trace of returned errors
+	filterPath []string    // list of filters used to reduce the response
+	headers    http.Header // custom request-level HTTP headers
 }
 
-// NewXpackWatcherStopService creates a new XpackWatcherStopService.
-func NewXpackWatcherStopService(client *Client) *XpackWatcherStopService {
-	return &XpackWatcherStopService{
+// NewXPackWatcherStopService creates a new XPackWatcherStopService.
+func NewXPackWatcherStopService(client *Client) *XPackWatcherStopService {
+	return &XPackWatcherStopService{
 		client: client,
 	}
 }
 
-// Pretty indicates that the JSON response be indented and human readable.
-func (s *XpackWatcherStopService) Pretty(pretty bool) *XpackWatcherStopService {
-	s.pretty = pretty
+// Pretty tells Elasticsearch whether to return a formatted JSON response.
+func (s *XPackWatcherStopService) Pretty(pretty bool) *XPackWatcherStopService {
+	s.pretty = &pretty
+	return s
+}
+
+// Human specifies whether human readable values should be returned in
+// the JSON response, e.g. "7.5mb".
+func (s *XPackWatcherStopService) Human(human bool) *XPackWatcherStopService {
+	s.human = &human
+	return s
+}
+
+// ErrorTrace specifies whether to include the stack trace of returned errors.
+func (s *XPackWatcherStopService) ErrorTrace(errorTrace bool) *XPackWatcherStopService {
+	s.errorTrace = &errorTrace
+	return s
+}
+
+// FilterPath specifies a list of filters used to reduce the response.
+func (s *XPackWatcherStopService) FilterPath(filterPath ...string) *XPackWatcherStopService {
+	s.filterPath = filterPath
+	return s
+}
+
+// Header adds a header to the request.
+func (s *XPackWatcherStopService) Header(name string, value string) *XPackWatcherStopService {
+	if s.headers == nil {
+		s.headers = http.Header{}
+	}
+	s.headers.Add(name, value)
+	return s
+}
+
+// Headers specifies the headers of the request.
+func (s *XPackWatcherStopService) Headers(headers http.Header) *XPackWatcherStopService {
+	s.headers = headers
 	return s
 }
 
 // buildURL builds the URL for the operation.
-func (s *XpackWatcherStopService) buildURL() (string, url.Values, error) {
+func (s *XPackWatcherStopService) buildURL() (string, url.Values, error) {
 	// Build URL path
 	path := "/_xpack/watcher/_stop"
 
 	// Add query string parameters
 	params := url.Values{}
-	if s.pretty {
-		params.Set("pretty", "1")
+	if v := s.pretty; v != nil {
+		params.Set("pretty", fmt.Sprint(*v))
+	}
+	if v := s.human; v != nil {
+		params.Set("human", fmt.Sprint(*v))
+	}
+	if v := s.errorTrace; v != nil {
+		params.Set("error_trace", fmt.Sprint(*v))
+	}
+	if len(s.filterPath) > 0 {
+		params.Set("filter_path", strings.Join(s.filterPath, ","))
 	}
 	return path, params, nil
 }
 
 // Validate checks if the operation is valid.
-func (s *XpackWatcherStopService) Validate() error {
+func (s *XPackWatcherStopService) Validate() error {
 	return nil
 }
 
 // Do executes the operation.
-func (s *XpackWatcherStopService) Do(ctx context.Context) (*XpackWatcherStopResponse, error) {
+func (s *XPackWatcherStopService) Do(ctx context.Context) (*XPackWatcherStopResponse, error) {
 	// Check pre-conditions
 	if err := s.Validate(); err != nil {
 		return nil, err
@@ -62,23 +114,24 @@ func (s *XpackWatcherStopService) Do(ctx context.Context) (*XpackWatcherStopResp
 
 	// Get HTTP response
 	res, err := s.client.PerformRequest(ctx, PerformRequestOptions{
-		Method: "POST",
-		Path:   path,
-		Params: params,
+		Method:  "POST",
+		Path:    path,
+		Params:  params,
+		Headers: s.headers,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Return operation response
-	ret := new(XpackWatcherStopResponse)
+	ret := new(XPackWatcherStopResponse)
 	if err := json.Unmarshal(res.Body, ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-// XpackWatcherStopResponse is the response of XpackWatcherStopService.Do.
-type XpackWatcherStopResponse struct {
+// XPackWatcherStopResponse is the response of XPackWatcherStopService.Do.
+type XPackWatcherStopResponse struct {
 	Acknowledged bool `json:"acknowledged"`
 }

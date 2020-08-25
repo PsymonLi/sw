@@ -89,7 +89,8 @@ TEXT ·_find_quote_mask_and_bits_avx512(SB), $0-48
     MOVQ input+0(FP), DI
     MOVQ odd_ends+8(FP), DX
     MOVQ prev_iter_inside_quote+16(FP), CX
-    MOVQ error_mask+24(FP), R9
+
+    KORQ K_ERRORMASK, K_ERRORMASK, K_ERRORMASK
 
     VMOVDQU32    (DI), Z8
 
@@ -97,8 +98,8 @@ TEXT ·_find_quote_mask_and_bits_avx512(SB), $0-48
     CALL ·__find_quote_mask_and_bits_avx512(SB)
 
     VZEROUPPER
-    KMOVQ  K_QUOTEBITS, R8
-    MOVQ R8, quote_bits+32(FP)
+    KMOVQ K_ERRORMASK, error_mask+24(FP)
+    KMOVQ  K_QUOTEBITS, quote_bits+32(FP)
     MOVQ AX, quote_mask+40(FP)
     RET
 
@@ -115,9 +116,9 @@ TEXT ·__init_quote_mask_and_bits_avx512(SB), $0
 
 TEXT ·__find_quote_mask_and_bits_avx512(SB), $0
     VPCMPEQB   QMAB_CONST1, Z8, K_QUOTEBITS
-    KMOVQ      DX, K1
-    KNOTQ      K1, K1
-    KANDQ      K1, K_QUOTEBITS, K_QUOTEBITS
+    KMOVQ      DX, K_TEMP1
+    KNOTQ      K_TEMP1, K_TEMP1
+    KANDQ      K_TEMP1, K_QUOTEBITS, K_QUOTEBITS
     KMOVQ      K_QUOTEBITS, DX
     VMOVQ      DX, X2            // vmovq    xmm2, rdx
     VPCMPEQD   X3, X3, X3        // vpcmpeqd    xmm3, xmm3, xmm3
@@ -125,10 +126,10 @@ TEXT ·__find_quote_mask_and_bits_avx512(SB), $0
     VMOVQ      X2, AX            // vmovq    rax, xmm2
     XORQ       (CX), AX          // xor    rax, qword [rcx]
     VPXORD     QMAB_CONST2, Z8, Z0
-    VPCMPGTB   Z0, QMAB_CONST3, K1        // vpcmpgtb    ymm0, ymm3, ymm0
-    KMOVQ      K1, SI            // or    rsi, rdx
-    ANDQ       AX, SI            // and    rsi, rax
-    ORQ        SI, (R9)          // or    qword [r9], rsi
+    VPCMPGTB   Z0, QMAB_CONST3, K_TEMP1 // vpcmpgtb    ymm0, ymm3, ymm0
+    KMOVQ      AX, K_TEMP2
+    KANDQ      K_TEMP2, K_TEMP1, K_TEMP1
+    KORQ       K_TEMP1, K_ERRORMASK, K_ERRORMASK
     MOVQ       AX, DX            // mov    rdx, rax
     SARQ       $63, DX           // sar    rdx, 63
     MOVQ       DX, (CX)          // mov    qword [rcx], rdx

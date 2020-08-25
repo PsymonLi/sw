@@ -34,10 +34,6 @@ import (
 	"github.com/minio/minio/cmd/http"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/cmd/rest"
-	bucketsse "github.com/minio/minio/pkg/bucket/encryption"
-	"github.com/minio/minio/pkg/bucket/lifecycle"
-	objectlock "github.com/minio/minio/pkg/bucket/object/lock"
-	"github.com/minio/minio/pkg/bucket/policy"
 	"github.com/minio/minio/pkg/event"
 	"github.com/minio/minio/pkg/madmin"
 	xnet "github.com/minio/minio/pkg/net"
@@ -471,11 +467,23 @@ func (client *peerRESTClient) DownloadProfileData() (data map[string][]byte, err
 	return data, err
 }
 
-// DeleteBucket - Delete notification and policies related to the bucket.
-func (client *peerRESTClient) DeleteBucket(bucket string) error {
+// LoadBucketMetadata - load bucket metadata
+func (client *peerRESTClient) LoadBucketMetadata(bucket string) error {
 	values := make(url.Values)
 	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodDeleteBucket, values, nil, -1)
+	respBody, err := client.call(peerRESTMethodLoadBucketMetadata, values, nil, -1)
+	if err != nil {
+		return err
+	}
+	defer http.DrainBody(respBody)
+	return nil
+}
+
+// DeleteBucketMetadata - Delete bucket metadata
+func (client *peerRESTClient) DeleteBucketMetadata(bucket string) error {
+	values := make(url.Values)
+	values.Set(peerRESTBucket, bucket)
+	respBody, err := client.call(peerRESTMethodDeleteBucketMetadata, values, nil, -1)
 	if err != nil {
 		return err
 	}
@@ -500,219 +508,23 @@ func (client *peerRESTClient) ReloadFormat(dryRun bool) error {
 	return nil
 }
 
-// SendEvent - calls send event RPC.
-func (client *peerRESTClient) SendEvent(bucket string, targetID, remoteTargetID event.TargetID, eventData event.Event) error {
-	numTries := 10
-	for {
-		err := client.sendEvent(bucket, targetID, remoteTargetID, eventData)
-		if err == nil {
-			return nil
-		}
-		if numTries == 0 {
-			return err
-		}
-		numTries--
-		time.Sleep(5 * time.Second)
-	}
-}
-
-func (client *peerRESTClient) sendEvent(bucket string, targetID, remoteTargetID event.TargetID, eventData event.Event) error {
-	args := sendEventRequest{
-		TargetID: remoteTargetID,
-		Event:    eventData,
-	}
-
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
+// cycleServerBloomFilter will cycle the bloom filter to start recording to index y if not already.
+// The response will contain a bloom filter starting at index x up to, but not including index y.
+// If y is 0, the response will not update y, but return the currently recorded information
+// from the current x to y-1.
+func (client *peerRESTClient) cycleServerBloomFilter(ctx context.Context, req bloomFilterRequest) (*bloomFilterResponse, error) {
 	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(args)
+	err := gob.NewEncoder(&reader).Encode(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	respBody, err := client.call(peerRESTMethodSendEvent, values, &reader, -1)
+	respBody, err := client.callWithContext(ctx, peerRESTMethodCycleBloom, nil, &reader, -1)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	var eventResp sendEventResp
+	var resp bloomFilterResponse
 	defer http.DrainBody(respBody)
-	err = gob.NewDecoder(respBody).Decode(&eventResp)
-
-	if err != nil || !eventResp.Success {
-		reqInfo := &logger.ReqInfo{BucketName: bucket}
-		reqInfo.AppendTags("targetID", targetID.Name)
-		reqInfo.AppendTags("event", eventData.EventName.String())
-		ctx := logger.SetReqInfo(GlobalContext, reqInfo)
-		logger.LogIf(ctx, err)
-		globalNotificationSys.RemoveRemoteTarget(bucket, targetID)
-	}
-
-	return err
-}
-
-// RemoteTargetExist - calls remote target ID exist REST API.
-func (client *peerRESTClient) RemoteTargetExist(bucket string, targetID event.TargetID) (bool, error) {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(targetID)
-	if err != nil {
-		return false, err
-	}
-
-	respBody, err := client.call(peerRESTMethodTargetExists, values, &reader, -1)
-	if err != nil {
-		return false, err
-	}
-	defer http.DrainBody(respBody)
-	var targetExists remoteTargetExistsResp
-	err = gob.NewDecoder(respBody).Decode(&targetExists)
-	return targetExists.Exists, err
-}
-
-// RemoveBucketPolicy - Remove bucket policy on the peer node.
-func (client *peerRESTClient) RemoveBucketPolicy(bucket string) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodBucketPolicyRemove, values, nil, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// RemoveBucketObjectLockConfig - Remove bucket object lock config on the peer node.
-func (client *peerRESTClient) RemoveBucketObjectLockConfig(bucket string) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodBucketObjectLockConfigRemove, values, nil, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// SetBucketPolicy - Set bucket policy on the peer node.
-func (client *peerRESTClient) SetBucketPolicy(bucket string, bucketPolicy *policy.Policy) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(bucketPolicy)
-	if err != nil {
-		return err
-	}
-
-	respBody, err := client.call(peerRESTMethodBucketPolicySet, values, &reader, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// RemoveBucketLifecycle - Remove bucket lifecycle configuration on the peer node
-func (client *peerRESTClient) RemoveBucketLifecycle(bucket string) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodBucketLifecycleRemove, values, nil, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// SetBucketLifecycle - Set bucket lifecycle configuration on the peer node
-func (client *peerRESTClient) SetBucketLifecycle(bucket string, bucketLifecycle *lifecycle.Lifecycle) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(bucketLifecycle)
-	if err != nil {
-		return err
-	}
-
-	respBody, err := client.call(peerRESTMethodBucketLifecycleSet, values, &reader, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// RemoveBucketSSEConfig - Remove bucket encryption configuration on the peer node
-func (client *peerRESTClient) RemoveBucketSSEConfig(bucket string) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodBucketEncryptionRemove, values, nil, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// SetBucketSSEConfig - Set bucket encryption configuration on the peer node
-func (client *peerRESTClient) SetBucketSSEConfig(bucket string, encConfig *bucketsse.BucketSSEConfig) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(encConfig)
-	if err != nil {
-		return err
-	}
-
-	respBody, err := client.call(peerRESTMethodBucketEncryptionSet, values, &reader, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// PutBucketNotification - Put bucket notification on the peer node.
-func (client *peerRESTClient) PutBucketNotification(bucket string, rulesMap event.RulesMap) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(&rulesMap)
-	if err != nil {
-		return err
-	}
-
-	respBody, err := client.call(peerRESTMethodBucketNotificationPut, values, &reader, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
-}
-
-// PutBucketObjectLockConfig - PUT bucket object lock configuration.
-func (client *peerRESTClient) PutBucketObjectLockConfig(bucket string, retention objectlock.Retention) error {
-	values := make(url.Values)
-	values.Set(peerRESTBucket, bucket)
-
-	var reader bytes.Buffer
-	err := gob.NewEncoder(&reader).Encode(&retention)
-	if err != nil {
-		return err
-	}
-
-	respBody, err := client.call(peerRESTMethodPutBucketObjectLockConfig, values, &reader, -1)
-	if err != nil {
-		return err
-	}
-	defer http.DrainBody(respBody)
-	return nil
+	return &resp, gob.NewDecoder(respBody).Decode(&resp)
 }
 
 // DeletePolicy - delete a specific canned policy.
@@ -770,6 +582,19 @@ func (client *peerRESTClient) DeleteUser(accessKey string) (err error) {
 	return nil
 }
 
+// DeleteServiceAccount - delete a specific service account.
+func (client *peerRESTClient) DeleteServiceAccount(accessKey string) (err error) {
+	values := make(url.Values)
+	values.Set(peerRESTUser, accessKey)
+
+	respBody, err := client.call(peerRESTMethodDeleteServiceAccount, values, nil, -1)
+	if err != nil {
+		return
+	}
+	defer http.DrainBody(respBody)
+	return nil
+}
+
 // LoadUser - reload a specific user.
 func (client *peerRESTClient) LoadUser(accessKey string, temp bool) (err error) {
 	values := make(url.Values)
@@ -777,6 +602,19 @@ func (client *peerRESTClient) LoadUser(accessKey string, temp bool) (err error) 
 	values.Set(peerRESTUserTemp, strconv.FormatBool(temp))
 
 	respBody, err := client.call(peerRESTMethodLoadUser, values, nil, -1)
+	if err != nil {
+		return
+	}
+	defer http.DrainBody(respBody)
+	return nil
+}
+
+// LoadServiceAccount - reload a specific service account.
+func (client *peerRESTClient) LoadServiceAccount(accessKey string) (err error) {
+	values := make(url.Values)
+	values.Set(peerRESTUser, accessKey)
+
+	respBody, err := client.call(peerRESTMethodLoadServiceAccount, values, nil, -1)
 	if err != nil {
 		return
 	}
@@ -836,6 +674,21 @@ func (client *peerRESTClient) BackgroundHealStatus() (madmin.BgHealState, error)
 	state := madmin.BgHealState{}
 	err = gob.NewDecoder(respBody).Decode(&state)
 	return state, err
+}
+
+// GetLocalDiskIDs - get a peer's local disks' IDs.
+func (client *peerRESTClient) GetLocalDiskIDs(ctx context.Context) (diskIDs []string) {
+	respBody, err := client.callWithContext(ctx, peerRESTMethodGetLocalDiskIDs, nil, nil, -1)
+	if err != nil {
+		logger.LogIf(ctx, err)
+		return nil
+	}
+	defer http.DrainBody(respBody)
+	if err = gob.NewDecoder(respBody).Decode(&diskIDs); err != nil {
+		logger.LogIf(ctx, err)
+		return nil
+	}
+	return diskIDs
 }
 
 func (client *peerRESTClient) doTrace(traceCh chan interface{}, doneCh <-chan struct{}, trcAll, trcErr bool) {

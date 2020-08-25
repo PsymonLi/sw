@@ -57,6 +57,7 @@ func monitorLocalDisksAndHeal(ctx context.Context, objAPI ObjectLayer) {
 		case <-time.After(defaultMonitorNewDiskInterval):
 			// Attempt a heal as the server starts-up first.
 			localDisksInZoneHeal := make([]Endpoints, len(z.zones))
+			var healNewDisks bool
 			for i, ep := range globalEndpoints {
 				localDisksToHeal := Endpoints{}
 				for _, endpoint := range ep.Endpoints {
@@ -74,6 +75,12 @@ func monitorLocalDisksAndHeal(ctx context.Context, objAPI ObjectLayer) {
 					continue
 				}
 				localDisksInZoneHeal[i] = localDisksToHeal
+				healNewDisks = true
+			}
+
+			// Reformat disks only if needed.
+			if !healNewDisks {
+				continue
 			}
 
 			// Reformat disks
@@ -108,7 +115,7 @@ func monitorLocalDisksAndHeal(ctx context.Context, objAPI ObjectLayer) {
 			// Heal all erasure sets that need
 			for i, erasureSetToHeal := range erasureSetInZoneToHeal {
 				for _, setIndex := range erasureSetToHeal {
-					err := healErasureSet(ctx, setIndex, z.zones[i].sets[setIndex])
+					err := healErasureSet(ctx, setIndex, z.zones[i].sets[setIndex], z.zones[i].drivesPerSet)
 					if err != nil {
 						logger.LogIf(ctx, err)
 					}

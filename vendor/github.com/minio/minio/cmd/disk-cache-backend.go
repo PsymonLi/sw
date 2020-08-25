@@ -21,14 +21,15 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/djherbis/atime"
@@ -37,7 +38,6 @@ import (
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/disk"
 	"github.com/minio/sio"
-	"go.uber.org/atomic"
 )
 
 const (
@@ -125,17 +125,16 @@ func (m *cacheMeta) ToObjectInfo(bucket, object string) (o ObjectInfo) {
 
 // represents disk cache struct
 type diskCache struct {
-	dir      string // caching directory
-	quotaPct int    // max usage in %
-	// mark false if drive is offline
-	online bool
-	// mutex to protect updates to online variable
-	onlineMutex   *sync.RWMutex
+	gcCounter uint64 // ref: https://golang.org/pkg/sync/atomic/#pkg-note-BUG
+	// is set to 0 if drive is offline
+	online uint32
+
+	dir           string // caching directory
+	quotaPct      int    // max usage in %
 	pool          sync.Pool
 	after         int // minimum accesses before an object is cached.
 	lowWatermark  int
 	highWatermark int
-	gcCounter     atomic.Uint64
 	// nsMutex namespace lock
 	nsMutex *nsLockMap
 	// Object functions pointing to the corresponding functions of backend implementation.
@@ -153,8 +152,7 @@ func newDiskCache(dir string, quotaPct, after, lowWatermark, highWatermark int) 
 		after:         after,
 		lowWatermark:  lowWatermark,
 		highWatermark: highWatermark,
-		online:        true,
-		onlineMutex:   &sync.RWMutex{},
+		online:        1,
 		pool: sync.Pool{
 			New: func() interface{} {
 				b := disk.AlignedBlock(int(cacheBlkSize))
@@ -228,6 +226,10 @@ func (c *diskCache) toClear() uint64 {
 	return bytesToClear(int64(di.Total), int64(di.Free), uint64(c.quotaPct), uint64(c.lowWatermark))
 }
 
+var (
+	errDoneForNow = errors.New("done for now")
+)
+
 // Purge cache entries that were not accessed.
 func (c *diskCache) purge(ctx context.Context) {
 	if c.diskUsageLow() {
@@ -241,7 +243,7 @@ func (c *diskCache) purge(ctx context.Context) {
 	// need to be cleaned up.
 	expiry := UTCNow().Add(-cacheExpiryDays)
 	// defaulting max hits count to 100
-	scorer, err := newFileScorer(int64(toFree), time.Now().Unix(), 100)
+	scorer, err := newFileScorer(toFree, time.Now().Unix(), 100)
 	if err != nil {
 		logger.LogIf(ctx, err)
 		return
@@ -263,25 +265,24 @@ func (c *diskCache) purge(ctx context.Context) {
 		}
 		return fm
 	}
-	objDirs, err := ioutil.ReadDir(c.dir)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	for _, obj := range objDirs {
-		if obj.Name() == minioMetaBucket {
-			continue
+	filterFn := func(name string, typ os.FileMode) error {
+		if name == minioMetaBucket {
+			// Proceed to next file.
+			return nil
 		}
 
-		cacheDir := pathJoin(c.dir, obj.Name())
+		cacheDir := pathJoin(c.dir, name)
 		meta, _, numHits, err := c.statCachedMeta(ctx, cacheDir)
 		if err != nil {
 			// delete any partially filled cache entry left behind.
 			removeAll(cacheDir)
-			continue
+			// Proceed to next file.
+			return nil
 		}
+
 		// stat all cached file ranges and cacheDataFile.
-		cachedFiles := fiStatFn(meta.Ranges, cacheDataFile, pathJoin(c.dir, obj.Name()))
+		cachedFiles := fiStatFn(meta.Ranges, cacheDataFile, pathJoin(c.dir, name))
 		objInfo := meta.ToObjectInfo("", "")
 		cc := cacheControlOpts(objInfo)
 		for fname, fi := range cachedFiles {
@@ -291,9 +292,11 @@ func (c *diskCache) purge(ctx context.Context) {
 						logger.LogIf(ctx, err)
 					}
 					scorer.adjustSaveBytes(-fi.Size())
+
 					// break early if sufficient disk space reclaimed.
 					if c.diskUsageLow() {
-						return
+						// if we found disk usage is already low, we return nil filtering is complete.
+						return errDoneForNow
 					}
 				}
 				continue
@@ -305,12 +308,24 @@ func (c *diskCache) purge(ctx context.Context) {
 		if err != nil || (fi.ModTime().Before(expiry) && len(cachedFiles) == 0) {
 			removeAll(cacheDir)
 			scorer.adjustSaveBytes(-fi.Size())
-			continue
+			// Proceed to next file.
+			return nil
 		}
+
+		// if we found disk usage is already low, we return nil filtering is complete.
 		if c.diskUsageLow() {
-			return
+			return errDoneForNow
 		}
+
+		// Proceed to next file.
+		return nil
 	}
+
+	if err := readDirFilterFn(c.dir, filterFn); err != nil {
+		logger.LogIf(ctx, err)
+		return
+	}
+
 	for _, path := range scorer.fileNames() {
 		removeAll(path)
 		slashIdx := strings.LastIndex(path, SlashSeparator)
@@ -323,27 +338,25 @@ func (c *diskCache) purge(ctx context.Context) {
 }
 
 func (c *diskCache) incGCCounter() {
-	c.gcCounter.Add(uint64(1))
+	atomic.AddUint64(&c.gcCounter, 1)
 }
+
 func (c *diskCache) resetGCCounter() {
-	c.gcCounter.Store(uint64(0))
+	atomic.StoreUint64(&c.gcCounter, 0)
 }
+
 func (c *diskCache) gcCount() uint64 {
-	return c.gcCounter.Load()
+	return atomic.LoadUint64(&c.gcCounter)
 }
 
 // sets cache drive status
-func (c *diskCache) setOnline(status bool) {
-	c.onlineMutex.Lock()
-	c.online = status
-	c.onlineMutex.Unlock()
+func (c *diskCache) setOffline() {
+	atomic.StoreUint32(&c.online, 0)
 }
 
 // returns true if cache drive is online
 func (c *diskCache) IsOnline() bool {
-	c.onlineMutex.RLock()
-	defer c.onlineMutex.RUnlock()
-	return c.online
+	return atomic.LoadUint32(&c.online) != 0
 }
 
 // Stat returns ObjectInfo from disk cache
@@ -485,10 +498,14 @@ func (c *diskCache) saveMetadata(ctx context.Context, bucket, object string, met
 	}
 	// increment hits
 	if rs != nil {
-		if m.Ranges == nil {
-			m.Ranges = make(map[string]string)
+		// rsFileName gets set by putRange. Check for blank values here
+		// coming from other code paths that set rs only (eg initial creation or hit increment).
+		if rsFileName != "" {
+			if m.Ranges == nil {
+				m.Ranges = make(map[string]string)
+			}
+			m.Ranges[rs.String(actualSize)] = rsFileName
 		}
-		m.Ranges[rs.String(actualSize)] = rsFileName
 	} else {
 		// this is necessary cleanup of range files if entire object is cached.
 		for _, f := range m.Ranges {
@@ -663,7 +680,8 @@ func (c *diskCache) Put(ctx context.Context, bucket, object string, data io.Read
 	}
 	n, err := c.bitrotWriteToCache(cachePath, cacheDataFile, reader, actualSize)
 	if IsErr(err, baseErrs...) {
-		c.setOnline(false)
+		// take the cache drive offline
+		c.setOffline()
 	}
 	if err != nil {
 		removeAll(cachePath)
@@ -710,7 +728,8 @@ func (c *diskCache) putRange(ctx context.Context, bucket, object string, data io
 	cacheFile := MustGetUUID()
 	n, err := c.bitrotWriteToCache(cachePath, cacheFile, reader, actualSize)
 	if IsErr(err, baseErrs...) {
-		c.setOnline(false)
+		// take the cache drive offline
+		c.setOffline()
 	}
 	if err != nil {
 		removeAll(cachePath)

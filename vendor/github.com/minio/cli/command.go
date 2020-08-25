@@ -62,6 +62,17 @@ type Command struct {
 	HelpName        string
 	commandNamePath []string
 
+	// Default prompt, specific to OS
+	Prompt string
+	// Command to set the environment variable, specific to OS
+	EnvVarSetCommand string
+	// Assignment operator to set the environment variable, specific to OS
+	AssignmentOperator string
+	// Disable history for security reasons
+	DisableHistory string
+	// Enable history
+	EnableHistory string
+
 	// CustomHelpTemplate the text template for the command help topic.
 	// cli.go uses text/template to render templates. You can
 	// render custom help text by setting this variable.
@@ -161,19 +172,20 @@ func (c Command) Run(ctx *Context) (err error) {
 	}
 
 	context := NewContext(ctx.App, set, ctx)
+	context.Command = c
 	if checkCommandCompletions(context, c.Name) {
 		return nil
 	}
 
 	if err != nil {
 		if c.OnUsageError != nil {
-			err := c.OnUsageError(ctx, err, false)
+			err := c.OnUsageError(context, err, false)
 			HandleExitCoder(err)
 			return err
 		}
-		fmt.Fprintln(ctx.App.Writer, "Incorrect Usage:", err.Error())
-		fmt.Fprintln(ctx.App.Writer)
-		ShowCommandHelp(ctx, c.Name)
+		fmt.Fprintln(context.App.Writer, "Incorrect Usage:", err.Error())
+		fmt.Fprintln(context.App.Writer)
+		ShowCommandHelp(context, c.Name)
 		return err
 	}
 
@@ -198,9 +210,9 @@ func (c Command) Run(ctx *Context) (err error) {
 	if c.Before != nil {
 		err = c.Before(context)
 		if err != nil {
-			fmt.Fprintln(ctx.App.Writer, err)
-			fmt.Fprintln(ctx.App.Writer)
-			ShowCommandHelp(ctx, c.Name)
+			fmt.Fprintln(context.App.Writer, err)
+			fmt.Fprintln(context.App.Writer)
+			ShowCommandHelp(context, c.Name)
 			HandleExitCoder(err)
 			return err
 		}
@@ -210,7 +222,6 @@ func (c Command) Run(ctx *Context) (err error) {
 		c.Action = helpSubcommand.Action
 	}
 
-	context.Command = c
 	err = HandleAction(c.Action, context)
 
 	if err != nil {

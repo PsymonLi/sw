@@ -1,5 +1,5 @@
 /*
- * MinIO Cloud Storage, (C) 2016 MinIO, Inc.
+ * MinIO Cloud Storage, (C) 2016-2020 MinIO, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,9 @@ import (
 	"net/http"
 
 	"github.com/minio/minio-go/v6/pkg/encrypt"
-	bucketsse "github.com/minio/minio/pkg/bucket/encryption"
-	"github.com/minio/minio/pkg/bucket/lifecycle"
-	"github.com/minio/minio/pkg/bucket/object/tagging"
-	"github.com/minio/minio/pkg/bucket/policy"
+	"github.com/minio/minio-go/v6/pkg/tags"
 
+	"github.com/minio/minio/pkg/bucket/policy"
 	"github.com/minio/minio/pkg/madmin"
 )
 
@@ -60,11 +58,11 @@ type ObjectLayer interface {
 
 	// Storage operations.
 	Shutdown(context.Context) error
-	CrawlAndGetDataUsage(ctx context.Context, updates chan<- DataUsageInfo) error
-	StorageInfo(ctx context.Context, local bool) StorageInfo // local queries only local disks
+	CrawlAndGetDataUsage(ctx context.Context, bf *bloomFilter, updates chan<- DataUsageInfo) error
+	StorageInfo(ctx context.Context, local bool) (StorageInfo, []error) // local queries only local disks
 
 	// Bucket operations.
-	MakeBucketWithLocation(ctx context.Context, bucket string, location string) error
+	MakeBucketWithLocation(ctx context.Context, bucket string, location string, lockEnabled bool) error
 	GetBucketInfo(ctx context.Context, bucket string) (bucketInfo BucketInfo, err error)
 	ListBuckets(ctx context.Context) (buckets []BucketInfo, err error)
 	DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error
@@ -94,6 +92,7 @@ type ObjectLayer interface {
 	CopyObjectPart(ctx context.Context, srcBucket, srcObject, destBucket, destObject string, uploadID string, partID int,
 		startOffset int64, length int64, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (info PartInfo, err error)
 	PutObjectPart(ctx context.Context, bucket, object, uploadID string, partID int, data *PutObjReader, opts ObjectOptions) (info PartInfo, err error)
+	GetMultipartInfo(ctx context.Context, bucket, object, uploadID string, opts ObjectOptions) (info MultipartInfo, err error)
 	ListObjectParts(ctx context.Context, bucket, object, uploadID string, partNumberMarker int, maxParts int, opts ObjectOptions) (result ListPartsInfo, err error)
 	AbortMultipartUpload(ctx context.Context, bucket, object, uploadID string) error
 	CompleteMultipartUpload(ctx context.Context, bucket, object, uploadID string, uploadedParts []CompletePart, opts ObjectOptions) (objInfo ObjectInfo, err error)
@@ -104,7 +103,6 @@ type ObjectLayer interface {
 	HealBucket(ctx context.Context, bucket string, dryRun, remove bool) (madmin.HealResultItem, error)
 	HealObject(ctx context.Context, bucket, object string, opts madmin.HealOpts) (madmin.HealResultItem, error)
 	HealObjects(ctx context.Context, bucket, prefix string, opts madmin.HealOpts, fn healObjectFn) error
-
 	ListBucketsHeal(ctx context.Context) (buckets []BucketInfo, err error)
 
 	// Policy operations
@@ -116,19 +114,8 @@ type ObjectLayer interface {
 	IsNotificationSupported() bool
 	IsListenBucketSupported() bool
 	IsEncryptionSupported() bool
-
-	// Compression support check.
+	IsTaggingSupported() bool
 	IsCompressionSupported() bool
-
-	// Lifecycle operations
-	SetBucketLifecycle(context.Context, string, *lifecycle.Lifecycle) error
-	GetBucketLifecycle(context.Context, string) (*lifecycle.Lifecycle, error)
-	DeleteBucketLifecycle(context.Context, string) error
-
-	// Bucket Encryption operations
-	SetBucketSSEConfig(context.Context, string, *bucketsse.BucketSSEConfig) error
-	GetBucketSSEConfig(context.Context, string) (*bucketsse.BucketSSEConfig, error)
-	DeleteBucketSSEConfig(context.Context, string) error
 
 	// Backend related metrics
 	GetMetrics(ctx context.Context) (*Metrics, error)
@@ -137,7 +124,7 @@ type ObjectLayer interface {
 	IsReady(ctx context.Context) bool
 
 	// ObjectTagging operations
-	PutObjectTag(context.Context, string, string, string) error
-	GetObjectTag(context.Context, string, string) (tagging.Tagging, error)
-	DeleteObjectTag(context.Context, string, string) error
+	PutObjectTags(context.Context, string, string, string) error
+	GetObjectTags(context.Context, string, string) (*tags.Tags, error)
+	DeleteObjectTags(context.Context, string, string) error
 }

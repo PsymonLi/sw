@@ -57,11 +57,39 @@ func easyjson9de0fcbfDecodeGithubComOlivereElastic(in *jlexer.Lexer, out *bulkIn
 		case "routing":
 			out.Routing = string(in.String())
 		case "version":
-			out.Version = int64(in.Int64())
+			if in.IsNull() {
+				in.Skip()
+				out.Version = nil
+			} else {
+				if out.Version == nil {
+					out.Version = new(int64)
+				}
+				*out.Version = int64(in.Int64())
+			}
 		case "version_type":
 			out.VersionType = string(in.String())
 		case "pipeline":
 			out.Pipeline = string(in.String())
+		case "if_seq_no":
+			if in.IsNull() {
+				in.Skip()
+				out.IfSeqNo = nil
+			} else {
+				if out.IfSeqNo == nil {
+					out.IfSeqNo = new(int64)
+				}
+				*out.IfSeqNo = int64(in.Int64())
+			}
+		case "if_primary_term":
+			if in.IsNull() {
+				in.Skip()
+				out.IfPrimaryTerm = nil
+			} else {
+				if out.IfPrimaryTerm == nil {
+					out.IfPrimaryTerm = new(int64)
+				}
+				*out.IfPrimaryTerm = int64(in.Int64())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -78,12 +106,8 @@ func easyjson9de0fcbfEncodeGithubComOlivereElastic(out *jwriter.Writer, in bulkI
 	_ = first
 	if in.Index != "" {
 		const prefix string = ",\"_index\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
+		first = false
+		out.RawString(prefix[1:])
 		out.String(string(in.Index))
 	}
 	if in.Id != "" {
@@ -136,7 +160,7 @@ func easyjson9de0fcbfEncodeGithubComOlivereElastic(out *jwriter.Writer, in bulkI
 		}
 		out.String(string(in.Routing))
 	}
-	if in.Version != 0 {
+	if in.Version != nil {
 		const prefix string = ",\"version\":"
 		if first {
 			first = false
@@ -144,7 +168,7 @@ func easyjson9de0fcbfEncodeGithubComOlivereElastic(out *jwriter.Writer, in bulkI
 		} else {
 			out.RawString(prefix)
 		}
-		out.Int64(int64(in.Version))
+		out.Int64(int64(*in.Version))
 	}
 	if in.VersionType != "" {
 		const prefix string = ",\"version_type\":"
@@ -165,6 +189,26 @@ func easyjson9de0fcbfEncodeGithubComOlivereElastic(out *jwriter.Writer, in bulkI
 			out.RawString(prefix)
 		}
 		out.String(string(in.Pipeline))
+	}
+	if in.IfSeqNo != nil {
+		const prefix string = ",\"if_seq_no\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.IfSeqNo))
+	}
+	if in.IfPrimaryTerm != nil {
+		const prefix string = ",\"if_primary_term\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.IfPrimaryTerm))
 	}
 	out.RawByte('}')
 }
@@ -198,11 +242,7 @@ func easyjson9de0fcbfDecodeGithubComOlivereElastic1(in *jlexer.Lexer, out *bulkI
 		in.Skip()
 	} else {
 		in.Delim('{')
-		if !in.IsDelim('}') {
-			*out = make(bulkIndexRequestCommand)
-		} else {
-			*out = nil
-		}
+		*out = make(bulkIndexRequestCommand)
 		for !in.IsDelim('}') {
 			key := string(in.String())
 			in.WantColon()

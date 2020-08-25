@@ -36,14 +36,6 @@ func (xl xlObjects) getUploadIDDir(bucket, object, uploadID string) string {
 	return pathJoin(xl.getMultipartSHADir(bucket, object), uploadID)
 }
 
-// getUploadIDLockPath returns the name of the Lock in the form of
-// bucket/object/uploadID. For locking, the path bucket/object/uploadID
-// is locked instead of multipart-sha256-Dir/uploadID as it is more
-// readable in the list-locks output which helps in debugging.
-func (xl xlObjects) getUploadIDLockPath(bucket, object, uploadID string) string {
-	return pathJoin(bucket, object, uploadID)
-}
-
 func (xl xlObjects) getMultipartSHADir(bucket, object string) string {
 	return getSHA256Hash([]byte(pathJoin(bucket, object)))
 }
@@ -56,7 +48,7 @@ func (xl xlObjects) checkUploadIDExists(ctx context.Context, bucket, object, upl
 
 // Removes part given by partName belonging to a mulitpart upload from minioMetaBucket
 func (xl xlObjects) removeObjectPart(bucket, object, uploadID string, partNumber int) {
-	curpartPath := pathJoin(bucket, object, uploadID, fmt.Sprintf("part.%d", partNumber))
+	curpartPath := pathJoin(xl.getUploadIDDir(bucket, object, uploadID), fmt.Sprintf("part.%d", partNumber))
 	storageDisks := xl.getDisks()
 
 	g := errgroup.WithNErrs(len(storageDisks))
@@ -114,10 +106,6 @@ func commitXLMetadata(ctx context.Context, disks []StorageAPI, srcBucket, srcPre
 // towards simplification of multipart APIs.
 // The resulting ListMultipartsInfo structure is unmarshalled directly as XML.
 func (xl xlObjects) ListMultipartUploads(ctx context.Context, bucket, object, keyMarker, uploadIDMarker, delimiter string, maxUploads int) (result ListMultipartsInfo, e error) {
-	if err := checkListMultipartArgs(ctx, bucket, object, keyMarker, uploadIDMarker, delimiter, xl); err != nil {
-		return result, err
-	}
-
 	result.MaxUploads = maxUploads
 	result.KeyMarker = keyMarker
 	result.Prefix = object
@@ -172,7 +160,10 @@ func (xl xlObjects) newMultipartUpload(ctx context.Context, bucket string, objec
 
 	// we now know the number of blocks this object needs for data and parity.
 	// establish the writeQuorum using this data
-	writeQuorum := dataBlocks + 1
+	writeQuorum := dataBlocks
+	if dataBlocks == parityBlocks {
+		writeQuorum = dataBlocks + 1
+	}
 
 	if meta["content-type"] == "" {
 		contentType := mimedb.TypeByExtension(path.Ext(object))
@@ -218,9 +209,6 @@ func (xl xlObjects) newMultipartUpload(ctx context.Context, bucket string, objec
 //
 // Implements S3 compatible initiate multipart API.
 func (xl xlObjects) NewMultipartUpload(ctx context.Context, bucket, object string, opts ObjectOptions) (string, error) {
-	if err := checkNewMultipartArgs(ctx, bucket, object, xl); err != nil {
-		return "", err
-	}
 	// No metadata is set, allocate a new one.
 	if opts.UserDefined == nil {
 		opts.UserDefined = make(map[string]string)
@@ -234,11 +222,6 @@ func (xl xlObjects) NewMultipartUpload(ctx context.Context, bucket, object strin
 //
 // Implements S3 compatible Upload Part Copy API.
 func (xl xlObjects) CopyObjectPart(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject, uploadID string, partID int, startOffset int64, length int64, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (pi PartInfo, e error) {
-
-	if err := checkNewMultipartArgs(ctx, srcBucket, srcObject, xl); err != nil {
-		return pi, err
-	}
-
 	partInfo, err := xl.PutObjectPart(ctx, dstBucket, dstObject, uploadID, partID, NewPutObjReader(srcInfo.Reader, nil, nil), dstOpts)
 	if err != nil {
 		return pi, toObjectErr(err, dstBucket, dstObject)
@@ -432,6 +415,51 @@ func (xl xlObjects) PutObjectPart(ctx context.Context, bucket, object, uploadID 
 	}, nil
 }
 
+// GetMultipartInfo returns multipart metadata uploaded during newMultipartUpload, used
+// by callers to verify object states
+// - encrypted
+// - compressed
+func (xl xlObjects) GetMultipartInfo(ctx context.Context, bucket, object, uploadID string, opts ObjectOptions) (MultipartInfo, error) {
+	result := MultipartInfo{
+		Bucket:   bucket,
+		Object:   object,
+		UploadID: uploadID,
+	}
+
+	if err := xl.checkUploadIDExists(ctx, bucket, object, uploadID); err != nil {
+		return result, toObjectErr(err, bucket, object, uploadID)
+	}
+
+	uploadIDPath := xl.getUploadIDDir(bucket, object, uploadID)
+
+	storageDisks := xl.getDisks()
+
+	// Read metadata associated with the object from all disks.
+	partsMetadata, errs := readAllXLMetadata(ctx, storageDisks, minioMetaMultipartBucket, uploadIDPath)
+
+	// get Quorum for this object
+	_, writeQuorum, err := objectQuorumFromMeta(ctx, xl, partsMetadata, errs)
+	if err != nil {
+		return result, toObjectErr(err, minioMetaMultipartBucket, uploadIDPath)
+	}
+
+	reducedErr := reduceWriteQuorumErrs(ctx, errs, objectOpIgnoredErrs, writeQuorum)
+	if reducedErr == errXLWriteQuorum {
+		return result, toObjectErr(reducedErr, minioMetaMultipartBucket, uploadIDPath)
+	}
+
+	_, modTime := listOnlineDisks(storageDisks, partsMetadata, errs)
+
+	// Pick one from the first valid metadata.
+	xlMeta, err := pickValidXLMeta(ctx, partsMetadata, modTime, writeQuorum)
+	if err != nil {
+		return result, err
+	}
+
+	result.UserDefined = xlMeta.Meta
+	return result, nil
+}
+
 // ListObjectParts - lists all previously uploaded parts for a given
 // object and uploadID.  Takes additional input of part-number-marker
 // to indicate where the listing should begin from.
@@ -440,9 +468,7 @@ func (xl xlObjects) PutObjectPart(ctx context.Context, bucket, object, uploadID 
 // ListPartsInfo structure is marshaled directly into XML and
 // replied back to the client.
 func (xl xlObjects) ListObjectParts(ctx context.Context, bucket, object, uploadID string, partNumberMarker, maxParts int, opts ObjectOptions) (result ListPartsInfo, e error) {
-	if err := checkListPartsArgs(ctx, bucket, object, xl); err != nil {
-		return result, err
-	}
+
 	if err := xl.checkUploadIDExists(ctx, bucket, object, uploadID); err != nil {
 		return result, toObjectErr(err, bucket, object, uploadID)
 	}
@@ -531,10 +557,6 @@ func (xl xlObjects) ListObjectParts(ctx context.Context, bucket, object, uploadI
 //
 // Implements S3 compatible Complete multipart API.
 func (xl xlObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, opts ObjectOptions) (oi ObjectInfo, e error) {
-	if err := checkCompleteMultipartArgs(ctx, bucket, object, xl); err != nil {
-		return oi, err
-	}
-
 	if err := xl.checkUploadIDExists(ctx, bucket, object, uploadID); err != nil {
 		return oi, toObjectErr(err, bucket, object, uploadID)
 	}
@@ -544,6 +566,8 @@ func (xl xlObjects) CompleteMultipartUpload(ctx context.Context, bucket string, 
 	if xl.parentDirIsObject(ctx, bucket, path.Dir(object)) {
 		return oi, toObjectErr(errFileParentIsFile, bucket, object)
 	}
+
+	defer ObjectPathUpdated(path.Join(bucket, object))
 
 	// Calculate s3 compatible md5sum for complete multipart.
 	s3MD5 := getCompleteMultipartMD5(parts)
@@ -673,13 +697,6 @@ func (xl xlObjects) CompleteMultipartUpload(ctx context.Context, bucket string, 
 	}
 
 	if xl.isObject(bucket, object) {
-		// Deny if WORM is enabled
-		if isWORMEnabled(bucket) {
-			if _, err := xl.getObjectInfo(ctx, bucket, object, ObjectOptions{}); err == nil {
-				return ObjectInfo{}, ObjectAlreadyExists{Bucket: bucket, Object: object}
-			}
-		}
-
 		// Rename if an object already exists to temporary location.
 		newUniqueID := mustGetUUID()
 
@@ -717,6 +734,7 @@ func (xl xlObjects) CompleteMultipartUpload(ctx context.Context, bucket string, 
 	for i := 0; i < len(onlineDisks); i++ {
 		if onlineDisks[i] == nil || storageDisks[i] == nil {
 			xl.addPartialUpload(bucket, object)
+			break
 		}
 	}
 
@@ -736,9 +754,6 @@ func (xl xlObjects) CompleteMultipartUpload(ctx context.Context, bucket string, 
 // that this is an atomic idempotent operation. Subsequent calls have
 // no affect and further requests to the same uploadID would not be honored.
 func (xl xlObjects) AbortMultipartUpload(ctx context.Context, bucket, object, uploadID string) error {
-	if err := checkAbortMultipartArgs(ctx, bucket, object, xl); err != nil {
-		return err
-	}
 	// Validates if upload ID exists.
 	if err := xl.checkUploadIDExists(ctx, bucket, object, uploadID); err != nil {
 		return toObjectErr(err, bucket, object, uploadID)
