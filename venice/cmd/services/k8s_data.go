@@ -68,6 +68,13 @@ var eventsVolume = protos.ModuleSpec_Volume{
 	MountPath: globals.EventsDir,
 }
 
+// alertsVolume is a reusable volume definition for Pensando alerts.
+var alertsVolume = protos.ModuleSpec_Volume{
+	Name:      "alerts",
+	HostPath:  globals.AlertsDir,
+	MountPath: globals.AlertsDir,
+}
+
 // objstoreVolume1 is a reusable volume definition for Pensando object store.
 var objstoreVolume1 = protos.ModuleSpec_Volume{
 	Name:      "disk1",
@@ -227,6 +234,7 @@ var k8sModules = map[string]protos.Module{
 				etcdClientCredsVolume,
 				logVolume,
 				eventsVolume,
+				alertsVolume,
 			},
 			RestrictNodes: memoryHogIndicator,
 		},
@@ -775,38 +783,34 @@ var k8sModules = map[string]protos.Module{
 			},
 		},
 	},
-	/*
-		globals.AlertMgr: {
-			TypeMeta: api.TypeMeta{
-				Kind: "Module",
-			},
-			ObjectMeta: api.ObjectMeta{
-				Name: globals.AlertMgr,
-			},
-			Spec: protos.ModuleSpec{
-				Type:      protos.ModuleSpec_Deployment,
-				NumCopies: 1,
-				Submodules: []protos.ModuleSpec_Submodule{
-					{
-						Name:    globals.AlertMgr,
-						EnvVars: map[string]string{},
-						Services: []protos.ModuleSpec_Submodule_Service{
-							{
-								Name: globals.AlertMgr,
-								Port: runtime.MustUint32(globals.AlertMgrRPCPort),
-							},
-						},
-						Args: []string{
-							"-resolver-urls", "$RESOLVER_URLS",
+	globals.AlertMgr: {
+		TypeMeta: api.TypeMeta{
+			Kind: "Module",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.AlertMgr,
+		},
+		Spec: protos.ModuleSpec{
+			Type:      protos.ModuleSpec_Deployment,
+			NumCopies: 1,
+			Submodules: []protos.ModuleSpec_Submodule{
+				{
+					Name:    globals.AlertMgr,
+					EnvVars: map[string]string{},
+					Services: []protos.ModuleSpec_Submodule_Service{
+						{
+							Name: globals.AlertMgr,
+							Port: runtime.MustUint32(globals.AlertMgrRPCPort),
 						},
 					},
-				},
-				Volumes: []protos.ModuleSpec_Volume{
-					logVolume,
-					eventsVolume,
-					elasticClientCredsVolume,
+					Args: []string{
+						"-resolver-urls", "$RESOLVER_URLS",
+					},
 				},
 			},
+			Volumes: []protos.ModuleSpec_Volume{
+				logVolume,
+			},
 		},
-	*/
+	},
 }

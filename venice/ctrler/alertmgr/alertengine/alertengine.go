@@ -582,6 +582,9 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 }
 
 func (ae *alertEngine) processAlert(peOutput *policyengine.PEOutput) error {
+	// Alert is received when its ACK status changes.
+	a := peOutput.Object.(*monitoring.Alert)
+	ae.logger.Debugf("Received alert: %v", a)
 	return nil
 }
 

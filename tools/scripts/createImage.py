@@ -164,6 +164,7 @@ ExecuteCommand("cp tools/scripts/gettechsupport.sh tools/docker-files/install/ta
 ExecuteCommand("cp nic/build/x86_64/iris/" + asic + "/bin/penctl.linux tools/docker-files/install/target/usr/bin/ ")
 ExecuteCommand("cp venice/build/bin/psmctl.linux tools/docker-files/install/target/usr/bin/ ")
 ExecuteCommand("cp tools/scripts/INSTALL.sh tools/docker-files/install/target/usr/bin/ ")
+ExecuteCommand("cp -r alerts tools/docker-files/install/target/var/lib/")
 
 with open("bin/venice-install.json", 'w') as f:
     json.dump(installInfo, f, indent=True, sort_keys=True, cls=MyEncoder)

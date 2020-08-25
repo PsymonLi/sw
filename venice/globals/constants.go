@@ -101,6 +101,9 @@ const (
 	EventsDir    = "/var/lib/pensando/events"
 	DSCEventsDir = LogDir + "/events"
 
+	// Alerts directory
+	AlertsDir = "/var/lib/pensando/alerts"
+
 	// Cores directory
 	CoresDir = "/data/core"
 
@@ -309,4 +312,7 @@ var (
 
 	// PensandoPEN PrivateEnterpriseNumber assigned by IANA
 	PensandoPEN = 51886
+
+	// AlertsPath is where default alert polices are stored
+	AlertsPath = AlertsDir
 )

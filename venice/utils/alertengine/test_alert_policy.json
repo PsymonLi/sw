@@ -1,0 +1,36 @@
+{
+        "kind": "AlertPolicy",
+        "meta": {
+                "name": "unhealthy-DSC",
+                "tenant": "default"
+        },
+        "spec": {
+                "resource": "DistributedServiceCard",
+                "severity": "critical",
+                "message": "DSC unhealthy",
+                "requirements": [
+                        {
+                                "key": "status.admission-phase",
+                                "operator": "Equals",
+                                "values": [
+                                        "Admitted"
+                                ]
+                        },
+                        {
+                                "key": "status.conditions.type",
+                                "operator": "equals",
+                                "values": [
+                                        "Healthy"
+                                ]
+                        },
+                        {
+                                "key": "status.sonditions.status",
+                                "operator": "Equals",
+                                "values": [
+                                        "True"
+                                ]
+                        }
+                ]
+        }
+}
+

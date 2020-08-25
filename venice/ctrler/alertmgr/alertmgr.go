@@ -137,10 +137,14 @@ func New(logger log.Logger, rslvr resolver.Interface) (Interface, error) {
 
 func (m *mgr) Run(apiCl apiservice.Services) {
 	inited := false
-	b := balancer.New(m.rslvr)
-	defer b.Close()
+	var b balancer.Balancer
 
 	for {
+		if b != nil {
+			b.Close()
+			b = nil
+		}
+
 		if m.watcher.GetRunningStatus() {
 			m.watcher.Stop()
 		}
@@ -169,6 +173,7 @@ func (m *mgr) Run(apiCl apiservice.Services) {
 			m.apiClient = apiCl
 		} else {
 			// Create API client with resolver.
+			b = balancer.New(m.rslvr)
 			apiClient, err := apiservice.NewGrpcAPIClient(globals.AlertMgr, globals.APIServer, m.logger, rpckit.WithBalancer(b))
 			if err != nil {
 				m.logger.Warnf("Failed to create api client, err: %v", err)

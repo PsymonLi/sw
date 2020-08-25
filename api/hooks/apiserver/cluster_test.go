@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -837,7 +838,7 @@ func TestTenantObject(t *testing.T) {
 	}
 }
 
-func TestCreateDefaultAlertPolicy(t *testing.T) {
+func TestCreateDefaultEventBasedAlertPolicy(t *testing.T) {
 	tests := []struct {
 		name     string
 		oper     apiintf.APIOperType
@@ -901,7 +902,95 @@ func TestCreateDefaultAlertPolicy(t *testing.T) {
 	}
 	for _, test := range tests {
 		txn := kvs.NewTxn()
-		out, ok, err := clusterHooks.createDefaultAlertPolicy(ctx, kvs, txn, "", test.oper, false, test.in)
+		out, ok, err := clusterHooks.createDefaultEventBasedAlertPolicy(ctx, kvs, txn, "", test.oper, false, test.in)
+		fmt.Println(err)
+		Assert(t, test.result == ok, fmt.Sprintf("[%v] test failed", test.name))
+		Assert(t, test.err == (err != nil), fmt.Sprintf("[%v] test failed", test.name))
+		Assert(t, reflect.DeepEqual(test.out, out), fmt.Sprintf("[%v] test failed, expected returned obj [%#v], got [%#v]", test.name, test.out, out))
+		Assert(t, test.txnEmpty == txn.IsEmpty(), fmt.Sprintf("[%v] test failed, expected txn empty to be [%v], got [%v]", test.name, test.txnEmpty, txn.IsEmpty()))
+	}
+}
+
+func TestDefaultAlertPolicies(t *testing.T) {
+	globals.AlertsPath = os.Getenv("GOPATH") + "/src/github.com/pensando/sw/alerts"
+
+	tests := []struct {
+		name     string
+		oper     apiintf.APIOperType
+		in       interface{}
+		out      interface{}
+		txnEmpty bool
+		result   bool
+		err      bool
+	}{
+		{
+			name: "invalid input object for create tenant",
+			oper: apiintf.CreateOper,
+			in: struct {
+				Test string
+			}{"testing"},
+			out: struct {
+				Test string
+			}{"testing"},
+			txnEmpty: true,
+			result:   true,
+			err:      true,
+		},
+		{
+			name: "create default alert policies for tenant",
+			oper: apiintf.CreateOper,
+			in: cluster.Tenant{
+				TypeMeta: api.TypeMeta{Kind: string(cluster.KindTenant)},
+				ObjectMeta: api.ObjectMeta{
+					Tenant: "tnt",
+					Name:   "tnt",
+				},
+			},
+			out: cluster.Tenant{
+				TypeMeta: api.TypeMeta{Kind: string(cluster.KindTenant)},
+				ObjectMeta: api.ObjectMeta{
+					Tenant: "tnt",
+					Name:   "tnt",
+				},
+			},
+			txnEmpty: true,
+			result:   true,
+			err:      false,
+		},
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancelFunc()
+	logConfig := log.GetDefaultConfig("TestClusterHooks")
+	l := log.GetNewLogger(logConfig)
+	storecfg := store.Config{
+		Type:    store.KVStoreTypeMemkv,
+		Codec:   runtime.NewJSONCodec(runtime.NewScheme()),
+		Servers: []string{t.Name()},
+	}
+	kvs, err := store.New(storecfg)
+	if err != nil {
+		t.Fatalf("unable to create kvstore %s", err)
+	}
+	clusterHooks := &clusterHooks{
+		logger: l,
+	}
+
+	// create policies
+	for _, test := range tests {
+		txn := kvs.NewTxn()
+		out, ok, err := clusterHooks.createDefaultAlertPolicies(ctx, kvs, txn, "", test.oper, false, test.in)
+		fmt.Println(err)
+		Assert(t, test.result == ok, fmt.Sprintf("[%v] test failed", test.name))
+		Assert(t, test.err == (err != nil), fmt.Sprintf("[%v] test failed", test.name))
+		Assert(t, reflect.DeepEqual(test.out, out), fmt.Sprintf("[%v] test failed, expected returned obj [%#v], got [%#v]", test.name, test.out, out))
+		Assert(t, test.txnEmpty == txn.IsEmpty(), fmt.Sprintf("[%v] test failed, expected txn empty to be [%v], got [%v]", test.name, test.txnEmpty, txn.IsEmpty()))
+	}
+
+	// delete policies
+	for _, test := range tests {
+		txn := kvs.NewTxn()
+		out, ok, err := clusterHooks.deleteDefaultAlertPolicies(ctx, kvs, txn, "", test.oper, false, test.in)
 		fmt.Println(err)
 		Assert(t, test.result == ok, fmt.Sprintf("[%v] test failed", test.name))
 		Assert(t, test.err == (err != nil), fmt.Sprintf("[%v] test failed", test.name))

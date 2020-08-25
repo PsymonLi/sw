@@ -38,6 +38,7 @@ import (
 	"github.com/pensando/sw/venice/apiserver"
 	apisrvpkg "github.com/pensando/sw/venice/apiserver/pkg"
 	"github.com/pensando/sw/venice/globals"
+	aeutils "github.com/pensando/sw/venice/utils/alertengine"
 	"github.com/pensando/sw/venice/utils/authz"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/kvstore"
@@ -459,9 +460,9 @@ func (cl *clusterHooks) createDefaultRoles(ctx context.Context, kv kvstore.Inter
 	return r, true, nil
 }
 
-// createDefaultAlertPolicy creates a default alert policy (ies) for the user. This is mainly to make the life easy for the user.
+// createDefaultEventBasedAlertPolicy creates a default alert policy (ies) for the user. This is mainly to make the life easy for the user.
 // so, we do not manage the life cycle of these objects. User can update/delete these objects as like any other objects that were created by user.
-func (cl *clusterHooks) createDefaultAlertPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+func (cl *clusterHooks) createDefaultEventBasedAlertPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
 	r, ok := i.(cluster.Tenant)
 	if !ok {
 		cl.logger.ErrorLog("method", "createDefaultAlertPolicy", "msg", fmt.Sprintf("API server hook to create default alert policy called for invalid object type [%#v]", i))
@@ -497,6 +498,45 @@ func (cl *clusterHooks) createDefaultAlertPolicy(ctx context.Context, kv kvstore
 
 	if err := txn.Create(alertPolicy.MakeKey(string(apiclient.GroupMonitoring)), alertPolicy); err != nil {
 		return r, true, err
+	}
+
+	return r, true, nil
+}
+
+// createDefaultAlertPolicies creates default alert polices for the user.
+func (cl *clusterHooks) createDefaultAlertPolicies(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+	r, ok := i.(cluster.Tenant)
+	if !ok {
+		cl.logger.ErrorLog("method", "createDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to create default alert policies called for invalid object type [%#v]", i))
+		return i, true, errors.New("invalid input type")
+	}
+	cl.logger.DebugLog("method", "createDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook called to create default alert policies for tenant [%v]", r.Name))
+
+	pols, err := aeutils.GetDefaultAlertPolicies([]string{globals.AlertsPath + "/" + "default_policies"}, []string{"example.json"})
+	if err != nil {
+		cl.logger.ErrorLog("method", "createDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to create default alert policies failed to get default alert policies, err: %v", err))
+		// Let the tenant creation continue.
+		return r, true, nil
+	}
+
+	apiServer := apisrvpkg.MustGetAPIServer()
+	ts, _ := types.TimestampProto(time.Now())
+
+	for i := range pols {
+		pols[i].APIVersion = apiServer.GetVersion()
+		pols[i].UUID = uuid.NewV4().String()
+		pols[i].CreationTime = api.Timestamp{Timestamp: *ts}
+		pols[i].ModTime = api.Timestamp{Timestamp: *ts}
+		pols[i].Tenant = r.GetName()
+		pols[i].Namespace = globals.DefaultNamespace
+		pols[i].GenerationID = "1"
+		pols[i].SelfLink = pols[i].MakeURI("configs", pols[i].APIVersion, string(apiclient.GroupMonitoring))
+		pols[i].Spec.Enable = true
+		if err := txn.Create(pols[i].MakeKey(string(apiclient.GroupMonitoring)), &(pols[i])); err != nil {
+			cl.logger.ErrorLog("method", "createDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to create default alert policies failed for policy %v, err: %v", pols[i], err))
+			return r, true, err
+		}
+		cl.logger.DebugLog("method", "createDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to create default alert policies succeeded for policy %v, err: %v", pols[i], err))
 	}
 
 	return r, true, nil
@@ -538,7 +578,7 @@ func (cl *clusterHooks) deleteDefaultRoles(ctx context.Context, kv kvstore.Inter
 	return r, true, nil
 }
 
-func (cl *clusterHooks) deleteDefaultAlertPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+func (cl *clusterHooks) deleteDefaultEventBasedAlertPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
 	r, ok := i.(cluster.Tenant)
 	if !ok {
 		cl.logger.ErrorLog("method", "deleteDefaultAlertPolicy", "msg", fmt.Sprintf("API server hook to delete default alert policy called for invalid object type [%#v]", i))
@@ -554,6 +594,34 @@ func (cl *clusterHooks) deleteDefaultAlertPolicy(ctx context.Context, kv kvstore
 	if err := txn.Delete(alertPolicy.MakeKey(string(apiclient.GroupMonitoring))); err != nil {
 		return r, true, err
 	}
+	return r, true, nil
+}
+
+func (cl *clusterHooks) deleteDefaultAlertPolicies(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+	r, ok := i.(cluster.Tenant)
+	if !ok {
+		cl.logger.ErrorLog("method", "deleteDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to delete default alert policies called for invalid object type [%#v]", i))
+		return i, true, errors.New("invalid input type")
+	}
+	cl.logger.DebugLog("method", "deleteDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook called to delete default alert policy for tenant [%v]", r.Name))
+
+	pols, err := aeutils.GetDefaultAlertPolicies([]string{globals.AlertsPath + "/" + "default_policies"}, []string{"example.json"})
+	if err != nil {
+		cl.logger.ErrorLog("method", "deleteDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to create default alert policies failed to get default alert policies, err: %v", err))
+		// Let the tenant deletion continue.
+		return r, true, nil
+	}
+
+	for _, pol := range pols {
+		pol.Tenant = r.GetName()
+		pol.Namespace = globals.DefaultNamespace
+		if err := txn.Delete(pol.MakeKey(string(apiclient.GroupMonitoring))); err != nil {
+			cl.logger.ErrorLog("method", "deleteDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to delete default alert policies failed for policy %v, err: %v", pol, err))
+			return r, true, err
+		}
+		cl.logger.DebugLog("method", "deleteDefaultAlertPolicies", "msg", fmt.Sprintf("API server hook to delete default alert policies succeeded for policy %v, err: %v", pol, err))
+	}
+
 	return r, true, nil
 }
 
@@ -1548,13 +1616,15 @@ func registerClusterHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createFirewallProfile)
 	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultVirtualRouter)
 	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultRouteTable)
-	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultAlertPolicy)
+	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultEventBasedAlertPolicy)
+	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultAlertPolicies)
 	svc.GetCrudService("Tenant", apiintf.CreateOper).WithPreCommitHook(r.createDefaultDSCProfile)
 	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultRoles)
 	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteFirewallProfile)
 	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultVirtualRouter)
 	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultRouteTable)
-	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultAlertPolicy)
+	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultEventBasedAlertPolicy)
+	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultAlertPolicies)
 	svc.GetCrudService("Tenant", apiintf.DeleteOper).WithPreCommitHook(r.deleteDefaultTelemetryPolicies)
 
 	svc.GetCrudService("License", apiintf.CreateOper).GetRequestType().WithValidate(r.validateFFBootstrap)
