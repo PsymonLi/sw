@@ -330,8 +330,8 @@ nic/build/$ARCH/$PIPELINE/bin/cpldmon                               /platform/bi
 nic/build/$ARCH/$PIPELINE/bin/mctpd                                 /platform/bin/
 nic/build/$ARCH/$PIPELINE/bin/pldmd                                 /platform/bin/
 nic/build/$ARCH/$PIPELINE/bin/mctputil                              /platform/bin/
-nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbtrace                        /platform/bin/
-nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbmon                          /platform/bin/
+nic/build/$ARCH/$PIPELINE/bin/elbtrace                              /platform/bin/
+nic/build/$ARCH/$PIPELINE/bin/elbmon                                /platform/bin/
 
 # Libraries
 nic/build/$ARCH/$PIPELINE/lib/libnicmgr.so                          /platform/lib/

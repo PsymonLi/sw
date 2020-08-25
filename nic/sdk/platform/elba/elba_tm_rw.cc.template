@@ -3257,6 +3257,8 @@ elba_tm_init (sdk::lib::catalog* catalog,
     sdk_ret_t ret = sdk::SDK_RET_OK;
     elba_tm_cfg_profile_t tm_cfg_profile_;
     elba_tm_cfg_profile_t *tm_cfg_profile = &tm_cfg_profile_;
+    elb_top_csr_t &elb0    = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_pbc_csr_t &pbc_csr = elb0.pb.pbc;
 
     elba_tm_asic_profile_t asic_profile;
 
@@ -3321,6 +3323,14 @@ elba_tm_init (sdk::lib::catalog* catalog,
             elba_tm_update_perf_run_config();
         }
     }
+
+    // ELBA supports caching of replication entries. 
+    // When replication list is updated with more than one entry,  Cache is not updated.
+    // Hence, temporarily disabling Caching feature in ELBA
+    pbc_csr.pbccache.cfg_pcache_control.read();
+    pbc_csr.pbccache.cfg_pcache_control.enable(0);
+    pbc_csr.pbccache.cfg_pcache_control.write();
+
     SDK_TRACE_DEBUG("Init completed");
     tm_ctx()->init_complete.store(true);
 
