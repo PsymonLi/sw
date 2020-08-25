@@ -111,13 +111,14 @@ func (r *Requirement) MatchesObj(obj matchObject) bool {
 			// Remove the brackets from the key
 			key := r.Key[1 : len(r.Key)-1]
 			fieldValues, err := ref.FieldValues(reflect.ValueOf(obj), field)
-			// infield only supports checking for single value fields to keep lookup fast
-			if err != nil || len(fieldValues) != 1 {
+			if err != nil {
 				continue
 			}
 
-			if fieldValues[0] == key {
-				return true
+			for _, v := range fieldValues {
+				if v == key {
+					return true
+				}
 			}
 		}
 

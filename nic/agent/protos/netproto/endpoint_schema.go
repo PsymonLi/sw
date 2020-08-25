@@ -53,9 +53,11 @@ var typesMapEndpoint = map[string]*api.Struct{
 
 		CLITags: map[string]api.CLIInfo{
 			"api-version":         api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
+			"dsc-ids":             api.CLIInfo{Path: "Spec.DSCIDs", Skip: false, Insert: "", Help: ""},
 			"enic-id":             api.CLIInfo{Path: "Status.EnicID", Skip: false, Insert: "", Help: ""},
 			"generation-id":       api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
 			"homing-host-address": api.CLIInfo{Path: "Spec.HomingHostAddr", Skip: false, Insert: "", Help: ""},
+			"homing-host-ips":     api.CLIInfo{Path: "Spec.HomingHostIPs", Skip: false, Insert: "", Help: ""},
 			"ipv4-addresses":      api.CLIInfo{Path: "Spec.IPv4Addresses", Skip: false, Insert: "", Help: ""},
 			"ipv6-address":        api.CLIInfo{Path: "Spec.IPv6Addresses", Skip: false, Insert: "", Help: ""},
 			"kind":                api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
@@ -117,6 +119,10 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"Migration": api.Field{Name: "Migration", CLITag: api.CLIInfo{ID: "migration", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "migration", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"MirrorSessions": api.Field{Name: "MirrorSessions", CLITag: api.CLIInfo{ID: "mirror-sessions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mirror-sessions", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"DSCIDs": api.Field{Name: "DSCIDs", CLITag: api.CLIInfo{ID: "dsc-ids", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "dsc-ids", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"HomingHostIPs": api.Field{Name: "HomingHostIPs", CLITag: api.CLIInfo{ID: "homing-host-ips", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "homing-host-ips", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"netproto.EndpointStatus": &api.Struct{

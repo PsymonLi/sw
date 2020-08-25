@@ -507,11 +507,13 @@ func TestMatchesObj(t *testing.T) {
 			Kind: "Endpoint",
 		},
 		Spec: workload.EndpointSpec{
-			NodeUUID: "00ae.cd00.1111",
+			NodeUUID:     "00ae.cd00.1111",
+			NodeUUIDList: []string{"aaaa.bbbb.cccc", "aaaa.bbbb.dddd"},
 		},
 		Status: workload.EndpointStatus{
-			WorkloadName: "workload1",
-			NodeUUID:     "00ae.cd01.5555",
+			WorkloadName:  "workload1",
+			NodeUUID:      "00ae.cd01.5555",
+			IPv4Addresses: []string{"1.2.3.4", "1.2.3.5"},
 		},
 	}
 
@@ -583,6 +585,90 @@ func TestMatchesObj(t *testing.T) {
 			selector: Selector{
 				Requirements: []*Requirement{
 					{
+						Key:      "(1.2.3.4)",
+						Operator: "inField",
+						Values:   []string{"Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd00.1119)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: false,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(1.2.3.4)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(1.2.3.4)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Spec.NodeUUIDList", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(1.2.3.4)",
+						Operator: "inField",
+						Values:   []string{"Status.NodeUUID", "Spec.NodeUUID", "Spec.NodeUUIDList", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(aaaa.bbbb.dddd)",
+						Operator: "inField",
+						Values:   []string{"Status.NodeUUID", "Spec.NodeUUID", "Spec.NodeUUIDList", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(aaaa.bbbb.dded)",
+						Operator: "inField",
+						Values:   []string{"Status.NodeUUID", "Spec.NodeUUID", "Spec.NodeUUIDList", "Status.IPv4Addresses"},
+					},
+				},
+			},
+			match: false,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
 						Key:      "(00ae.cd01.5555)",
 						Operator: "inField",
 						Values:   []string{"Spec.NodeUUID", "Status.WorkloadName"},
@@ -621,6 +707,160 @@ func BenchmarkMatchesObjPerformance(b *testing.B) {
 				Key:      "(00ae.cd00.1111)",
 				Operator: "inField",
 				Values:   []string{"Spec.NodeUUID"},
+			},
+		},
+	}
+
+	for ii := 0; ii < b.N; ii++ {
+		sel.MatchesObj(e)
+	}
+}
+
+func BenchmarkMatchesObjPerformanceWorst(b *testing.B) {
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID:     "00ae.cd01.4443",
+			NodeUUIDList: []string{"00ae.cd00.1111", "00ae.cd00.1112"},
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName:  "workload1",
+			NodeUUID:      "00ae.cd01.5555",
+			IPv4Addresses: []string{"192.168.101.102", "16.17.18.19"},
+		},
+	}
+
+	sel := Selector{
+		Requirements: []*Requirement{
+			{
+				Key:      "(16.17.18.19)",
+				Operator: "inField",
+				Values:   []string{"Spec.NodeUUID", "Spec.NodeUUIDList", "Status.NodeUUID", "Status.IPv4Addresses"},
+			},
+		},
+	}
+
+	for ii := 0; ii < b.N; ii++ {
+		v := sel.MatchesObj(e)
+		if !v {
+			b.Fatalf("Expected selector to pass, but failed")
+		}
+	}
+}
+
+func BenchmarkMatchesObjPerformanceBaselineNonMatching(b *testing.B) {
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID: "00ae.cd00.1111",
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName: "workload1",
+			NodeUUID:     "00ae.cd01.5555",
+		},
+	}
+
+	sel := Selector{
+		Requirements: []*Requirement{
+			{
+				Key:      "(00ae.cd00.1112)",
+				Operator: "inField",
+				Values:   []string{"Spec.NodeUUID", "Status.NodeUUID"},
+			},
+		},
+	}
+
+	for ii := 0; ii < b.N; ii++ {
+		sel.MatchesObj(e)
+	}
+}
+
+func BenchmarkMatchesObjPerformanceAverageNonMatching(b *testing.B) {
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID:     "00ae.cd01.4443",
+			NodeUUIDList: []string{"00ae.cd00.1111"},
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName: "workload1",
+		},
+	}
+
+	sel := Selector{
+		Requirements: []*Requirement{
+			{
+				Key:      "(aaaa.bbbb.cccc)",
+				Operator: "inField",
+				Values:   []string{"Spec.NodeUUID", "Spec.NodeUUIDList", "Status.NodeUUID", "Status.IPv4Addresses"},
+			},
+		},
+	}
+
+	for ii := 0; ii < b.N; ii++ {
+		sel.MatchesObj(e)
+	}
+}
+
+func BenchmarkMatchesObjPerformanceWorstNonMatching(b *testing.B) {
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID:     "00ae.cd01.4443",
+			NodeUUIDList: []string{"00ae.cd00.1111", "00ae.cd00.1112"},
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName:  "workload1",
+			NodeUUID:      "00ae.cd01.5555",
+			IPv4Addresses: []string{"192.168.101.102", "16.17.18.19"},
+		},
+	}
+
+	sel := Selector{
+		Requirements: []*Requirement{
+			{
+				Key:      "(16.17.18.25)",
+				Operator: "inField",
+				Values:   []string{"Spec.NodeUUID", "Spec.NodeUUIDList", "Status.NodeUUID", "Status.IPv4Addresses"},
+			},
+		},
+	}
+
+	for ii := 0; ii < b.N; ii++ {
+		sel.MatchesObj(e)
+	}
+}
+
+func BenchmarkMatchesObjPerformanceAverage(b *testing.B) {
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID:     "00ae.cd01.4443",
+			NodeUUIDList: []string{"00ae.cd00.1111", "00ae.cd00.1112"},
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName:  "workload1",
+			NodeUUID:      "00ae.cd01.5555",
+			IPv4Addresses: []string{"192.168.101.102", "16.17.18.19"},
+		},
+	}
+
+	sel := Selector{
+		Requirements: []*Requirement{
+			{
+				Key:      "(00ae.cd01.4443)",
+				Operator: "inField",
+				Values:   []string{"Spec.NodeUUID", "Spec.NodeUUIDList", "Status.NodeUUID", "Status.IPv4Addresses"},
 			},
 		},
 	}

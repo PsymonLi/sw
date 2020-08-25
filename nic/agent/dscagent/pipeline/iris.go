@@ -2223,7 +2223,8 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 func (i *IrisAPI) GetWatchOptions(ctx context.Context, kind string) (ret api.ListWatchOptions) {
 	switch kind {
 	case "Endpoint":
-		str := fmt.Sprintf("(%s) infield (spec.node-uuid,status.node-uuid)", i.InfraAPI.GetDscName())
+		// To start supporting migration, add status.node-uuid in the infield list too
+		str := fmt.Sprintf("(%s) infield (spec.node-uuid,spec.DSCIDs)", i.InfraAPI.GetDscName())
 		log.Info("WatchOptions for: ", kind, " ", str)
 		ret.FieldSelector = str
 	}

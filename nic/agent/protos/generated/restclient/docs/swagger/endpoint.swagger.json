@@ -598,6 +598,20 @@
             "type": "string"
           },
           "description": "Mirror sessions, if mirroring is enabled for this endpoint."
+        },
+        "dsc-ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "DSCIDs is the list of DSCs where the an endpoint is supposed to go to."
+        },
+        "homing-host-ips": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "HomingHostIPList list of IPs where the endpoint is present."
         }
       }
     },

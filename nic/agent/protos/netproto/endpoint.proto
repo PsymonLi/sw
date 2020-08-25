@@ -76,6 +76,11 @@ message EndpointSpec {
 
     // Mirror sessions, if mirroring is enabled for this endpoint.
     repeated string MirrorSessions = 11 [(gogoproto.jsontag) = "mirror-sessions,omitemtpy"];
+
+    // DSCIDs is the list of DSCs where the an endpoint is supposed to go to 
+    repeated string DSCIDs = 12 [(gogoproto.jsontag) = "dsc-ids,omitempty"];
+    // HomingHostIPList list of IPs where the endpoint is present
+    repeated string HomingHostIPs = 13 [(gogoproto.jsontag) = "homing-host-ips,omitempty"];
 }
 
 // endpoint status
