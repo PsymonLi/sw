@@ -9,6 +9,7 @@
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/hal/plugins/cfg/nw/interface.hpp"
 #include "nic/hal/plugins/cfg/nw/interface_api.hpp"
+#include "nic/hal/plugins/sfw/cfg/nwsec.hpp"
 #include "nic/hal/src/internal/proxy.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/include/hal_cfg.hpp"
@@ -198,6 +199,10 @@ init (hal_cfg_t *hal_cfg)
     } else {
         g_hal_state->set_inband_bond_mode(hal::BOND_MODE_ACTIVE_BACKUP);
     }
+
+    // SFW init moved here for goldFw
+    ret = hal::plugins::sfw::sfw_profile_init(hal_cfg);
+
     HAL_TRACE_DEBUG("Setting bond mode: {}", g_hal_state->inband_bond_mode());
 
     HAL_TRACE_DEBUG("Done with if init");

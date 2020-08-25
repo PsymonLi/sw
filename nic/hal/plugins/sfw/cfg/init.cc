@@ -246,6 +246,16 @@ svc_reg (ServerBuilder *server_builder, hal::hal_feature_set_t feature_set)
     return;
 }
 
+hal_ret_t
+sfw_profile_init (hal_cfg_t *hal_cfg)
+{
+    sfw_init_default_mgmt_security_profile(hal_cfg);
+    sfw_init_default_enforce_security_profile(hal_cfg);
+    sfw_init_default_host_security_profile(hal_cfg);
+
+    return HAL_RET_OK;
+}
+
 // initialization routine for network module
 hal_ret_t
 sfwcfg_init (hal_cfg_t *hal_cfg)
@@ -255,9 +265,7 @@ sfwcfg_init (hal_cfg_t *hal_cfg)
     SDK_ASSERT(g_rule_stats_indexer != NULL);
 
     svc_reg((ServerBuilder *)hal_cfg->server_builder, hal_cfg->features);
-    sfw_init_default_mgmt_security_profile(hal_cfg);
-    sfw_init_default_enforce_security_profile(hal_cfg);
-    sfw_init_default_host_security_profile(hal_cfg);
+    // sfw_profile_init(hal_cfg);
     return HAL_RET_OK;
 }
 

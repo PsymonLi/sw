@@ -268,6 +268,7 @@ namespace plugins {
 namespace sfw {
 hal_ret_t sfw_update_default_security_profile(uint32_t id, bool policy_enforce_en);
 hal_ret_t sfw_update_default_security_profile_spec(SecurityProfileSpec& prof);
+hal_ret_t sfw_profile_init(hal_cfg_t *hal_cfg);
 }
 }
 
