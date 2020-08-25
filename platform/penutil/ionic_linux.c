@@ -263,7 +263,7 @@ ionic_linux_copy_fw_file(FILE *fstream, const char *intfName, const char *src, c
 	if (f1 == NULL) {
 		ionic_print_error(fstream, intfName, "Couldn't open file: %s, error: %s\n",
 			src, strerror(errno));
-		return (errno);
+		return (HPE_SPP_FW_FILE_MISSING);
 	}
 
 	f2 = fopen(dest, "wb");
@@ -271,7 +271,7 @@ ionic_linux_copy_fw_file(FILE *fstream, const char *intfName, const char *src, c
 		ionic_print_error(fstream, intfName, "Couldn't create file: %s, error: %s\n",
 			dest, strerror(errno));
 		fclose(f1);
-		return (EIO);
+		return (HPE_SPP_FW_FILE_PERM_ERR);
 	}
 
 	while (fread(&buffer, 1, 1, f1) > 0) {
@@ -334,7 +334,7 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 	if (error) {
 		ionic_print_error(fstream, intfName, "Couldn't copy file: %s, error: %s\n",
 			path, strerror(errno));
-		return (HPE_SPP_FW_FILE_PERM_ERR);
+		return (error);
 	}
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);

@@ -110,31 +110,31 @@ ionic_dis_add_dev(FILE *fstream, struct ionic *ionic, char *fw_file, xmlNodePtr 
 	ionic_desc_name(ionic, buffer, sizeof(buffer));
 	child = ionic_dis_add_new_node(fstream, intfName, device, "nictype", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->venId);
+	snprintf(buffer, sizeof(buffer), "%04X", ionic->venId);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "venid", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->devId);
+	snprintf(buffer, sizeof(buffer), "%04X", ionic->devId);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "devid", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->subVenId);
+	snprintf(buffer, sizeof(buffer), "%04X", ionic->subVenId);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "subvenid", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->subDevId);
+	snprintf(buffer, sizeof(buffer), "%04X", ionic->subDevId);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "subdevid", "value", buffer);
 
 	snprintf(buffer, sizeof(buffer), "HPE Pensando DSC adapter");
 	child = ionic_dis_add_new_node(fstream, intfName, device, "product_id", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%04x", ionic->domain);
+	snprintf(buffer, sizeof(buffer), "%04X", ionic->domain);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "segment", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%02x", ionic->bus);
+	snprintf(buffer, sizeof(buffer), "%02X", ionic->bus);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "busnumber", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%02x", ionic->dev);
+	snprintf(buffer, sizeof(buffer), "%02X", ionic->dev);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "devicenumber", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%02x", ionic->func);
+	snprintf(buffer, sizeof(buffer), "%02X", ionic->func);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "functionnumber", "value", buffer);
 
 	for (i = 0, j = 0; i< strlen(ionic->slotInfo); i++) {

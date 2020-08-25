@@ -40,12 +40,12 @@ print_usage (char **argv)
 int
 main (int argc,  char **argv)
 {
-	char *log_file = NULL, *path_of_fw = NULL, *discovery_file = NULL;
-	bool update = false, test_multi = false;
+	char *log_file = NULL, *path_of_fw = NULL, *discovery_file = NULL, *pen_ver = NULL;
+	bool update = false, test_multi = false, create = false, add_all = false;
 	int error;
 
 	struct option longopts[] = {
-	//	{ "create NICFWData.xml", required_argument,	NULL, 'c'},
+		{ "create NICFWData.xml", required_argument,	NULL, 'c'},
 		{ "discovery_file", 	required_argument, 	NULL, 'd'},
 		{ "help",  		no_argument,  		NULL, 'h'},
 		{ "log",  		required_argument, 	NULL, 'l'},
@@ -58,15 +58,13 @@ main (int argc,  char **argv)
 #ifdef _WIN32
 	fprintf(stdout, "%s Ver.: %s\n", argv[0], ionic_get_dll_ver());
 #endif
-	while ((error = getopt_long(argc, argv, "c:d:hl:m:p:u:v:x:", longopts, NULL)) != -1) {
+	while ((error = getopt_long(argc, argv, "ac:d:hl:m:p:u:v:x:", longopts, NULL)) != -1) {
 		switch (error) {
-		case 'd':
-			if (optarg) {
-				discovery_file = optarg;
-			}
+#ifdef SPP_DSC_OLD_NICFWDATA
+		case 'a': /* Add all devices in NICFWData.xml */
+			add_all = true;
 			break;
 
-#ifdef SPP_DSC_OLD_NICFWDATA
 		case 'c': /* Option to create NICFWData.xml based on version string. */
 			if (optarg) {
 				pen_ver = optarg;
@@ -74,6 +72,12 @@ main (int argc,  char **argv)
 			}
 			break;
 #endif
+		case 'd':
+			if (optarg) {
+				discovery_file = optarg;
+			}
+			break;
+
 		case 'h':
 			print_usage(argv);
 			exit(0);
@@ -129,15 +133,20 @@ main (int argc,  char **argv)
 		exit(1);
 	}
 
+	if (create) {
+		error = ionic_create_NICFWData(pen_ver, path_of_fw, add_all);
+		exit (error);
+	}
+
 	if (log_file == NULL || discovery_file == NULL || path_of_fw == NULL) {
 		print_usage(argv);
 		exit(1);
 	}
 
 	if (update) {
-		if (test_multi)
+		if (test_multi) {
 			error = ionic_test_multi_update(log_file, path_of_fw, discovery_file);
-		else {
+		} else {
 			fprintf(stderr, "Running firmware update\n");
 			error = ionic_test_update(log_file, path_of_fw, discovery_file);
 		}

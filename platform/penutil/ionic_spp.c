@@ -114,6 +114,7 @@ ionic_open_log_file(void)
 			oem_log_file, strerror(errno));
 	} else {
 		setvbuf (fstream, NULL, _IONBF, 0);
+		fprintf(fstream, "\n----------------------------\n");
 	}
 
 	return (fstream);
@@ -190,8 +191,8 @@ oem_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmw
 			ionic = &ionic_devs[i];
 			intfName = ionic->intfName;
 			error = ionic_add_spp_entry(fstream, &ionic_info[i], ionic, fw_file_path);
-			ionic_print_info(fstream, intfName, "Added entry in ven_adapter_info, error: %d\n",
-				error);
+			ionic_print_info(fstream, intfName, "Added(%d/%d) entry in ven_adapter_info,"
+				" error: %d\n", i, ionic_count, error);
 			if (error) {
 				ionic_print_error(fstream, intfName, "Couldn't add entry, error: %d\n",
 					error);
@@ -219,7 +220,7 @@ oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 	struct ionic *ionic;
 	FILE* fstream, * fw;
 	int i, error, secs;
-	char fw_file[256];
+	char fw_path[128];
 	char *intfName, *sugg;
 #ifndef _WIN32
 	struct timeval start, end;
@@ -233,19 +234,10 @@ oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 		return (error);
 	}
 
-	snprintf(fw_file, sizeof(fw_file), PRIxWS, firmware_file);
+	snprintf(fw_path, sizeof(fw_path), PRIxWS, firmware_file);
 
 	ionic_print_info(fstream, "all", "Enter flash update for PCI(%d:%d:%d.%d) firmware image: %s\n",
-		domain, bus, dev, func, fw_file);
-	/* Check firmware file for permission. */
-	fw = fopen(fw_file, "rb");
-	if (fw == NULL) {
-		ionic_print_error(fstream, "all", "failed to access firmware file: %s\n",
-			fw_file);
-		error = (errno == EACCES) ? HPE_SPP_FW_FILE_PERM_ERR : HPE_SPP_FW_FILE_MISSING;
-		goto err_out;
-	}
-	fclose(fw);
+		domain, bus, dev, func, fw_path);
 
 	error = HPE_SPP_STATUS_SUCCESS;
 	for (i = 0; i < ionic_count; i++) {
@@ -260,12 +252,21 @@ oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 				error = HPE_SPP_FW_VER_SAME;
 				continue;
 			}
+			/* Check firmware file is accessible as a sanity check */
+			fw = fopen(fw_path, "rb");
+			if (fw == NULL) {
+				ionic_print_error(fstream, "all", "failed to access firmware file: %s\n",
+					fw_path);
+				error = (errno == EACCES) ? HPE_SPP_FW_FILE_PERM_ERR : HPE_SPP_FW_FILE_MISSING;
+				goto err_out;
+			}
+			fclose(fw);
 #ifndef _WIN32
 			gettimeofday(&start, NULL);
 #else
 			start = clock();
 #endif
-			error = ionic_flash_firmware(fstream, ionic, fw_file);
+			error = ionic_flash_firmware(fstream, ionic, fw_path);
 #ifndef _WIN32
 			gettimeofday(&end, NULL);
 
@@ -290,7 +291,7 @@ oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 err_out:
 	ionic_print_info(fstream, "all", "Exit flash update PCI(%d:%d:%d.%d)"
 		"firmware image: %s, SPP status: " PRIxWS "\n",
-		domain, bus, dev, func, fw_file, oem_text_for_error_code(error));
+		domain, bus, dev, func, fw_path, oem_text_for_error_code(error));
 	fflush(fstream);
 	fclose(fstream);
 	return (error);
@@ -355,10 +356,13 @@ oem_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_fil
 
 	ionic_print_info(fstream, "all", "Enter create discovery file: %s\n", dis_file);
 
-	if (ionic_count == 0) {
-		ionic_print_error(fstream, "all", "No Naples devices detected\n");
-		error = HPE_SPP_HW_ACCESS;
-		goto err_out;
+	/*
+	 * In case get_adapter_info() is not called before
+	 * do the scanning now.
+	 */
+	error = ionic_init(fstream);
+	if (error) {
+		return (error);
 	}
 
 	error = ionic_parse_NICFWData(fstream, fw_file);

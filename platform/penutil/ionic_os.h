@@ -6,6 +6,9 @@
 
 #include "ionic_spp.h"
 
+/* Use NICFWData.xml file */
+#define SPP_DSC_OLD_NICFWDATA
+
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof((x)[0]))
 
 #define SIZE_1MB(x)		(x / (1024 * 1024))
@@ -124,7 +127,7 @@ struct ionic {
 #endif
 };
 
-#if defined (_USRDLL) || ! defined (_WIN32) 
+#if defined (_USRDLL) || ! defined (_WIN32)
 extern struct ionic ionic_devs[];
 extern int ionic_count;
 extern uint16_t ionic_devid;

@@ -280,10 +280,10 @@ TEST (IonicSppUtilTest, DescNameValid)
 	char buf[64] = "PRE";
 
 	strncpy(ionic.asicType, "CAPRI", sizeof(ionic.asicType));
-	ionic.subDevId = 0x4000;
+	ionic.subDevId = 0x4008;
 	ret = ionic_desc_name(&ionic, buf, sizeof(buf));
 	EXPECT_EQ(ret, 0);
-	ASSERT_STREQ(buf, "PEN_DSC_CAPRI_MEM8G_100G_NIC");
+	ASSERT_STREQ(buf, "PEN_DSC_CAPRI_SFP28_10-25G_NIC");
 }
 
 

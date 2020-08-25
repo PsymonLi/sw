@@ -26,11 +26,9 @@ int ionic_test_discovery(const char *log_file, const char *fw_path, const char *
 int ionic_test_update(const char *log_file, const char *fw_path, const char *discovery_file);
 int ionic_test_multi_update(const char *log_file, const char *fw_path, const char *discovery_file);
 
+int ionic_create_NICFWData(const char *pen_ver, const char *fw_path, bool all);
 #ifdef DSC_SPP_CHECK_MANIFEST
 int ionic_find_version_from_tar(FILE *fstream, char *tar_file, const char *find_file);
-#endif
-#ifdef SPP_DSC_OLD_NICFWDATA
-int ionic_create_NICFWData(const char *pen_ver, const char *fw_path);
 #endif
 /* For GTEST */
 char *ionic_fw_decision2(uint32_t new_maj, uint32_t new_min, uint32_t new_rel, uint32_t cur_maj,

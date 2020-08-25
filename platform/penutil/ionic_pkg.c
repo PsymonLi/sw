@@ -25,6 +25,11 @@
  * NICFWData.xml is meta file for the firmware package.
  */
 
+/*
+ * HPE confirm to use NICFWData.xml and not CPXXX.xml file, compile time
+ * disable for now. We can remove the file in next phase.
+ */
+#ifndef SPP_DSC_OLD_NICFWDATA
 xmlNodePtr
 ionic_find_child(FILE *fstream, xmlNodePtr parent, const char *name, const char *childName)
 {
@@ -136,7 +141,15 @@ ionic_parse_NICFWData(FILE *fstream, char *firmware_file_path)
 	char *intfName;
 	int i, error = 0;
 
-	snprintf(nic_file, sizeof(nic_file), "%s/%s", firmware_file_path, HPE_NIC_FW_DATA_FILE);
+	if (firmware_file_path) {
+		/*
+		 * XXX: this will change soon, hack to compile.
+		 * CPXXX.xml file is present in same directory as hpsetup
+		 * unlike NIICFWData.xml which is in fw_package directory.
+		 */
+	}
+	snprintf(nic_file, sizeof(nic_file), "%s", HPE_NIC_FW_DATA_FILE);
+	//snprintf(nic_file, sizeof(nic_file), "%s/%s", firmware_file_path, HPE_NIC_FW_DATA_FILE);
 	doc = xmlReadFile(nic_file, NULL, 0);
 	if (doc == NULL) {
 		ionic_print_error(fstream, "all", "%s file not found\n", nic_file);
@@ -182,3 +195,4 @@ err_exit:
 	return (error);
 }
 
+#endif /* !SPP_DSC_OLD_NICFWDATA */

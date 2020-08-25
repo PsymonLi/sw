@@ -97,7 +97,7 @@ typedef char spp_char_t;
 /*
  * File contains firmware version and file name details.
  */
-#define HPE_NIC_FW_DATA_FILE 	"CP044891.xml"
+#define HPE_NIC_FW_DATA_FILE 	"NICFWData.xml"
 
 /* From HPE SPP spec, appendix C */
 /*

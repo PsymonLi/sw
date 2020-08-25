@@ -67,29 +67,37 @@ int ionic_verbose_level = 0;
 uint16_t ionic_devid = PCI_DEVICE_ID_PENSANDO_IONIC_ETH_MGMT;
 /* Mode flag to select devcmd(0)/adminQ(non-zero) for firmware update. */
 int ionic_fw_update_type = 0;
+/* ionic init flag to do disocvery only once. */
+static int ionic_spp_init = 0;
 
 /*
  * Naples PCI sub dev id table used to create NICFWData.xml
  * and also to populate discovery file nictype.
+ * See https://docs.google.com/document/d/1baMPIVRQr9KtzJosnJCmt2OlVn8ImhVhKBUEILbHZHI/edit
  */
-static struct {
+struct ionic_subdid {
+	bool hpe_supported;
 	uint16_t subDevId;
 	/*  Only <type> of <VENDOR_NAME>_<TYPE>_1GB_NIC */
 	char nictype[80];
 	/* Full description of device. */
 	char desc[256];
-} naples_subid[] = {
-	{0x4000, "MEM8G_100G", "Naples Dual 100Gb FHHL PCIe, 8GB HBM"},
-	{0x4001, "MEM4G_100G", "Dual 100Gb FHHL PCIe, 4GB HBM"},
-	{0x4002, "MEM4G_25G",  "Naples Dual 25Gb HHHL PCIe, 4GB HBM"},
-	{0x4005, "MEM8G_25G",  "Naples Dual 25Gb HHHL PCIe, 8GB HBM"},
-	{0x4007, "OCP_MEM4G_25G", "Naples Dual 25Gb OCP, 4GB HBM"},
-	{0x4008, "SWM_MEM4G_25G", "Naples Dual 25Gb SWM, 4GB HBM"},
-	{0x4009, "VOMERO_MEM8G_FLASH64G_25G", "Vomero Dual 100Gb HH3/4L PCIe, 8GB HBM, 64GB EMMC"},
-	{0x400a, "MEM8G_FLASH16G_100G", "Naples Dual 100Gb HH3/4L PCIe, 8GB HBM, 16GB EMMC"},
-	{0x400b, "OCP_MEM4G_FLASH8G_100G", "DSC-25-OCP 10/25G 2-port 4G RAM 8G eMMC G1"},
-	{0x400c, "OCP_MEM4G_FLASH8G_10-25G", "DSC-25 10/25G 2-port 4G RAM 8G eMMC G1"},
-	{0x400d, "QSFP28_40-100G", "DSP DSC-100 40/100G 2p QSFP28"},
+};
+
+static struct ionic_subdid naples_subid[] = {
+	{false, 0x4000, "MEM8G_100G", "Naples Dual 100Gb FHHL PCIe, 8GB HBM"},
+	{false, 0x4001, "MEM4G_FLASH8G_40-100G", "DSC-100 40/100G 2-port 4G RAM 8G eMMC G1 Services"},
+	{false, 0x4002, "MEM4G_FLASH8G_10-25G",  "DSC-25 10/25G 2-port 4G RAM 8G eMMC G1 Services"},
+	{false, 0x4005, "MEM8G_10-25G",  "DSC-25 10/25G 2-port 8G RAM 8G eMMC G1 Services"},
+	{true,  0x4007, "OCP_MEM4G_FLASH8G_10-25G", "DSC-25-OCP 10/25G 2-port 4G RAM 8G eMMC G1 Services"},
+	{true,  0x4008, "SFP28_10-25G", "DSP DSC-25 10/25G 2p SFP28"},
+	{false, 0x4009, "VOMERO_MEM8G_FLASH64G_25G", "Vomero Dual 100Gb HH3/4L PCIe, 8GB HBM, 64GB EMMC"},
+	{false, 0x400a, "MEM8G_FLASH16G_40-100G", "DSC-100 40/100G 2-port 8G RAM 16G eMMC G1 Services"},
+	{false, 0x400b, "MEM4G_FLASH8G_10-25G", "DSC-25-OCP 10/25G 2-port 4G RAM 8G eMMC G1 Services"},
+	{false, 0x400c, "MEM4G_FLASH8G_10-25G", "DSC-25 10/25G 2-port 4G RAM 8G eMMC G1 Services"},
+	{false, 0x400d, "QSFP28_100G", " DSP DSC-100 100G 2p QSFP28 Card"},
+	{false, 0x400e, "MEM4G_FLASH8G_10-25G", "DSC-25 10/25G 2-port 4G RAM 8G eMMC G1 Services"},
+	{false, 0x400f, "OCP_MEM4G_FLASH8G_10-25G", "DSC-25-OCP 10/25G 2-port 4G RAM 8G eMMC G1 Services "},
 };
 
 
@@ -99,6 +107,13 @@ ionic_init(FILE *fstream)
 	struct ionic *ionic;
 	int i, error;
 	char *intfName;
+
+	if (ionic_spp_init) {
+		ionic_spp_init = 1;
+		ionic_print_info(fstream, "", "ionic_init already done, DSC card in system : %d\n",
+			ionic_count);
+		return (0);
+	}
 
 	error = ionic_find_devices(fstream, ionic_devs, &ionic_count);
 	if (error) {
@@ -116,7 +131,7 @@ ionic_init(FILE *fstream)
 		 * as specified in SPP spec.
 		 */
 		if (intfName[0] == 0) {
-			snprintf(intfName, sizeof(ionic->intfName), "%04X.%04X.%04X.%04x",
+			snprintf(intfName, sizeof(ionic->intfName), "%04X.%04X.%04X.%04X",
 				ionic->venId, ionic->devId, ionic->subVenId, ionic->subDevId);
 			ionic_print_info(fstream, intfName, "Setting interface name using SPP format\n");
 		}
@@ -371,7 +386,10 @@ ionic_desc_name(struct ionic *ionic, char *desc, int len)
 		}
 	}
 
-	snprintf(desc, len, "PEN_DSC_%s_0x%x_NIC", ionic->asicType, ionic->subDevId);
+	if (ionic->asicType[0])
+		snprintf(desc, len, "PEN_DSC_%s_0x%04X_NIC", ionic->asicType, ionic->subDevId);
+	else
+		snprintf(desc, len, "PEN_DSC_0x%04X_NIC", ionic->subDevId);
 	return (EINVAL);
 }
 
@@ -381,10 +399,11 @@ ionic_desc_name(struct ionic *ionic, char *desc, int len)
  * Create NICFWData.xmll for version string
  */
 int
-ionic_create_NICFWData(const char *pen_ver, const char *fw_path)
+ionic_create_NICFWData(const char *pen_ver, const char *fw_path, bool add_all)
 {
 	xmlDoc *doc = NULL;
 	xmlNodePtr root, nics, nic;
+	struct ionic_subdid *sub;
 	char file[256], buffer[320];
 	int error = 0, len;
 	uint32_t i;
@@ -404,32 +423,38 @@ ionic_create_NICFWData(const char *pen_ver, const char *fw_path)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(naples_subid); i++) {
+		sub = &naples_subid[i];
+		if (!add_all && !sub->hpe_supported)
+			continue;
+
 		nic = xmlNewChild(nics, NULL, BAD_CAST "nic", NULL);
 		if (nic == NULL) {
 			fprintf(stderr, "Failed to add nic node\n");
 			error = ENXIO;
 			goto err_out;
 		}
-		snprintf(buffer, sizeof(buffer), "HPE %s Adapter", naples_subid[i].desc);
+		snprintf(buffer, sizeof(buffer), "HPE %s Adapter", sub->desc);
 		xmlNewProp(nic, BAD_CAST "name", BAD_CAST buffer);
 
-		snprintf(buffer, sizeof(buffer), "%x", PCI_VENDOR_ID_PENSANDO);
+		snprintf(buffer, sizeof(buffer), "%04X", PCI_VENDOR_ID_PENSANDO);
 		xmlNewProp(nic, BAD_CAST "venid", BAD_CAST buffer);
 
-		snprintf(buffer, sizeof(buffer), "%x", PCI_DEVICE_ID_PENSANDO_IONIC_ETH_MGMT);
+		snprintf(buffer, sizeof(buffer), "%04X", PCI_DEVICE_ID_PENSANDO_IONIC_ETH_MGMT);
 		xmlNewProp(nic, BAD_CAST "devid", BAD_CAST buffer);
 
-		snprintf(buffer, sizeof(buffer), "%x", PCI_VENDOR_ID_PENSANDO);
+		snprintf(buffer, sizeof(buffer), "%04X", PCI_VENDOR_ID_PENSANDO);
 		xmlNewProp(nic, BAD_CAST "subvenid", BAD_CAST buffer);
 
-		snprintf(buffer, sizeof(buffer), "%x", naples_subid[i].subDevId);
+		snprintf(buffer, sizeof(buffer), "%04X", sub->subDevId);
 		xmlNewProp(nic, BAD_CAST "subdevid", BAD_CAST buffer);
+
+		xmlNewProp(nic, BAD_CAST "pnso_version", BAD_CAST pen_ver);
 
 		memset(buffer, 0, sizeof(buffer));
 		ionic_pen2spp_verstr(pen_ver, buffer, sizeof(buffer));
 		xmlNewProp(nic, BAD_CAST IONIC_SPP_FW_TYPE, BAD_CAST buffer);
 
-		snprintf(buffer, sizeof(buffer), "%s/dsc_fw_%s.tar", fw_path, pen_ver);
+		snprintf(buffer, sizeof(buffer), "dsc_fw_%s.tar", pen_ver);
 		xmlNewProp(nic, BAD_CAST IONIC_SPP_FW_TYPE_FILE, BAD_CAST buffer);
 	}
 
@@ -600,7 +625,8 @@ ionic_test_flash_thread(void *arg)
 
 	error = oem_do_full_flash_PCI(ionic->fwFile, true, ionic->domain, ionic->bus,
 		ionic->dev, ionic->func);
-	fprintf(stderr, "Flash update status: " PRIxWS "\n", oem_text_for_error_code(error));
+	fprintf(stderr, "(%s)Flash update status: " PRIxWS "\n", ionic->intfName,
+		oem_text_for_error_code(error));
 	pthread_exit(NULL);
 }
 #else
@@ -613,7 +639,7 @@ unsigned __stdcall ionic_test_flash_thread(void* arg)
 	W_SNPRINTF(w_fw_file, sizeof(w_fw_file), PRIxHS, ionic->fwFile);
 	fprintf(stderr, "Starting Flash update...\n");
 	error = oem_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
-	fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", oem_text_for_error_code(error));
+	fprintf(stderr, "Flash update status: " PRIxWS "\n", oem_text_for_error_code(error));
 
 	_endthreadex(0);
 	return 0;
@@ -682,7 +708,7 @@ ionic_test_multi_update(const char *log_file, const char *fw_path, const char *d
 		fprintf(stderr, "Failed to wait for flash thread. Err: %u\n", error);
 	}
 #endif
-	fprintf(stderr, "SPP status:" PRIxWS "\n", oem_text_for_error_code(error));
+	fprintf(stderr, "All flash update status: " PRIxWS "\n", oem_text_for_error_code(error));
 
 	return (error);
 }
@@ -706,7 +732,7 @@ ionic_test_discovery(const char *log_file, const char *fw_path, const char *disc
 	count = 0;
 	error = oem_get_debug_info(w_log_file);
 	if (error) {
-		fprintf(stderr, "SPP status: " PRIxWS "\n", oem_text_for_error_code(error));
+		fprintf(stderr, "Discovery file create failed: " PRIxWS "\n", oem_text_for_error_code(error));
 		return (error);
 	}
 
@@ -719,8 +745,8 @@ ionic_test_discovery(const char *log_file, const char *fw_path, const char *disc
 
 	ionic_info = malloc(count * sizeof(ven_adapter_info));
 	if (ionic_info == NULL) {
-		fprintf(stderr, "malloc failed\n");
-		perror("malloc");
+		fprintf(stderr, "Discovery create malloc failed, error: %s\n",
+			strerror(errno));
 		return (ENOMEM);
 	}
 
@@ -734,7 +760,7 @@ ionic_test_discovery(const char *log_file, const char *fw_path, const char *disc
 	}
 
 	error = oem_do_discovery_with_files(w_discovery_file, w_fw_path);
-	fprintf(stderr, "SPP status:" PRIxWS "\n", oem_text_for_error_code(error));
+	fprintf(stderr, "Discovery create status: " PRIxWS "\n", oem_text_for_error_code(error));
 
 	//ionic_dump_list();
 
@@ -766,7 +792,7 @@ ionic_test_update(const char *log_file, const char *fw_path, const char *discove
 	}
 
 	error = oem_do_flash_with_file(w_discovery_file, w_fw_path);
-	fprintf(stderr, "SPP status: " PRIxWS "\n",
+	fprintf(stderr, "Flash update status: " PRIxWS "\n",
 			oem_text_for_error_code(error));
 
 	return (error);
