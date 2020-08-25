@@ -128,35 +128,56 @@ port_event_cb (port_event_info_t *port_event_info)
         pds_event.port_info.spec.key.str());
 }
 
-bool
+static void
+send_xcvr_event (xcvr_event_info_t *xcvr_event_info, bool dom)
+{
+    sdk::types::sdk_event_t sdk_event;
+
+    memcpy(&sdk_event.xcvr_event_info, xcvr_event_info,
+           sizeof(xcvr_event_info_t));
+    if (dom) {
+        sdk_event.event_id =
+            sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_DOM_STATUS;
+    } else {
+        PDS_TRACE_DEBUG("send event xcvr status, phy port %u, ifindex 0x%x, "
+                        "type %u, state %u, pid %u, cable type %u",
+                        sdk_event.xcvr_event_info.phy_port,
+                        sdk_event.xcvr_event_info.ifindex,
+                        sdk_event.xcvr_event_info.type,
+                        sdk_event.xcvr_event_info.state,
+                        sdk_event.xcvr_event_info.pid,
+                        sdk_event.xcvr_event_info.cable_type);
+        sdk_event.event_id = sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS;
+    }
+    sdk::ipc::broadcast(sdk_event.event_id, &sdk_event,
+                        sizeof(sdk::types::sdk_event_t));
+}
+
+static bool
 xvcr_event_walk_cb (void *entry, void *ctxt)
 {
     int phy_port;
-    uint32_t logical_port;
     if_index_t ifindex;
+    port_type_t port_type;
     if_entry *intf = (if_entry *)entry;
     xcvr_event_info_t *xcvr_event_info = (xcvr_event_info_t *)ctxt;
-    sdk::types::sdk_event_t sdk_event;
 
     // if the interface is already added to db, but port_info is not yet set
     if (intf->port_info() == NULL) {
         return false;
     }
     ifindex = intf->ifindex();
-    logical_port = sdk::lib::catalog::ifindex_to_logical_port(ifindex);
-    phy_port = sdk::lib::catalog::logical_port_to_phy_port(logical_port);
-    if ((phy_port == -1) ||
-        (phy_port != (int)xcvr_event_info->phy_port)) {
-        return false;
-    }
-    sdk::linkmgr::port_update_xcvr_event(intf->port_info(), xcvr_event_info);
+    port_type = sdk::linkmgr::port_type(intf->port_info());
 
-    xcvr_event_info->ifindex = ifindex;
-    sdk_event.event_id = sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS;
-    memcpy(&sdk_event.xcvr_event_info, xcvr_event_info,
-           sizeof(xcvr_event_info_t));
-    sdk::ipc::broadcast(sdk_event.event_id, &sdk_event,
-                        sizeof(sdk::types::sdk_event_t));
+    if (port_type != port_type_t::PORT_TYPE_MGMT) {
+        phy_port = g_pds_state.catalogue()->ifindex_to_phy_port(ifindex);
+        if (phy_port != (int)xcvr_event_info->phy_port) {
+            return false;
+        }
+        sdk::linkmgr::port_update_xcvr_event(intf->port_info(), xcvr_event_info);
+        xcvr_event_info->ifindex = ifindex;
+        send_xcvr_event(xcvr_event_info, false);
+    }
     return false;
 }
 
@@ -260,6 +281,49 @@ sdk_ret_t
 port_get_all (if_read_cb_t cb, void *ctxt)
 {
     return pds_if_read_all(cb, ctxt);
+}
+
+static bool
+port_xcvr_dom_update_helper (void *entry, void *ctxt)
+{
+    uint32_t phy_port;
+    if_index_t ifindex;
+    port_type_t port_type;
+    if_entry *intf = (if_entry *)entry;
+    xcvr_event_info_t xcvr_event_info = { 0 };
+
+    // if the interface is already added to db, but port_info is not yet set
+    if (intf->port_info() == NULL) {
+        return false;
+    }
+    ifindex = intf->ifindex();
+    port_type = sdk::linkmgr::port_type(intf->port_info());
+
+    // send xcvr dom event
+    if (port_type != port_type_t::PORT_TYPE_MGMT) {
+        phy_port = g_pds_state.catalogue()->ifindex_to_phy_port(ifindex);
+        xcvr_event_info.ifindex = ifindex;
+
+        // populate the event info
+        sdk::platform::xcvr_get(phy_port - 1, &xcvr_event_info);
+        PDS_TRACE_VERBOSE("sending DOM info for ifindex 0x%x, "
+                          "phy port %u, state %u", xcvr_event_info.ifindex,
+                          phy_port, xcvr_event_info.state);
+        if (xcvr_event_info.state == xcvr_state_t::XCVR_SPROM_READ) {
+            // read dom info
+            sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.sprom);
+            // send event
+            send_xcvr_event(&xcvr_event_info, true);
+        }
+    }
+    return false;
+}
+
+sdk_ret_t
+port_xcvr_dom_update (void)
+{
+    if_db()->walk(IF_TYPE_ETH, port_xcvr_dom_update_helper, NULL);
+    return SDK_RET_OK;
 }
 
 }    // namespace api

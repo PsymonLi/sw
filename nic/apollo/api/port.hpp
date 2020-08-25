@@ -69,6 +69,9 @@ sdk_ret_t port_get(pds_obj_key_t *key, pds_if_info_t *info);
 /// \return #SDK_RET_OK on success, failure status code on error
 sdk_ret_t port_get_all(if_read_cb_t cb, void *ctxt);
 
+/// \brief  publish transceiver diagnostics
+/// \return #SDK_RET_OK on success, failure status code on error
+sdk_ret_t port_xcvr_dom_update(void);
 
 }    // namespace api
 

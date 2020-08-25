@@ -23,11 +23,13 @@
 #include "nic/apollo/learn/learn_thread.hpp"
 #include "nic/apollo/api/internal/upgrade.hpp"
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
+#include "nic/apollo/api/port.hpp"
 
 using boost::property_tree::ptree;
 
 #define SESSION_AGE_SCAN_INTVL          1     // in seconds
 #define SYSTEM_INTR_SCAN_INTVL          5     // in seconds
+#define SYSTEM_XCVR_DOM_PUBLISH_INTVL   10    // in seconds
 
 namespace core {
 
@@ -79,10 +81,18 @@ intr_mon_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     impl_base::asic_impl()->monitor(monitor_type_t::MONITOR_TYPE_INTERRUPTS);
 }
 
+static void
+xcvr_dom_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
+{
+    // send transceiver dom event
+    api::port_xcvr_dom_update();
+}
+
 sdk_ret_t
 schedule_timers (pds_state *state)
 {
     void *intr_timer;
+    void *xcvr_dom_timer;
 
     while (!sdk::lib::periodic_thread_is_running()) {
         pthread_yield();
@@ -96,6 +106,16 @@ schedule_timers (pds_state *state)
                            nullptr, intr_mon_timer_cb, true);
         if (intr_timer == NULL) {
             PDS_TRACE_ERR("Failed to start system interrupt timer");
+            return SDK_RET_ERR;
+        }
+
+        // start periodic timer for transceiver diagnostics/dom
+        xcvr_dom_timer = sdk::lib::timer_schedule(
+                            PDS_TIMER_ID_XCVR_DOM_PUBLISH,
+                            SYSTEM_XCVR_DOM_PUBLISH_INTVL * TIME_MSECS_PER_SEC,
+                            nullptr, xcvr_dom_timer_cb, true);
+        if (xcvr_dom_timer == NULL) {
+            PDS_TRACE_ERR("Failed to start transceiver diagnostics timer");
             return SDK_RET_ERR;
         }
     }
