@@ -201,6 +201,7 @@ action erspan(nexthop_type, nexthop_id, egress_bd_id, rewrite_flags,
 }
 
 @pragma stage 0
+@pragma index_table
 @pragma table_write
 table mirror {
     reads {
