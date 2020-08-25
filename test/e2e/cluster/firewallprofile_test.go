@@ -78,6 +78,7 @@ func (fwp *firewallTestGroup) testFirewallPendingPropagation() {
 		},
 	}
 	updateFwp.Defaults("")
+	updateFwp.Spec.TcpHalfOpenSessionLimit = 20000
 	numNaples := int32(len(ts.tu.NaplesNodes))
 	if numNaples == 0 {
 		Skip("No DSC's found, skipping propagation test")
@@ -91,13 +92,14 @@ func (fwp *firewallTestGroup) testFirewallPendingPropagation() {
 
 	time.Sleep(5 * time.Second)
 
-	_, err := fwp.suite.restSvc.SecurityV1().FirewallProfile().Update(fwp.suite.loggedInCtx, &updateFwp)
+	initFwpStat, err := fwp.suite.restSvc.SecurityV1().FirewallProfile().Update(fwp.suite.loggedInCtx, &updateFwp)
 	Expect(err).ShouldNot(HaveOccurred())
+	By(fmt.Sprintf("Initial Firewall State : %+v", initFwpStat))
 
 	By(fmt.Sprintf("Verify the propagation is pending to unreachable DSCs total: %d", numNaples))
 	Eventually(func() bool {
 		fwpStat, err := fwp.suite.restSvc.SecurityV1().FirewallProfile().Get(fwp.suite.loggedInCtx, &updateFwp.ObjectMeta)
-		By(fmt.Sprintf("%s: FirewallProfile paused Status : %v", time.Now().String(), fwpStat.Status))
+		By(fmt.Sprintf("%s: FirewallProfile GenID : %v paused Status : %v", time.Now().String(), fwpStat.ObjectMeta.GenerationID, fwpStat.Status))
 		Expect(err).ShouldNot(HaveOccurred())
 		if fwpStat.Status.PropagationStatus.Pending == numNaples {
 			return true
