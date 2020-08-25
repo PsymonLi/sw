@@ -6,7 +6,7 @@ import iota.test.athena.utils.misc as utils
 def Setup(tc):
 
     tc.wl0 = api.GetTestsuiteAttr("kni_wl")
-    tc.wl1 = api.GetTestsuiteAttr("kni_wl_sub")
+    tc.sub_wl = api.GetTestsuiteAttr("kni_sub_wl")
     tc.bitw_node_name = api.GetTestsuiteAttr("bitw_node_name")
     tc.wl_node_name = api.GetTestsuiteAttr("wl_node_name")
     tc.mnic_p2p_ip = api.GetTestsuiteAttr("mnic_p2p_ip")
@@ -17,11 +17,12 @@ def Trigger(tc):
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
 
-    # undo config changes for mnic_p2p subintf
-    utils.configureNaplesIntf(req, tc.bitw_node_name, 'mnic_p2p',
-                              tc.mnic_p2p_ip, '24',
-                              vlan = str(tc.wl1.uplink_vlan),
-                              unconfig = True)
+    for sub_wl in tc.sub_wl:
+        # undo config changes for mnic_p2p subintf
+        utils.configureNaplesIntf(req, tc.bitw_node_name, 'mnic_p2p',
+                                  tc.mnic_p2p_ip, '24',
+                                  vlan = str(sub_wl.uplink_vlan),
+                                  unconfig = True)
 
     # kill testpmd
     cmd = "pkill testpmd"

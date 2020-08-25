@@ -4,6 +4,7 @@ import re
 import iota.harness.api as api
 import iota.test.utils.p4ctl as p4ctl
 from iota.harness.infra.glopts import GlobalOptions
+import iota.test.athena.utils.pdsctl as pdsctl
 
 def Sleep(timeout=5):
     if GlobalOptions.dryrun:
@@ -339,8 +340,7 @@ def configureNaplesIntf(req, node, intf,
             cmd = "vconfig rem " + intf + "." + vlan
             api.Trigger_AddNaplesCommand(req, node, cmd)
 
-        cmd = "ifconfig " + intf + " down && "
-        cmd += "ip addr del " + ip + "/" + mask + " dev " + intf
+        cmd = "ifconfig " + intf + " 0.0.0.0 down"
         api.Trigger_AddNaplesCommand(req, node, cmd)
 
 # ======================================================
@@ -361,3 +361,69 @@ def configureHostIntfMtu(req, node, intf_list, mtu=1500):
 def isPowerOfTwo (x): 
     # First x in the below exp is to handle x = 0
     return (x and (not (x & (x - 1)))) 
+
+# ==========================================
+# Return: UUID for uplink port using pdsctl 
+# ==========================================
+def get_port_uuid(port_str, node_name, nic_name=None):
+    
+    if port_str not in ['Eth1/1', 'Eth1/2']:
+        raise Exception("Invalid port %s", port_str)
+        
+    if nic_name is None:
+        nic_name = api.GetDeviceNames(node_name)[0] 
+   
+    cmd = "pdsctl show port status"
+    show_cmd_substr = "port status"
+    ret, resp = pdsctl.ExecutePdsctlShowCommand(node_name, 
+                            nic_name, show_cmd_substr, yaml=False)
+    if ret != True:
+        raise Exception("%s command failed" % cmd)
+
+    if ('API_STATUS_NOT_FOUND' in resp) or ("err rpc error" in resp):
+        raise Exception("GRPC get request failed for %s command" % cmd)
+    
+    for line in resp.splitlines():
+        if port_str in line:
+            return line.strip().split()[0]
+
+    return ''
+
+# =======================================
+# Return: Uplink port stats using pdsctl 
+# =======================================
+def get_uplink_stats(port_str, node_name, nic_name=None, stat_type=None):
+
+    if port_str not in ['Eth1/1', 'Eth1/2']:
+        raise Exception("Invalid port %s", port_str)
+        
+    if nic_name is None:
+        nic_name = api.GetDeviceNames(node_name)[0] 
+   
+    if stat_type is None:
+        stat_type = 'FRAMES RX OK'
+    
+    uuid = get_port_uuid(port_str, node_name, nic_name)
+    if not uuid:
+        raise Exception("uuid get failed for port %s", port_str)
+
+    cmd = "pdsctl show port statistics"
+    show_cmd_substr = "port statistics"
+    args = '--port ' + uuid
+
+    ret, resp = pdsctl.ExecutePdsctlShowCommand(node_name, nic_name, 
+                                    show_cmd_substr, args, yaml=False)
+
+    if ret != True:
+        raise Exception("%s command failed" % cmd)
+
+    if ('API_STATUS_NOT_FOUND' in resp) or ("err rpc error" in resp):
+        raise Exception("GRPC get request failed for %s command" % cmd)
+    
+    for line in resp.splitlines():
+        if stat_type in line:
+            return int(line.strip().split()[-1])
+
+    return 0
+
+

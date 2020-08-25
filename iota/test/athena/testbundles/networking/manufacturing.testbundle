@@ -1,0 +1,78 @@
+meta:
+    name    : manufacturing
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : Setup
+        testcase: testcases.networking.setup
+        enable  : True
+
+    #########################################
+    # Testing Uplink-ARM vlan redirect NACL #
+    #########################################
+
+    -   name    : Setup_Mfg_Test_1
+        testcase: testcases.networking.mfg_test_setup
+        enable  : True
+        args    :
+            uplink : up0
+
+    -   name    : Mfg_KNI_Setup_1
+        testcase: testcases.networking.kni_setup
+        enable  : True
+
+    -   name    : Mfg_Traffic_Test_1
+        testcase: testcases.networking.kni_traffic
+        enable  : True
+        iterators :
+            type         : nested
+            traffic_type : ['ping', 'TCP', 'UDP']
+
+    -   name    : Mfg_KNI_Teardown_1
+        testcase: testcases.networking.kni_teardown
+        enable  : True
+
+    -   name    : Setup_Mfg_Test_2
+        testcase: testcases.networking.mfg_test_setup
+        enable  : True
+        args    :
+            uplink : up1
+
+    -   name    : Mfg_KNI_Setup_2
+        testcase: testcases.networking.kni_setup
+        enable  : True
+
+    -   name    : Mfg_Traffic_Test_2
+        testcase: testcases.networking.kni_traffic
+        enable  : True
+        iterators :
+            type         : nested
+            traffic_type : ['ping', 'TCP', 'UDP']
+
+    -   name    : Mfg_KNI_Teardown_2
+        testcase: testcases.networking.kni_teardown
+        enable  : True
+
+    #######################################
+    # Testing Uplink-Uplink redirect NACL #
+    #######################################
+
+    -   name    : Flow_Gen
+        testcase: testcases.networking.config.flow_gen
+        enable  : True
+        args    :
+            max_dyn_flow_count : 1
+            use_cfg  :  no
+
+    -   name    : Mfg_Test_Uplink_Redirect
+        testcase: testcases.networking.mfg_test_fwd
+        enable  : True
+        iterators :
+            type     : nested
+            proto    : ['UDP', 'TCP', 'ICMP']
+
+    -   name    : Mfg_Test_Teardown
+        testcase: testcases.networking.mfg_test_teardown
+        enable  : True
+

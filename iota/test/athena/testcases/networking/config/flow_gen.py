@@ -681,11 +681,12 @@ class NatFlowSet:
 
 class FlowSet:
  
-    def __init__(self):
+    def __init__(self, use_cfg):
         self.udp_flow_set = None
         self.tcp_flow_set = None
         self.icmp_flow_set = None
         self.nat_flow_set = None
+        self.use_cfg = use_cfg
 
     def GetStaticFlowInfo(self):
         plcy_obj = None
@@ -744,12 +745,16 @@ class FlowSet:
         self.icmp_flow_set = IcmpFlowSet()
         self.nat_flow_set = NatFlowSet()
 
-        self.GetStaticFlowInfo()
+        if self.use_cfg == 'yes':
+            self.GetStaticFlowInfo()
 
         self.udp_flow_set.CreateUdpFlows()
         self.tcp_flow_set.CreateTcpFlows()
         self.icmp_flow_set.CreateIcmpFlows()
-        self.nat_flow_set.CreateNatFlows()
+
+        # NAT flow creation relies on info in cfg file
+        if self.use_cfg == 'yes':
+            self.nat_flow_set.CreateNatFlows()
 
 
 # ============================================
@@ -898,8 +903,12 @@ def Setup(tc):
     global max_dyn_flow_cnt
     max_dyn_flow_cnt = getattr(tc.args, "max_dyn_flow_count", 1)
 
+    tc.use_cfg = 'yes'
+    if hasattr(tc.args, 'use_cfg'):
+        tc.use_cfg = tc.args.use_cfg
+
     # Create a flowset consisting of all types of flows
-    flow_set = FlowSet()
+    flow_set = FlowSet(tc.use_cfg)
     flow_set.CreateAllFlowSets()
 
     api.SetTestsuiteAttr("FlowSet", flow_set) 

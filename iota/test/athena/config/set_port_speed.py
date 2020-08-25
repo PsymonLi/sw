@@ -3,6 +3,7 @@
 import iota.harness.api as api
 import iota.test.athena.utils.athena_app as athena_app_utils
 import iota.test.athena.utils.pdsctl as pdsctl
+import iota.test.athena.utils.misc as utils
 
 def Main(step):
 
@@ -12,26 +13,8 @@ def Main(step):
     for nname, nicname in node_nic_pairs:
    
         # get UUIDs of the uplink ports
-        req = api.Trigger_CreateExecuteCommandsRequest()
-      
-        cmd = "pdsctl show port status"
-        show_cmd_substr = "port status"
-        ret, resp = pdsctl.ExecutePdsctlShowCommand(nname, nicname, 
-                                        show_cmd_substr, yaml=False)
-        if ret != True:
-            api.Logger.error("%s command failed" % cmd)
-            return api.types.status.FAILURE
-
-        if ('API_STATUS_NOT_FOUND' in resp) or ("err rpc error" in resp):
-            api.Logger.error("GRPC get request failed for %s command" % cmd)
-            return api.types.status.FAILURE
-        
-        for line in resp.splitlines():
-            if "Eth1/1" in line:
-                up0_uuid = line.strip().split()[0]
-
-            if "Eth1/2" in line:
-                up1_uuid = line.strip().split()[0]
+        up0_uuid = get_port_uuid('Eth1/1', nname, nicname)
+        up1_uuid = get_port_uuid('Eth1/2', nname, nicname)
 
         if not (up0_uuid and up1_uuid):
             api.Logger.error('Unable to find uplink port UUIDs')
@@ -40,8 +23,6 @@ def Main(step):
         # set port speeds/config for uplink ports
         # For Vomero card alone, the default speed is 50G, fec none, autoneg disable
         # For all other cards, default is 100G. For athena IOTA, we configure 50G speed explicitly here to test 50g
-        req = api.Trigger_CreateExecuteCommandsRequest()
-
         cmd = "pdsctl debug update port"
         debug_cmd_substr = "debug update port"
         

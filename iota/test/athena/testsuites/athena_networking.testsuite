@@ -42,6 +42,7 @@ testbundles:
     sanity:
         # Relative paths from iota/test/athena/testbundles/
         - networking/bootstrap.testbundle
+        - networking/manufacturing.testbundle
         - classic/flow-logging-sanity.testbundle
 
     regression:
