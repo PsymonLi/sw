@@ -66,7 +66,7 @@ type queryResult struct {
 	lastResult  time.Time
 }
 
-func TestFlowlogsCustomIndexingFunctionality(t *testing.T) {
+func SkipTestFlowlogsCustomIndexingFunctionality(t *testing.T) {
 	// runtime.GOMAXPROCS(1)
 	fmt.Println("max procs", runtime.GOMAXPROCS(-1))
 	fmt.Println("RUN *******")
