@@ -289,50 +289,58 @@ func testBlacklistPolicy(fromIP, toIP, proto, port string) error {
 	return nil
 }
 
-func getNetworkCollections() ([]*objects.NetworkCollection, error) {
-
-	// add permit rules for workload pairs
-	ten, err := ts.model.ConfigClient().ListTenant()
+func getAllNetworksAsCollections() ([]*objects.NetworkCollection, error) {
+	var nwcs []*objects.NetworkCollection
+	client := ts.model.ConfigClient()
+	tenants, err := client.ListTenant()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(ten) == 0 {
+	if len(tenants) == 0 {
 		return nil, fmt.Errorf("Not enough tenants to list networks")
 	}
 
-	nws, err := ts.model.ConfigClient().ListNetwork(ten[0].Name)
-
-	nwc := objects.NewNetworkCollectionsFromNetworks(ts.model.ConfigClient(), nws)
-
-	return nwc, nil
+	for _, ten := range tenants {
+		nws, err := client.ListNetwork(ten.Name)
+		if err == nil {
+			for index := 0; index < len(nws); index++ {
+				nwcs = append(nwcs, objects.NewNetworkCollectionFromNetworks(client, nws[index : index+1]))
+			}
+		}
+	}
+	log.Infof("No of Networks: %v", len(nwcs))
+	return nwcs, err
 }
 
 var _ = Describe("scale policy", func() {
 	var startTime time.Time
 	BeforeEach(func() {
-		//verify cluster is in good health
 		startTime = time.Now().UTC()
-
-		nwc, err := getNetworkCollection()
+		ts.model.DefaultNetworkSecurityPolicy().Restore()
+		nwcs, err := getAllNetworksAsCollections()
 		Expect(err).Should(Succeed())
 
-		//Reset ingress and egress policies
-		nwc.SetIngressSecurityPolicy(nil)
-		nwc.SetEgressSecurityPolicy(nil)
+		//verify cluster is in good health
 		Eventually(func() error {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
+		//Reset ingress and egress policies
+		for index := 0; index < len(nwcs); index++ {
+			nwcs[index].SetIngressSecurityPolicy(nil)
+			nwcs[index].SetEgressSecurityPolicy(nil)
+		}
 		// delete the default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
 	})
 	AfterEach(func() {
 		//Expect No Service is stopped
 		Expect(ts.model.ServiceStoppedEvents(startTime, ts.model.Naples()).Len(0))
-		nwcs, err := getNetworkCollections()
+		nwcs, err := getAllNetworksAsCollections()
 		Expect(err).Should(BeNil())
 
 		// Delete the policies. Reset the network references
+		log.Infof("Deleting all security policies")
 		for index := 0; index < len(nwcs); index++ {
 			nwcs[index].SetIngressSecurityPolicy(nil)
 			nwcs[index].SetEgressSecurityPolicy(nil)
@@ -341,6 +349,7 @@ var _ = Describe("scale policy", func() {
 			ts.model.NetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index)).Delete()
 			ts.model.NetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index+1)).Delete()
 		}
+		log.Infof("Done deleting all policies")
 		// recreate default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
 		for index := 0; index < len(nwcs); index++ {
@@ -351,14 +360,12 @@ var _ = Describe("scale policy", func() {
 	Context("Scale Policy tests", func() {
 		var (
 			protoList = []string{"tcp", "udp", "icmp"}
-			portList  = []string{"80", "53", "0"}
+			portList = []string{"80", "53", "0"}
+			policyList []*objects.NetworkSecurityPolicyCollection
 		)
 		It("scale policy", func() {
-			if !ts.tb.HasNaplesHW() {
-				Skip("Disabling on naples sim till traffic issue is debugged")
-			}
 			//Get all the networks as individual collection
-			nwcs, err := getNetworkCollections()
+			nwcs, err := getAllNetworksAsCollections()
 			Expect(err).Should(BeNil())
 			var networkPrefixList []string
 			for _, nwc := range nwcs {
@@ -378,12 +385,14 @@ var _ = Describe("scale policy", func() {
 				//Create user provider Ingress policy
 				ingress_policy := ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("ingress%v%v", index, index)).AddRuleForSubnets(targetPrefixList, sourcePrefixList, "any", "any", "PERMIT")
 				ingress_policy.Add(ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("ingress%v%v", index, index+1)).AddRuleForSubnets(
-					targetPrefixList, sourcePrefixList, portList[index%len(portList)], protoList[index%len(protoList)], "PERMIT"))
+					targetPrefixList, sourcePrefixList, portList[index % len(portList)], protoList[index % len(protoList)], "PERMIT"))
+				policyList = append(policyList, ingress_policy)
 				//Create user provider Egress policy
 				egress_policy := ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index)).AddRuleForSubnets(sourcePrefixList, targetPrefixList, "any", "any", "PERMIT")
 				egress_policy.Add(ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index+1)).AddRuleForSubnets(
-					sourcePrefixList, targetPrefixList, portList[index%len(portList)], protoList[index%len(protoList)], "PERMIT"))
+					sourcePrefixList, targetPrefixList, portList[index % len(portList)], protoList[index % len(protoList)], "PERMIT"))
 
+				policyList = append(policyList, egress_policy)
 				//Set tenant for both policies
 				ingress_policy.SetTenant(nwc.GetTenant())
 				egress_policy.SetTenant(nwc.GetTenant())
@@ -393,10 +402,23 @@ var _ = Describe("scale policy", func() {
 				//Apply the ingress and egress policies
 				Expect(nwc.SetIngressSecurityPolicy(ingress_policy)).Should(BeNil())
 				Expect(nwc.SetEgressSecurityPolicy(egress_policy)).Should(BeNil())
-				//Verify if the policies are available in datapath
-				Eventually(func() error { return ts.model.VerifyPolicyStatus(ingress_policy) }).Should(Succeed())
-				Eventually(func() error { return ts.model.VerifyPolicyStatus(egress_policy) }).Should(Succeed())
+			}
+			//Verify if the policies are available in datapath
+			log.Infof("Policy propagation check")
+			Eventually(func() error {
+				for i, policy := range policyList {
+					if err := ts.model.VerifyPolicyStatus(policy); err != nil {
+						log.Infof("Prop error for policy(%v)", i)
+						return err
+					}
+				}
+				return nil
+			}, 600, 30).Should(BeNil(), "Failed to validate policy on naples (%s)", err)
+			log.Infof("Policy propagation done")
 
+			if !ts.tb.HasNaplesHW() {
+				log.Infof("Skipping Datapath testing on sim nodes")
+				return
 			}
 
 			//Data Traffic Tests. From network 'x' to all other networks as per the installed policy
@@ -426,7 +448,7 @@ var _ = Describe("scale policy", func() {
 				Expect(ts.model.PingFails(wp1)).Should(BeNil())
 
 				//Verify the traffic across networks according to policies
-				port, err := strconv.Atoi(portList[index%len(portList)])
+				port, err := strconv.Atoi(portList[index % len(portList)])
 				Expect(err).Should(BeNil())
 				proto := protoList[index%len(protoList)]
 				switch proto {
