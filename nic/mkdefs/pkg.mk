@@ -35,8 +35,8 @@ else
 		--pipeline $(PIPELINE) --target sim --no-strip
 endif
 endif
-	if [ ${ARCH} == "x86_64" ] && [ ${ASIC} == "capri" ]; then cd $(NICDIR)/build/${ARCH}/${PIPELINE}/capri; pwd; \
-		for d in */; do echo "link $$d"; cd ..; ln -snf capri/$$d $${d::-1}; cd - >& /dev/null; done; fi; \
+	if [ ${ARCH} == "x86_64" ]; then cd $(NICDIR)/build/${ARCH}/${PIPELINE}/${ASIC}; pwd; \
+		for d in */; do echo "link $$d"; cd ..; ln -snf ${ASIC}/$$d $${d::-1}; cd - >& /dev/null; done; fi; \
 	cd $(NICDIR)/..
 
 package-clean-debug-arm:

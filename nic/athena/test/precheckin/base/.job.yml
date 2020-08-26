@@ -110,6 +110,26 @@ targets:
     build-dependencies:
     - build-athena-customer-x86
 
+  athena/elba_gtests:
+    commands: ["make", "PIPELINE=athena",  "ASIC=elba", "jobd/athena/gtests"]
+    owners: ["email:skittur@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-athena-elba-x86
+    - build-athena-elba-arm
+
+  athena/elba_gtests_sim:
+    commands: ["make", "PIPELINE=athena", " ASIC=elba", "jobd/athena/gtests_sim"]
+    owners: ["email:skittur@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-athena-elba-x86
+    - build-athena-elba-arm
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/nic"

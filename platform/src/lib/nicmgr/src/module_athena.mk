@@ -12,4 +12,7 @@ MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
                    ! -name 'nicmgr_init_apollo.cc' \
                    ! -name '*iris*')
 MODULE_SOLIBS   := edma
+ifeq ($(ASIC),elba)
+MODULE_FLAGS     := -DELBA
+endif
 include ${MKDEFS}/post.mk

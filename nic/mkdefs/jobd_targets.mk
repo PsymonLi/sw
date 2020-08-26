@@ -6,7 +6,7 @@ jobd/runner/core_count_check:
 JOBD_PREREQS:= jobd/runner/core_count_check | jobd/package
 ifeq (${PKG_PIPELINE},)
   PKG_PIPELINE=${PIPELINE}
-  ifeq (${PKG_PIPELINE}, iris)
+  ifeq (${PKG_PIPELINE}, $(filter ${PKG_PIPELINE}, iris athena))
     PKG_TAR_FILE=build_$(PKG_PIPELINE)_x86_${ASIC}.tar.gz
   else
 	PKG_TAR_FILE=build_$(PKG_PIPELINE)_x86.tar.gz

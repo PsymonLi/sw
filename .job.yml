@@ -96,10 +96,10 @@ builds:
     artifacts:
       - /sw/athena-x86.tar.gz
   build-athena-x86:
-    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && make PIPELINE=athena package && find ./build -name '*.o'  | xargs rm && tar -zvcf /sw/build_athena_x86.tar.gz /usr/src/github.com/pensando/sw/nic/build"]
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && make PIPELINE=athena package && find ./build -name '*.o'  | xargs rm && tar -zvcf /sw/build_athena_x86_capri.tar.gz /usr/src/github.com/pensando/sw/nic/build"]
     owners: ["email:skittur@pensando.io"]
     artifacts:
-      - /sw/build_athena_x86.tar.gz
+      - /sw/build_athena_x86_capri.tar.gz
   build-athena14-x86:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && make P4VER=P4_14 PIPELINE=athena package && find ./build -name '*.o'  | xargs rm && tar -zvcf /sw/build_athena14_x86.tar.gz /usr/src/github.com/pensando/sw/nic/build"]
     owners: ["email:skittur@pensando.io"]
@@ -110,6 +110,16 @@ builds:
     owners: ["email:skittur@pensando.io"]
     artifacts:
       - /sw/naples_fw_all_athena.tgz
+  build-athena-elba-x86:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && make PIPELINE=athena ASIC=elba package && find ./build -name '*.o'  | xargs rm && tar -zvcf /sw/build_athena_x86_elba.tar.gz /usr/src/github.com/pensando/sw/nic/build"]
+    owners: ["email:skittur@pensando.io"]
+    artifacts:
+      - /sw/build_athena_x86_elba.tar.gz
+  build-athena-elba-arm:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw && ls -al && make PIPELINE=athena ASIC=elba CUSTOM_BUILDROOT=1 naples-firmware && make PIPELINE=athena ASIC=elba naples-firmware-tarball-athena"]
+    owners: ["email:skittur@pensando.io"]
+    artifacts:
+      - /sw/naples_fw_all_elba_athena.tgz
   #build-athena-arm-mfg:
   #  commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw && ls -al && make PIPELINE=athena CUSTOM_BUILDROOT=1 PKG_ARGS=\"--kvp MFG-DIR=mfg\" naples-firmware && make PIPELINE=athena naples-firmware-tarball-athena-mfg"]
   #  owners: ["email:vignesh@pensando.io"]

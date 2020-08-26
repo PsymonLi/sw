@@ -37,6 +37,7 @@ nic/conf/catalog_hw_P37689-001.json                               /nic/conf/
 nic/conf/catalog_hw_DSC1-2Q100-8F16P.json                         /nic/conf/
 nic/conf/catalog_hw_DSC1-2Q100-8V64P.json                         /nic/conf/
 nic/conf/catalog_hw_DSC1-2S25-4H8P-DS.json                        /nic/conf/
+nic/conf/catalog_hw_elba-haps.json                                /nic/conf/
 
 # serdes config files
 nic/conf/serdes_68-0003.json                                      /nic/conf/
@@ -101,6 +102,7 @@ nic/build/$ARCH/$PIPELINE/lib/libcrypto.so.1.1                    /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libmpuobj.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libcapisa.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libisa.so                           /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libelbisa.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsknobs.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libev.so.4                          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkp4loader.so                   /nic/lib/
@@ -156,6 +158,9 @@ nic/sdk/third-party/avago/$ASIC/$ARCH/bin/aapl                    /nic/bin/
 nic/sdk/third-party/avago/$ASIC/$ARCH/lib/aapl/C/libAAPL.so       /nic/lib/
 nic/sdk/third-party/avago/fw/serdes.0x1087_244D.rom               /nic/conf/fw/
 nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom               /nic/conf/fw/
+nic/sdk/third-party/avago/fw/serdes.0x10A4_1045.rom                 /nic/conf/fw/
+nic/sdk/third-party/avago/fw/blackhawk7_v1l8p2_ucode_image_D004_09_0x61C8.h   /nic/conf/fw/
+nic/sdk/third-party/avago/fw/blackhawk7_v2l8p2_ucode_image_D005_06_0xD090.h   /nic/conf/fw/
 
 # python table debug cli specific
 nic/debug_cli/images/$ARCH/$PIPELINE/p4ctl                        /nic/bin
@@ -231,6 +236,8 @@ nic/build/$ARCH/$PIPELINE/lib/libdevice.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libconfig.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsysmon.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libasicerror.so                     /nic/lib/
+nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbtrace                      /nic/bin/
+nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbmon                        /nic/bin/
 
 nic/build/$ARCH/$PIPELINE/bin/penctl                              /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/console                             /nic/bin/
@@ -247,6 +254,17 @@ nic/conf/captrace/p4eg-all.json                                   /nic/conf/capt
 nic/conf/captrace/p4-all.json                                     /nic/conf/captrace/
 nic/conf/captrace/pipeline-all.json                               /nic/conf/captrace/
 nic/conf/captrace/sample-conf.json                                /nic/conf/captrace/
+
+# elbtrace conf json files
+nic/conf/elbtrace/txdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/rxdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/dma-all.json                                      /nic/conf/elbtrace/
+nic/conf/elbtrace/p4-all.json                                       /nic/conf/elbtrace/
+nic/conf/elbtrace/p4eg-all.json                                     /nic/conf/elbtrace/
+nic/conf/elbtrace/p4ig-all.json                                     /nic/conf/elbtrace/
+nic/conf/elbtrace/pipeline-all.json                                 /nic/conf/elbtrace/
+nic/conf/elbtrace/rxdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/txdma-all.json                                    /nic/conf/elbtrace/
 
 nic/build/$ARCH/$PIPELINE/bin/fd_send                             /nic/conf/
 
@@ -292,6 +310,7 @@ nic/apollo/tools/run_cron.sh                                      /nic/tools/
 
 # init config profiles
 nic/conf/profiles/qos_profile_default.json                        /nic/conf/profiles/
+nic/conf/biodona_serdes_si.json                                   /nic/conf/
 
 # dhcp server
 #nic/tools/dhcp-server/S80dhcp-server                              /nic/tools/start-dhcpd.sh

@@ -1598,6 +1598,10 @@ elba_tcam_table_entry_write (uint32_t tableid, uint32_t index,
         }
     }
 
+    if (unlikely(elba_write_to_hw() == false)) {
+        return (SDK_RET_OK);
+    }
+
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     // push to HW/Capri from entry_start_block to block
     pu_cpp_int<128> tcam_block_data_x;
@@ -1668,7 +1672,10 @@ elba_tcam_table_entry_read (uint32_t tableid, uint32_t index,
                  + ((tbl_col * tbl_info.entry_width) /
                      ELBA_TCAM_WORDS_PER_BLOCK);
     int block = blk;
-    int copy_bits = tbl_info.entry_width_bits;
+    int pad = (tbl_info.entry_width_bits % 16) ? (16 -
+                                                  (tbl_info.entry_width_bits %
+                                                   16)) : 0;
+    int copy_bits = tbl_info.entry_width_bits + pad;
     int start_word = entry_start_word;
     uint16_t *_trit_x = (uint16_t*)trit_x;
     uint16_t *_trit_y = (uint16_t*)trit_y;
@@ -1820,7 +1827,7 @@ elba_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
     } else if (cache & P4_TBL_CACHE_RXDMA) {
         p4plus_invalidate_cache(addr, entry_width,
                                 P4PLUS_CACHE_INVALIDATE_RXDMA);
-    } else {
+    } else if (!(cache & (P4_TBL_CACHE_INGRESS | P4_TBL_CACHE_EGRESS))) {
         SDK_TRACE_ERR("elba: Not implemented for cache: %u... addr=0x%lx, "
                       "width=%d, base_mem_pa=0x%lx", cache,
                       entry_addr, entry_width, base_mem_pa);

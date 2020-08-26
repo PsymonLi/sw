@@ -52,7 +52,12 @@ _timestamp_start:
     // as one atomic write (the ARM will never see any partial writes).
     
     tblwr.c2    d.timestamp, r_timestamp[47:0]
+#ifdef CAPRI
     memwr.dx    d.g_mpu_timestamp_addr, r_timestamp[47:0]
+#elif ELBA
+    add         r8, r0, d.g_mpu_timestamp_addr
+    memwr.dx    r8, r_timestamp[47:0]
+#endif    
     tbladd.c2   d.num_updates, 1
     
     /*
