@@ -171,8 +171,7 @@ type TestNodeInterface interface {
 	AddNode() error
 	GetAgentURL() (string, error)
 	GetNodeIP() (string, error)
-	IpmiNodeControl(name string, restoreState bool, method string, useNcsi bool) error
-	ReloadNode(name string, restoreState bool, method string, useNcsi bool) error
+	ReloadNode(name string, restoreState bool, method string, methodArgs string, initAgent bool, useNcsi bool) error
 	SetNodeMsg(*iota.Node)
 	SetNodeResponse(*iota.Node)
 	GetNodeMsg(ctx context.Context, name string) *iota.Node

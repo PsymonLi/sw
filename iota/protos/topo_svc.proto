@@ -37,10 +37,8 @@ service TopologyApi {
     // AddNodes brings up the nodes with their corresponding personalities
     rpc AddNodes (NodeMsg) returns (NodeMsg) {};
 
-    // Load Node will save, reboot and load context
+    // Load Node will save, reboot and reload context based on flags set in ReloadMsg
     rpc ReloadNodes (ReloadMsg) returns (ReloadMsg) {};
-
-    rpc IpmiNodeAction (ReloadMsg) returns (ReloadMsg) {};
 
     // DeleteNodes removes a node from the e2e cluster
     rpc DeleteNodes (NodeMsg) returns (NodeMsg) {};
@@ -123,19 +121,37 @@ message NodeMsg {
 
 }
 
+enum NodeRestartMethod {
+
+    RESTART_METHOD_AUTO         = 0;
+
+    RESTART_METHOD_APC          = 1;
+
+    RESTART_METHOD_IPMI         = 2;
+
+    RESTART_METHOD_REBOOT       = 3;
+
+    RESTART_METHOD_REDFISH      = 4;
+}
+
 // Reload msg
 message ReloadMsg {
 
     // API Response for the node
-    IotaAPIResponse api_response    = 1;
+    IotaAPIResponse api_response        = 1;
 
-    NodeMsg node_msg                = 2;
+    NodeMsg node_msg                    = 2;
 
-    bool skip_restore               = 3;
+    NodeRestartMethod restart_method    = 3;
 
-    string restart_method           = 4;
+    string method_args                  = 4;
 
-    bool use_ncsi                   = 5;
+    bool use_ncsi                       = 5;
+
+    bool skip_restore                   = 6;
+
+    // If request is to power-cycle and not wait for host to come online
+    bool skip_agent_init                = 7;
 }
 
 enum NaplesOperationMode {

@@ -10,7 +10,6 @@ import time
 import traceback
 import ipaddress
 
-from iota.harness.infra.apc import ApcControl
 from iota.harness.infra.utils.logger import Logger as Logger
 from iota.harness.infra.glopts import GlobalOptions as GlobalOptions
 from iota.harness.infra.utils.console import Console
@@ -653,38 +652,6 @@ class Node(object):
     def GetCimcInfo(self):
         return self.__cimcInfo
 
-    def IpmiPowerCycle(self):
-        cimc = self.GetCimcInfo()
-        if not cimc:
-            raise Exception('no cimc info for node {0} in warmd.json'.format(self.__name))
-        cmd="ipmitool -I lanplus -H %s -U %s -P %s power cycle" %\
-              (cimc.GetIp(), cimc.GetUsername(), cimc.GetPassword())
-        subprocess.check_call(cmd, shell=True)
-        time.sleep(30)
-
-    def ApcPowerCycle(self):
-        self.PowerOffNode()
-        time.sleep(20)
-        self.PowerOnNode()
-        time.sleep(20)
-
-    def PowerOffNode(self):
-        apcInfo = self.GetApcInfo()
-        if not apcInfo:
-            raise Exception('no apc info for node {0} in warmd.json'.format(self.__name))
-        apcctrl = ApcControl(host=apcInfo.GetIp(), username=apcInfo.GetUsername(),
-                                password=apcInfo.GetPassword())
-        apcctrl.portOff(apcInfo.GetPort())
-
-    def PowerOnNode(self):
-        apcInfo = self.GetApcInfo()
-        if not apcInfo:
-            raise Exception('no apc info for node {0} in warmd.json'.format(self.__name))
-        apcctrl = ApcControl(host=apcInfo.GetIp(), username=apcInfo.GetUsername(),
-                                password=apcInfo.GetPassword())
-        apcctrl.portOn(apcInfo.GetPort())
-
-
     def GetNicType(self, index=0):
         if hasattr(self.__inst, 'Nics'):
             return self.__inst.Nics[index].Type
@@ -1166,18 +1133,12 @@ class Node(object):
 
 class Topology(object):
 
-    RestartMethodAuto = ''
-    RestartMethodApc = 'apc'
-    RestartMethodIpmi = 'ipmi'
-    RestartMethodReboot = 'reboot'
-    RestartMethods = [RestartMethodAuto, RestartMethodApc, RestartMethodIpmi, RestartMethodReboot]
-
-    IpmiMethodCycle = "cycle"
-    IpmiMethodOn = "on"
-    IpmiMethodOff = "off"
-    IpmiMethodReset = "reset"
-    IpmiMethodSoft = "soft"
-    IpmiMethods = [IpmiMethodCycle, IpmiMethodOn, IpmiMethodOff, IpmiMethodReset, IpmiMethodSoft]
+    IpmiApcMethodCycle = "cycle"
+    IpmiApcMethodOn = "on"
+    IpmiApcMethodOff = "off"
+    IpmiApcMethodReset = "reset"
+    IpmiApcMethodSoft = "soft"
+    IpmiApcMethods = [IpmiApcMethodCycle, IpmiApcMethodOn, IpmiApcMethodOff, IpmiApcMethodReset, IpmiApcMethodSoft]
 
     def __init__(self, spec, prov_spec=None):
         self.__nodes = {}
@@ -1249,7 +1210,7 @@ class Topology(object):
             return None
         return node[0]
 
-    def PowerCycleViaRedfish(self, nodeNames):
+    def PowerCycleViaRedfish(self, nodeNames, skip_agent_init=False, skip_restore=False):
         try:
             nodes = []
             failedNodes = []
@@ -1266,6 +1227,10 @@ class Topology(object):
             time.sleep(20)
             for node in nodes:
                 node.redfish.RedfishPowerCommand("On")
+
+            if skip_agent_init and skip_restore:
+                return
+
             for node in nodes:
                 for timeout in range(30):
                     if node.IsNodeMgmtUp():
@@ -1282,54 +1247,25 @@ class Topology(object):
                 if hasattr(node, "redfish"):
                     node.redfish.Close()
         api.TimeSyncNaples(node_names)
+        return
 
-    def IpmiNodes(self, node_names, ipmiMethod, useNcsi=False):
-        if ipmiMethod not in self.IpmiMethods:
-            raise ValueError('ipmiMethod must be one of {0}'.format(self.IpmiMethods))
+    def RestartNodes(self, node_names, restart_method, method_args="", use_ncsi=False, skip_agent_init=False, skip_restore=False):
+        if GlobalOptions.dryrun:
+            return types.status.SUCCESS
+
+        if restart_method == topo_pb2.NodeRestartMethod.RESTART_METHOD_REDFISH:
+            return self.PowerCycleViaRedfish(node_names)
+
         req = topo_pb2.ReloadMsg()
-        req.restart_method = ipmiMethod
-        req.use_ncsi = useNcsi
-        for node_name in node_names:
-            if node_name not in self.__nodes:
-                Logger.error("Node %s not found" % node_name)
-                return types.status.FAILURE
-            node = self.__nodes[node_name]
-            msg = req.node_msg.nodes.add()
-            msg.name = node_name
+        req.restart_method = restart_method
+        if restart_method in [topo_pb2.NodeRestartMethod.RESTART_METHOD_IPMI, topo_pb2.NodeRestartMethod.RESTART_METHOD_APC]:
+            if method_args not in self.IpmiApcMethods:
+                raise ValueError(f'ipmiMethod must be one of {self.IpmiApcMethods}')
+            req.method_args = method_args
 
-        resp = api.IpmiNodeAction(req)
-        if not api.IsApiResponseOk(resp):
-            return types.status.FAILURE
-        api.TimeSyncNaples(node_names)
-        return types.status.SUCCESS
-
-    def ApcPowerCycle(self, node_names):
-        if GlobalOptions.dryrun:
-            return types.status.SUCCESS
-
-        for node_name in node_names:
-            self.__nodes[node_name].ApcPowerCycle()
-
-        return types.status.SUCCESS
-
-    def IpmiPowerCycle(self, node_names):
-        if GlobalOptions.dryrun:
-            return types.status.SUCCESS
-
-        for node_name in node_names:
-            self.__nodes[node_name].IpmiPowerCycle()
-
-        return types.status.SUCCESS
-
-    def RestartNodes(self, node_names, restartMethod=RestartMethodAuto, useNcsi=False):
-        if GlobalOptions.dryrun:
-            return types.status.SUCCESS
-
-        if restartMethod not in self.RestartMethods:
-            raise ValueError('restartMethod must be one of {0}'.format(self.RestartMethods))
-        req = topo_pb2.ReloadMsg()
-        req.restart_method = restartMethod
-        req.use_ncsi = useNcsi
+        req.use_ncsi = use_ncsi
+        req.skip_restore = skip_restore
+        req.skip_agent_init = skip_agent_init
         for node_name in node_names:
             if node_name not in self.__nodes:
                 Logger.error("Node %s not found" % node_name)
@@ -1341,6 +1277,10 @@ class Topology(object):
         resp = api.ReloadNodes(req)
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
+
+        if skip_agent_init and skip_restore:
+            return types.status.SUCCESS
+
         api.TimeSyncNaples(node_names)
         return types.status.SUCCESS
 

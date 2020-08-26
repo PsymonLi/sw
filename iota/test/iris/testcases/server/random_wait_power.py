@@ -40,7 +40,14 @@ def Setup (tc):
             raise OfflineTestbedException
 
     # power-cycle nodes
-    api.PowerCycleNodes([n.Name() for n in tc.naples_nodes], tc.iterators.powercycle_method)
+    if tc.iterators.powercycle_method == "apc":
+        api.ApcNodes([n.Name() for n in tc.naples_nodes])
+    elif tc.iterators.powercycle_method == "ipmi":
+        api.IpmiNodes([n.Name() for n in tc.naples_nodes])
+    else:
+        api.Logger.error(f"Powercycle-method: {tc.iterators.powercycle_method} unknown")
+        return api.types.status.IGNORE
+
     time.sleep(180)
 
     for node in tc.naples_nodes:
@@ -78,7 +85,11 @@ def Trigger (tc):
         # Reboot Node.
         # Reboot method (APC, IPMI, OS Reboot) is passed as a testcase parameter
         for reboot in range(tc.args.reboots + 1):
-            api.PowerCycleNodes([node.Name()], tc.iterators.powercycle_method)
+            if tc.iterators.powercycle_method == "apc":
+                api.ApcNodes([node.Name()], skip_agent_init=True, skip_restore=True)
+            elif tc.iterators.powercycle_method == "ipmi":
+                api.IpmiNodes([node.Name()], skip_agent_init=True, skip_restore=True)
+
             rand_sleep = random.randint(5, node_data.MeanBootTime)
             api.Logger.info(f"Sleeping after reset via {tc.iterators.powercycle_method} of node: {node.Name()} for: {rand_sleep}sec")
             time.sleep(rand_sleep)

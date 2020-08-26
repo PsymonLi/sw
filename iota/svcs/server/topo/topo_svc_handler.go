@@ -58,6 +58,13 @@ type DriverInfo struct {
 	FileType                string `json:"pkg_file_type"`
 }
 
+var restartMethodMap = map[iota.NodeRestartMethod]string{
+	iota.NodeRestartMethod_RESTART_METHOD_AUTO:   "auto",
+	iota.NodeRestartMethod_RESTART_METHOD_APC:    "apc",
+	iota.NodeRestartMethod_RESTART_METHOD_IPMI:   "ipmi",
+	iota.NodeRestartMethod_RESTART_METHOD_REBOOT: "reboot",
+}
+
 // NewTopologyServiceHandler Topo service handle
 func NewTopologyServiceHandler() *TopologyService {
 	topoServer := TopologyService{}
@@ -723,60 +730,6 @@ func (ts *TopologyService) SaveNode(ctx context.Context, req *iota.NodeMsg) (*io
 	return resp, nil
 }
 
-// IpmiNodeAction issues ipmi command. also saves and loads node personality if needed
-func (ts *TopologyService) IpmiNodeAction(ctx context.Context, req *iota.ReloadMsg) (*iota.ReloadMsg, error) {
-	log.Infof("TOPO SVC | DEBUG | IpmiNodeAction. Received Request Msg: %v", req)
-	defer log.Infof("TOPO SVC | DEBUG | IpmiNodeAction Returned: %v", req)
-
-	type reloadReq struct {
-		name    string
-		node    testbed.TestNodeInterface
-		method  string
-		useNcsi bool
-	}
-	rNodes := []reloadReq{}
-
-	for _, node := range req.NodeMsg.Nodes {
-		n, ok := ts.ProvisionedNodes[node.Name]
-		if !ok {
-			req.ApiResponse.ApiStatus = iota.APIResponseType_API_BAD_REQUEST
-			req.ApiResponse.ErrorMsg = fmt.Sprintf("Reload on unprovisioned node : %v", node.GetName())
-			return req, nil
-		}
-		rNodes = append(rNodes, reloadReq{name: node.Name, node: n, method: req.RestartMethod, useNcsi: req.UseNcsi})
-	}
-
-	reloadNodes := func(ctx context.Context) error {
-		pool, ctx := errgroup.WithContext(ctx)
-
-		for _, rnode := range rNodes {
-			node := rnode.node
-			name := rnode.name
-			pool.Go(func() error {
-				return node.IpmiNodeControl(name, !req.SkipRestore, rnode.method, rnode.useNcsi)
-			})
-		}
-		return pool.Wait()
-	}
-
-	req.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK}
-	err := reloadNodes(context.Background())
-	if err != nil {
-		log.Errorf("TOPO SVC | IpmiNodeAction | IpmiNodeActions Call Failed. %v", err)
-		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
-		req.ApiResponse.ErrorMsg = err.Error()
-	}
-
-	for idx, rnode := range rNodes {
-		req.NodeMsg.Nodes[idx] = rnode.node.GetNodeMsg(ctx, rnode.name)
-		if req.NodeMsg.Nodes[idx].GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
-			req.ApiResponse.ErrorMsg = "Node :" + req.NodeMsg.Nodes[idx].GetName() + " : " + req.NodeMsg.Nodes[idx].GetNodeStatus().ErrorMsg + "\n"
-			req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
-		}
-	}
-	return req, nil
-}
-
 // ReloadNodes saves and loads node personality
 func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg) (*iota.ReloadMsg, error) {
 	log.Infof("TOPO SVC | DEBUG | ReloadNodes. Received Request Msg: %v", req)
@@ -790,10 +743,13 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 	}
 
 	type reloadReq struct {
-		name    string
-		node    testbed.TestNodeInterface
-		method  string
-		useNcsi bool
+		name             string
+		node             testbed.TestNodeInterface
+		method           string
+		methodArgs       string
+		useNcsi          bool
+		skipAgentInit    bool
+		skipAgentRestore bool
 	}
 	rNodes := []reloadReq{}
 
@@ -804,7 +760,15 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 			req.ApiResponse.ErrorMsg = fmt.Sprintf("Reload on unprovisioned node : %v", node.GetName())
 			return req, nil
 		}
-		rNodes = append(rNodes, reloadReq{name: node.Name, node: n, method: req.RestartMethod, useNcsi: req.UseNcsi})
+		rNodes = append(rNodes, reloadReq{
+			name:             node.Name,
+			node:             n,
+			method:           restartMethodMap[req.RestartMethod],
+			methodArgs:       req.MethodArgs,
+			useNcsi:          req.UseNcsi,
+			skipAgentInit:    req.SkipAgentInit,
+			skipAgentRestore: req.SkipRestore,
+		})
 	}
 
 	reloadNodes := func(ctx context.Context) error {
@@ -816,7 +780,7 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 			log.Infof("Processing Reloading node %v , name %vv", node.GetNodeInfo().Name, name)
 			pool.Go(func() error {
 				log.Infof("Reloading node %v , name %vv", node.GetNodeInfo().Name, name)
-				return node.ReloadNode(name, !req.SkipRestore, rnode.method, rnode.useNcsi)
+				return node.ReloadNode(name, !rnode.skipAgentRestore, rnode.method, rnode.methodArgs, !rnode.skipAgentInit, rnode.useNcsi)
 			})
 		}
 		return pool.Wait()

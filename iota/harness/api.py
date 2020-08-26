@@ -140,10 +140,6 @@ def ReloadNodes(req):
     Logger.debug("Reloading Nodes:")
     return __rpc(req, gl_topo_svc_stub.ReloadNodes)
 
-def IpmiNodeAction(req):
-    Logger.debug("IpmiNodeAction:")
-    return __rpc(req, gl_topo_svc_stub.IpmiNodeAction)
-
 def SaveNodes(req):
     Logger.debug("Saving Nodes:")
     return __rpc(req, gl_topo_svc_stub.SaveNodes)
@@ -1165,16 +1161,34 @@ def CopyFromESX(node_name, files, dest_dir, esx_dir="/tmp"):
     return ret_resp
 
 def RestartNodes(nodes, restartMode='', useNcsi=False):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestartNodes(nodes,restartMode,useNcsi)
+    restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_AUTO
+    method_args = ""
+    if restartMode == "ipmi":
+        restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_IPMI
+        method_args = "cycle"
+    elif restartMode == "apc":
+        method_args = "cycle"
+        restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_APC
+    elif restartMode == "reboot":
+        restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_REBOOT
 
-def IpmiNodes(nodes, ipmiMethod, useNcsi=False):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().IpmiNodes(nodes,ipmiMethod,useNcsi)
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestartNodes(nodes, restart_method, 
+                                                                               method_args=method_args, use_ncsi=useNcsi,
+                                                                               skip_agent_init=False, skip_restore=False)
 
-def PowerCycleNodes(nodes, powerCycleMethod='apc'):
-    if powerCycleMethod == 'apc':
-        return store.GetTestbed().GetCurrentTestsuite().GetTopology().ApcPowerCycle(nodes)
-    elif powerCycleMethod == 'ipmi':
-        return store.GetTestbed().GetCurrentTestsuite().GetTopology().IpmiPowerCycle(nodes)
+def IpmiNodes(nodes, ipmiMethod, useNcsi=False, skip_agent_init=False, skip_restore=False):
+    restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_IPMI
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestartNodes(nodes, restart_method, 
+                                                                               method_args=ipmiMethod, use_ncsi=useNcsi, 
+                                                                               skip_agent_init=skip_agent_init, 
+                                                                               skip_restore=skip_restore)
+
+def ApcNodes(nodes, apc_method="cycle", skip_agent_init=False, skip_restore=False):
+    restart_method = topo_svc.NodeRestartMethod.RESTART_METHOD_APC
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestartNodes(nodes, restart_method, 
+                                                                               method_args=apc_method, use_ncsi=False, 
+                                                                               skip_agent_init=skip_agent_init, 
+                                                                               skip_restore=skip_restore)
 
 def ReinitForTestsuite():
     return store.GetTestbed().InitForTestsuite()
