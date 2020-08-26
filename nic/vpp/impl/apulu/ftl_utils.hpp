@@ -57,18 +57,6 @@ ftl_set_flow_miss_hit(flow_hash_entry_t *entry, uint8_t val)
     entry->set_force_flow_miss(val);
 }
 
-void
-ftlv4_set_l2l(ipv4_flow_hash_entry_t *entry, uint8_t val)
-{
-    entry->set_is_local_to_local(val);
-}
-
-void
-ftl_set_l2l(flow_hash_entry_t *entry, uint8_t val)
-{
-    entry->set_is_local_to_local(val);
-}
-
 uint16_t
 ftlv4_get_lookup_id(ipv4_flow_hash_entry_t *entry)
 {
@@ -140,18 +128,6 @@ uint8_t
 ftl_get_nexthop_priority(flow_hash_entry_t *entry)
 {
     return entry->get_priority();
-}
-
-uint8_t
-ftlv4_get_l2l(ipv4_flow_hash_entry_t *entry)
-{
-    return entry->get_is_local_to_local();
-}
-
-uint8_t
-ftl_get_l2l(flow_hash_entry_t *entry)
-{
-    return entry->get_is_local_to_local();
 }
 
 #endif  // __VPP_IMPL_APULU_FTL_UTILS_H__

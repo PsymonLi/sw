@@ -51,18 +51,6 @@ ftl_set_flow_miss_hit(flow_hash_entry_t *entry, uint8_t val)
     return;
 }
 
-void
-ftlv4_set_l2l(ipv4_flow_hash_entry_t *entry, uint8_t val)
-{
-    return;
-}
-
-void
-ftl_set_l2l(flow_hash_entry_t *entry, uint8_t val)
-{
-    return;
-}
-
 uint16_t
 ftlv4_get_lookup_id(ipv4_flow_hash_entry_t *entry)
 {
@@ -131,18 +119,6 @@ ftlv4_get_nexthop_priority(ipv4_flow_hash_entry_t *entry)
 
 uint8_t
 ftlv4_get_nexthop_priority(flow_hash_entry_t *entry)
-{
-    return 0;
-}
-
-uint8_t
-ftlv4_get_l2l(ipv4_flow_hash_entry_t *entry)
-{
-    return 0;
-}
-
-uint8_t
-ftl_get_l2l(flow_hash_entry_t *entry)
 {
     return 0;
 }

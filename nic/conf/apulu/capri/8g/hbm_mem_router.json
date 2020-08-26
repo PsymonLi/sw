@@ -577,6 +577,14 @@
             "_comment": "1M * 32B"
         },
         {
+            "name": "flow_info",
+            "kind": "opertbl",
+            "size": "32M",
+            "cache": "p4ig",
+            "reset": true,
+            "_comment": "2M * 16B"
+        },
+        {
             "name": "ip_mac_binding",
             "kind": "opertbl",
             "size": "512K",

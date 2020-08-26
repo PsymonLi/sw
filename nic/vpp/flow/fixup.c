@@ -11,8 +11,8 @@
 #include <sess.h>
 #include <sess_helper.h>
 #include <nic/vpp/infra/utils.h>
+#include <nic/vpp/impl/flow_info.h>
 #include "fixup.h"
-#include <flow_info.h>
 
 typedef struct ipv4_flow_params_s {
     u32 sip;
@@ -87,11 +87,9 @@ pds_flow_lookup_id_update (pds_flow_hw_ctx_t *session, bool iflow,
     pds_flow_main_t *fm = &pds_flow_main;
     u32 ses_id = session - fm->session_index_pool + 1;
     u64 handle = iflow ? session->iflow.handle : session->rflow.handle;
-    bool l2l = (session->packet_type == PDS_FLOW_L2L_INTER_SUBNET ||
-                session->packet_type == PDS_FLOW_L2L_INTRA_SUBNET) ? true : false;
     if (PREDICT_FALSE(ftlv4_insert_with_new_lookup_id(table4, handle,
                                                       &new_handle,
-                                                      lookup_id, l2l) != 0)) {
+                                                      lookup_id) != 0)) {
         flow_log_error("%s ftlv4 insert failed", __FUNCTION__);
         return -1;
     }
@@ -181,24 +179,8 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data,
         // Update session packet type
         if (session->packet_type == PDS_FLOW_L2L_INTRA_SUBNET) {
             session->packet_type = PDS_FLOW_L2R_INTRA_SUBNET;
-            l2l = false;
         } else {
             session->packet_type = PDS_FLOW_L2L_INTRA_SUBNET;
-            l2l = true;
-        }
-
-        // In this case, we only need to update l2l flag in the rflow.
-        ret = ftlv4_get_with_handle(table4,
-                                    session->rflow.handle,
-                                    thread_id);
-        if (PREDICT_FALSE(ret != 0)) {
-            return;
-        }
-
-        ftlv4_set_last_read_entry_l2l(l2l, thread_id);
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
-                                                    thread_id) != 0)) {
-            return;
         }
         break;
     case PDS_FLOW_R2L_INTRA_SUBNET:
@@ -220,21 +202,8 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data,
         l2l = false;
     }
 
-    ret = ftlv4_get_with_handle(table4,
-                                session->iflow.handle,
-                                thread_id);
-    if (PREDICT_FALSE(ret != 0)) {
-        return;
-    }
-
-    ftlv4_set_last_read_entry_l2l(l2l, thread_id);
-    if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
-                                                thread_id) != 0)) {
-        return;
-    }
-
-    // Update l2l flag in flow info table
-    pds_flow_info_update_l2l(ses_id, false, l2l);
+    // update l2l flag in flow info table
+    pds_flow_info_l2l_update(ses_id, l2l);
 
     // Also, update the session flags
     pds_session_get_rewrite_flags(ses_id, session->packet_type,
@@ -293,25 +262,10 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data,
         // Update session packet type
         if (session->packet_type == PDS_FLOW_L2L_INTRA_SUBNET) {
             session->packet_type = PDS_FLOW_R2L_INTRA_SUBNET;
-            l2l = false;
         } else {
             session->packet_type = PDS_FLOW_L2L_INTRA_SUBNET;
-            l2l = true;
         }
 
-        // In this case, we only need to update l2l flag in the iflow.
-        ret = ftlv4_get_with_handle(table4,
-                                    session->iflow.handle,
-                                    thread_id);
-        if (PREDICT_FALSE(ret != 0)) {
-            return;
-        }
-
-        ftlv4_set_last_read_entry_l2l(l2l, thread_id);
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
-                                                    thread_id) != 0)) {
-            return;
-        }
         break;
     case PDS_FLOW_L2R_INTRA_SUBNET:
     case PDS_FLOW_L2R_INTER_SUBNET:
@@ -334,21 +288,8 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data,
         l2l = false;
     }
 
-    ret = ftlv4_get_with_handle(table4,
-                                session->rflow.handle,
-                                thread_id);
-    if (PREDICT_FALSE(ret != 0)) {
-        return;
-    }
-
-    ftlv4_set_last_read_entry_l2l(l2l, thread_id);
-    if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
-                                                thread_id) != 0)) {
-        return;
-    }
-
-    // Update l2l flag in flow info table
-    pds_flow_info_update_l2l(ses_id, true, l2l);
+    // update l2l flag in flow info table
+    pds_flow_info_l2l_update(ses_id, l2l);
 
     // Also, update the session flags
     pds_session_get_rewrite_flags(ses_id, session->packet_type,

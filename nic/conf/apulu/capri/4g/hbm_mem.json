@@ -361,7 +361,7 @@
             "size": "32M",
             "cache": "p4ig",
             "reset": true,
-            "_comment": "4M * 8B"
+            "_comment": "2M * 16B"
         },
         {
             "name": "ip_mac_binding",

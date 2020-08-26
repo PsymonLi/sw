@@ -10,7 +10,7 @@ struct phv_         p;
 %%
 
 flow_info:
-    nop.e
+    phvwr.e.f       p.p4i_i2e_is_local_to_local, d.flow_info_d.is_local_to_local
     nop
 
 /*****************************************************************************/

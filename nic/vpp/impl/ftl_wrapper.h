@@ -152,8 +152,6 @@ void ftl_set_key_lookup_id(flow_entry *entry, uint16_t lookup_id);
 
 void ftl_set_entry_flow_miss_hit(flow_entry *entry, uint8_t val);
 
-void ftl_set_entry_l2l(flow_entry *entry, uint8_t val);
-
 void ftl_set_entry_nexthop(flow_entry *entry, uint32_t nhid, uint32_t nhtype,
                            uint8_t nhvalid, uint8_t priority);
 
@@ -176,8 +174,6 @@ uint16_t ftlv4_get_entry_nexthop_id(v4_flow_entry *entry);
 uint8_t ftlv4_get_entry_nexthop_priority(v4_flow_entry *entry);
 
 void ftlv4_set_entry_flow_miss_hit(v4_flow_entry *entry, uint8_t val);
-
-void ftlv4_set_entry_l2l(v4_flow_entry *entry, uint8_t val);
 
 ftlv4 * ftlv4_create(void *key2str,
                      void *appdata2str);
@@ -252,8 +248,6 @@ uint32_t ftlv4_cache_get_session_index(int id, uint16_t thread_id);
 uint8_t ftlv4_cache_get_proto(int id, uint16_t thread_id);
 
 void ftlv4_cache_set_epoch(uint8_t val, uint16_t thread_id);
-
-void ftlv4_cache_set_l2l(uint8_t val, uint16_t thread_id);
 
 void ftlv4_cache_set_hash_log(uint32_t val, uint8_t log, uint16_t thread_id);
 
@@ -340,8 +334,6 @@ uint8_t ftlv6_cache_get_proto(int id);
 
 void ftlv6_cache_set_epoch(uint8_t val);
 
-void ftlv6_cache_set_l2l(uint8_t val);
-
 void ftlv6_cache_set_flow_miss_hit(uint8_t val);
 
 void ftlv6_cache_set_update_flag(uint8_t update);
@@ -411,8 +403,6 @@ void ftlv4_set_last_read_entry_nexthop(uint32_t nhid,
 
 void ftlv4_set_last_read_entry_miss_hit(uint8_t flow_miss, uint16_t thread_id);
 
-void ftlv4_set_last_read_entry_l2l(uint8_t l2l, uint16_t thread_id);
-
 enum flow_export_reason_e {
     FLOW_EXPORT_REASON_ADD,
     FLOW_EXPORT_REASON_DEL,
@@ -447,7 +437,7 @@ int ftlv6_remove(ftlv6 *obj, flow_entry *entry, uint32_t hash);
 
 int ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
                                      uint64_t *ret_handle,
-                                     uint16_t lookup_id, bool l2l);
+                                     uint16_t lookup_id);
 
 void ftlv4_get_handle_str (char *handle_str, uint64_t handle);
 

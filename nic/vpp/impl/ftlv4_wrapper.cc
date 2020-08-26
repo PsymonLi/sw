@@ -838,12 +838,6 @@ ftlv4_cache_set_epoch (uint8_t val, uint16_t thread_id)
     ftlv4_set_epoch(g_ip4_flow_cache[thread_id].ip4_flow + g_ip4_flow_cache[thread_id].count, val);
 }
 
-void
-ftlv4_cache_set_l2l (uint8_t val, uint16_t thread_id)
-{
-    ftlv4_set_entry_l2l(g_ip4_flow_cache[thread_id].ip4_flow + g_ip4_flow_cache[thread_id].count, val);
-}
-
 /*
 void
 ftlv4_cache_batch_flush (ftlv4 *obj, int *status)
@@ -917,13 +911,6 @@ ftlv4_set_last_read_entry_miss_hit (uint8_t flow_miss, uint16_t tid)
 }
 
 void
-ftlv4_set_last_read_entry_l2l (uint8_t l2l, uint16_t tid)
-{
-    ipv4_flow_hash_entry_t *v4entry = &g_ip4_flow_cache[tid].ip4_last_read_flow;
-    ftlv4_set_entry_l2l(v4entry, l2l);
-}
-
-void
 ftlv4_set_thread_id (ftlv4 *obj, uint32_t thread_id)
 {
     //obj->set_thread_id(thread_id);
@@ -933,8 +920,7 @@ ftlv4_set_thread_id (ftlv4 *obj, uint32_t thread_id)
 int
 ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
                                  uint64_t *ret_handle,
-                                 uint16_t lookup_id,
-                                 bool l2l)
+                                 uint16_t lookup_id)
 {
     sdk_table_api_params_t params = {0};
     ipv4_flow_hash_entry_t v4entry;
@@ -950,7 +936,6 @@ ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
 
     memset(&params, 0, sizeof(params));
     ftlv4_set_key_lookup_id(&v4entry, lookup_id);
-    ftlv4_set_entry_l2l(&v4entry, l2l);
     params.entry = &v4entry;
     if (SDK_RET_OK != obj->insert(&params)) {
         return -1;

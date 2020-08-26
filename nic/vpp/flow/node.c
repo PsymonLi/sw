@@ -1023,7 +1023,6 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             pds_flow_handle_l2l(p0, flow_exists, &miss_hit, ses);
             l2l = 1;
         }
-        ftlv4_cache_set_l2l(l2l, thread_index);
         ftlv4_cache_set_flow_miss_hit(miss_hit, thread_index);
         ftlv4_cache_set_update_flag(flow_exists, thread_index);
         pds_flow_extract_nexthop_info(p0, true, true, bitw_svc, thread_index);
@@ -1056,25 +1055,18 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv4_cache_set_napt_flag(napt, thread_index);
         ftlv4_cache_advance_count(1, thread_index);
 
-        // Insert iflow into flow info table
-        pds_flow_info_program(session_id, true, l2l);
-
         // Insert rflow into FTL cache
         ftlv4_cache_set_key(r_src_ip, r_dst_ip,
                             protocol, r_sport, r_dport, lkp_id, thread_index);
         ftlv4_cache_set_session_index(session_id, thread_index);
         ftlv4_cache_set_flow_role(TCP_FLOW_RESPONDER, thread_index);
         ftlv4_cache_set_epoch(pds_get_flow_epoch(p0), thread_index);
-        ftlv4_cache_set_l2l(l2l, thread_index);
         ftlv4_cache_set_flow_miss_hit(miss_hit, thread_index);
         ftlv4_cache_set_update_flag(flow_exists, thread_index);
         pds_flow_extract_nexthop_info(p0, true, false, bitw_svc, thread_index);
         ftlv4_cache_set_hash_log(0, pds_get_flow_log_en(p0), thread_index);
         ftlv4_cache_set_napt_flag(napt, thread_index);
         ftlv4_cache_advance_count(1, thread_index);
-
-        // Insert rflow into flow info table
-        pds_flow_info_program(session_id, false, l2l);
 
         if (ip40->protocol == IP_PROTOCOL_TCP) {
             if (pds_flow_con_track_en_get(
@@ -1197,15 +1189,11 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             pds_flow_handle_l2l(p0, flow_exists, &miss_hit, ses);
             l2l = 1;
         }
-        ftlv6_cache_set_l2l(l2l);
         ftlv6_cache_set_flow_miss_hit(miss_hit);
         ftlv6_cache_set_update_flag(flow_exists);
         ftlv6_cache_set_hash_log(vnet_buffer(p0)->pds_flow_data.flow_hash,
                                  pds_get_flow_log_en(p0));
         ftlv6_cache_advance_count(1);
-
-        // Insert iflow into flow info table
-        pds_flow_info_program(session_id, true, l2l);
 
         // Insert rflow into FTL cache
         lkp_id = vnet_buffer(p0)->pds_flow_data.egress_lkp_id;
@@ -1219,15 +1207,12 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv6_cache_set_session_index(session_id);
         ftlv6_cache_set_flow_role(TCP_FLOW_RESPONDER);
         ftlv6_cache_set_epoch(pds_get_flow_epoch(p0));
-        ftlv6_cache_set_l2l(l2l);
         ftlv6_cache_set_flow_miss_hit(miss_hit);
         ftlv6_cache_set_update_flag(flow_exists);
         ftlv6_cache_set_hash_log(0, pds_get_flow_log_en(p0));
         ftlv6_cache_advance_count(1);
-
-        // Insert rflow into flow info table
-        pds_flow_info_program(session_id, false, l2l);
     }
+    pds_flow_info_cache_entry_add(thread_index, l2l);
     return;
 }
 
@@ -1266,6 +1251,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
             }
             goto err_rflow;
         }
+        pds_flow_info_cache_entry_prog(thread_index, i, session_id);
         if (PREDICT_TRUE(!pds_is_flow_session_present(p0))) {
             // don't increment ctr if session is already present
             ses_ctr[ftlv4_cache_get_counter_index(i, thread_index)]++;
@@ -1419,6 +1405,7 @@ pds_flow_prog (vlib_main_t *vm,
     } else {
         ftlv6_cache_batch_init();
     }
+    pds_flow_info_cache_reset(node->thread_index);
     PDS_PACKET_LOOP_START {
         PDS_PACKET_DUAL_LOOP_START(LOAD, LOAD) {
             u32 session_id0 = 0, session_id1 = 0;
@@ -1989,6 +1976,7 @@ pds_flow_init (vlib_main_t * vm)
     pds_flow_monitor_init();
 
     pds_flow_pipeline_init(vm);
+    pds_flow_info_init(no_of_threads, VLIB_FRAME_SIZE);
 
     fm->flow_metrics_hdl = pdsa_flow_stats_init();
     fm->datapath_assist_metrics_hdl = pdsa_datapath_assist_stats_init();

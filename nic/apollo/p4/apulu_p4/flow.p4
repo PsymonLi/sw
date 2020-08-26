@@ -1,13 +1,13 @@
 /*****************************************************************************/
 /* Policy (IPv6 and non-IP)                                                  */
 /*****************************************************************************/
-@pragma capi appdatafields epoch session_index flow_role nexthop_valid nexthop_type nexthop_id priority is_local_to_local
+@pragma capi appdatafields epoch session_index flow_role nexthop_valid nexthop_type nexthop_id priority control_traffic_redirect
 @pragma capi hwfields_access_api
 action flow_hash(epoch, session_index,
                  hash1, hint1, hash2, hint2, hash3, hint3, hash4, hint4,
                  more_hashes, more_hints, force_flow_miss, flow_role,
                  nexthop_valid, nexthop_type, nexthop_id, entry_valid,
-                 priority, is_local_to_local) {
+                 priority, control_traffic_redirect) {
     modify_field(p4i_i2e.entropy_hash, scratch_metadata.flow_hash);
     modify_field(p4i_to_arm.flow_hash, scratch_metadata.flow_hash);
     if (entry_valid == TRUE) {
@@ -26,17 +26,10 @@ action flow_hash(epoch, session_index,
             modify_field(p4i_to_arm.session_id, scratch_metadata.session_id);
             modify_field(p4i_to_arm.defunct_flow, ingress_recirc.defunct_flow);
         } else {
-            modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
             modify_field(p4i_i2e.flow_role, flow_role);
             modify_field(control_metadata.flow_info_lkp, TRUE);
-            if (flow_role == TCP_FLOW_INITIATOR) {
-                modify_field(key_metadata.flow_info_id,
-                             scratch_metadata.session_id);
-            } else {
-                modify_field(key_metadata.flow_info_id,
-                             scratch_metadata.session_id +
-                             (FLOW_INFO_TABLE_SIZE / 2));
-            }
+            modify_field(key_metadata.flow_info_id,
+                         scratch_metadata.session_id);
             modify_field(control_metadata.flow_done, TRUE);
             modify_field(scratch_metadata.flag, nexthop_valid);
             if (nexthop_valid == TRUE) {
@@ -48,8 +41,10 @@ action flow_hash(epoch, session_index,
                     modify_field(p4i_i2e.nexthop_id, nexthop_id);
                 }
             }
+            modify_field(scratch_metadata.flag, control_traffic_redirect);
             if ((arm_to_p4i.valid == FALSE) and
-                (tcp.flags & (TCP_FLAG_FIN|TCP_FLAG_RST) != 0)) {
+                ((control_traffic_redirect == TRUE) or
+                (tcp.flags & (TCP_FLAG_FIN|TCP_FLAG_RST) != 0))) {
                 modify_field(control_metadata.flow_miss, TRUE);
                 modify_field(control_metadata.force_flow_miss, TRUE);
                 modify_field(p4i_to_arm.flow_hit, TRUE);
@@ -154,12 +149,12 @@ table flow_ohash {
 /*****************************************************************************/
 /* Policy (IPv4)                                                             */
 /*****************************************************************************/
-@pragma capi appdatafields epoch session_index flow_role nexthop_valid nexthop_type nexthop_id priority is_local_to_local
+@pragma capi appdatafields epoch session_index flow_role nexthop_valid nexthop_type nexthop_id priority control_traffic_redirect
 @pragma capi hwfields_access_api
 action ipv4_flow_hash(epoch, session_index, nexthop_type,
                       hash1, hint1, hash2, hint2, more_hashes, more_hints,
                       force_flow_miss, flow_role, nexthop_valid, nexthop_id,
-                      entry_valid, priority, is_local_to_local) {
+                      entry_valid, priority, control_traffic_redirect) {
     modify_field(p4i_i2e.entropy_hash, scratch_metadata.flow_hash);
     modify_field(p4i_to_arm.flow_hash, scratch_metadata.flow_hash);
     if (entry_valid == TRUE) {
@@ -178,17 +173,10 @@ action ipv4_flow_hash(epoch, session_index, nexthop_type,
             modify_field(p4i_to_arm.session_id, scratch_metadata.session_id);
             modify_field(p4i_to_arm.defunct_flow, ingress_recirc.defunct_flow);
         } else {
-            modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
             modify_field(p4i_i2e.flow_role, flow_role);
             modify_field(control_metadata.flow_info_lkp, TRUE);
-            if (flow_role == TCP_FLOW_INITIATOR) {
-                modify_field(key_metadata.flow_info_id,
-                             scratch_metadata.session_id);
-            } else {
-                modify_field(key_metadata.flow_info_id,
-                             scratch_metadata.session_id +
-                             (FLOW_INFO_TABLE_SIZE / 2));
-            }
+            modify_field(key_metadata.flow_info_id,
+                         scratch_metadata.session_id);
             modify_field(control_metadata.flow_done, TRUE);
             modify_field(scratch_metadata.flag, nexthop_valid);
             if (nexthop_valid == TRUE) {
@@ -200,8 +188,10 @@ action ipv4_flow_hash(epoch, session_index, nexthop_type,
                     modify_field(p4i_i2e.nexthop_id, nexthop_id);
                 }
             }
+            modify_field(scratch_metadata.flag, control_traffic_redirect);
             if ((arm_to_p4i.valid == FALSE) and
-                (tcp.flags & (TCP_FLAG_FIN|TCP_FLAG_RST) != 0)) {
+                ((control_traffic_redirect == TRUE) or
+                (tcp.flags & (TCP_FLAG_FIN|TCP_FLAG_RST) != 0))) {
                 modify_field(control_metadata.flow_miss, TRUE);
                 modify_field(control_metadata.force_flow_miss, TRUE);
                 modify_field(p4i_to_arm.flow_hit, TRUE);
@@ -293,7 +283,7 @@ table ipv4_flow_ohash {
 }
 
 /*****************************************************************************/
-/* Additional info for flow                                                  */
+/* Additional info for flow/session                                          */
 /*****************************************************************************/
 action flow_info(is_local_to_local, pad) {
     modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
