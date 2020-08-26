@@ -2632,9 +2632,9 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
     } cfg = {0};
     asic_db_addr_t db_addr = { 0 };
 
-    NIC_LOG_DEBUG("{}: {}: type {} index {} oper {}", hal_lif_info_.name,
+    NIC_LOG_DEBUG("{}: {}: type {} index {} oper {} refcnt {}", hal_lif_info_.name,
                   opcode_to_str((cmd_opcode_t)cmd->opcode),
-                  cmd->type, cmd->index, cmd->oper);
+                  cmd->type, cmd->index, cmd->oper, lif_pstate->active_q_ref_cnt);
 
     if (!IsLifInitialized()) {
         NIC_LOG_ERR("{}: Lif is not initialized", hal_lif_info_.name);
@@ -4277,8 +4277,10 @@ EthLif::NotifyLifLinkState()
     db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_SET,
                     ASIC_DB_UPD_INDEX_SET_PINDEX, false);
 
-    NIC_LOG_DEBUG("{}: Sending notify event, eid {} notify_idx {} notify_desc_addr {:#x}",
-         hal_lif_info_.lif_id, lif_status->eid, notify_ring_head, addr);
+    NIC_LOG_DEBUG("{}: Sending notify event, eid {} notify_idx {}"
+                  "notify_desc_addr {:#x} queue refcnt {}",
+         hal_lif_info_.name, lif_status->eid, notify_ring_head,
+         addr, lif_pstate->active_q_ref_cnt);
     notify_ring_head = (notify_ring_head + 1) % ETH_NOTIFYQ_RING_SIZE;
     PAL_barrier();
 
