@@ -196,14 +196,8 @@ $table-headerheight: 55px;
 
         .telemetrychartview-card {
           width: calc(100% - 10px) !important;
-          height: 320px !important;
+          height: 360px !important;
           margin: 0px !important;
-
-          .basecard-container {
-            box-shadow: none !important;
-            border: none !important;
-            background: none !important;
-          }
         }
       }
     }

@@ -908,7 +908,6 @@ export class ObjectsRelationsUtility {
         for (let i = 0; i < nodes.length; i++) {
             let iObj = null;
             for (let j = i + 1; j < nodes.length; j++) {
-                console.log ('findRearchablePathMatrix()', i, j, nodes[i], nodes[j]);
                 if (nodes[i] !== nodes[j]) {
                     const ijPath = this.findReachablePath(graph, nodes[i], nodes[j]);
                     if (!!ijPath) {

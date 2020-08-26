@@ -3,6 +3,7 @@ import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { Animations } from '@app/animations';
 import { Router } from '@angular/router';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
+import { NONE_TYPE } from '@angular/compiler/src/output/output_ast';
 
 export interface Stat {
   value: any;
@@ -61,6 +62,8 @@ export class BasecardComponent implements OnInit, OnChanges {
   @Input() menuItems = [];
   // input to toggle the new gradient theme
   @Input() gradTheme: boolean = false;
+  // input to toggle border shadow and border
+  @Input() noBorder: boolean = false;
 
 
   showGraph: boolean = false;
@@ -81,7 +84,12 @@ export class BasecardComponent implements OnInit, OnChanges {
   /* changes the custom css of the cards
   updates this.themeCss based on this.gradTheme */
   generateThemeCss() {
-    if (!this.gradTheme) {
+    if (this.noBorder) {
+      this.themeCss = {
+        'border': 'none',
+        'background-color': 'transparent'
+      };
+    } else if (!this.gradTheme) {
       this.themeCss = {
         'box-shadow': '0 0 3px 0 ' + this.themeColor,
         'border': this.hasHover ? 'solid 1px ' + this.themeColor : 'solid 1px #cec5bd'

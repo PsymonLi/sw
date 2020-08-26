@@ -242,7 +242,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
         if (logs != null) {
           this.processLogs(logs);
           if (this.uiconfigsService.isFeatureEnabled('troubleshooting')) {
-              this.proecessLogGraph(logs);
+             //  this.proecessLogGraph(logs);
           }
         }
       },
@@ -264,16 +264,33 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     const compressedConns = ObjectsRelationsUtility.compressConnections(connections);
     const graph = ObjectsRelationsUtility.buildGraphFromConnections(compressedConns);
     const nodes = Object.keys(graph);
-    const connAllGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(graph, nodes);
-    console.log('Dashboard.proecessLogGraph()', graph, nodes, connAllGraphPaths);
+    // don't run this. It will freeze UI.  --  const connAllGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(graph, nodes);
+    // console.log('Dashboard.proecessLogGraph()', graph, nodes, connAllGraphPaths);
 
+    const nodesLinktoApps = {};
+
+    // From IPs, find all app-names. build a {ip:app} map and app-name list
+    // TODO, find the top 5 busiest nodes
     const apps = nodes.map( (ip: string) => {
        const appname =   ObjectsRelationsUtility.findAppNameFromWorkloadsByIp(ip, this.workloads as WorkloadWorkload []);
+       if (appname) {
+        nodesLinktoApps[ip] = appname;
+       }
        return (appname) ? appname : ip;
     });
     console.log('Dashboard.proecessLogGraph() apps', apps);
+
+    let list = Object.keys(nodesLinktoApps);
+    const maxLen = 5;
+    if (list.length > maxLen ) {
+      list = list.slice(0, maxLen); // It takes long time to compute all possible paths. Limit the list size up to maxLen.
+    }
+    // compute all paths among the list element.  This will take time.
+    const connAllGraphPaths = ObjectsRelationsUtility.findAllGraphPaths(graph, list );
+    console.log('Dashboard.proecessLogGraph() all paths for apps. (up to 40 apps) ', connAllGraphPaths);
+
     const appnameTest =   ObjectsRelationsUtility.findAppNameFromWorkloadsByIp( '20.0.1.23', this.workloads as WorkloadWorkload []);
-    console.log('Dashboard.proecessLogGraph() apps', appnameTest); // should match orch2--vm-169 of 10.30.1.173 server
+    console.log('Dashboard.proecessLogGraph() get app name of 20.0.1.23', appnameTest); // should match orch2--vm-169 of 10.30.1.173 server
 
     const randomIdxDst  = Utility.getRandomInt(0, nodes.length - 1 );
     const pickedDstNode = nodes[randomIdxDst];
