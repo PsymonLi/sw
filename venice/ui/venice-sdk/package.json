@@ -8,7 +8,7 @@
     "@angular/core": "5.2.11",
     "@angular/forms": "5.2.11",
     "@angular/platform-browser": "5.2.11",
-    "@pensando/swagger-ts-generator": "file:pensando-swagger-ts-generator-1.1.29.tgz",
+    "@pensando/swagger-ts-generator": "file:pensando-swagger-ts-generator-1.1.30.tgz",
     "@types/node": "^12.6.8",
     "handlebars": "^4.1.2",
     "lodash": "^4.17.11",

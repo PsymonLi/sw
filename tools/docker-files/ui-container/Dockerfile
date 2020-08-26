@@ -42,8 +42,8 @@ COPY web-app-framework/yarn.lock /usr/local/lib/web-app-framework
 COPY webapp/yarn.lock /usr/local/lib/webapp
 
 # Copy and extract ts generator so that its node modules will be stored in the offline mirror
-COPY venice-sdk/pensando-swagger-ts-generator-1.1.29.tgz /usr/local/lib/swagger-gen
-RUN cd /usr/local/lib/swagger-gen && yarn add file:pensando-swagger-ts-generator-1.1.29.tgz
+COPY venice-sdk/pensando-swagger-ts-generator-1.1.30.tgz /usr/local/lib/swagger-gen
+RUN cd /usr/local/lib/swagger-gen && yarn add file:pensando-swagger-ts-generator-1.1.30.tgz
 RUN rm -rf /usr/local/lib/swagger-gen 
 
 # yarn install packages to populate node_modules and offline mirror 

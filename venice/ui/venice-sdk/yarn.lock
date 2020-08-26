@@ -30,9 +30,9 @@
   dependencies:
     tslib "^1.7.1"
 
-"@pensando/swagger-ts-generator@file:pensando-swagger-ts-generator-1.1.29.tgz":
-  version "1.1.29"
-  resolved "file:pensando-swagger-ts-generator-1.1.29.tgz#cf117e54eb26aa138a79153ee110501d1e868583"
+"@pensando/swagger-ts-generator@file:pensando-swagger-ts-generator-1.1.30.tgz":
+  version "1.1.30"
+  resolved "file:pensando-swagger-ts-generator-1.1.30.tgz#d1a5997fa113b029611262136850fb3dfcab5313"
   dependencies:
     fs "0.0.2"
     handlebars "^4.1.2"

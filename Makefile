@@ -422,7 +422,7 @@ ui-container-helper:
 	mkdir -p tools/docker-files/ui-container/web-app-framework/dist tools/docker-files/ui-container/venice-sdk
 	# copy local packages
 	cp venice/ui/web-app-framework/web-app-framework.tgz tools/docker-files/ui-container/web-app-framework/web-app-framework.tgz
-	cp venice/ui/venice-sdk/pensando-swagger-ts-generator-1.1.29.tgz tools/docker-files/ui-container/venice-sdk/pensando-swagger-ts-generator-1.1.29.tgz
+	cp venice/ui/venice-sdk/pensando-swagger-ts-generator-1.1.30.tgz tools/docker-files/ui-container/venice-sdk/pensando-swagger-ts-generator-1.1.30.tgz
 	# copy package.json and yarn.locks files, removing local packages
 	$(eval FILENAME := package.json)
 	cp venice/ui/web-app-framework/$(FILENAME) tools/docker-files/ui-container/web-app-framework/$(FILENAME)
@@ -841,7 +841,7 @@ ui-link-framework:
 	cd venice/ui/webapp && yalc add web-app-framework
 
 ui-venice-sdk:
-	cd venice/ui/venice-sdk && yarn add file:pensando-swagger-ts-generator-1.1.29.tgz --offline
+	cd venice/ui/venice-sdk && yarn add file:pensando-swagger-ts-generator-1.1.30.tgz --offline
 	cd venice/ui/venice-sdk && yarn run build && yarn run gen
 
 ui:
