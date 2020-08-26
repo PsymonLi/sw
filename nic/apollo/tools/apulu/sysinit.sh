@@ -17,8 +17,7 @@ ulimit -c unlimited
 #if lowerdir=/new is not found then we are in fresh boot mode
 grep "overlay" /proc/mounts | grep -q "lowerdir=/new"
 if [ $? -ne 0 ]; then
-    rm -rf /update/*_upg*
-    rm -rf /update/upgmgr_init_mode.txt
+    rm -rf /update/*upg*
 else
     cp  /update/upgmgr_init_mode.txt /.upgrade_init_mode
 fi

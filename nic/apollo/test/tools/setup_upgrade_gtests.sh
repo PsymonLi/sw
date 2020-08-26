@@ -138,6 +138,7 @@ function hitless_copy_files() {
     cp ./sdk/upgrade/core/upgmgr_core_base.sh $PDSPKG_TOPDIR/tools/
     cp ./infra/operd/metrics/cloud/* $PDSPKG_TOPDIR/conf
     rm -rf $PDSPKG_TOPDIR/conf/gen/*
+    cp $CONFIG_PATH/$PIPELINE/upgrade_cc*.json /share/
 }
 
 function hitless_cleanup() {

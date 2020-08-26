@@ -12,14 +12,10 @@
 #define __SVC_LIF_PSTATE_HPP__
 
 #include "nic/sdk/include/sdk/types.hpp"
+#include "nic/apollo/api/internal/upgrade.hpp"
 
 // apollo service lif persistent state
 #define SVC_LIF_PSTATE_NAME "apollo_svc_lif"
-
-typedef struct svc_lif_meta_s {
-    module_version_t ver;
-    uint64_t rsvd[4];
-} __PACK__ svc_lif_meta_t;
 
 /// \brief persistent state for svc lif
 /// saved in shared memory store to access after process restart.
@@ -36,7 +32,7 @@ typedef struct svc_lif_pstate_v1_s {
     }
 
     /// meta data for the structure
-    svc_lif_meta_t metadata;
+    api::pstate_meta_info_t metadata;
 
     /// lif id - used as shm segment identifier
     uint32_t lif_id;

@@ -21,13 +21,18 @@ if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
     upgmgr_setup
     upgmgr_pkgcheck "hitless"
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
+    # copy the new image version meta to shared directory.
+    upgmgr_cc_version_copy $NEW_IMG_VERSION_PATH "to"
+    [[ $? -ne 0 ]] && echo "Version file copy failed!" && exit 1
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_setup
     # verification of the image is already done
-    # $SYS_UPDATE_TOOL -p $FW_PATH check with Stavros, whether we can do sysupdate
-    copy_img_to_alt_partition $FW_UPDATE_TOOL $RUNNING_IMAGE
+    $SYS_UPDATE_TOOL -p $FW_PATH
     [[ $? -ne 0 ]] && echo "Firmware store failed!" && exit 1
+    # copy the running image version meta to update. this would come as previous
+    # image version meta to the respawn(same image upgrade in this case)
+    upgmgr_cc_version_copy $RUNNING_IMG_VERSION_PATH "from"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_hitless_backup_files_check

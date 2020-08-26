@@ -41,18 +41,16 @@ typedef enum pds_shmstore_id_e {
     PDS_SHMSTORE_ID_MAX,
 } pds_shmstore_id_t;
 
-// module version input config
-typedef enum module_version_conf_e {
-    MODULE_VERSION_GRACEFUL = sysinit_mode_t::SYSINIT_MODE_GRACEFUL,
-    MODULE_VERSION_HITLESS = sysinit_mode_t::SYSINIT_MODE_HITLESS,
-    MODULE_VERSION_CONF_MAX
-} module_version_conf_t;
-
 // pstate header info. common for pds pstates
 typedef struct pstate_meta_info_s {
-    module_version_t vers;
+    module_version_t version;
     uint64_t rsvd[4];
 } __PACK__ pstate_meta_info_t;
+
+// module names for using shmstore and versions
+#define PDS_NICMGR_MODULE_NAME   "nicmgr"
+#define PDS_AGENT_MODULE_NAME    "pdsagent"
+#define PDS_LINKMGR_MODULE_NAME  "linkmgr"
 
 }    // namespace api
 

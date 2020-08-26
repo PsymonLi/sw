@@ -157,6 +157,7 @@ function remove_upgrade_files() {
     sudo rm -rf /update /share /.upgrade*
     # pciemgrd saves here in sim mode
     sudo rm -rf /root/.pcie*
+    sudo rm -f $CONFIG_PATH/upgrade_cc_*
 }
 
 function remove_db () {
@@ -293,6 +294,12 @@ function setup_operd_regions_file() {
     export OPERD_REGIONS=$CONFIG_PATH/operd-regions.json
 }
 
+function setup_upgrade_version_files() {
+    sudo rm -f $CONFIG_PATH/upgrade_cc_*
+    ln -s $CONFIG_PATH/$PIPELINE/upgrade_cc_graceful_version.json $CONFIG_PATH/upgrade_cc_graceful_version.json
+    ln -s $CONFIG_PATH/$PIPELINE/upgrade_cc_hitless_version.json $CONFIG_PATH/upgrade_cc_hitless_version.json
+}
+
 function setup_conf_files () {
     # TODO Remove this once agent code is fixed
     # Create dummy device.conf - agent is trying to update it when device object is updated.
@@ -301,6 +308,7 @@ function setup_conf_files () {
     setup_metrics_conf_files
     setup_catalog
     setup_operd_regions_file
+    setup_upgrade_version_files
 }
 
 function setup_interfaces () {

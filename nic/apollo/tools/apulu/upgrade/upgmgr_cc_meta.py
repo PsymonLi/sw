@@ -36,6 +36,22 @@ def is_same_image(mode, rdata, udata, ndata):
     return True
 
 
+def extract_version_meta(data):
+    mode = [ "hitless", "graceful" ]
+
+    for m in mode:
+        n_data = {}
+        n_data["modules"] = {}
+        for k,v  in data["upgrade"][m].items():
+            module = k.split('_')[0]
+            if module !=  "firmware":
+                n_data["modules"][module] = v
+            else:
+                n_data[module] = v
+        with open("/var/run/upgrade_cc_%s_version.json" %(m), "w+") as f:
+            json.dump(n_data, f, indent=4)
+
+
 def is_upgrade_ok(mode, rdata, udata, ndata):
     firmware_ver_str = "firmware_" + mode + "_compat_version"
 
@@ -111,6 +127,7 @@ def main():
 
         meta_running = rdata[args.running_img]["system_image"]
         if is_upgrade_ok(args.mode, meta_running, udata, ndata):
+            extract_version_meta(ndata)
             return 0
         else:
             return -1

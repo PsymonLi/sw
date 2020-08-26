@@ -14,13 +14,15 @@
 #include <list>
 #include <unordered_map>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/version_db.hpp"
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/infra/upgrade/api/include/version.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/api/internal/upgrade.hpp"
-#include "nic/apollo/api/internal/upgrade_pstate.hpp"
+#include "nic/apollo/api/internal/upgrade_op_pstate.hpp"
 
 namespace api {
 
@@ -146,17 +148,18 @@ public:
     sdk::lib::shmstore *restore_shmstore(pds_shmstore_id_t id) {
         return restore_shmstore_[id];
     }
-    /// \brief module versions, indexed using module id
-    void insert_module_version(uint32_t id, module_version_conf_t conf,
-                               module_version_pair_t &version) {
-        module_version_map_[conf].insert(std::make_pair(id, version));
+    /// \brief module versions, indexed using module name
+    module_version_pair_t module_version(const char *name,
+                                         module_version_conf_t conf) const;
+    upgrade_op_pstate_t *op_pstate(void) { return op_pstate_; }
+    void set_op_pstate(upgrade_op_pstate_t *pstate) { op_pstate_ = pstate; }
+    /// \brief version db instance get
+    sdk::version_db& curr_module_versions(module_version_conf_t conf) {
+        return curr_module_versions_[conf];
     }
-    module_version_pair_t module_version(uint32_t id,
-                                         module_version_conf_t conf) const {
-        return module_version_map_[conf].at(id);
+    sdk::version_db& prev_module_versions(module_version_conf_t conf) {
+        return prev_module_versions_[conf];
     }
-    upgrade_pstate_t *pstate(void) { return pstate_; }
-    void set_pstate(upgrade_pstate_t *pstate) { pstate_ = pstate; }
 
 private:
     /// lif qstate mpu program offset map
@@ -183,11 +186,11 @@ private:
     /// upgrade object store. indexed using a unique id and store type
     sdk::lib::shmstore *backup_shmstore_[PDS_SHMSTORE_ID_MAX];
     sdk::lib::shmstore *restore_shmstore_[PDS_SHMSTORE_ID_MAX];
-    /// module versions indexed using a unique id
-    std::unordered_map<uint32_t, module_version_pair_t>
-        module_version_map_[MODULE_VERSION_CONF_MAX];
-    /// states shared b/w A and B during hitless upgrade
-    upgrade_pstate_t *pstate_;
+    /// upgrade operational states shared b/w A and B during hitless upgrade
+    upgrade_op_pstate_t *op_pstate_;
+    /// version db
+    sdk::version_db curr_module_versions_[MODULE_VERSION_CONF_MAX];
+    sdk::version_db prev_module_versions_[MODULE_VERSION_CONF_MAX];
 private:
     void init_(pds_init_params_t *params);
 };

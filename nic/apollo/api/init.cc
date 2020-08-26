@@ -105,7 +105,6 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
 {
     linkmgr_cfg_t cfg;
     marvell_cfg_t marvell_cfg;
-    uint32_t thread_id = SDK_IPC_ID_LINKMGR_CTRL;
     module_version_conf_t version_conf;
     module_version_t curr_version, prev_version;
     sysinit_mode_t init_mode = g_upg_state->init_mode();
@@ -113,7 +112,7 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
                         api::MODULE_VERSION_HITLESS : api::MODULE_VERSION_GRACEFUL;
 
     std::tie(curr_version, prev_version) = g_upg_state->module_version(
-                                                thread_id, version_conf);
+                                                PDS_LINKMGR_MODULE_NAME, version_conf);
     // initialize the marvell switch
     memset(&marvell_cfg, 0, sizeof(marvell_cfg_t));
     marvell_cfg.catalog = catalog;

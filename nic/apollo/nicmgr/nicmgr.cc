@@ -48,7 +48,6 @@ void
 nicmgrapi::nicmgr_thread_init(void *ctxt) {
     pds_state *state;
     string device_cfg_file;
-    uint32_t thread_id = core::PDS_THREAD_ID_NICMGR;
     sdk::event_thread::event_thread *curr_thread;
     devicemgr_cfg_t cfg;
     api::module_version_conf_t version_conf;
@@ -94,7 +93,7 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     cfg.backup_store = api::g_upg_state->backup_shmstore(api::PDS_NICMGR_OPER_SHMSTORE_ID);
     cfg.restore_store = api::g_upg_state->restore_shmstore(api::PDS_NICMGR_OPER_SHMSTORE_ID);
     std::tie(cfg.curr_version, cfg.prev_version) = api::g_upg_state->module_version(
-                                                      thread_id, version_conf);
+                                                      PDS_NICMGR_MODULE_NAME, version_conf);
 
     // initialize the linkmgr
     cfg.EV_A = curr_thread->ev_loop();

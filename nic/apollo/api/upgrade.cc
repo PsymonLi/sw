@@ -18,61 +18,34 @@
 
 namespace api {
 
-static inline std::string
-module_name (uint32_t thread_id)
-{
-    std::string module;
-
-    switch (thread_id) {
-    case core::PDS_THREAD_ID_NICMGR:  return "nicmgr";
-    case SDK_THREAD_ID_LINKMGR_CTRL:  return "linkmgr";
-    case core::PDS_THREAD_ID_API:     return "pdsagent";
-    default :
-        PDS_TRACE_ERR("Invalid module version request, thread %u", thread_id);
-        break;
-    }
-    SDK_ASSERT(0);
-    return "";
-}
-
 // this function read the module versions from the files
 static inline void
 read_modules_version (sysinit_mode_t init_mode)
 {
-    std::string full_path;
-    module_version_pair_t version_pair;
-    module_version_t version = { 0 };
-    uint32_t thr_ids[] = { core::PDS_THREAD_ID_NICMGR, core::PDS_THREAD_ID_API,
-                           SDK_THREAD_ID_LINKMGR_CTRL };
+    std::string full_path, dir;
 
+    if (api::g_pds_state.platform_type() == platform_type_t::PLATFORM_TYPE_HW) {
+         dir = "/nic/upgrade/etc"; // TODO - modify to cfg_path, check with @prasanth
+    } else {
+        dir = api::g_pds_state.cfg_path();
+    }
     // decode current graceful version
-    full_path = api::g_pds_state.cfg_path() + "/" + api::g_pds_state.pipeline() +
-                    "/upgrade_cc_graceful_version.json";
-    // TODO graceful_store_db = store_cfg_parse(full_path);
+    full_path = dir + "/" + "/upgrade_cc_graceful_version.json";
+    g_upg_state->curr_module_versions(MODULE_VERSION_GRACEFUL).init(full_path.c_str());
     // decode current hitless version
-    full_path = api::g_pds_state.cfg_path() + "/" + api::g_pds_state.pipeline() +
-                    "/upgrade_cc_hitless_version.json";
-    // TODO hitless_store_db = store_cfg_parse(full_path);
+    full_path = dir + "/" + "/upgrade_cc_hitless_version.json";
+    g_upg_state->curr_module_versions(MODULE_VERSION_HITLESS).init(full_path.c_str());
 
     // if it is graceful/hitless boot, decode the previous version
-    if (!sdk::platform::sysinit_mode_graceful(init_mode)) {
+    if (!sdk::platform::sysinit_mode_default(init_mode)) {
+        // decode the previous graceful version
         full_path = upg_shmstore_persistent_path() +
-                        "/upgrade_cc_graceful_version.json";
-        // TODO graceful_store_prev_db = store_cfg_parse(full_path);
-    } else if (!sdk::platform::sysinit_mode_hitless(init_mode)) {
-        full_path = upg_shmstore_volatile_path_hitless() +
-                        "/upgrade_cc_hitless_version.json";
-        // TODO hitless_store_prev_db = store_cfg_parse(full_path);
-    }
-    // TODO : extract the above and insert the version.
-    // right now insert the default version
-    version.major = 1;
-    version_pair = module_version_pair_t(version, version);
-    for (uint32_t i = 0; i < sizeof(thr_ids)/sizeof(uint32_t); i++) {
-        g_upg_state->insert_module_version(thr_ids[i], MODULE_VERSION_GRACEFUL,
-                                           version_pair);
-        g_upg_state->insert_module_version(thr_ids[i], MODULE_VERSION_HITLESS,
-                                           version_pair);
+                        "/upgrade_cc_graceful_version_from.json";
+        g_upg_state->prev_module_versions(MODULE_VERSION_GRACEFUL).init(full_path.c_str());
+        // decode the previous hitless version
+        full_path = upg_shmstore_persistent_path() +
+                        "/upgrade_cc_hitless_version_from.json";
+        g_upg_state->prev_module_versions(MODULE_VERSION_HITLESS).init(full_path.c_str());
     }
 }
 
@@ -204,8 +177,8 @@ upg_shmstore_create (sysinit_mode_t mode, bool vstore)
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_create_(PDS_AGENT_CFG_SHMSTORE_ID,
-                                   upg_cfg_shmstore_name("pdsagent").c_str(),
-                                   upg_cfg_shmstore_size("pdsagent"),
+                                   upg_cfg_shmstore_name(PDS_AGENT_MODULE_NAME).c_str(),
+                                   upg_cfg_shmstore_size(PDS_AGENT_MODULE_NAME),
                                    version, vstore);
         if (ret != SDK_RET_OK) {
             return ret;
@@ -213,8 +186,8 @@ upg_shmstore_create (sysinit_mode_t mode, bool vstore)
     }
     // nicmgr config store
     ret = upg_shmstore_create_(PDS_NICMGR_CFG_SHMSTORE_ID,
-                               upg_cfg_shmstore_name("nicmgr").c_str(),
-                               upg_cfg_shmstore_size("nicmgr"),
+                               upg_cfg_shmstore_name(PDS_NICMGR_MODULE_NAME).c_str(),
+                               upg_cfg_shmstore_size(PDS_NICMGR_MODULE_NAME),
                                version, vstore);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -238,7 +211,7 @@ upg_shmstore_open (sysinit_mode_t mode, bool vstore)
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_open_(PDS_AGENT_CFG_SHMSTORE_ID,
-                                 upg_cfg_shmstore_name("pdsagent").c_str(),
+                                 upg_cfg_shmstore_name(PDS_AGENT_MODULE_NAME).c_str(),
                                  version, vstore);
         if (ret != SDK_RET_OK) {
             return ret;
@@ -246,7 +219,7 @@ upg_shmstore_open (sysinit_mode_t mode, bool vstore)
     }
     // nicmgr config store
     ret = upg_shmstore_open_(PDS_NICMGR_CFG_SHMSTORE_ID,
-                             upg_cfg_shmstore_name("nicmgr").c_str(),
+                             upg_cfg_shmstore_name(PDS_NICMGR_MODULE_NAME).c_str(),
                              version, vstore);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -257,7 +230,7 @@ upg_shmstore_open (sysinit_mode_t mode, bool vstore)
 }
 
 static sdk_ret_t
-upg_oper_shmstore_create (uint32_t thread_id, pds_shmstore_id_t id,
+upg_oper_shmstore_create (const char *module_name, pds_shmstore_id_t id,
                           const char *name, size_t size, sysinit_mode_t mode)
 {
     sdk_ret_t ret;
@@ -276,9 +249,9 @@ upg_oper_shmstore_create (uint32_t thread_id, pds_shmstore_id_t id,
     // oper states always uses hitless version irrespective of the bootup and
     // upgrade mode
     std::tie(curr_version, prev_version) = g_upg_state->module_version(
-                                              thread_id, MODULE_VERSION_HITLESS);
-    PDS_TRACE_DEBUG("Upgrade, module version for thread %u, current %u.%u, "
-                    "prev %u.%u", thread_id,
+                                              module_name, MODULE_VERSION_HITLESS);
+    PDS_TRACE_DEBUG("Upgrade, module version for %s, current %u.%u, "
+                    "prev %u.%u", module_name,
                     curr_version.major, curr_version.minor,
                     prev_version.major, prev_version.minor);
     if (sdk::platform::sysinit_mode_hitless(mode) ||
@@ -304,28 +277,28 @@ upg_oper_shmstore_create (uint32_t thread_id, pds_shmstore_id_t id,
 sdk_ret_t
 linkmgr_shmstore_create (sysinit_mode_t mode)
 {
-    return upg_oper_shmstore_create(SDK_THREAD_ID_LINKMGR_CTRL,
+    return upg_oper_shmstore_create(PDS_LINKMGR_MODULE_NAME,
                                     PDS_LINKMGR_OPER_SHMSTORE_ID,
-                                    upg_oper_shmstore_name("linkmgr").c_str(),
-                                    upg_oper_shmstore_size("linkmgr"), mode);
+                                    upg_oper_shmstore_name(PDS_LINKMGR_MODULE_NAME).c_str(),
+                                    upg_oper_shmstore_size(PDS_LINKMGR_MODULE_NAME), mode);
 }
 
 sdk_ret_t
 nicmgr_shmstore_create (sysinit_mode_t mode)
 {
-    return upg_oper_shmstore_create(core::PDS_THREAD_ID_NICMGR,
+    return upg_oper_shmstore_create(PDS_NICMGR_MODULE_NAME,
                                     PDS_NICMGR_OPER_SHMSTORE_ID,
-                                    upg_oper_shmstore_name("nicmgr").c_str(),
-                                    upg_oper_shmstore_size("nicmgr"), mode);
+                                    upg_oper_shmstore_name(PDS_NICMGR_MODULE_NAME).c_str(),
+                                    upg_oper_shmstore_size(PDS_NICMGR_MODULE_NAME), mode);
 }
 
 sdk_ret_t
 api_shmstore_create (sysinit_mode_t mode)
 {
-    return upg_oper_shmstore_create(core::PDS_THREAD_ID_API,
+    return upg_oper_shmstore_create(PDS_AGENT_MODULE_NAME,
                                     PDS_AGENT_OPER_SHMSTORE_ID,
-                                    upg_oper_shmstore_name("pdsagent").c_str(),
-                                    upg_oper_shmstore_size("pdsagent"), mode);
+                                    upg_oper_shmstore_name(PDS_AGENT_MODULE_NAME).c_str(),
+                                    upg_oper_shmstore_size(PDS_AGENT_MODULE_NAME), mode);
 }
 
 sdk_ret_t

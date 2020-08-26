@@ -147,7 +147,7 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     backup_store = api::g_upg_state->backup_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
     SDK_ASSERT(backup_store != NULL);
     std::tie(cur_version, prev_version) = api::g_upg_state->module_version(
-                                             core::PDS_THREAD_ID_API,
+                                             PDS_AGENT_MODULE_NAME,
                                              api::MODULE_VERSION_HITLESS);
     // create segment to backup svc lif pstate
     lif_pstate =
@@ -159,7 +159,7 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
         return SDK_RET_ERR;
     } else {
         new (lif_pstate) svc_lif_pstate_t();
-        memcpy(&lif_pstate->metadata.ver, &cur_version, sizeof(cur_version));
+        memcpy(&lif_pstate->metadata.version, &cur_version, sizeof(cur_version));
     }
     lif_pstate->lif_id = lif_id;
 
@@ -255,7 +255,7 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
     backup_store = api::g_upg_state->backup_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
     restore_store = api::g_upg_state->restore_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
     std::tie(cur_version, prev_version) = api::g_upg_state->module_version(
-                                              core::PDS_THREAD_ID_API,
+                                              PDS_AGENT_MODULE_NAME,
                                               api::MODULE_VERSION_HITLESS);
     //     hitless init:
     //     restore_store != NULL
@@ -279,7 +279,7 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
                            lif_id, lif_pstate->lif_id);
             return SDK_RET_ENTRY_NOT_FOUND;
         }
-        memcpy(&lif_pstate->metadata.ver, &cur_version, sizeof(cur_version));
+        memcpy(&lif_pstate->metadata.version, &cur_version, sizeof(cur_version));
         PDS_TRACE_DEBUG("svc lif %s, id %u, pstate converted to version %u",
                         SVC_LIF_PSTATE_NAME, lif_id, cur_version.version);
     } else {

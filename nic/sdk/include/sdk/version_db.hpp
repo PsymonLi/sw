@@ -43,6 +43,10 @@ public:
         }
     }
 
+    version_db() {
+        valid_ = false;
+    }
+
     /// \brief parse version json file and initialize the db
     /// \param[in] version info json file
     /// \return #SDK_RET_OK on success, failure status code on error
@@ -76,13 +80,14 @@ public:
             mv->minor = mod_info.get<uint16_t>(JSON_KEY_MINOR_VER);
             mod_ver_db_[mod_name] = mv;
         }
+        valid_ = true;
         return SDK_RET_OK;
     }
 
     /// \brief get named module version info
     /// \param[in] module name
     /// \return pointer to version info, nullptr if not found
-    const types::module_version_t* module_version(const char *mod_name) {
+    const types::module_version_t* module_version(const char *mod_name) const {
         auto iter = mod_ver_db_.find(mod_name);
         if (iter != mod_ver_db_.end()) {
             return iter->second;
@@ -92,7 +97,7 @@ public:
 
     /// \brief get base firmware version info
     /// \return pointer to version info, nullptr if not found
-    const types::module_version_t* firmware_version(void) {
+    const types::module_version_t* firmware_version(void) const {
         return &fw_ver_;
     }
 
@@ -110,11 +115,16 @@ public:
         }
     }
 
+    /// \brief returns whether the db is valid or not
+    bool valid(void) const { return valid_; }
+
 private:
     // firmware version info
     types::module_version_t fw_ver_;
     // module version map with module name as key
     std::unordered_map<std::string, types::module_version_t*> mod_ver_db_;
+    // true if version db is initialized, false otherwise
+    bool valid_;
 };
 
 }    // namespace sdk

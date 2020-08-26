@@ -43,8 +43,7 @@ function initial_boot_action {
    echo 1 > /sys/firmware/pensando/bsm/success
 
    # cleanup if there are any stale upgrade files due to incomplete upgrades
-   rm -rf /update/*_upg*
-   rm -rf /update/upgmgr_init_mode.txt
+   rm -rf /update/*upg*
 }
 
 function load_drivers {

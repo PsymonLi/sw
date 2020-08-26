@@ -9,6 +9,10 @@ RESPAWN_IN_PROGRESS_FILE='/tmp/.respawn_in_progress'
 HITLESS_INSTANCE_LOAD_STATUS_FILE='/tmp/.hitless_instance_load_done'
 PENVISORCTL=$PDSPKG_TOPDIR/bin/penvisorctl
 
+# version path
+RUNNING_IMG_VERSION_PATH="/nic/upgrade/etc/"
+NEW_IMG_VERSION_PATH="/var/run"  # see upgmgr_cc_meta.py
+
 function upgmgr_set_upgrade_status() {
     pds_upg_status_ok="success"
     pds_upg_status_fail="failed"
@@ -246,4 +250,26 @@ function upgmgr_exit () {
              upgmgr_set_upgrade_status $status
         fi
     fi
+}
+
+function upgmgr_cc_version_copy() {
+    src_dir=$1
+    tgt=$2
+    if [ ! -e $src_dir/upgrade_cc_graceful_version.json ];then
+        echo "Graceful version file could not find"
+        exit 1
+    fi
+    if [ ! -e $src_dir/upgrade_cc_hitless_version.json ];then
+        echo "Hitless version file could not find"
+        exit 1
+    fi
+    # TODO : Right now write to both. once the unified image is ready, only one
+    # can be chosen
+    for d in /update /share; do
+        if [ -d $d ];then
+            cp $src_dir/upgrade_cc_graceful_version.json $d/upgrade_cc_graceful_version_$tgt.json
+            cp $src_dir/upgrade_cc_hitless_version.json $d/upgrade_cc_hitless_version_$tgt.json
+        fi
+    done
+    return 0
 }

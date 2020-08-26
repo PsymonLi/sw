@@ -60,10 +60,24 @@ upg_state::incr_tbl_eng_cfg_count(p4pd_pipeline_t pipe, uint32_t ncfgs) {
 void
 upg_state::set_qstate_cfg(uint64_t addr, uint32_t size, uint32_t pgm_off) {
     qstate_cfg_t q;
+
     q.addr = addr;
     q.size = size;
     q.pgm_off = pgm_off;
     qstate_cfgs_.push_back(q);
+}
+
+module_version_pair_t
+upg_state::module_version(const char *name, module_version_conf_t conf) const {
+    const module_version_t *curr_version, *prev_version = NULL;
+
+    curr_version = upg_current_version(name, conf, curr_module_versions_);
+    if (!sdk::platform::sysinit_mode_default(init_mode_)) {
+        prev_version = upg_previous_version(name, conf, prev_module_versions_);
+    } else {
+        prev_version = curr_version;
+    }
+    return module_version_pair_t(*curr_version, *prev_version);
 }
 
 }    // namespace api

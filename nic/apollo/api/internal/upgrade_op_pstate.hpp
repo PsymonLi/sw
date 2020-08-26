@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __UPGRADE_PSTATE_HPP__
-#define __UPGRADE_PSTATE_HPP__
+#ifndef __UPGRADE_OP_PSTATE_HPP__
+#define __UPGRADE_OP_PSTATE_HPP__
 
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/apollo/api/internal/upgrade.hpp"
@@ -25,9 +25,9 @@ namespace api {
 /// saved in shared memory store to access after process restart.
 /// as this is used across upgrades, all the modifications should be
 /// done to the end
-typedef struct upgrade_pstate_v1_s {
+typedef struct upgrade_op_pstate_v1_s {
     /// always assign the default valuse for the structure
-    upgrade_pstate_v1_s () {
+    upgrade_op_pstate_v1_s () {
         metadata =  { 0 };
         pipeline_switchover_done = false;
         linkmgr_switchover_done = false;
@@ -53,13 +53,13 @@ typedef struct upgrade_pstate_v1_s {
     uint32_t port_ingress_num_oqs;
     uint32_t port_egress_num_oqs;
 
-} __PACK__ upgrade_pstate_v1_t;
+} __PACK__ upgrade_op_pstate_v1_t;
 
 /// \brief typdefs for persistent state
 /// these typedefs should always be latest version so no need to changes inside
 /// code for every version bump.
-typedef upgrade_pstate_v1_t upgrade_pstate_t;
+typedef upgrade_op_pstate_v1_t upgrade_op_pstate_t;
 
 }   // namespace api
 
-#endif    // __UPGRADE_PSTATE_HPP__
+#endif    // __UPGRADE_OP_PSTATE_HPP__

@@ -14,6 +14,13 @@ OPERD_METRICS_PATH=${PDSPKG_TOPDIR}/infra/operd/metrics/cloud/
 function remove_conf_files () {
     find ${OPERD_METRICS_PATH} -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
     sudo rm -f ${CONFIG_PATH}/pipeline.json ${CONFIG_PATH}/vpp_startup.conf
+    sudo rm -f ${CONFIG_PATH}/upgrade_cc*
+}
+
+function setup_upgrade_version_files() {
+    sudo rm -f $CONFIG_PATH/upgrade_cc_*
+    ln -s $CONFIG_PATH/$PIPELINE/upgrade_cc_graceful_version.json $CONFIG_PATH/upgrade_cc_graceful_version.json
+    ln -s $CONFIG_PATH/$PIPELINE/upgrade_cc_hitless_version.json $CONFIG_PATH/upgrade_cc_hitless_version.json
 }
 
 function finish () {
@@ -39,6 +46,7 @@ function setup_metrics_conf_files () {
 function setup_conf_files () {
     ln -s ${CONFIG_PATH}/${PIPELINE}/pipeline.json ${CONFIG_PATH}/pipeline.json
     setup_metrics_conf_files
+    setup_upgrade_version_files
 }
 
 function setup () {

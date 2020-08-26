@@ -25,7 +25,7 @@
 #include "nic/apollo/api/vpc.hpp"
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
-#include "nic/apollo/api/internal/upgrade_pstate.hpp"
+#include "nic/apollo/api/internal/upgrade_op_pstate.hpp"
 
 namespace api {
 
@@ -33,7 +33,7 @@ namespace api {
 #define PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME    "pds_agent_upgobjs"
 
 static void
-asic_quiesce_queue_credit_read (bool ingress, upgrade_pstate_t *pstate)
+asic_quiesce_queue_credit_read (bool ingress, upgrade_op_pstate_t *pstate)
 {
     sdk::asic::pd::port_queue_credit_t credit;
     sdk::asic::pd::queue_credit_t oqs[64];
@@ -63,7 +63,7 @@ asic_quiesce_queue_credit_read (bool ingress, upgrade_pstate_t *pstate)
 }
 
 static void
-asic_quiesce_queue_credit_restore (bool ingress, upgrade_pstate_t *pstate)
+asic_quiesce_queue_credit_restore (bool ingress, upgrade_op_pstate_t *pstate)
 {
     sdk::asic::pd::port_queue_credit_t credit;
     sdk::asic::pd::queue_credit_t oqs[64];
@@ -85,38 +85,38 @@ asic_quiesce_queue_credit_restore (bool ingress, upgrade_pstate_t *pstate)
     sdk::asic::pd::asicpd_quiesce_queue_credits_restore(pipe, &credit);
 }
 
-upgrade_pstate_t *
-upgrade_pstate_create_or_open (bool create)
+upgrade_op_pstate_t *
+upgrade_op_state_create_or_open (bool create)
 {
     sdk::lib::shmstore *store;
     module_version_t curr_version;
     module_version_t prev_version;
-    upgrade_pstate_t *upgrade_pstate;
+    upgrade_op_pstate_t *op_pstate;
 
     std::tie(curr_version, prev_version) = api::g_upg_state->module_version(
-                                              core::PDS_THREAD_ID_API,
+                                              PDS_AGENT_MODULE_NAME,
                                               MODULE_VERSION_HITLESS);
     if (!sdk::platform::sysinit_mode_hitless(g_upg_state->init_mode())) {
         store = api::g_upg_state->backup_shmstore(PDS_AGENT_OPER_SHMSTORE_ID);
         SDK_ASSERT(store != NULL);
         if (create) {
-            upgrade_pstate = (upgrade_pstate_t *)store->create_segment(UPGRADE_PSTATE_NAME,
-                                                                       sizeof(upgrade_pstate_t));
-            new (upgrade_pstate) upgrade_pstate_t();
+            op_pstate = (upgrade_op_pstate_t *)store->create_segment(UPGRADE_PSTATE_NAME,
+                                                                     sizeof(upgrade_op_pstate_t));
+            new (op_pstate) upgrade_op_pstate_t();
             // read the port queue credits
-            asic_quiesce_queue_credit_read(true, upgrade_pstate);
-            asic_quiesce_queue_credit_read(false, upgrade_pstate);
+            asic_quiesce_queue_credit_read(true, op_pstate);
+            asic_quiesce_queue_credit_read(false, op_pstate);
         } else {
-            upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
+            op_pstate = (upgrade_op_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
         }
     } else {
         store = api::g_upg_state->restore_shmstore(PDS_AGENT_OPER_SHMSTORE_ID);
         SDK_ASSERT(store != NULL);
-        upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
+        op_pstate = (upgrade_op_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
         // TODO : version management if previous and current versions are different
         SDK_ASSERT(prev_version.minor == curr_version.minor);
     }
-    return upgrade_pstate;
+    return op_pstate;
 }
 
 static bool
@@ -332,7 +332,7 @@ backup_mapping (upg_obj_info_t *info)
 static sdk_ret_t
 upg_ev_compat_check (upg_ev_params_t *params)
 {
-    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(true);
+    upgrade_op_pstate_t *pstate = upgrade_op_state_create_or_open(true);
 
     if (pstate == NULL) {
         PDS_TRACE_ERR("Failed to create pstate %s", UPGRADE_PSTATE_NAME);
@@ -544,7 +544,7 @@ upg_hitless_restore_api_objs (void)
 static sdk_ret_t
 upg_ev_ready (upg_ev_params_t *params)
 {
-    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+    upgrade_op_pstate_t *pstate = upgrade_op_state_create_or_open(false);
 
     if (pstate == NULL) {
         PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
@@ -552,7 +552,7 @@ upg_ev_ready (upg_ev_params_t *params)
     }
     asic_quiesce_queue_credit_restore(true, pstate);
     asic_quiesce_queue_credit_restore(false, pstate);
-    g_upg_state->set_pstate(pstate);
+    g_upg_state->set_op_pstate(pstate);
     return SDK_RET_OK;
 }
 
@@ -593,7 +593,7 @@ static sdk_ret_t
 upg_ev_switchover (upg_ev_params_t *params)
 {
     sdk_ret_t ret, rv;
-    upgrade_pstate_t *pstate = g_upg_state->pstate();
+    upgrade_op_pstate_t *pstate = g_upg_state->op_pstate();
 
     ret = asic_quiesce(true);
     if (ret == SDK_RET_OK) {
@@ -728,7 +728,7 @@ static sdk_ret_t
 upg_ev_repeal (upg_ev_params_t *params)
 {
     sdk_ret_t ret, rv;
-    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+    upgrade_op_pstate_t *pstate = upgrade_op_state_create_or_open(false);
 
     if (pstate == NULL) {
         PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
@@ -777,7 +777,7 @@ static sdk_ret_t
 upg_ev_finish (upg_ev_params_t *params)
 {
     sdk_ret_t ret;
-    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+    upgrade_op_pstate_t *pstate = upgrade_op_state_create_or_open(false);
 
     // clear of the states
     pstate->pipeline_switchover_done = false;

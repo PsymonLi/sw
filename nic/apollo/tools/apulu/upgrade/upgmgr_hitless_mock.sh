@@ -10,9 +10,14 @@ echo "In mock/sim, starting commands for $STAGE_NAME"
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
     upgmgr_clear_upgrade_status $STAGE_NAME
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
+    # copy the upgrade image version meta to update. for sim tests, both current
+    # and new are always same till we support different images during upgrade
+    upgmgr_cc_version_copy $CONFIG_PATH/$PIPELINE "to"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
-    echo "Skipping"
+    # copy the running image version meta to update. this would come as previous
+    # image version meta to the new
+    upgmgr_cc_version_copy $CONFIG_PATH/$PIPELINE "from"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
     echo "Skipping"

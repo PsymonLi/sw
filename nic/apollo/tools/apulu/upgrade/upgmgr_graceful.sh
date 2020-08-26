@@ -19,8 +19,11 @@ if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
     upgmgr_clear_upgrade_status $STAGE_NAME
     upgmgr_setup
     upgmgr_pkgcheck "graceful"
-    upgmgr_clear_respawn_status
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
+    upgmgr_clear_respawn_status
+    # copy the new image version meta to shared directory.
+    upgmgr_cc_version_copy $NEW_IMG_VERSION_PATH "to"
+    [[ $? -ne 0 ]] && echo "Version file copy failed!" && exit 1
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_setup
@@ -39,9 +42,15 @@ elif [[ $STAGE_NAME == "UPG_STAGE_RESPAWN" && $STAGE_TYPE == "PRE" ]]; then
     reload_drivers
     upgmgr_set_respawn_status
     upgmgr_set_init_mode "graceful"
+    # copy the running image version meta to update. this would come as previous
+    # image version meta to the respawn(same image upgrade in this case)
+    upgmgr_cc_version_copy $RUNNING_IMG_VERSION_PATH "from"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "PRE" ]]; then
     upgmgr_set_init_mode "graceful"
+    # copy the running image version meta to update. this would come as previous
+    # image version meta to the new
+    upgmgr_cc_version_copy $RUNNING_IMG_VERSION_PATH "from"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
     # post ready below is no more in use
