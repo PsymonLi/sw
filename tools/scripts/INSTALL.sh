@@ -97,6 +97,22 @@ function dockerSettings() {
     systemctl start docker || :
 }
 
+function dscpSettings() {
+    #Clear existing iptables rules
+    iptables -t mangle -D POSTROUTING -p tcp --match multiport --sport 9000:9300,5001,5002,6443,4194,10248,10250,10255,19001,179,50057,8001 -j DSCP --set-dscp-class CS6
+    iptables -t mangle -D POSTROUTING -p tcp --match multiport --sport 7000,7086,7087,5601,8083,8086,10777,10778 -j DSCP --set-dscp-class CS6
+
+    iptables -t mangle -D POSTROUTING -p tcp --match multiport --dport 9000:9300,5001,5002,6443,4194,10248,10250,10255,19001,179,50057,8001 -j DSCP --set-dscp-class CS6
+    iptables -t mangle -D POSTROUTING -p tcp --match multiport --dport 7000,7086,7087,5601,8083,8086,10777,10778 -j DSCP --set-dscp-class CS6
+
+    #Setting the iptables rules
+    iptables -t mangle -A POSTROUTING -p tcp --match multiport --sport 9000:9300,5001,5002,6443,4194,10248,10250,10255,19001,179,50057,8001 -j DSCP --set-dscp-class CS6
+    iptables -t mangle -A POSTROUTING -p tcp --match multiport --sport 7000,7086,7087,5601,8083,8086,10777,10778 -j DSCP --set-dscp-class CS6
+
+    iptables -t mangle -A POSTROUTING -p tcp --match multiport --dport 9000:9300,5001,5002,6443,4194,10248,10250,10255,19001,179,50057,8001 -j DSCP --set-dscp-class CS6
+    iptables -t mangle -A POSTROUTING -p tcp --match multiport --dport 7000,7086,7087,5601,8083,8086,10777,10778 -j DSCP --set-dscp-class CS6
+}
+
 if [ "$1" == "--clean" ]
 then
     cleanupNode
@@ -120,6 +136,7 @@ disableNTP
 clockSettings
 dockerSettings
 optmemSysctl
+dscpSettings
 
 mkdir -p /data /run/initramfs/live /usr/local/bin
 
