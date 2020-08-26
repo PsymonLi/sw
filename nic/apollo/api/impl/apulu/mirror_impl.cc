@@ -17,6 +17,7 @@
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/internal/pds_route.hpp"
+#include "nic/apollo/api/internal/pds_mirror.hpp"
 #include "nic/apollo/api/impl/apulu/tep_impl.hpp"
 #include "nic/apollo/api/impl/apulu/mapping_impl.hpp"
 #include "nic/apollo/api/impl/apulu/mirror_impl.hpp"
@@ -295,9 +296,8 @@ mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
     nexthop *nh;
     sdk_ret_t ret;
     tep_entry *tep;
+    nh_info_t nh_info;
     ip_addr_t mytep_ip;
-    pds_obj_key_t nh_key;
-    pds_nh_type_t nh_type;
     p4pd_error_t p4pd_ret;
     nexthop_group *nhgroup;
     mirror_actiondata_t mirror_data = { 0 };
@@ -323,14 +323,14 @@ mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
         // to system drop nexthop until we hear about its reachability
         // from the routing stack
         mirror_data.erspan_action.dip = spec->erspan_spec.ip_addr.addr.v4_addr;
-        // consult the underlay route db to figure out the nexthop for this
-        if (pds_underlay_nexthop(spec->erspan_spec.ip_addr.addr.v4_addr,
-                                 &nh_type, &nh_key) == SDK_RET_OK) {
-            if (nh_type == PDS_NH_TYPE_UNDERLAY) {
-                nh = nexthop_db()->find(&nh_key);
+        // consult the underlay mirror session db to figure out the nexthop
+        if (pds_mirror_session_nh(&spec->key, &nh_info) == SDK_RET_OK) {
+            if (nh_info.nh_type == PDS_NH_TYPE_UNDERLAY) {
+                nh = nexthop_db()->find(&nh_info.nh);
                 if (unlikely(nh == NULL)) {
                     PDS_TRACE_ERR("Nexthop %s for ERSPAN collector IP %s in "
-                                  "mirror session %s not found", nh_key.str(),
+                                  "mirror session %s not found",
+                                  nh_info.nh.str(),
                                   ipaddr2str(&spec->erspan_spec.ip_addr),
                                   spec->key.str());
                     return SDK_RET_INVALID_ARG;
@@ -338,12 +338,12 @@ mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
                 mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
                 mirror_data.erspan_action.nexthop_id =
                     ((nexthop_impl *)nh->impl())->hw_id();
-            } else if (nh_type == PDS_NH_TYPE_UNDERLAY_ECMP) {
-                nhgroup = nexthop_group_db()->find(&nh_key);
+            } else if (nh_info.nh_type == PDS_NH_TYPE_UNDERLAY_ECMP) {
+                nhgroup = nexthop_group_db()->find(&nh_info.nh_group);
                 if (unlikely(nhgroup == NULL)) {
                     PDS_TRACE_ERR("nhgroup %s for ERSPAN collector IP %s in "
                                   "mirror session %s not found",
-                                  nh_key.str(),
+                                  nh_info.nh_group.str(),
                                   ipaddr2str(&spec->erspan_spec.ip_addr),
                                   spec->key.str());
                     return SDK_RET_INVALID_ARG;

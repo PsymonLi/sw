@@ -112,6 +112,8 @@ pds_mirror_session_update (pds_obj_key_t *key, nh_info_t *nh_info)
         pds_batch_destroy(bctxt);
         return ret;
     }
+    PDS_TRACE_VERBOSE("Mirror session %s updated with nh type %u, nh %s",
+                      key->str(), nh_info->nh_type, nh_info->nh.str());
     return pds_batch_commit(bctxt);
 }
 
