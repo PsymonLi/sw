@@ -31,6 +31,8 @@ var (
 	ifType              string
 	txPolicerID         string
 	ifPpsTrackingAction string
+	ifTxMirrorID        string
+	ifRxMirrorID        string
 )
 
 var lifShowCmd = &cobra.Command{
@@ -104,10 +106,11 @@ var lifClearStatsCmd = &cobra.Command{
 }
 
 var ifUpdateCmd = &cobra.Command{
-	Use:   "interface",
-	Short: "update interface information",
-	Long:  "update interface information",
-	Run:   ifUpdateCmdHandler,
+	Use:     "interface",
+	Short:   "update interface information",
+	Long:    "update interface information",
+	PreRunE: ifUpdateCmdPreRunE,
+	Run:     ifUpdateCmdHandler,
 }
 
 var ifDebugCmd = &cobra.Command{
@@ -155,8 +158,11 @@ func init() {
 	debugUpdateCmd.AddCommand(ifUpdateCmd)
 	ifUpdateCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 	ifUpdateCmd.Flags().StringVar(&txPolicerID, "tx-policer", "", "Specify tx policer ID")
+	ifUpdateCmd.Flags().StringVar(&ifTxMirrorID, "tx-mirror-id", "",
+		"Specify TX Mirror Session IDs in comma separated list")
+	ifUpdateCmd.Flags().StringVar(&ifRxMirrorID, "rx-mirror-id", "",
+		"Specify RX Mirror Session IDs in comma separated list")
 	ifUpdateCmd.MarkFlagRequired("id")
-	ifUpdateCmd.MarkFlagRequired("tx-policer")
 
 	debugCmd.AddCommand(ifDebugCmd)
 	ifDebugCmd.AddCommand(ifPpsTrackingCmd)
@@ -200,6 +206,19 @@ func ifPpsTrackingCmdHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func ifUpdateCmdPreRunE(cmd *cobra.Command, args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+	if !cmd.Flags().Changed("tx-mirror-id") &&
+		!cmd.Flags().Changed("rx-mirror-id") &&
+		!cmd.Flags().Changed("tx-policer") {
+		return fmt.Errorf("Required flag(s) \"tx-mirror-id\" or \"rx-mirror-id\" or \"tx-policier\" have/has not been set\n")
+	}
+	return nil
+
+}
+
 func ifUpdateCmdHandler(cmd *cobra.Command, args []string) {
 	// connect to PDS
 	c, err := utils.CreateNewGRPCClient()
@@ -228,14 +247,32 @@ func ifUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 	ifResp := ifRespMsg.GetResponse()
-	if ifResp[0].GetSpec().GetHostIfSpec() == nil {
+	ifSpec := ifResp[0].GetSpec()
+	txMirror := ifSpec.GetTxMirrorSessionId()
+	rxMirror := ifSpec.GetRxMirrorSessionId()
+	if ifSpec.GetHostIfSpec() == nil {
 		fmt.Printf("Only update of  host interface supported\n")
 		return
 	}
-
+	if cmd.Flags().Changed("tx-mirror-id") {
+		ids := strings.Split(ifTxMirrorID, ",")
+		txMirror = make([][]byte, len(ids), len(ids))
+		for i := 0; i < len(ids); i++ {
+			txMirror[i] = uuid.FromStringOrNil(ids[i]).Bytes()
+		}
+	}
+	if cmd.Flags().Changed("rx-mirror-id") {
+		ids := strings.Split(ifRxMirrorID, ",")
+		rxMirror = make([][]byte, len(ids), len(ids))
+		for i := 0; i < len(ids); i++ {
+			rxMirror[i] = uuid.FromStringOrNil(ids[i]).Bytes()
+		}
+	}
 	spec := &pds.InterfaceSpec{
-		Id:          uuid.FromStringOrNil(ifID).Bytes(),
-		AdminStatus: ifResp[0].GetSpec().GetAdminStatus(),
+		Id:                ifSpec.GetId(),
+		AdminStatus:       ifSpec.GetAdminStatus(),
+		TxMirrorSessionId: txMirror,
+		RxMirrorSessionId: rxMirror,
 		Ifinfo: &pds.InterfaceSpec_HostIfSpec{
 			HostIfSpec: &pds.HostIfSpec{
 				TxPolicer: uuid.FromStringOrNil(txPolicerID).Bytes(),
@@ -494,8 +531,9 @@ func printIfHeader(str string) {
 	case "host":
 		hdrLine := strings.Repeat("-", 178)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-14s%-14s%-20s%-40s%-40s%-10s\n",
-			"ID", "IfIndex", "Interface", "MACAddress", "Lif", "Policer", "AdminState")
+		fmt.Printf("%-40s%-14s%-14s%-20s%-40s%-40s%-40s%-40s%-10s\n",
+			"ID", "IfIndex", "Interface", "MACAddress", "Lif", "Policer",
+			"TxMirror", "RxMirror", "AdminState")
 		fmt.Println(hdrLine)
 	}
 }
@@ -547,17 +585,51 @@ func printIf(intf *pds.Interface) {
 			adminState, operState, ipPrefix, mac)
 	case *pds.InterfaceSpec_HostIfSpec:
 		policer := utils.IdToStr(spec.GetHostIfSpec().GetTxPolicer())
+		var txmirror strings.Builder
+		var rxmirror strings.Builder
+		first := true
+		if len(spec.GetTxMirrorSessionId()) != 0 {
+			for _, session := range spec.GetTxMirrorSessionId() {
+				if first {
+					txmirror.WriteString("[")
+					txmirror.WriteString(utils.IdToStr(session))
+					first = false
+				} else {
+					txmirror.WriteString(",")
+					txmirror.WriteString(utils.IdToStr(session))
+				}
+			}
+			txmirror.WriteString("]")
+		} else {
+			txmirror.WriteString("-")
+		}
+		first = true
+		if len(spec.GetRxMirrorSessionId()) != 0 {
+			for _, session := range spec.GetRxMirrorSessionId() {
+				if first {
+					rxmirror.WriteString("[")
+					rxmirror.WriteString(utils.IdToStr(session))
+					first = false
+				} else {
+					rxmirror.WriteString(",")
+					rxmirror.WriteString(utils.IdToStr(session))
+				}
+			}
+			rxmirror.WriteString("]")
+		} else {
+			rxmirror.WriteString("-")
+		}
 		lifs := status.GetHostIfStatus().GetLifId()
 		adminState := strings.Replace(spec.GetAdminStatus().String(),
 			"IF_STATUS_", "", -1)
-		first := true
+		first = true
 		for _, lif := range lifs {
 			if first {
-				fmt.Printf("%-40s0x%-12x%-14s%-20s%-40s%-40s%-10s\n",
+				fmt.Printf("%-40s0x%-12x%-14s%-20s%-40s%-40s%-40s%-40s%-10s\n",
 					utils.IdToStr(spec.GetId()), ifIndex,
 					status.GetHostIfStatus().GetName(),
 					utils.MactoStr(status.GetHostIfStatus().GetMacAddress()),
-					utils.IdToStr(lif), policer, adminState)
+					utils.IdToStr(lif), policer, txmirror.String(), rxmirror.String(), adminState)
 				first = false
 			} else {
 				fmt.Printf("%-88s%-40s%-40s%-10s\n",

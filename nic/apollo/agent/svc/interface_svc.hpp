@@ -159,6 +159,14 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
             proto_host_if->set_conntracken(api_spec->host_if_info.conn_track_en);
             proto_host_if->set_txpolicer(api_spec->host_if_info.tx_policer.id,
                                          PDS_MAX_KEY_LEN);
+            for (uint8_t i = 0; i < api_spec->num_tx_mirror_session; i++) {
+                proto_spec->add_txmirrorsessionid(api_spec->tx_mirror_session[i].id,
+                                                  PDS_MAX_KEY_LEN);
+            }
+            for (uint8_t i = 0; i < api_spec->num_rx_mirror_session; i++) {
+                proto_spec->add_rxmirrorsessionid(api_spec->rx_mirror_session[i].id,
+                                                  PDS_MAX_KEY_LEN);
+            }
         }
         break;
     default:
@@ -484,10 +492,20 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
             proto_spec.hostifspec().conntracken();
         pds_obj_key_proto_to_api_spec(&api_spec->host_if_info.tx_policer,
                                       proto_spec.hostifspec().txpolicer());
+        if (proto_spec.txmirrorsessionid_size() > PDS_MAX_MIRROR_SESSION) {
+            PDS_TRACE_ERR("No. of Tx mirror sessions on interface can't exceed {}",
+                          PDS_MAX_MIRROR_SESSION);
+            return SDK_RET_INVALID_ARG;
+        }
         api_spec->num_tx_mirror_session = proto_spec.txmirrorsessionid_size();
         for (uint8_t i = 0; i < api_spec->num_tx_mirror_session; i++) {
             pds_obj_key_proto_to_api_spec(&api_spec->tx_mirror_session[i],
                                           proto_spec.txmirrorsessionid(i));
+        }
+        if (proto_spec.rxmirrorsessionid_size() > PDS_MAX_MIRROR_SESSION) {
+            PDS_TRACE_ERR("No. of Rx mirror sessions on interface can't exceed {}",
+                          PDS_MAX_MIRROR_SESSION);
+            return SDK_RET_INVALID_ARG;
         }
         api_spec->num_rx_mirror_session = proto_spec.rxmirrorsessionid_size();
         for (uint8_t i = 0; i < api_spec->num_rx_mirror_session; i++) {

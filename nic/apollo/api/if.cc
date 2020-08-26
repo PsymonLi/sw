@@ -558,6 +558,14 @@ if_entry::fill_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
         break;
     case IF_TYPE_HOST:
         spec->host_if_info.tx_policer = if_info_.host_.tx_policer_;
+        spec->num_tx_mirror_session = num_tx_mirror_session_;
+        spec->num_rx_mirror_session = num_rx_mirror_session_;
+        for (uint8_t i = 0; i < num_tx_mirror_session_; i++) {
+            spec->tx_mirror_session[i] = tx_mirror_session_[i];
+        }
+        for (uint8_t i = 0; i < num_rx_mirror_session_; i++) {
+            spec->rx_mirror_session[i] = rx_mirror_session_[i];
+        }
         break;
     case IF_TYPE_ETH:
         fill_port_if_spec_(spec, port_args);
