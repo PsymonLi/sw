@@ -107,6 +107,17 @@ thread_init (void)
     return SDK_RET_OK;
 }
 
+static void
+log_alom_presence(void)
+{
+    if (cpld_reg_rd(CPLD_REGISTER_ID) == CPLD_ID_NAPLES25_SWM ||
+        cpld_reg_rd(CPLD_REGISTER_ID) == CPLD_NAPLES25_DELL_SWM_ID) {
+        if (cpld_reg_rd(CPLD_REGISTER_CTRL) & CPLD_ALOM_PRESENT_BIT) {
+            SDK_HMON_TRACE_ERR("ALOM is present in the system.");
+        }
+    }
+}
+
 int
 sysmon_init (sysmon_cfg_t *sysmon_cfg)
 {
@@ -121,13 +132,17 @@ sysmon_init (sysmon_cfg_t *sysmon_cfg)
 
     memory_threshold_cfg_init();
 
-    SDK_HMON_TRACE_INFO("Monitoring system events");
+    // Log to indicate a new boot.
+    SDK_HMON_TRACE_ERR("Monitoring system events");
 
     // check for panic dump
     checkpanicdump();
 
     // update the firmware version in cpld
     updatefwversion();
+
+    // log whether ALOM is present or not
+    log_alom_presence();
 
     SDK_HMON_TRACE_INFO("HBM Threshold temperature is %u",
                    g_sysmon_cfg.catalog->hbmtemperature_threshold());

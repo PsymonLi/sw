@@ -233,7 +233,8 @@ main(int argc, char *argv[])
     } else if (strcmp(argv[1], "-hwlock") == 0) {
         cout << "CPLD hwlock is" << (pal_cpld_hwlock_enabled() ? "enabled" : "disabled") << endl;
     } else if (strcmp(argv[1], "-alompresent") == 0) {
-        if (cpld_reg_rd(CPLD_REGISTER_ID) == CPLD_ID_NAPLES25_SWM) {
+        if (cpld_reg_rd(CPLD_REGISTER_ID) == CPLD_ID_NAPLES25_SWM ||
+            cpld_reg_rd(CPLD_REGISTER_ID) == CPLD_NAPLES25_DELL_SWM_ID) {
             if (cpld_reg_rd(CPLD_REGISTER_CTRL) & CPLD_ALOM_PRESENT_BIT) {
                 cout << "ALOM present";
                 goto success;
