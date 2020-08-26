@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Pensando Systems Inc.
+ * Copyright (c) 2019-2020, Pensando Systems Inc.
  */
 
 #include <stdio.h>
@@ -12,65 +12,7 @@
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "cmd.h"
 #include "pcieutilpd.h"
-
-typedef union {
-    struct {
-        uint64_t vld:1;
-        uint64_t qstateaddr_or_qid:29;
-        uint64_t pid_or_lif_type:16;
-        uint64_t cnt:11;
-        uint64_t doorbell_merged:1;
-        uint64_t addr_conflict:1;
-        uint64_t tot_ring_err:1;
-        uint64_t host_ring_err:1;
-        uint64_t pid_fail:1;
-        uint64_t qid_ovflow:1;
-    } __attribute__((packed));
-    uint32_t w[2];
-    uint64_t w64;
-} db_err_activity_log_entry_t;
-
-#define DBERR_BASE \
-    (ASIC_(ADDR_BASE_DB_WA_OFFSET) + \
-     ASIC_(WA_CSR_DHS_DOORBELL_ERR_ACTIVITY_LOG_ENTRY_BYTE_ADDRESS))
-#define DBERR_STRIDE 0x8
-#define DBERR_COUNT \
-    ASIC_(WA_CSR_DHS_DOORBELL_ERR_ACTIVITY_LOG_ENTRY_ARRAY_COUNT)
-
-typedef union {
-    struct {
-        uint64_t vld:1;
-        uint64_t qstate_base:22;
-        uint64_t length0:5;
-        uint64_t size0:3;
-        uint64_t length1:5;
-        uint64_t size1:3;
-        uint64_t length2:5;
-        uint64_t size2:3;
-        uint64_t length3:5;
-        uint64_t size3:3;
-        uint64_t length4:5;
-        uint64_t size4:3;
-        uint64_t length5:5;
-        uint64_t size5:3;
-        uint64_t length6:5;
-        uint64_t size6:3;
-        uint64_t length7:5;
-        uint64_t size7:3;
-        uint64_t sched_hint_en:1;
-        uint64_t sched_hint_cos:4;
-        uint64_t spare:4;
-        uint64_t ecc:8;
-    } __attribute__((packed));
-    uint32_t w[4];
-} lif_qstate_map_entry_t;
-
-#define LIF_QSTATE_MAP_BASE \
-    (ASIC_(ADDR_BASE_DB_WA_OFFSET) + \
-     ASIC_(WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_BYTE_ADDRESS))
-#define LIF_QSTATE_MAP_STRIDE   0x10
-#define LIF_QSTATE_MAP_COUNT \
-    ASIC_(WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ARRAY_COUNT)
+#include "db.h"
 
 #define DBF_QSTATE      0x1
 
@@ -83,7 +25,7 @@ lif_qstate_map_addr(const int lif)
 static void
 lif_qstate_map_read(const int lif, lif_qstate_map_entry_t *qstmap)
 {
-    pal_reg_rd32w(lif_qstate_map_addr(lif), qstmap->w, 4);
+    pal_reg_rd32w(lif_qstate_map_addr(lif), qstmap->w, LIF_QSTATE_MAP_NWORDS);
 }
 
 static unsigned int
@@ -136,12 +78,6 @@ qstate_size(const lif_qstate_map_entry_t *qstmap, const int type)
     return 1 << (qstate_raw_size(qstmap, type) + 5);
 }
 
-typedef struct {
-    int lif;
-    int qtype;
-    int qid;
-} qstate_qinfo_t;
-
 static int
 qstate_qinfo(const lif_qstate_map_entry_t *qstmap,
              const uint64_t addr,
@@ -193,38 +129,21 @@ dberr_addr(const int entry)
 static void
 dberr_read(const int entry, db_err_activity_log_entry_t *dberr)
 {
-    pal_reg_rd32w(dberr_addr(entry), dberr->w, 2);
+    pal_reg_rd32w(dberr_addr(entry), dberr->w, DBERR_NWORDS);
 }
 
 static void
 dberr_display(db_err_activity_log_entry_t *dberr, const int flags)
 {
-    const int w = 20;
-
     const uint64_t qstate_addr = (uint64_t)dberr->qstateaddr_or_qid << 5;
     qstate_qinfo_t qinfo;
 
-#define PDB(fmt, field) \
-    printf("%-*s: " fmt "\n", w, #field, dberr->field)
-
-    PDB("%" PRIu64, vld);
     if ((flags & DBF_QSTATE) &&
         lif_qstate_map_qinfo(qstate_addr, &qinfo)) {
-        printf("%-*s: 0x%" PRIx64 " "
-               "(qstateaddr 0x%" PRIx64 " lif %d qtype %d qid %d)\n",
-               w, "qstateaddr_or_qid", dberr->qstateaddr_or_qid,
-               qstate_addr, qinfo.lif, qinfo.qtype, qinfo.qid);
+        dberrpd_display(dberr, &qinfo);
     } else {
-        PDB("0x%" PRIx64, qstateaddr_or_qid);
+        dberrpd_display(dberr, NULL);
     }
-    PDB("0x%" PRIx64, pid_or_lif_type);
-    PDB("%" PRIu64, cnt);
-    PDB("%" PRIu64, doorbell_merged);
-    PDB("%" PRIu64, addr_conflict);
-    PDB("%" PRIu64, tot_ring_err);
-    PDB("%" PRIu64, host_ring_err);
-    PDB("%" PRIu64, pid_fail);
-    PDB("%" PRIu64, qid_ovflow);
 }
 
 static void
