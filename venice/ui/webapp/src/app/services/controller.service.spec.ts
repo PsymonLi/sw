@@ -1,13 +1,13 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { inject, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { ControllerService } from './controller.service';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MessageService, Message, RemoveMessageReq } from './message.service';
 import { Utility } from '@app/common/Utility';
 import { ToolbarButton } from '@app/models/frontend/shared/toolbar.interface';
@@ -55,7 +55,7 @@ describe('ControllerService', () => {
     };
 
     spyOn(service, 'createSignOutButton').and.returnValue(
-      signoutButton
+      signoutButton as any
     );
     // invoke success attempting to clear error toasters
 
@@ -83,7 +83,7 @@ describe('ControllerService', () => {
     };
 
 
-    const messageService = TestBed.get(MessageService);
+    const messageService = TestBed.inject(MessageService);
     const addSpy = spyOn(messageService, 'add');
     const removeSpy = spyOn(messageService, 'remove');
     const clearSpy = spyOn(messageService, 'clear');

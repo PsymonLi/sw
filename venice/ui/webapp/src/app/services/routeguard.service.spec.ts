@@ -4,7 +4,7 @@ import { configureTestSuite } from 'ng-bullet';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { RouteGuard } from '@app/services/routeguard.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
@@ -49,8 +49,8 @@ describe('RouteGuardService', () => {
 
   // synchronous beforeEach
   beforeEach(() => {
-    routeGuard = TestBed.get(RouteGuard);
-    uiConfig = TestBed.get(UIConfigsService);
+    routeGuard = TestBed.inject(RouteGuard);
+    uiConfig = TestBed.inject(UIConfigsService);
   });
 
   it('check route guarding',

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateUIPermissionsFile = void 0;
 var path = require("path");
 var fs = require("fs");
 var utils_1 = require("./utils");

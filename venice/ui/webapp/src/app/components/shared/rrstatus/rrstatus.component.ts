@@ -9,7 +9,7 @@ import { Utility } from '@app/common/Utility';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { BaseComponent } from '@app/components/base/base.component';
 import { runInThisContext } from 'vm';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 
 @Component({

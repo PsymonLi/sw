@@ -1,11 +1,11 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { configureTestSuite } from 'ng-bullet';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { BehaviorSubject } from 'rxjs';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';

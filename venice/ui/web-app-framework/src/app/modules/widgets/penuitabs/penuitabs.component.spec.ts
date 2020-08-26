@@ -35,7 +35,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
             </app-penuitabs>`,
 })
 class TestWrapperComponent {
-  @ViewChild(PenuitabsComponent) tabComponent: PenuitabsComponent;
+  @ViewChild(PenuitabsComponent, { static: true}) tabComponent: PenuitabsComponent;
   tabCounter1: number = 0;
   tabCounter2: number = 0;
   tabCounter3: number = 0;
@@ -136,7 +136,7 @@ describe('PenuitabsComponent', () => {
 
       expect(spy0).toHaveBeenCalled();
       expect(spy0).toHaveBeenCalledTimes(1);
-      let args = spy0.calls.argsFor(0)[0];
+      let args: any = spy0.calls.argsFor(0)[0];
       expect(args.isActiveTab).toBeDefined();
       expect(args.isActiveTab.previousValue).toBeTruthy();
       expect(args.isActiveTab.currentValue).toBeFalsy();
@@ -230,10 +230,8 @@ describe('PenuitabsComponent', () => {
 
   it('should reject if no penuitab is given', () => {
     fixture.detectChanges();
-    fixture.whenStable().then(() => {
-      component.tabItems = undefined;
-      expect(() => component.ngAfterContentInit())
+    component.tabItems = undefined;
+    expect(() => component.ngAfterContentInit())
         .toThrowError('No Penuitab components were given');
-    });
   });
 });

@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
 import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
-import { SelectItem } from 'primeng/primeng';
 import { RepeaterData, RepeaterItem, ValueType, RepeaterItemUnique } from '../index';
+import { SelectItem } from 'primeng';
 
 
 /**

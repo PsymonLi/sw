@@ -1,70 +1,73 @@
-@import 'src/global-mixins';
+@import 'src/import-mixins';
 
-.ui-breadcrumb {
-  border: 0px;
-}
-
-.toolbar-buffer {
-  width: 100%;
-}
-
-.toolbar-button {
-  margin-left: 12px;
-  margin-right: 12px;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 2px;
-  margin-top: 2px;
-}
-
-.toolbar-splitbutton {
-  @include primary-font(16px);
-}
-
-.toolbarcomponent-toolbar {
-  margin: 2px 0px;
-  height: 50px;
-  width: 100%;
-}
-
-.ui-menuitem-text {
-  @include primary-font(18px);
-}
-
-.ui-breadcrumb-chevron {
-  font-size: 10px;
-}
-
-// Last breadcrumb icon is bolded and is not shown as clickable
-.ui-breadcrumb ul li:last-child>a>span {
-  font-weight: 500;
-  cursor: auto;
-}
-
-.toolbar-splitbutton {
-  @include primary-font(16px);
-}
-
-.toolbar-splitbutton-menu {
-  @include primary-font(16px);
-  width: 100%;
-  background: #fff;
-  padding: 0.1em;
-}
-
-.toolbar-splitbutton .ui-widget.ui-button,
-.ui-button {
-  border: 1px solid #97b8df;
-  background: #97b8df;
-  margin-top: 1px;
-
-  &:hover {
-    background: #86a8d7;
+.pensando-ui {
+  .ui-breadcrumb {
+    padding: .5em;
+    border: none;
   }
-}
 
-// add this class for the validation error message
-// when user hover create button
-mat-tooltip-component .mat-tooltip.validation_error_tooltip {
-  color: orange !important;
+  .toolbar-buffer {
+    width: 100%;
+  }
+
+  .toolbar-button {
+    margin-left: 12px;
+    margin-right: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+
+  .toolbar-splitbutton {
+    @include primary-font(16px);
+  }
+
+  .toolbarcomponent-toolbar {
+    margin: 2px 0px;
+    height: 50px;
+    width: 100%;
+  }
+
+  .ui-menuitem-text {
+    @include primary-font(18px);
+  }
+
+  .ui-breadcrumb-chevron {
+    font-size: 10px;
+  }
+
+  // Last breadcrumb icon is bolded and is not shown as clickable
+  .ui-breadcrumb ul li:last-child>a>span {
+    font-weight: 500;
+    cursor: auto;
+  }
+
+  .toolbar-splitbutton {
+    @include primary-font(16px);
+  }
+
+  .toolbar-splitbutton-menu {
+    @include primary-font(16px);
+    width: 100%;
+    background: #fff;
+    padding: 0.1em;
+  }
+
+  .toolbar-splitbutton .ui-widget.ui-button,
+  .ui-button {
+    border: 1px solid #97b8df;
+    background: #97b8df;
+    margin-top: 1px;
+
+    &:hover {
+      background: #86a8d7;
+    }
+  }
+
+  // add this class for the validation error message
+  // when user hover create button
+  mat-tooltip-component .mat-tooltip.validation_error_tooltip {
+    color: orange !important;
+  }
 }

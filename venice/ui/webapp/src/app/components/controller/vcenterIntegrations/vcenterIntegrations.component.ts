@@ -46,7 +46,7 @@ interface VcenterUIModel {
 export class VcenterIntegrationsComponent extends DataComponent implements OnInit {
 
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
-  @ViewChild('vCenterIntegrationTable') vCenterIntegrationTable: PentableComponent;
+  @ViewChild('vCenterIntegrationTable', { static: true }) vCenterIntegrationTable: PentableComponent;
 
   bodyicon: Icon = {
     margin: {

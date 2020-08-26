@@ -14,7 +14,7 @@ import { AlertseventsComponent } from '@app/components/shared/alertsevents/alert
   encapsulation: ViewEncapsulation.None
 })
 export class AlertseventspageComponent extends BaseComponent implements OnInit, OnDestroy {
-  @ViewChild('alertsEventsComponent') alertsEventsComponent: AlertseventsComponent;
+  @ViewChild('alertsEventsComponent', { static: true }) alertsEventsComponent: AlertseventsComponent;
 
   breadCrumb = [{ label: 'Alerts & Events', url: Utility.getBaseUIUrl() + 'monitoring/alertsevents' }];
 

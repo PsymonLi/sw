@@ -1,4 +1,4 @@
-@import 'src/global-mixins';
+@import 'src/import-mixins';
 
 .alertdetail-key {
   @include primary-font(14px, #676763, bold);

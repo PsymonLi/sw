@@ -15,10 +15,6 @@ export class AppComponent {
 
   public data: any = [
     {
-      title: 'plotly',
-      children: []
-    },
-    {
       title: 'barchart',
       children: []
     },

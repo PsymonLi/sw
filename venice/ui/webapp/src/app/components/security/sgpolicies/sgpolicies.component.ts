@@ -24,7 +24,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 })
 
 export class SgpoliciesComponent extends DataComponent implements OnInit, OnDestroy {
-  @ViewChild('securityPoliciesTable') securityPoliciesTable: PentableComponent;
+  @ViewChild('securityPoliciesTable', { static: true }) securityPoliciesTable: PentableComponent;
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = true;
   dataObjects: ReadonlyArray<SecurityNetworkSecurityPolicy> = [];

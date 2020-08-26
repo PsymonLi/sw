@@ -5,7 +5,7 @@ import { Observable, forkJoin } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { UsersComponent, ACTIONTYPE } from '../users.component';
 import { Animations } from '@app/animations';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { ControllerService } from '@app/services/controller.service';
 import { AuthService } from '@app/services/generated/auth.service';
 import { StagingService } from '@app/services/generated/staging.service';

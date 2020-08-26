@@ -4,31 +4,38 @@
  * Do not edit.
 */
 /* tslint:disable */
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./enums"));
-__export(require("./api-agg-watch-options.model"));
-__export(require("./api-interface.model"));
-__export(require("./api-interface-slice.model"));
-__export(require("./api-kind-watch-options.model"));
-__export(require("./api-list-watch-options.model"));
-__export(require("./api-object-meta.model"));
-__export(require("./api-object-ref.model"));
-__export(require("./api-status.model"));
-__export(require("./api-status-result.model"));
-__export(require("./api-timestamp.model"));
-__export(require("./api-type-meta.model"));
-__export(require("./api-watch-control.model"));
-__export(require("./api-watch-event.model"));
-__export(require("./api-watch-event-list.model"));
-__export(require("./fields-requirement.model"));
-__export(require("./fields-selector.model"));
-__export(require("./googleprotobuf-any.model"));
-__export(require("./telemetry-query-metrics-query-list.model"));
-__export(require("./telemetry-query-metrics-query-response.model"));
-__export(require("./telemetry-query-metrics-query-result.model"));
-__export(require("./telemetry-query-metrics-query-spec.model"));
-__export(require("./telemetry-query-pagination-spec.model"));
-__export(require("./telemetry-query-result-series.model"));
+__exportStar(require("./enums"), exports);
+__exportStar(require("./api-agg-watch-options.model"), exports);
+__exportStar(require("./api-interface.model"), exports);
+__exportStar(require("./api-interface-slice.model"), exports);
+__exportStar(require("./api-kind-watch-options.model"), exports);
+__exportStar(require("./api-list-watch-options.model"), exports);
+__exportStar(require("./api-object-meta.model"), exports);
+__exportStar(require("./api-object-ref.model"), exports);
+__exportStar(require("./api-status.model"), exports);
+__exportStar(require("./api-status-result.model"), exports);
+__exportStar(require("./api-timestamp.model"), exports);
+__exportStar(require("./api-type-meta.model"), exports);
+__exportStar(require("./api-watch-control.model"), exports);
+__exportStar(require("./api-watch-event.model"), exports);
+__exportStar(require("./api-watch-event-list.model"), exports);
+__exportStar(require("./fields-requirement.model"), exports);
+__exportStar(require("./fields-selector.model"), exports);
+__exportStar(require("./googleprotobuf-any.model"), exports);
+__exportStar(require("./telemetry-query-metrics-query-list.model"), exports);
+__exportStar(require("./telemetry-query-metrics-query-response.model"), exports);
+__exportStar(require("./telemetry-query-metrics-query-result.model"), exports);
+__exportStar(require("./telemetry-query-metrics-query-spec.model"), exports);
+__exportStar(require("./telemetry-query-pagination-spec.model"), exports);
+__exportStar(require("./telemetry-query-result-series.model"), exports);

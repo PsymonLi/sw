@@ -8,7 +8,6 @@ import { PrimengModule } from '@app/lib/primeng.module';
 import { FormsModule, ReactiveFormsModule, NgControl } from '@angular/forms';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ChipsComponent } from '@app/components/shared/chips/chips.component';
-import { DomHandler } from 'primeng/api';
 
 describe('PsmChipsBoxComponent', () => {
   let component: PsmChipsBoxComponent;
@@ -26,7 +25,7 @@ describe('PsmChipsBoxComponent', () => {
         ReactiveFormsModule,
         NoopAnimationsModule,
       ],
-      providers: [DomHandler, NgControl]
+      providers: [NgControl]
     });
   });
 

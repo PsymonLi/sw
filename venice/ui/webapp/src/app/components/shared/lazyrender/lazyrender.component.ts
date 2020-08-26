@@ -2,7 +2,7 @@ import { Component, OnInit, ContentChild, AfterContentInit, Input, Output, Event
 import { Table } from 'primeng/table';
 import { ArrayChunkUtility } from '@app/common/ArrayChunkUtility';
 import { Utility } from '@app/common/Utility';
-import { LazyLoadEvent } from 'primeng/primeng';
+import { LazyLoadEvent } from 'primeng';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 
 /**
@@ -30,7 +30,7 @@ import { HttpEventUtility } from '@app/common/HttpEventUtility';
   styleUrls: ['./lazyrender.component.scss'],
 })
 export class LazyrenderComponent implements OnInit, AfterContentInit, OnChanges, AfterViewInit, DoCheck {
-  @ContentChild(Table) primengTable: Table;
+  @ContentChild(Table, /* TODO: add static flag */ {}) primengTable: Table;
 
   // The entire data set, will only render a subsection of it at a time
   // Unless loadDataFunc is supplied
@@ -231,35 +231,36 @@ export class LazyrenderComponent implements OnInit, AfterContentInit, OnChanges,
       clearTimeout(this.resizeTimeout);
       this.resizeTimeout = null;
     }
-    this.resizeTimeout = setTimeout(() => {
-      const $ = Utility.getJQuery();
+    // this.resizeTimeout = setTimeout(() => {
+    //   const $ = Utility.getJQuery();
 
       // set header width, account for scrollbar in table body, to align column widths with body widths
-      const bodyWidth = parseInt($('.lazyrender-container .ui-table-scrollable-body').css('width'), 10);
-      const bodyTableWidth = parseInt($('.lazyrender-container .ui-table-scrollable-body-table.ui-table-virtual-table').css('width'), 10);
-      const scrollWidth = bodyWidth - bodyTableWidth;
-      $('.lazyrender-container .ui-table-scrollable-header-box').css('margin-right', `${scrollWidth}px`);
+    //   const bodyWidth = parseInt($('.lazyrender-container .ui-table-scrollable-body').css('width'), 10);
+    //   const bodyTableWidth = parseInt($('.lazyrender-container .ui-table-scrollable-body-table.ui-table-virtual-table').css('width'), 10);
+    //   console.log("bodyWith ", bodyWidth, " ", bodyTableWidth)
+    //   const scrollWidth = bodyWidth - 0;
+    //   $('.lazyrender-container .ui-table-scrollable-header-box').css('margin-right', `${scrollWidth}px`);
 
-      const containerHeight = $('.lazyrender-container').outerHeight();
-      let headerHeight = $('.lazyrender-container .ui-table-caption').outerHeight();
-      const tableBodyHeader = $('.lazyrender-container .ui-table-scrollable-header').outerHeight();
-      // If there is no caption element, outerHeight will return undefined
-      if (headerHeight == null) {
-        headerHeight = 0;
-      }
-      const newHeight = containerHeight - headerHeight - tableBodyHeader;
-      $('.lazyrender-container .ui-table-scrollable-body').css('max-height', newHeight + 'px');
-      // Setting height as well since sometimes the auto calculation is off by 1 px
-      $('.lazyrender-container .ui-table-scrollable-body').css('height', newHeight + 'px');
-      $('.lazyrender-container .ui-table-scrollable-body').css('visibility', ''); // VS-757.  Parent html dom has "visibility: hidden". We want this node now to have "visibility: visible"
+    //   const containerHeight = $('.lazyrender-container').outerHeight();
+    //   let headerHeight = $('.lazyrender-container .ui-table-caption').outerHeight();
+    //   const tableBodyHeader = $('.lazyrender-container .ui-table-scrollable-header').outerHeight();
+    //   // If there is no caption element, outerHeight will return undefined
+    //   if (headerHeight == null) {
+    //     headerHeight = 0;
+    //   }
+    //   const newHeight = containerHeight - headerHeight - tableBodyHeader;
+    //   $('.lazyrender-container .ui-table-scrollable-body').css('max-height', newHeight + 'px');
+    //   // Setting height as well since sometimes the auto calculation is off by 1 px
+    //   $('.lazyrender-container .ui-table-scrollable-body').css('height', newHeight + 'px');
+    //   $('.lazyrender-container .ui-table-scrollable-body').css('visibility', ''); // VS-757.  Parent html dom has "visibility: hidden". We want this node now to have "visibility: visible"
 
-      // reset top value to 0 if bounce scrolls sets to invalid negative number
-      const virtualTop = parseInt($('.lazyrender-container .ui-table-scrollable-body-table.ui-table-virtual-table').css('top'), 10);
-      if (virtualTop < 0) {
-        $('.lazyrender-container .ui-table-virtual-table').css('top', '0');
-      }
+    //   // reset top value to 0 if bounce scrolls sets to invalid negative number
+    //   const virtualTop = parseInt($('.lazyrender-container .ui-table-scrollable-body-table.ui-table-virtual-table').css('top'), 10);
+    //   if (virtualTop < 0) {
+    //     $('.lazyrender-container .ui-table-virtual-table').css('top', '0');
+    //   }
 
-    }, delay);
+    // }, delay);
   }
 
   /**
@@ -322,12 +323,18 @@ export class LazyrenderComponent implements OnInit, AfterContentInit, OnChanges,
    * Returns the table's current scroll amount
    */
   getTableScroll() {
-    return this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scrollTop;
+    // const item = this.elRef.nativeElement.querySelector('.ui-table-scrollable-body');
+    // if (item == null) {
+    //   console.log("scrollable body is gone")
+    //   return 0
+    // }
+    // return item.scrollTop;
+    return 0;
   }
 
   scrollToRowNumber(rowNum) {
-    const scrollAmount = rowNum * this.virtualRowHeight;
-    this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, scrollAmount);
+    // const scrollAmount = rowNum * this.virtualRowHeight;
+    // this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, scrollAmount);
   }
 
   /**
@@ -336,7 +343,7 @@ export class LazyrenderComponent implements OnInit, AfterContentInit, OnChanges,
   resetTableView() {
     if (this.isToFetchData) {
       this.setTableValues();
-      this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, 0);
+      // this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, 0);
       return;
     }
     this.dataChunkUtility.switchToNewData();
@@ -347,7 +354,7 @@ export class LazyrenderComponent implements OnInit, AfterContentInit, OnChanges,
     this.dataLazy = this.dataChunkUtility.getLastRequestedChunk();
     this.dataUpdate.emit(true);
     this.setTableValues();
-    this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, 0);
+    // this.elRef.nativeElement.querySelector('.ui-table-scrollable-body').scroll(0, 0);
   }
 
   // Returns the data that is currently being displayed in the table

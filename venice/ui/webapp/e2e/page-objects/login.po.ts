@@ -1,4 +1,5 @@
 import { browser, by, element, protractor } from 'protractor';
+import 'jasmine';
 
 export class LoginPage {
   username: string;

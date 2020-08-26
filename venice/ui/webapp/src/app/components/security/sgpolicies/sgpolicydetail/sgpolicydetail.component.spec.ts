@@ -6,7 +6,7 @@ import { DebugElement, Component, Directive, Input, NO_ERRORS_SCHEMA } from '@an
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -19,7 +19,7 @@ import { SecuritySGRule_action_uihint } from '@sdk/v1/models/generated/security'
  Venice web-app imports
  ------------------*/
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { SearchService } from '@app/services/generated/search.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { LogService } from '@app/services/logging/log.service';
@@ -292,7 +292,7 @@ describe('SgpolicydetailComponent', () => {
     fixture = TestBed.createComponent(SgpolicydetailComponent);
     component = fixture.componentInstance;
     testingUtility = new TestingUtility(fixture);
-    const securityService = TestBed.get(SecurityService);
+    const securityService = TestBed.inject(SecurityService);
     const rules1 = [
       {
         'apps': [
@@ -389,7 +389,7 @@ describe('SgpolicydetailComponent', () => {
     sgPolicyGetSpy = spyOn(securityService, 'GetNetworkSecurityPolicy').and.returnValue(
       new BehaviorSubject({
         body: sgPolicy1
-      })
+      }) as any
     );
   });
 
@@ -401,7 +401,7 @@ describe('SgpolicydetailComponent', () => {
     fixture.detectChanges();
     component.selectedPolicyId = 'policy1';
 
-    const service = TestBed.get(SearchService);
+    const service = TestBed.inject(SearchService);
     const postQuerySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
       new BehaviorSubject<any>(
         {
@@ -424,7 +424,7 @@ describe('SgpolicydetailComponent', () => {
     expectedReq['tenant'] = 'default';
     expectedReq['namespace'] = 'default';
     expectedReq['sg-policy'] = 'policy1';
-    let calledObj = postQuerySpy.calls.mostRecent().args[0];
+    let calledObj: any = postQuerySpy.calls.mostRecent().args[0];
     expect(_.isEqual(expectedReq.getFormGroupValues(), calledObj.getFormGroupValues())).toBeTruthy();
 
     // Putting in text into dest IP
@@ -498,7 +498,7 @@ describe('SgpolicydetailComponent', () => {
   it('should show search/cancel buttons when either src ip, dest ip or app is not empty', () => {
     fixture.detectChanges();
     const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
-    const service = TestBed.get(SearchService);
+    const service = TestBed.inject(SearchService);
     const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
       new BehaviorSubject<any>({
         body: {
@@ -563,7 +563,7 @@ describe('SgpolicydetailComponent', () => {
     fixture.detectChanges();
 
     const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
-    const service = TestBed.get(SearchService);
+    const service = TestBed.inject(SearchService);
     const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
       new BehaviorSubject<any>({
         body: {
@@ -631,7 +631,7 @@ describe('SgpolicydetailComponent', () => {
 
   it('should display missing policy overlay and deleted policy overlay', () => {
     // change param id
-    const mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    const mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setPolicyId('policy2');
     const policyWatchObserver = new ReplaySubject();
     const policyGetObserver = new Observable((observable) => {
@@ -728,12 +728,14 @@ describe('SgpolicydetailComponent', () => {
 
 
   it('should rerender when user navigates to same page with different id and use field selectors', () => {
+    let mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
+    mockActivatedRoute.setPolicyId('policy1');
     fixture.detectChanges();
     verifyMeta(sgPolicy1.meta.name, sgPolicy1.meta['creation-time'], sgPolicy1.meta['mod-time']);
     verifyServiceCalls('policy1');
 
     // change param id
-    let mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     sgPolicyWatchSpy.and.returnValue(
       new BehaviorSubject({
         events: [
@@ -764,7 +766,7 @@ describe('SgpolicydetailComponent', () => {
     sgPolicyGetSpy.and.returnValue(
       policyGetObserver
     );
-    mockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setPolicyId('policy3');
 
     verifyServiceCalls('policy3');
@@ -809,7 +811,7 @@ describe('SgpolicydetailComponent', () => {
         }
       ]
     };
-    const service = TestBed.get(MetricsqueryService);
+    const service = TestBed.inject(MetricsqueryService);
     const spy = spyOn(service, 'pollMetrics').and.returnValue(
       new BehaviorSubject<any>(data)
     );

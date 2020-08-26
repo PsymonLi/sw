@@ -32,7 +32,7 @@ export class FlowexportpolicyComponent extends DataComponent implements OnInit {
   public static MAX_TARGETS_PER_POLICY = 2;
   public static MAX_TOTAL_TARGETS = 8;
 
-  @ViewChild('flowExportPolicyTable') flowExportPolicyTable: PentableComponent;
+  @ViewChild('flowExportPolicyTable', { static: true }) flowExportPolicyTable: PentableComponent;
 
   dataObjects: ReadonlyArray<MonitoringFlowExportPolicy> = [];
 

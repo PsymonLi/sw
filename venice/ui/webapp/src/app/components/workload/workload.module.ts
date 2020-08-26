@@ -13,7 +13,6 @@ import { MomentModule } from 'angular2-moment';
 import { PrimengModule } from '@lib/primeng.module';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { FlexLayoutModule } from '@angular/flex-layout';
-import { GridsterModule } from 'angular-gridster2';
 /**-----
  Venice Framework UI -  imports
  ------------------*/
@@ -38,7 +37,6 @@ import { WorkloaddetailComponent } from './workloaddetail/workloaddetail.compone
     ReactiveFormsModule,
 
     MomentModule,
-    GridsterModule,
     PrimengModule,
     FlexLayoutModule,
     MaterialdesignModule,

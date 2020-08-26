@@ -1,15 +1,7 @@
 {
   "$schema": "./node_modules/ng-packagr/ng-package.schema.json",
   "lib": {
-    "entryFile": "src/public_api.ts",
-    "externals": {
-      "@angular/material": "ng.material",
-      "primeng/primeng": "primeng",
-      "primeng/table"  :"primeng/components/table/table",
-      "primeng/autocomplete"  :"primeng/components/autocomplete",
-      "primeng/calendar"  :  "primeng/components/calendar",
-      "primeng/components/utils/objectutils":"primeng/components/utils/objectutils"
-    }
+    "entryFile": "src/public_api.ts"
   },
   "whitelistedNonPeerDependencies": ["."]
 }

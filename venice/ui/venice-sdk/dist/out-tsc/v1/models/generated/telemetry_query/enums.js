@@ -5,6 +5,7 @@
 */
 /* tslint:disable */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.AllEnums = exports.FieldsRequirement_operator_uihint = exports.ApiListWatchOptions_sort_order_uihint = exports.Telemetry_queryMetricsQuerySpec_sort_order = exports.Telemetry_queryMetricsQuerySpec_function = exports.FieldsRequirement_operator = exports.ApiListWatchOptions_sort_order = void 0;
 // generate enum based on strings instead of numbers
 // (see https://blog.rsuter.com/how-to-implement-an-enum-with-string-values-in-typescript/)
 var ApiListWatchOptions_sort_order;
@@ -103,7 +104,7 @@ var AllEnums = /** @class */ (function () {
         get: function () {
             return AllEnums._instance;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     AllEnums._instance = new AllEnums();

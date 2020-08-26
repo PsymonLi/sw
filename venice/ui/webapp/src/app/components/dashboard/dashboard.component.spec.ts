@@ -5,7 +5,6 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 
-import { GridsterModule } from 'angular-gridster2';
 import { WidgetsModule } from 'web-app-framework';
 import { PrimengModule } from '@lib/primeng.module';
 import { MaterialdesignModule } from '../../lib/materialdesign.module';
@@ -25,8 +24,8 @@ import { DsbdworkloadComponent } from './widgets/dsbdworkload/dsbdworkload.compo
 import { HostCardComponent } from './widgets/hostcard/hostcard.component';
 import { RrhealthcardComponent } from './widgets/rrhealthcard/rrhealthcard.component';
 
-import { MatIconRegistry } from '@angular/material';
-import { ConfirmationService } from 'primeng/primeng';
+import { MatIconRegistry } from '@angular/material/icon';
+import { ConfirmationService } from 'primeng';
 import { WorkloadsComponent } from './workloads/workloads.component';
 import { MetricsqueryService } from '@app/services/metricsquery.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
@@ -81,7 +80,6 @@ describe('DashboardComponent', () => {
         ]),
         FormsModule,
         HttpClientTestingModule,
-        GridsterModule,
         WidgetsModule,
         PrimengModule,
         MaterialdesignModule,
@@ -115,7 +113,7 @@ describe('DashboardComponent', () => {
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
     component.gridsterOptions = [];
-    uiconfigService = TestBed.get(UIConfigsService);
+    uiconfigService = TestBed.inject(UIConfigsService);
   });
 
   describe('RBAC', () => {

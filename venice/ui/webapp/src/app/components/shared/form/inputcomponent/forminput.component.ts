@@ -1,4 +1,4 @@
-import {Input, OnInit, Injector, ViewChild, ElementRef, Type, ChangeDetectorRef, AfterViewInit, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Input, OnInit, Injector, ViewChild, ElementRef, Type, ChangeDetectorRef, AfterViewInit, OnDestroy, Output, EventEmitter, Directive } from '@angular/core';
 import { ControlValueAccessor, NgControl, AbstractControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Utility } from '@app/common/Utility';
@@ -50,7 +50,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   }
 
   ngOnInit() {
-    this.ngControl = this.inj.get<NgControl>(NgControl as Type<NgControl>);
+    this.ngControl = this.inj.get<NgControl>(NgControl);
     this.boxId = this.id ? this.id + '-box' :
         this.constructor.name + '-' + Utility.s4() + '-' + Utility.s4();
     this.currentTooltipClass = this.tooltipClass;

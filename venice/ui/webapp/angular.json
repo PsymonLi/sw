@@ -2,6 +2,9 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "newProjectRoot": "projects",
+  "cli": {
+    "packageManager": "yarn"
+  },
   "projects": {
     "venice-ui": {
       "root": "",
@@ -11,6 +14,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "aot": true,
             "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -37,16 +41,15 @@
               "src/theme.scss",
               "src/styles-app-loading.scss",
               "node_modules/font-awesome/css/font-awesome.css",
-              "node_modules/primeng/resources/themes/omega/theme.css",
-              "node_modules/primeng/resources/primeng.css",
               "node_modules/primeicons/primeicons.css",
+              "node_modules/primeng/resources/themes/nova-light/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
               "node_modules/material-design-icons/iconfont/material-icons.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/typeface-fira-sans-condensed/index.css",
               "node_modules/typeface-roboto-condensed/index.css"
             ],
             "scripts": [
-              "node_modules/plotly.js/dist/plotly.min.js",
               "node_modules/chart.js/dist/Chart.js",
               "node_modules/chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.js",
               "node_modules/jquery/dist/jquery.min.js",
@@ -55,6 +58,12 @@
           },
           "configurations": {
             "production": {
+              "budgets": [
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb"
+                }
+              ],
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
@@ -78,7 +87,8 @@
           "options": {
             "browserTarget": "venice-ui:build",
             "ssl": true,
-            "proxyConfig": "proxy.conf.js"
+            "proxyConfig": "proxy.conf.js",
+            "sourceMap": true
           },
           "configurations": {
             "production": {
@@ -100,7 +110,6 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.spec.json",
             "scripts": [
-              "node_modules/plotly.js/dist/plotly.min.js",
               "node_modules/chart.js/dist/Chart.js",
               "node_modules/chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.js",
               "node_modules/jquery/dist/jquery.min.js",
@@ -111,9 +120,9 @@
               "src/theme.scss",
               "src/styles-app-loading.scss",
               "node_modules/font-awesome/css/font-awesome.css",
-              "node_modules/primeng/resources/themes/omega/theme.css",
-              "node_modules/primeng/resources/primeng.css",
               "node_modules/primeicons/primeicons.css",
+              "node_modules/primeng/resources/themes/nova-light/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
               "node_modules/material-design-icons/iconfont/material-icons.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/typeface-fira-sans-condensed/index.css",
@@ -151,7 +160,8 @@
             ],
             "exclude": [
               "**/node_modules/**",
-              "src/assets/generated/**"
+              "src/assets/generated/**",
+              "src/assets/apiSample.json"
             ]
           }
         }
@@ -191,7 +201,7 @@
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
-      "styleext": "scss"
+      "style": "scss"
     },
     "@schematics/angular:directive": {
       "prefix": "app"

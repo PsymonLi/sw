@@ -19,7 +19,8 @@ import * as $ from 'jquery';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 import * as pluralize from 'pluralize';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
+import { ObjectUtils } from 'primeng/utils';
 import { Table } from 'primeng/table';
 import { RepeaterComponent } from 'web-app-framework';
 import { Eventtypes } from '../enum/eventtypes.enum';
@@ -1723,7 +1724,7 @@ export class Utility {
       for (let j = 0; j < table.columns.length; j++) {
         const column = table.columns[j];
         if (column.exportable !== false && column.field) {
-          let cellData = table.objectUtils.resolveFieldData(record, column.field);
+          let cellData = ObjectUtils.resolveFieldData(record, column.field);
           if (cellData != null) {
             if (table.exportFunction) {
               cellData = table.exportFunction({
@@ -1778,7 +1779,7 @@ export class Utility {
       for (let j = 0; j < table.columns.length; j++) {
         const column = table.columns[j];
         if (column.exportable !== false && column.field) {
-          let cellData = table.objectUtils.resolveFieldData(record, column.field);
+          let cellData = ObjectUtils.resolveFieldData(record, column.field);
           if (cellData != null) {
             if (table.exportFunction) {
               cellData = table.exportFunction({
@@ -2732,14 +2733,10 @@ export interface RestAPIRequestResponse {
 export interface UrlData {
   category?: string;
   kind?: string;
-  method?: Method;
+  method?: string;
   url?: string;
-  request?: Object;
-  response?: Object;
+  request?: any;
+  response?: any;
   id?: number;
   comment?: string;
-}
-
-export enum Method {
-  GET, PUT, POST, DELETE, WATCH
 }

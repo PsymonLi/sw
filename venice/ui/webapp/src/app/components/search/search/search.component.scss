@@ -41,7 +41,8 @@ span.searchwidget-select-panel-template-item-options-item:hover {
 }
 
 .searchwidget .ui-autocomplete-input-text {
-  font-family: "Fira Sans Condensed";
+  font-family: "Fira Sans Condensed" !important;
+  font-size: 20px !important;
 }
 
 .searchwidget .searchwidget-multi-selected-item-li {

@@ -21,7 +21,7 @@ import { FormArray, FormGroup, FormControl } from '@angular/forms';
   encapsulation: ViewEncapsulation.None
 })
 export class FieldselectorComponent implements OnInit, OnChanges {
-  @ViewChild('fieldRepeater') fieldRepeater: RepeaterComponent;
+  @ViewChild('fieldRepeater', { static: true }) fieldRepeater: RepeaterComponent;
 
   @Input() kind: string;
   @Input() formArray = new FormArray([]);

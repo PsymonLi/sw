@@ -41,7 +41,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   public static SNAPSHOT_NAMESPACES: string = 'snapshots';
   public static SNAPSHOT_RESTORE_METANAME: string = 'SnapshotRestore';
 
-  @ViewChild('snapshotsTable') snapshotsTable: PentableComponent;
+  @ViewChild('snapshotsTable', { static: true }) snapshotsTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ObjstoreObject> = [];
   dataObjectsBackUp: ReadonlyArray<ObjstoreObject> = [];

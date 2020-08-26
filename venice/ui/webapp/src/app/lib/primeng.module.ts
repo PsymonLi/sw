@@ -8,11 +8,11 @@ import {
   CalendarModule,
   ChartModule,
   CheckboxModule,
-  DataGridModule,
-  DataTableModule,
+
+
   DropdownModule,
   FieldsetModule,
-  GrowlModule,
+
   InputMaskModule,
   InputSwitchModule,
   InputTextareaModule,
@@ -32,7 +32,7 @@ import {
   ConfirmDialogModule,
   ChipsModule,
   DialogModule, ScrollPanelModule
-} from 'primeng/primeng';
+} from 'primeng';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { TreeModule } from 'primeng/tree';
@@ -48,17 +48,17 @@ import {FileUploadModule} from 'primeng/fileupload';
  */
 @NgModule({
   imports: [
-    ChartModule, SplitButtonModule, StepsModule, AccordionModule, SpinnerModule, CalendarModule, PanelModule, DataTableModule,
+    ChartModule, SplitButtonModule, StepsModule, AccordionModule, SpinnerModule, CalendarModule, PanelModule,
     SharedModule, BlockUIModule, DropdownModule, SliderModule,
     ToolbarModule, FieldsetModule, InputTextModule, InputMaskModule, InputSwitchModule, InputTextareaModule, CheckboxModule,
-    MultiSelectModule, ListboxModule, RadioButtonModule, DataGridModule, GrowlModule, OverlayPanelModule,
+    MultiSelectModule, ListboxModule, RadioButtonModule,   OverlayPanelModule,
     SelectButtonModule, TooltipModule, AutoCompleteModule, BreadcrumbModule, TableModule, InputTextModule, ToastModule, TreeModule, TreeTableModule, PickListModule, ConfirmDialogModule, FileUploadModule, ChipsModule, DialogModule, ScrollPanelModule
   ],
   exports: [
-    ChartModule, SplitButtonModule, StepsModule, AccordionModule, SpinnerModule, CalendarModule, PanelModule, DataTableModule,
+    ChartModule, SplitButtonModule, StepsModule, AccordionModule, SpinnerModule, CalendarModule, PanelModule,
     SharedModule, BlockUIModule, DropdownModule, SliderModule,
     ToolbarModule, FieldsetModule, InputTextModule, InputMaskModule, InputSwitchModule, InputTextareaModule, CheckboxModule,
-    MultiSelectModule, ListboxModule, RadioButtonModule, DataGridModule, GrowlModule, OverlayPanelModule,
+    MultiSelectModule, ListboxModule, RadioButtonModule,   OverlayPanelModule,
     SelectButtonModule, TooltipModule, AutoCompleteModule, BreadcrumbModule, TableModule, InputTextModule, ToastModule, TreeModule, TreeTableModule, PickListModule, ConfirmDialogModule, FileUploadModule, ChipsModule, DialogModule, ScrollPanelModule
   ],
   declarations: []

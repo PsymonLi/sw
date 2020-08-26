@@ -7,7 +7,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ClusterDSCProfile, IClusterDSCProfile, ClusterDSCProfileSpec_deployment_target, ClusterDSCProfileSpec_feature_set } from '@sdk/v1/models/generated/cluster';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 

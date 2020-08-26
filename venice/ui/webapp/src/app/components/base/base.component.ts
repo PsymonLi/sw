@@ -3,11 +3,11 @@ import { AbstractControl, FormArray } from '@angular/forms';
 import { Utility } from '@app/common/Utility';
 import { LogService } from '@app/services/logging/log.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { SortEvent } from 'primeng/components/common/api';
 import { ControllerService } from '../../services/controller.service';
 import { TableUtility } from '../shared/tableviewedit/tableutility';
 import { Subscription } from 'rxjs';
 import { PrettyDatePipe } from '../shared/Pipes/PrettyDate.pipe';
+import { SortEvent } from 'primeng';
 // declare var google: any;
 
 /**

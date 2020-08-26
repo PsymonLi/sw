@@ -63,7 +63,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
   public static MAX_LEGEND_VIEW_MODE: number = 8;
 
 
-  @ViewChild('pChart') chartContainer: UIChartComponent;
+  @ViewChild('pChart', { static: true }) chartContainer: UIChartComponent;
   @Input() chartConfig: GraphConfig;
   @Input() inEditMode: boolean = false;
   @Input() inDebugMode: boolean = false;

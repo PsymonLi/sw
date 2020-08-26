@@ -1,6 +1,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "downlevelIteration": true,
+    "resolveJsonModule": true,
     "newLine": "lf",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
@@ -8,7 +10,7 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es5",
+    "target": "es2015",
     "typeRoots": [
       "node_modules/@types"
     ],
@@ -40,6 +42,6 @@
         "../node_modules/@angular/*"
       ]
     },
-    "module": "es2015"
+    "module": "esnext"
   }
 }

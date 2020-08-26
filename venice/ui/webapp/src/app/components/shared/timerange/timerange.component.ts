@@ -2,7 +2,7 @@ import { Component, OnInit, ViewEncapsulation, Input, Output, EventEmitter, View
 import { FormControl, ValidatorFn, AbstractControl, ValidationErrors, FormGroup } from '@angular/forms';
 import * as moment from 'moment';
 import { TimeRange, TimeRangeUtility, KeywordFactory, ParserResp, MomentTimeInstance, KeywordUtility } from './utility';
-import { OverlayPanel } from 'primeng/primeng';
+import { OverlayPanel } from 'primeng';
 import { Subscription } from 'rxjs';
 import { Utility } from '@app/common/Utility';
 

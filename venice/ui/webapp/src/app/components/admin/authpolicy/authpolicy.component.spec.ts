@@ -9,11 +9,11 @@ import { LocalComponent } from '@app/components/admin/authpolicy/local/local.com
 import { SharedModule } from '@app/components/shared/shared.module';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { AuthService as AuthServiceGen } from '@app/services/generated/auth.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';

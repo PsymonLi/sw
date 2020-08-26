@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { PrimengModule } from '@app/lib/primeng.module';
-import { MatIconRegistry, MatIcon } from '@angular/material';
+import { MatIconRegistry, MatIcon } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import { MaterialdesignModule} from '@lib/materialdesign.module';
 import { FormsModule, ReactiveFormsModule} from '@angular/forms';
@@ -14,7 +14,7 @@ import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { MessageService } from '@app/services/message.service';
 import { AuthService } from '@app/services/auth.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -22,10 +22,10 @@ import { ClusterNode, ClusterCluster} from '@sdk/v1/models/generated/cluster';
 import { NgModule } from '@angular/core';
 
 
-@NgModule({
-  entryComponents: [ClusterupdateComponent]
-})
-class TestModule { }
+// @NgModule({
+//   entryComponents: [ClusterupdateComponent]
+// })
+// class TestModule { }
 
 
 describe('ClusterupdateComponent', () => {
@@ -42,7 +42,7 @@ describe('ClusterupdateComponent', () => {
         MaterialdesignModule,
         NoopAnimationsModule,
         HttpClientTestingModule,
-        TestModule],
+      ],
       providers: [
         {provide: MatDialogRef, useValue: {}},
         {provide: MAT_DIALOG_DATA, useValue: {}},
@@ -63,7 +63,7 @@ describe('ClusterupdateComponent', () => {
   }));
 
   beforeEach(() => {
-    const dialog = TestBed.get(MatDialog);
+    const dialog = TestBed.inject(MatDialog);
     const node1 = new ClusterNode({ 'kind': 'Node', 'api-version': 'v1', 'meta': { 'name': 'node1', 'tenant': 'default', 'namespace': 'default', 'resource-version': '5', 'uuid': '6a000b60-949b-4338-bd7e-8e750a9a8edb', 'creation-time': '2018-06-13T17:50:29.117624431Z', 'mod-time': '2018-06-13T17:50:29.117624431Z', 'self-link': '/v1/cluster/nodes/node1' }, 'spec': {}, 'status': { 'phase': 'joined', 'quorum': true } });
     const componentRef = dialog.open(ClusterupdateComponent, {
       data: {

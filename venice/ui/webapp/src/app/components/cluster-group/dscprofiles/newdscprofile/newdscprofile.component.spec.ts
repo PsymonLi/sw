@@ -15,7 +15,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { MessageService } from '@app/services/message.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '@app/services/auth.service';
 

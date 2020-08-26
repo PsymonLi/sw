@@ -1,7 +1,6 @@
-import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnInit, ViewEncapsulation, OnChanges } from '@angular/core';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { Animations } from '@app/animations';
-import { OnChanges } from '@angular/core/src/metadata/lifecycle_hooks';
 import { Router } from '@angular/router';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 

@@ -1,4 +1,6 @@
 {
-    "entry": "./src/global-mixins.scss",
-    "dest": "./dist/theme.scss"
+    "bundlerOptions": {
+        "entryFile": "./src/global-mixins.scss",
+        "outFile": "./dist/theme.scss"
+    }
 }

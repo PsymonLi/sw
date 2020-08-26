@@ -1,4 +1,4 @@
-@import 'src/global-mixins';
+@import 'src/import-mixins';
 
 app-pentable,
 .pentable-widget {
@@ -109,6 +109,7 @@ app-pentable,
 
       .ui-dropdown-trigger {
         right: unset;
+        width: 20px;
       }
     }
   }

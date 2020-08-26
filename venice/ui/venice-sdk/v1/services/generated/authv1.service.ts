@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IAuthAuthenticationPolicy,AuthAuthenticationPolicy,IApiStatus,ApiStatus,AuthTokenSecretRequest,IAuthTokenSecretRequest,ApiLabel,IApiLabel,IAuthRoleBindingList,AuthRoleBindingList,IAuthRoleBinding,AuthRoleBinding,IAuthRoleList,AuthRoleList,IAuthRole,AuthRole,IAuthUserPreference,AuthUserPreference,IAuthUserList,AuthUserList,IAuthUser,AuthUser,AuthSubjectAccessReviewRequest,IAuthSubjectAccessReviewRequest,AuthPasswordChangeRequest,IAuthPasswordChangeRequest,AuthPasswordResetRequest,IAuthPasswordResetRequest,IAuthAutoMsgAuthenticationPolicyWatchHelper,AuthAutoMsgAuthenticationPolicyWatchHelper,IAuthAutoMsgRoleBindingWatchHelper,AuthAutoMsgRoleBindingWatchHelper,IAuthAutoMsgRoleWatchHelper,AuthAutoMsgRoleWatchHelper,IAuthAutoMsgUserPreferenceWatchHelper,AuthAutoMsgUserPreferenceWatchHelper,IAuthAutoMsgUserWatchHelper,AuthAutoMsgUserWatchHelper } from '../../models/generated/auth';
 
-@Injectable()
 export class Authv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

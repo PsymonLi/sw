@@ -47,7 +47,7 @@ import { ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
   animations: [Animations]
 })
 export class TelemetrycharteditComponent extends BaseComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('chart') chart: TelemetrychartComponent;
+  @ViewChild('chart', { static: true }) chart: TelemetrychartComponent;
   @Input() chartConfig: GraphConfig;
   @Input() selectedTimeRange: TimeRange;
   @Output() saveChartReq: EventEmitter<GraphConfig> = new EventEmitter<GraphConfig>();

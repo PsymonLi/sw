@@ -24,7 +24,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 export class ArchivelogComponent extends DataComponent implements OnInit {
   public static AL_DOWNLOAD = 'archivelogsdownload'; // Will contain URL for archive request download
 
-  @ViewChild('archiveTable') archiveTable: PentableComponent;
+  @ViewChild('archiveTable', { static: true }) archiveTable: PentableComponent;
 
   dataObjects: MonitoringArchiveRequest[] = [];
   dataObjectsBackUp: MonitoringArchiveRequest[] = [];

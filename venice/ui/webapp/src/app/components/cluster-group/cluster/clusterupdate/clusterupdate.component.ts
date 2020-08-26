@@ -10,7 +10,7 @@ import { IApiStatus } from '@sdk/v1/models/generated/auth';
 import { ClusterCluster, IClusterCluster } from '@sdk/v1/models/generated/cluster';
 import { required } from '@sdk/v1/utils/validators';
 import * as _ from 'lodash';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Observable } from 'rxjs';
 
 

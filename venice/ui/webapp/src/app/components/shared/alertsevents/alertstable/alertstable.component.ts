@@ -31,7 +31,7 @@ import { DataComponent } from '@app/components/shared/datacomponent/datacomponen
 })
 export class AlertstableComponent extends DataComponent implements OnInit, OnChanges {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
-  @ViewChild('alertsTable') alertsTable: PentableComponent;
+  @ViewChild('alertsTable', { static: true }) alertsTable: PentableComponent;
 
   isTabComponent: boolean;
   disableTableWhenRowExpanded: boolean;

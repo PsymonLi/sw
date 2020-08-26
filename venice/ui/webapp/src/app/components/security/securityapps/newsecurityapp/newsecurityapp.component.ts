@@ -3,7 +3,7 @@ import { Animations } from '@app/animations';
 import { ISecurityApp, SecurityApp, SecurityALG, SecurityALG_type, SecuritySunrpc, SecurityMsrpc} from '@sdk/v1/models/generated/security';
 import { ControllerService } from '@app/services/controller.service';
 import { SecurityService } from '@app/services/generated/security.service';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Utility } from '@app/common/Utility';
 import { FormArray, FormGroup, AbstractControl, ValidatorFn, ValidationErrors, FormControl } from '@angular/forms';
 import { SecurityAppOptions} from '@app/components/security';

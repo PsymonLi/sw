@@ -1,7 +1,7 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TestingUtility } from '@app/common/TestingUtility';
@@ -20,7 +20,7 @@ import { LicenseService } from '@app/services/license.service';
 import { IWorkloadWorkload, WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
 import { configureTestSuite } from 'ng-bullet';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { NewworkloadComponent } from './newworkload.component';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { TrimUIFields } from '@sdk/v1/utils/utility';
@@ -89,7 +89,7 @@ describe('NewworkloadComponent', () => {
   });
 
   it('should create', () => {
-    const workloadService = TestBed.get(WorkloadService);
+    const workloadService = TestBed.inject(WorkloadService);
     const spy = spyOn(workloadService, 'AddWorkload');
     // newWorkload has @Input variables. We build them here
     const hosts = [];
@@ -115,7 +115,7 @@ describe('NewworkloadComponent', () => {
     };
 
     tu.setInput('.new-workload-name input', workload.meta.name);
-    tu.setPsmSelectbox('.new-workload-host p-dropdown', 'naples1-host');
+    tu.setPsmSelectbox('.new-workload-host p-dropdown', '.psm-form-select-box-dropdown-label', 'naples1-host');
     tu.setInput('.new-workload-mac-address input', workload.spec.interfaces[0]['mac-address']);
     tu.setInput('.new-workload-micro-seg-vlan input', workload.spec.interfaces[0]['micro-seg-vlan']);
     tu.setInput('.new-workload-external-vlan input', workload.spec.interfaces[0]['external-vlan']);
@@ -144,13 +144,13 @@ describe('NewworkloadComponent', () => {
       }
     };
     component.objectData = workload;
-    const workloadService = TestBed.get(WorkloadService);
-    const clusterService = TestBed.get(ClusterService);
+    const workloadService = TestBed.inject(WorkloadService);
+    const clusterService = TestBed.inject(ClusterService);
     const spy = spyOn(workloadService, 'UpdateWorkload');
     spyOn(clusterService, 'WatchHost').and.returnValue(
       TestingUtility.createWatchEventsSubject([
         host1,
-      ])
+      ]) as any
     );
     fixture.detectChanges();
     workload.spec.interfaces[0]['mac-address'] = '2222.2222.2222';

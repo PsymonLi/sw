@@ -56,7 +56,6 @@ import { UIChartComponent } from './primeng-chart/chart';
 import { OrderedlistComponent } from './orderedlist/orderedlist.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ChipsComponent } from './chips/chips.component';
-import { DomHandler } from 'primeng/api';
 import { FeatureGuardDirective } from './directives/featureGuard.directive';
 import { AlertstableComponent } from './alertsevents/alertstable/alertstable.component';
 import { EventstableComponent } from './alertsevents/eventstable/eventstable.component';
@@ -207,8 +206,5 @@ import { PartialEditSgpolicyComponent } from '@app/components/security/sgpolicie
     RrstatusComponent,
     PartialEditSgpolicyComponent
   ],
-  providers: [
-    DomHandler
-  ]
 })
 export class SharedModule { }

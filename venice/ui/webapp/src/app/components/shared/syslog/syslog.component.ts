@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, ViewEncapsulation, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Utility } from '@app/common/Utility';
 import { MonitoringSyslogExport,  IMonitoringSyslogExport, MonitoringExportConfig, MonitoringSyslogExportConfig } from '@sdk/v1/models/generated/monitoring';
 import { FormArray, FormGroup, AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';

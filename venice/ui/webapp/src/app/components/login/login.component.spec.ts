@@ -2,7 +2,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import {  ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CoreModule } from '@app/core';
@@ -15,7 +15,7 @@ import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MessageService } from '@app/services/message.service';
 
 describe('LoginComponent', () => {

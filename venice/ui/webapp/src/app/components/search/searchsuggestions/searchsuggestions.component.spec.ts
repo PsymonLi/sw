@@ -8,13 +8,13 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Component, DebugElement } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 
 /**-----
  Venice UI -  imports
  ------------------*/
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { SharedModule } from '@app/components/shared/shared.module';

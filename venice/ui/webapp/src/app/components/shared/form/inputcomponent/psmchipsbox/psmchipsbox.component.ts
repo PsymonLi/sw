@@ -3,7 +3,6 @@ import { NG_VALUE_ACCESSOR, NgControl, FormControl } from '@angular/forms';
 import { AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { Utility } from '@app/common/Utility';
 import { ChipsComponent } from '@app/components/shared/chips/chips.component';
-import { DomHandler } from 'primeng/api';
 
 /**
  * This componet is a wrap on app-chips
@@ -47,8 +46,8 @@ export class PsmChipsBoxComponent extends ChipsComponent  implements OnInit, Aft
   @Input() showRequired: boolean;
   @Input() itemValidator: (item: string) => boolean = (item: string) => true;
 
-  constructor(protected inj: Injector, el: ElementRef, protected cdr: ChangeDetectorRef, domHandler: DomHandler) {
-    super(el, domHandler);
+  constructor(protected inj: Injector, el: ElementRef, protected cdr: ChangeDetectorRef) {
+    super(el);
   }
 
   ngOnInit() {
@@ -59,7 +58,7 @@ export class PsmChipsBoxComponent extends ChipsComponent  implements OnInit, Aft
 
   ngAfterViewInit() {
     super.ngAfterViewInit();
-    this.ngControl = this.inj.get<NgControl>(NgControl as Type<NgControl>);
+    this.ngControl = this.inj.get<NgControl>(NgControl);
     if (this.ngControl && this.ngControl.control) {
       this.formCtrl = this.ngControl.control as FormControl;
       if (this.formCtrl.validator) {

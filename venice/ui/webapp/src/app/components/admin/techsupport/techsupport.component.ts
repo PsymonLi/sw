@@ -29,7 +29,7 @@ import { SelectItem } from 'primeng/api';
 
 export class TechsupportComponent extends DataComponent implements OnInit {
   public static TS_DOWNLOAD = 'techsupportdownload';
-  @ViewChild('techsupportTable') techsupportTable: PentableComponent;
+  @ViewChild('techsupportTable', { static: true }) techsupportTable: PentableComponent;
 
   dataObjects: MonitoringTechSupportRequest[] = [];
   dataObjectsBackUp: MonitoringTechSupportRequest[] = [];

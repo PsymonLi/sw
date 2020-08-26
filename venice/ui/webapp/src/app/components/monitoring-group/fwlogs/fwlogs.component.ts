@@ -4,7 +4,7 @@ import { Utility } from '@app/common/Utility';
 import { Animations } from '@app/animations';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { IPUtility } from '@app/common/IPUtility';
-import { OverlayPanel } from 'primeng/primeng';
+import { SelectItem, OverlayPanel } from 'primeng';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
@@ -16,7 +16,6 @@ import { SearchUtil } from '@app/components/search/SearchUtil';
 import { SecurityService } from '@app/services/generated/security.service';
 import { SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { PolicyRuleTuple } from './';
-import { SelectItem } from 'primeng/primeng';
 import { TimeRange } from '@app/components/shared/timerange/utility';
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -37,8 +36,8 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 })
 export class FwlogsComponent extends DataComponent implements OnInit {
   public static ALLOPTION = 'All';
-  @ViewChild('fwlogsTable') fwlogsTable: PentableComponent;
-  @ViewChild('ruleDetailsOverlay') overlay: OverlayPanel;
+  @ViewChild('fwlogsTable', { static: true }) fwlogsTable: PentableComponent;
+  @ViewChild('ruleDetailsOverlay', { static: true }) overlay: OverlayPanel;
 
   dataObjects: ReadonlyArray<FwlogFwLog> = [];
   loading: boolean = false;

@@ -12,7 +12,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/troubleshoot-group/flowexport/flowexport.module#FlowexportModule'
+        loadChildren: () => import('@app/components/troubleshoot-group/flowexport/flowexport.module').then(m => m.FlowexportModule)
       }
     ]
   },
@@ -21,7 +21,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/troubleshoot-group/troubleshooting/troubleshooting.module#TroubleshootingModule'
+        loadChildren: () => import('@app/components/troubleshoot-group/troubleshooting/troubleshooting.module').then(m => m.TroubleshootingModule)
       }
     ]
   },
@@ -30,7 +30,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/troubleshoot-group/mirrorsessions/mirrorsessions.module#MirrorsessionsModule'
+        loadChildren: () => import('@app/components/troubleshoot-group/mirrorsessions/mirrorsessions.module').then(m => m.MirrorsessionsModule)
       }
     ]
   }

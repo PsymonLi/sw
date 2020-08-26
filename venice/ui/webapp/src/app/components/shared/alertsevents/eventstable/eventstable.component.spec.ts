@@ -6,7 +6,8 @@
  import { Component } from '@angular/core';
  import { configureTestSuite } from 'ng-bullet';
  import { FormsModule, ReactiveFormsModule } from '@angular/forms';
- import { MatIconRegistry, MatTabsModule } from '@angular/material';
+ import { MatIconRegistry } from '@angular/material/icon';
+import { MatTabsModule } from '@angular/material/tabs';
  import { NoopAnimationsModule } from '@angular/platform-browser/animations';
  import { RouterTestingModule } from '@angular/router/testing';
  import { AlerttableService } from '@app/services/alerttable.service';
@@ -16,7 +17,7 @@
   Venice web-app imports
   ------------------*/
  import { ControllerService } from '@app/services/controller.service';
- import { ConfirmationService } from 'primeng/primeng';
+ import { ConfirmationService } from 'primeng';
  import { LogPublishersService } from '@app/services/logging/log-publishers.service';
  import { LogService } from '@app/services/logging/log.service';
  import { MaterialdesignModule } from '@lib/materialdesign.module';
@@ -29,7 +30,6 @@ import { LicenseService } from '@app/services/license.service';
  import { BehaviorSubject } from 'rxjs';
  import { Utility } from '@app/common/Utility';
  import { EventsEvent, EventsEventAttributes_severity, ApiListWatchOptions_sort_order, EventsEvent_type } from '@sdk/v1/models/generated/events';
- import { Eventsv1Service } from '@sdk/v1/services/generated/eventsv1.service';
  import { By } from '@angular/platform-browser';
  import { TestingUtility } from '@app/common/TestingUtility';
  import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -100,7 +100,6 @@ describe('EventstableComponent', () => {
         MatIconRegistry,
         EventsService,
         EventsServiceGen,
-        Eventsv1Service,
         AlerttableService,
         SearchService,
         UIConfigsService,
@@ -113,8 +112,8 @@ describe('EventstableComponent', () => {
       });
 
   beforeEach(() => {
-    eventsService = TestBed.get(EventsService);
-    uiconfigService = TestBed.get(UIConfigsService);
+    eventsService = TestBed.inject(EventsService);
+    uiconfigService = TestBed.inject(UIConfigsService);
     spyOn(uiconfigService, 'isAuthorized').and.returnValue(true);
     spyOn(uiconfigService, 'roleGuardIsAuthorized').and.returnValue(true);
     spyOn(eventsService, 'pollEvents').and.returnValue(observer);

@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IFwlogFwLogList,FwlogFwLogList,FwlogFwLogQuery,IFwlogFwLogQuery } from '../../models/generated/fwlog';
 
-@Injectable()
 export class Fwlogv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

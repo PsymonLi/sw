@@ -11,7 +11,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { MessageService } from '@app/services/message.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { AuthService } from '@app/services/auth.service';

@@ -50,7 +50,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { ToasterComponent, ToasterItemComponent } from '@app/widgets/toaster/toaster.component';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { ClusterService } from './services/generated/cluster.service';
 import { MessageService } from './services/message.service';
 import { HelpoverlayComponent } from './widgets/helpcontent/helpoverlay.component';
@@ -148,10 +148,10 @@ describe('AppcontentComponent', () => {
     // Get will return all 20
     // Watch will return in three batches, 10, 5, 5
     // We then send a new alert to watch, which should trigger a notification
-    const controllerService = TestBed.get(ControllerService);
+    const controllerService = TestBed.inject(ControllerService);
     const toasterSpy = spyOn(controllerService, 'invokeInfoToaster');
 
-    const monitoringService = TestBed.get(MonitoringService);
+    const monitoringService = TestBed.inject(MonitoringService);
 
 
     const watchSubjectCache = TestingUtility.createDataCacheSubject(
@@ -301,8 +301,8 @@ describe('UIBlock during rollout progress', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(AppcontentComponent);
     debugElement = fixture.debugElement;
-    clusterService = TestBed.get(ClusterService);
-    rolloutService = TestBed.get(RolloutService);
+    clusterService = TestBed.inject(ClusterService);
+    rolloutService = TestBed.inject(RolloutService);
   });
 
   afterEach(() => {
@@ -312,10 +312,10 @@ describe('UIBlock during rollout progress', () => {
   it('Rollout Progressing: Admin behaviour', () => {
     TestingUtility.setAllPermissions();
     spyOn(clusterService, 'WatchVersion').and.returnValue(
-      new BehaviorSubject(versionObj)
+      new BehaviorSubject(versionObj) as any
     );
     spyOn(rolloutService, 'WatchRollout').and.returnValue(
-      new BehaviorSubject(rolloutObj)
+      new BehaviorSubject(rolloutObj) as any
     );
     fixture.detectChanges();
     // check if sidenav menu is served
@@ -327,7 +327,7 @@ describe('UIBlock during rollout progress', () => {
   it('Rollout Progressing: NonAdmin behaviour', () => {
     TestingUtility.removeAllPermissions();
     spyOn(clusterService, 'WatchVersion').and.returnValue(
-      new BehaviorSubject(versionObj)
+      new BehaviorSubject(versionObj) as any
     );
     fixture.detectChanges();
     // check if sidenav menu is served

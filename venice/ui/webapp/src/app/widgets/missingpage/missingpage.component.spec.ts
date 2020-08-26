@@ -3,9 +3,9 @@ import { configureTestSuite } from 'ng-bullet';
 
 import { MissingpageComponent } from './missingpage.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { SharedModule } from '@app/components/shared/shared.module';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { LogService } from '@app/services/logging/log.service';
 import { RouterTestingModule } from '@angular/router/testing';

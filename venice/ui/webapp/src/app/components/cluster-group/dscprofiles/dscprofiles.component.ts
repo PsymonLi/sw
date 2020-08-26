@@ -49,7 +49,7 @@ interface DSCProfileUiModel {
   encapsulation: ViewEncapsulation.None
 })
 export class DscprofilesComponent extends DataComponent implements OnInit {
-  @ViewChild('dscProfilesTable') dscProfilesTable: PentableComponent;
+  @ViewChild('dscProfilesTable', { static: true }) dscProfilesTable: PentableComponent;
 
   DEFAULT_DSCPROFILE = 'default';
 

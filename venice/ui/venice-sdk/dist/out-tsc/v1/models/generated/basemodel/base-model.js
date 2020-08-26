@@ -5,6 +5,7 @@
 */
 /* tslint:disable */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BaseModel = void 0;
 var forms_1 = require("@angular/forms");
 var BaseModel = /** @class */ (function () {
     function BaseModel() {

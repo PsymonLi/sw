@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IDiagnosticsModuleList,DiagnosticsModuleList,IApiStatus,ApiStatus,IDiagnosticsModule,DiagnosticsModule,IDiagnosticsDiagnosticsResponse,DiagnosticsDiagnosticsResponse,DiagnosticsDiagnosticsRequest,IDiagnosticsDiagnosticsRequest,ApiLabel,IApiLabel,IDiagnosticsAutoMsgModuleWatchHelper,DiagnosticsAutoMsgModuleWatchHelper } from '../../models/generated/diagnostics';
 
-@Injectable()
 export class Diagnosticsv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

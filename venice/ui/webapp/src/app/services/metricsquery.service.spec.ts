@@ -4,10 +4,10 @@ import { MetricsqueryService, TelemetryPollingMetricQueries } from './metricsque
 import { ControllerService } from './controller.service';
 import { LogService } from './logging/log.service';
 import { LogPublishersService } from './logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MessageService } from './message.service';
 import { Component } from '@angular/core';
 import { MetricsUtility } from '@app/common/MetricsUtility';
@@ -81,7 +81,7 @@ describe('MetricsqueryService', () => {
     component = fixture.componentInstance;
     const spy = spyOn(service, 'PostMetrics').and.returnValue(new BehaviorSubject({
       results: []
-    }));
+    }) as any);
     component.startQuery();
     expect(component.metricStatus = 'ready');
 
@@ -90,7 +90,7 @@ describe('MetricsqueryService', () => {
     expect(component.metricStatus = 'failed');
     spy.and.returnValue(new BehaviorSubject({
       results: []
-    }));
+    }) as any);
     tick(200);
 
     component.stopQuery();

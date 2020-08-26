@@ -8,7 +8,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Component, DebugElement } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 
 
 /**-----
@@ -16,7 +16,7 @@ import { MatIconRegistry } from '@angular/material';
  ------------------*/
 import { ClusterComponent } from './cluster.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { NetworkService } from '@app/services/generated/network.service';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
@@ -113,12 +113,12 @@ describe('ClusterComponent', () => {
     const node1 = new ClusterNode({ 'kind': 'Node', 'api-version': 'v1', 'meta': { 'name': 'node1', 'tenant': 'default', 'namespace': 'default', 'resource-version': '5', 'uuid': '6a000b60-949b-4338-bd7e-8e750a9a8edb', 'creation-time': '2018-06-13T17:50:29.117624431Z', 'mod-time': '2018-06-13T17:50:29.117624431Z', 'self-link': '/v1/cluster/nodes/node1' }, 'spec': {}, 'status': { 'phase': 'joined', 'quorum': true, 'conditions' : [{'status' : 'false'}] } });
     events.push({ type: 'Created', object: node1 });
 
-    const service = TestBed.get(ClusterService);
+    const service = TestBed.inject(ClusterService);
     const ret = {
       events: events
     };
     spyOn(service, 'WatchNode').and.returnValue(
-      new BehaviorSubject(ret)
+      new BehaviorSubject(ret) as any
     );
   });
 
@@ -148,7 +148,7 @@ describe('ClusterComponent', () => {
 
       beforeEach(() => {
         TestingUtility.removeAllPermissions();
-        const controllerService = TestBed.get(ControllerService);
+        const controllerService = TestBed.inject(ControllerService);
         toolbarSpy = spyOn(controllerService, 'setToolbarData');
       });
 

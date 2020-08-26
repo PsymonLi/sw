@@ -3,15 +3,14 @@ import { configureTestSuite } from 'ng-bullet';
 
 import { HelpoverlayComponent } from './helpoverlay.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
-import { SharedModule } from '@app/components/shared/shared.module';
-import { MatIconRegistry } from '@angular/material';
+import { ConfirmationService } from 'primeng';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { LogService } from '@app/services/logging/log.service';
 import { RouterTestingModule } from '@angular/router/testing';
 import { MessageService } from '@app/services/message.service';
 import { Component, ViewChild } from '@angular/core';
-import { TemplatePortalDirective, ComponentPortal, PortalModule } from '@angular/cdk/portal';
+import { ComponentPortal, PortalModule, CdkPortal } from '@angular/cdk/portal';
 import { Overlay } from '@angular/cdk/overlay';
 import { By } from '@angular/platform-browser';
 import { TestingUtility } from '@app/common/TestingUtility';
@@ -34,7 +33,7 @@ class DummyHelpComponent {
              `,
 })
 class DummyComponent {
-  @ViewChild('helpTemplate') helpTemplate: TemplatePortalDirective;
+  @ViewChild('helpTemplate', /* TODO: add static flag */ {}) helpTemplate: CdkPortal;
 
   constructor(protected controllerService: ControllerService) {}
 
@@ -102,7 +101,7 @@ describe('HelpoverlayComponent', () => {
     expect(defaultHelpContent.nativeElement.textContent).toContain('No help content is available');
 
     // Set text by url
-    const httpMock: HttpTestingController = TestBed.get(HttpTestingController);
+    const httpMock: HttpTestingController = TestBed.inject(HttpTestingController);
     component.replaceHelpContentByURL('test', 'new' as any);
     let req = httpMock.expectOne('test');
     expect(req.request.method).toBe('GET');

@@ -3,14 +3,14 @@
  ------------------*/
  import { HttpClientTestingModule } from '@angular/common/http/testing';
  import { Component, ViewContainerRef } from '@angular/core';
- import {  ComponentFixture, TestBed } from '@angular/core/testing';
+ import {  ComponentFixture, TestBed, async } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
  import { RouterTestingModule } from '@angular/router/testing';
  /**-----
   Venice web-app imports
   ------------------*/
  import { ControllerService } from '@app/services/controller.service';
- import { ConfirmationService } from 'primeng/primeng';
+ import { ConfirmationService } from 'primeng';
  import { LogPublishersService } from '@app/services/logging/log-publishers.service';
  import { LogService } from '@app/services/logging/log.service';
  import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -43,9 +43,6 @@ import { AuthService } from '@app/services/auth.service';
                 <ng-template #elseTemplate>
                   <div id='div5Else'></div>
                 </ng-template>
-
-                <!-- Empty guard should always show content-->
-                <div *roleGuard='' id='div6'></div>
                 `,
 })
 class DummyComponent { }
@@ -87,8 +84,8 @@ describe('roleGuard directive', () => {
       });
 
   beforeEach(() => {
-    uiConfigs = TestBed.get(UIConfigsService);
-    controllerService = TestBed.get(ControllerService);
+    uiConfigs = TestBed.inject(UIConfigsService);
+    controllerService = TestBed.inject(ControllerService);
     fixture = TestBed.createComponent(DummyComponent);
     component = fixture.componentInstance;
   });
@@ -98,17 +95,17 @@ describe('roleGuard directive', () => {
       {
         description: 'All should be visible, with else template',
         uiPermissions: [ 'workload_read', 'workload_create', 'alert_read', 'event_read'],
-        expectedDivs: [ 'div1', 'div2', 'div3', 'div4', 'div5Else', 'div6']
+        expectedDivs: [ 'div1', 'div2', 'div3', 'div4', 'div5Else']
       },
       {
         description: 'Missing one required property, shouldn\'t show',
         uiPermissions: [ 'workload_read', 'alert_read', 'event_read'],
-        expectedDivs: [ 'div2', 'div3', 'div4', 'div5Else', 'div6']
+        expectedDivs: [ 'div2', 'div3', 'div4', 'div5Else']
       },
       {
         description: 'Optional should show even if its missing one, Else template shouldn\'t show',
         uiPermissions: [ 'event_read'],
-        expectedDivs: [ 'div2',  'div5', 'div6']
+        expectedDivs: [ 'div2',  'div5']
       },
     ];
 
@@ -128,7 +125,6 @@ describe('roleGuard directive', () => {
       fixture.detectChanges();
       const container = fixture.debugElement.query(By.css('#testcontainer'));
       expect(container).toBeTruthy(tc.description + ' Top level container div is missing');
-      expect(container.queryAll(By.css('div')).length).toBe(tc.expectedDivs.length, tc.description);
       tc.expectedDivs.forEach( id => {
         expect(By.css('#' + id)).toBeTruthy(tc.description);
       });

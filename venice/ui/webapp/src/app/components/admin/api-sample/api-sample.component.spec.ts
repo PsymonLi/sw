@@ -12,7 +12,7 @@ import { ClusterService } from '@app/services/generated/cluster.service';
 import { ObjstoreService } from '@app/services/generated/objstore.service';
 
 import { PrimengModule } from '@lib/primeng.module';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { WidgetsModule } from 'web-app-framework';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { AuthService } from '@app/services/auth.service';
@@ -25,7 +25,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { FlexLayoutModule } from '@angular/flex-layout';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 
 import { By } from '@angular/platform-browser';
 

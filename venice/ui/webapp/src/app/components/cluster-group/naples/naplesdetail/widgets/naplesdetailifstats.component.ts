@@ -2,7 +2,6 @@ import { Component, OnInit, ViewEncapsulation, Input, EventEmitter, Output, Chan
 import { InterfaceStats } from '../naplesdetail.component';
 import { Utility } from '@app/common/Utility';
 import { NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type } from '@sdk/v1/models/generated/network';
-import { ViewRef_ } from '@angular/core/src/view';
 
 @Component({
   selector: 'app-naplesdetail-ifstats',

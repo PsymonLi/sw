@@ -34,7 +34,7 @@ import { PentableComponent } from '../../pentable/pentable.component';
 export class EventstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy, DoCheck {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
   @ViewChild('exportLogsComponent') exportLogsComponent: ExportLogsComponent;
-  @ViewChild('eventsTable') eventsTable: PentableComponent;
+  @ViewChild('eventsTable', { static: true }) eventsTable: PentableComponent;
 
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = false;

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateMetricMetadata = exports.generatePipelineMetricMetadata = void 0;
 var utils_1 = require("./utils");
 var fs = require("fs");
 var utils = require("./utils");

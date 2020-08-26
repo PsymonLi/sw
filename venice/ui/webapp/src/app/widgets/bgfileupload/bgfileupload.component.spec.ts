@@ -3,7 +3,7 @@ import { BgfileuploadComponent } from './bgfileupload.component';
 import { configureTestSuite } from 'ng-bullet';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { PrimengModule } from '@app/lib/primeng.module';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { ControllerService } from '@app/services/controller.service';
 import { RouterTestingModule } from '@angular/router/testing';

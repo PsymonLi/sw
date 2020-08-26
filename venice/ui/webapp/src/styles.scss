@@ -2,7 +2,7 @@
  * This file does not need to be imported by any file except for theme.scss.
  */
 @import '~@angular/material/theming';
-@import 'src/global-mixins';
+@import 'src/import-mixins';
 
 @mixin global-styles($theme) {
   $colorPalette: map-get($theme, colors);
@@ -219,8 +219,15 @@
   /*********  Prime NG overrides  *********/
   %primeng-table {
     .ui-table {
+
+      .ui-chkbox-box {
+        height: 15px;
+        width: 15px;
+      }
+
       .ui-table-caption {
         background: #ffffff;
+        padding: 8px 4px;
       }
 
       //Column headers

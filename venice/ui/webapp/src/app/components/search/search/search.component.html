@@ -10,7 +10,7 @@
           class="ui-autocomplete-token ui-state-highlight ui-corner-all searchwidget-multi-selected-item-li">
         <span class="ui-autocomplete-token-icon fa fa-fw fa-close" *ngIf="!disabled"></span>
         <span *ngIf="!selectedItemTemplate"
-              class="ui-autocomplete-token-label">{{field ? objectUtils.resolveFieldData(val, field): val}}</span>
+              class="ui-autocomplete-token-label">{{field ? objUtilsResolveFieldData(val, field): val}}</span>
         <ng-container *ngTemplateOutlet="selectedItemTemplate; context: {$implicit: val}">
         </ng-container>
       </li>

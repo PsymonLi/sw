@@ -8,10 +8,10 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { RouterLinkStubDirective } from '@app/common/RouterLinkStub.directive.spec';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { SecurityService } from '@app/services/generated/security.service';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { PrimengModule } from '@app/lib/primeng.module';
@@ -70,7 +70,7 @@ describe('SgpoliciesComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SgpoliciesComponent);
     component = fixture.componentInstance;
-    securityService = TestBed.get(SecurityService);
+    securityService = TestBed.inject(SecurityService);
     policy1 = new SecurityNetworkSecurityPolicy({
       meta: {
         name: 'policy1',

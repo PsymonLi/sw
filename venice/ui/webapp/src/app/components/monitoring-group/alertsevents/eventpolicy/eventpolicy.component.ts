@@ -26,7 +26,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 export class EventpolicyComponent extends DataComponent implements OnInit {
   public static MAX_TOTAL_TARGETS = 8;
 
-  @ViewChild('eventPolicyTable') eventPolicyTable: PentableComponent;
+  @ViewChild('eventPolicyTable', { static: true }) eventPolicyTable: PentableComponent;
 
   dataObjects: ReadonlyArray<MonitoringEventPolicy> = [];
 

@@ -8,7 +8,7 @@ import { ControllerService } from './controller.service';
 import { ConfirmationService } from 'primeng/api';
 import { LogService } from './logging/log.service';
 import { LogPublishersService } from './logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MessageService } from './message.service';
 import { AuthService } from './auth.service';
 import { LicenseService } from './license.service';

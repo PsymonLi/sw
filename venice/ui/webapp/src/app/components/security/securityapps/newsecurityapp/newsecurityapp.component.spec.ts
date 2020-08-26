@@ -6,7 +6,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { WidgetsModule } from 'web-app-framework';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { SecurityService } from '@app/services/generated/security.service';
@@ -19,7 +19,7 @@ import { NewsecurityappComponent } from './newsecurityapp.component';
 import { SearchService } from '@app/services/generated/search.service';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import {MaterialdesignModule} from '@lib/materialdesign.module';
 import { EventsService } from '@app/services/events.service';
 

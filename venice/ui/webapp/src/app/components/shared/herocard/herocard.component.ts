@@ -1,7 +1,6 @@
-import { Component, Input, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ViewEncapsulation, OnChanges, SimpleChanges } from '@angular/core';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { Animations } from '@app/animations';
-import { OnChanges, SimpleChanges } from '@angular/core/src/metadata/lifecycle_hooks';
 import { Router } from '@angular/router';
 import { StatArrowDirection, CardStates } from '../basecard/basecard.component';
 import { UIConfigsService } from '@app/services/uiconfigs.service';

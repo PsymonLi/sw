@@ -41,7 +41,7 @@ interface NetworkUIModel {
 
 export class NetworkComponent extends DataComponent implements OnInit {
 
-  @ViewChild('networkTable') networkTable: PentableComponent;
+  @ViewChild('networkTable', { static: true }) networkTable: PentableComponent;
 
   bodyicon: Icon = {
     margin: {

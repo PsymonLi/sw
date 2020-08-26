@@ -50,7 +50,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 
 export class ImageuploadComponent extends DataComponent implements OnInit, OnDestroy {
 
-  @ViewChild('imageUploadTable') imageUploadTable: PentableComponent;
+  @ViewChild('imageUploadTable', { static: true }) imageUploadTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ObjstoreObject> = [];
   tableLoading: boolean;

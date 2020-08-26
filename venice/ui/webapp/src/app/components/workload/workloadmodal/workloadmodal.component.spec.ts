@@ -9,14 +9,14 @@ import { RouterTestingModule } from '@angular/router/testing';
 ----------------------------------------------------- */
 import { WorkloadModalComponent } from './workloadmodal.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
-import { MatIconRegistry } from '@angular/material';
+import { ConfirmationService } from 'primeng';
+import { MatIconRegistry } from '@angular/material/icon';
 /* ---------------------------------------------------
     Third-party libraries
 ----------------------------------------------------- */
 import { PrimengModule } from '@lib/primeng.module';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientTestingModule} from '@angular/common/http/testing';
 import { WidgetsModule } from 'web-app-framework';
@@ -67,7 +67,7 @@ describe('WorkloadModalComponent', () => {
       });
 
   beforeEach(() => {
-    const dialog = TestBed.get(MatDialog);
+    const dialog = TestBed.inject(MatDialog);
     const componentRef = dialog.open(WorkloadModalComponent, {
       data: {
         securityGroups: ['SG1', 'SG2'],

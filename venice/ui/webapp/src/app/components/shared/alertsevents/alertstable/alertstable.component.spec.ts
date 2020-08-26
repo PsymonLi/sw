@@ -8,10 +8,9 @@ import { configureTestSuite } from 'ng-bullet';
  ------------------*/
 //  import { async, ComponentFixture, TestBed } from '@angular/core/testing';
  import { HttpClientTestingModule } from '@angular/common/http/testing';
- import { Component } from '@angular/core';
 //  import { configureTestSuite } from 'ng-bullet';
  import { FormsModule, ReactiveFormsModule } from '@angular/forms';
- import { MatIconRegistry } from '@angular/material';
+ import { MatIconRegistry } from '@angular/material/icon';
  import { NoopAnimationsModule } from '@angular/platform-browser/animations';
  import { RouterTestingModule } from '@angular/router/testing';
  import { AlerttableService } from '@app/services/alerttable.service';
@@ -21,7 +20,7 @@ import { configureTestSuite } from 'ng-bullet';
   Venice web-app imports
   ------------------*/
  import { ControllerService } from '@app/services/controller.service';
- import { ConfirmationService } from 'primeng/primeng';
+ import { ConfirmationService } from 'primeng';
  import { LogPublishersService } from '@app/services/logging/log-publishers.service';
  import { LogService } from '@app/services/logging/log.service';
 //  import { MaterialdesignModule } from '@lib/materialdesign.module';
@@ -31,12 +30,6 @@ import { configureTestSuite } from 'ng-bullet';
  import { SearchService } from '@app/services/generated/search.service';
  import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
- import { BehaviorSubject } from 'rxjs';
- import { Utility } from '@app/common/Utility';
- import { EventsEvent, EventsEventAttributes_severity, ApiListWatchOptions_sort_order, EventsEvent_type } from '@sdk/v1/models/generated/events';
- import { Eventsv1Service } from '@sdk/v1/services/generated/eventsv1.service';
- import { By } from '@angular/platform-browser';
- import { TestingUtility } from '@app/common/TestingUtility';
  import { MonitoringService } from '@app/services/generated/monitoring.service';
  import { MessageService } from '@app/services/message.service';
  import { AuthService } from '@app/services/auth.service';
@@ -69,7 +62,6 @@ describe('AlertstableComponent', () => {
        MatIconRegistry,
        EventsService,
        EventsServiceGen,
-       Eventsv1Service,
        AlerttableService,
        SearchService,
        UIConfigsService,
@@ -91,10 +83,10 @@ describe('AlertstableComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(AlertstableComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 });

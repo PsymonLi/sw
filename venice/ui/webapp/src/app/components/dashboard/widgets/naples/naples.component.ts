@@ -1,5 +1,4 @@
-import { Component, Input, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
-import { OnChanges, OnDestroy, AfterViewInit } from '@angular/core/src/metadata/lifecycle_hooks';
+import { Component, Input, OnInit, ViewEncapsulation, ViewChild, OnChanges, OnDestroy, AfterViewInit } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { LineGraphStat, LinegraphComponent } from '@app/components/shared/linegraph/linegraph.component';

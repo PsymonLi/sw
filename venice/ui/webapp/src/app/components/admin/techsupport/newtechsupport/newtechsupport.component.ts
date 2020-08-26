@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, Input, OnInit, ViewEncapsulation, ViewChild, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { FormArray, ValidatorFn, FormGroup, FormControl } from '@angular/forms';
 import { Animations } from '@app/animations';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 
 import { Utility } from '@app/common/Utility';
 import { ControllerService } from '@app/services/controller.service';

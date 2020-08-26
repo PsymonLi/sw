@@ -1,8 +1,8 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { DebugElement } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, async } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -274,8 +274,8 @@ describe('HostsComponent', () => {
   it('should populate cloud table', () => {
     TestingUtility.setAllPermissions();
     TestingUtility.setCloudMode();
-    const serviceCluster = TestBed.get(ClusterService);
-    const serviceWorkload = TestBed.get(WorkloadService);
+    const serviceCluster = TestBed.inject(ClusterService);
+    const serviceWorkload = TestBed.inject(WorkloadService);
 
     spyOn(serviceCluster, 'ListHostCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -326,8 +326,8 @@ describe('HostsComponent', () => {
   it('should populate enterprise table', () => {
     TestingUtility.setAllPermissions();
     TestingUtility.setEnterpriseMode();
-    const serviceCluster = TestBed.get(ClusterService);
-    const serviceWorkload = TestBed.get(WorkloadService);
+    const serviceCluster = TestBed.inject(ClusterService);
+    const serviceWorkload = TestBed.inject(WorkloadService);
 
     spyOn(serviceCluster, 'ListHostCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -387,8 +387,8 @@ describe('HostsComponent', () => {
   it('should have correct router links for cloud', () => {
     TestingUtility.setAllPermissions();
     TestingUtility.setCloudMode();
-    const serviceCluster = TestBed.get(ClusterService);
-    const serviceWorkload = TestBed.get(WorkloadService);
+    const serviceCluster = TestBed.inject(ClusterService);
+    const serviceWorkload = TestBed.inject(WorkloadService);
 
     spyOn(serviceCluster, 'ListHostCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -424,8 +424,8 @@ describe('HostsComponent', () => {
   it('should have correct router links for enterprise', () => {
     TestingUtility.setAllPermissions();
     TestingUtility.setEnterpriseMode();
-    const serviceCluster = TestBed.get(ClusterService);
-    const serviceWorkload = TestBed.get(WorkloadService);
+    const serviceCluster = TestBed.inject(ClusterService);
+    const serviceWorkload = TestBed.inject(WorkloadService);
 
     spyOn(serviceCluster, 'ListHostCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -463,8 +463,8 @@ describe('HostsComponent', () => {
 
   describe('RBAC', () => {
     beforeEach(() => {
-      const serviceCluster = TestBed.get(ClusterService);
-      const serviceWorkload = TestBed.get(WorkloadService);
+      const serviceCluster = TestBed.inject(ClusterService);
+      const serviceWorkload = TestBed.inject(WorkloadService);
 
 
       spyOn(serviceCluster, 'ListHostCache').and.returnValue(
@@ -499,7 +499,11 @@ describe('HostsComponent', () => {
       expect(routerLinks.length).toBe(2, 'Should have 2 routerLinks');
     });
 
-    it('no permission  - cloud mode', () => {
+    it('no permission  - cloud mode', async(async() => {
+      TestingUtility.removeAllPermissions();
+      fixture.detectChanges();
+      await fixture.whenRenderingDone();
+      await fixture.whenStable();
       fixture.detectChanges();
       const linkDes = fixture.debugElement
         .queryAll(By.directive(RouterLinkStubDirective));
@@ -507,7 +511,7 @@ describe('HostsComponent', () => {
       // using each DebugElement's injector
       const routerLinks = linkDes.map(de => de.injector.get(RouterLinkStubDirective));
       expect(routerLinks.length).toBe(0, 'Should have no routerLinks');
-    });
+    }));
 
     it('naples read permission for enterprise mode', () => {
       TestingUtility.addPermissions(
@@ -522,7 +526,11 @@ describe('HostsComponent', () => {
       expect(routerLinks.length).toBe(2, 'Should have 2 routerLinks');
     });
 
-    it('no permission  - enterprise mode', () => {
+    it('no permission  - enterprise mode', async(async () => {
+      TestingUtility.removeAllPermissions();
+      fixture.detectChanges();
+      await fixture.whenRenderingDone();
+      await fixture.whenStable();
       fixture.detectChanges();
       const linkDes = fixture.debugElement
         .queryAll(By.directive(RouterLinkStubDirective));
@@ -530,7 +538,7 @@ describe('HostsComponent', () => {
       // using each DebugElement's injector
       const routerLinks = linkDes.map(de => de.injector.get(RouterLinkStubDirective));
       expect(routerLinks.length).toBe(0, 'Should have no routerLinks');
-    });
+    }));
 
   });
 });

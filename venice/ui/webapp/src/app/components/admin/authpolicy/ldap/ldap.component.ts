@@ -5,7 +5,7 @@ import { Animations } from '@app/animations';
 import { AuthLdap, AuthLdapDomain, AuthLdapServer, AuthAuthenticationPolicy } from '@sdk/v1/models/generated/auth';
 import { required } from '@sdk/v1/utils/validators';
 import { FormArray, FormControl, AbstractControl } from '@angular/forms';
-import { MatSlideToggleChange } from '@angular/material';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { LDAPCheckResponse, LDAPCheckType, LdapSave, CheckResponseError } from '@app/components/admin/authpolicy/.';
 import { AuthPolicyUtil } from '@app/components/admin/authpolicy/AuthPolicyUtil';

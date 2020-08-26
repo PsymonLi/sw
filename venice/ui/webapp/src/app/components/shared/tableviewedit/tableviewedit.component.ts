@@ -9,7 +9,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseModel } from '@sdk/v1/models/generated/basemodel/base-model';
 import { IApiStatus } from '@sdk/v1/models/generated/search';
-import { LazyLoadEvent } from 'primeng/primeng';
+import { LazyLoadEvent } from 'primeng';
 import { Table } from 'primeng/table';
 import { Observable, Subscription } from 'rxjs';
 import { TabcontentInterface } from 'web-app-framework';
@@ -327,7 +327,7 @@ export class TablevieweditHTMLComponent implements OnInit, AfterViewInit {
 export abstract class TableviewAbstract<I, T extends I> extends DataComponent implements OnInit, OnDestroy, OnChanges, TabcontentInterface {
   @Output() tableRowExpandClick: EventEmitter<any> = new EventEmitter();
 
-  @ViewChild(TablevieweditHTMLComponent) tableContainer: TablevieweditHTMLComponent;
+  @ViewChild(TablevieweditHTMLComponent, /* TODO: add static flag */ {}) tableContainer: TablevieweditHTMLComponent;
 
   subscriptions: Subscription[] = [];
 

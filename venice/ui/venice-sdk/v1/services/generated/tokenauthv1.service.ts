@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { ITokenauthNodeTokenResponse,TokenauthNodeTokenResponse } from '../../models/generated/tokenauth';
 
-@Injectable()
 export class Tokenauthv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

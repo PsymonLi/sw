@@ -1,7 +1,7 @@
 import { OverlayContainer } from '@angular/cdk/overlay';
-import { TemplatePortalDirective } from '@angular/cdk/portal';
+import { CdkPortal } from '@angular/cdk/portal';
 import { AfterViewInit, ChangeDetectorRef, Component, HostBinding, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { NavigationEnd, Router } from '@angular/router';
 import { Animations } from '@app/animations';
@@ -25,7 +25,7 @@ import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 import { FieldsRequirement_operator, ISearchSearchResponse, SearchSearchRequest, SearchSearchRequest_mode } from '@sdk/v1/models/generated/search';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import * as moment from 'moment';
-import { ConfirmDialog } from 'primeng/primeng';
+import { ConfirmDialog } from 'primeng';
 import { forkJoin, Observable, of, Subject, Subscription } from 'rxjs';
 import { catchError, filter, map, takeUntil, throttleTime } from 'rxjs/operators';
 import { SideNavItem, sideNavMenu } from './appcontent.sidenav';
@@ -118,13 +118,13 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
 
   @HostBinding('class') componentCssClass;
   private unsubscribeStore$: Subject<void> = new Subject<void>();
-  @ViewChild('sidenav') _sidenav: MatSidenav;
-  @ViewChild('rightSideNav') _rightSideNav: MatSidenav;
-  @ViewChild('container') _container: MatSidenavContainer;
+  @ViewChild('sidenav', { static: true }) _sidenav: MatSidenav;
+  @ViewChild('rightSideNav', { static: true }) _rightSideNav: MatSidenav;
+  @ViewChild('container', { static: true }) _container: MatSidenavContainer;
   @ViewChild('breadcrumbToolbar') _breadcrumbToolbar: ToolbarComponent;
   @ViewChild('helpOverlay') helpOverlay: HelpoverlayComponent;
-  @ViewChild('AppHelp') helpTemplate: TemplatePortalDirective;
-  @ViewChild('confirmDialog') confirmDialog: ConfirmDialog;
+  @ViewChild('AppHelp', { static: true }) helpTemplate: CdkPortal;
+  @ViewChild('confirmDialog', { static: true }) confirmDialog: ConfirmDialog;
 
   protected _rightSideNavIndicator = 'notifications';
 

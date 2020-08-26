@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IBrowserBrowseResponse,BrowserBrowseResponse,IBrowserBrowseResponseList,BrowserBrowseResponseList,BrowserBrowseRequestList,IBrowserBrowseRequestList } from '../../models/generated/browser';
 
-@Injectable()
 export class Browserv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

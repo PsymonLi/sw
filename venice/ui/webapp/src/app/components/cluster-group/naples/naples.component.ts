@@ -78,7 +78,7 @@ interface DSCUiModel {
 
 export class NaplesComponent extends DataComponent implements OnInit {
 
-  @ViewChild('dscTable') dscTable: PentableComponent;
+  @ViewChild('dscTable', { static: true }) dscTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ClusterDistributedServiceCard> = [];
   dataObjectsBackUp: ReadonlyArray<ClusterDistributedServiceCard> = [];

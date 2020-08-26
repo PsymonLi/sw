@@ -2,13 +2,13 @@ import { Component } from '@angular/core';
 import {  ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { FormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CoreModule } from '@app/core';
 import { AuthService } from '@app/services/auth.service';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 
 import { SettingsComponent } from './settings.component';

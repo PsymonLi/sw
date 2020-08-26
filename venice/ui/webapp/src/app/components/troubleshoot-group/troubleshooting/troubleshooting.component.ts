@@ -65,8 +65,8 @@ interface RuleHitEntry {
   encapsulation: ViewEncapsulation.None
 })
 export class TroubleshootingComponent extends DataComponent implements OnInit {
-  @ViewChild('networkgraph') graph: NetworkgraphComponent;
-  @ViewChild('rulesTable') rulesTable: PentableComponent;
+  @ViewChild('networkgraph', { static: true }) graph: NetworkgraphComponent;
+  @ViewChild('rulesTable', { static: true }) rulesTable: PentableComponent;
 
   bodyicon: any = {
     margin: {

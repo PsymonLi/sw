@@ -13,7 +13,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/fwlogs/fwlogpolicies/fwlogpolicies.module#FwlogpoliciesModule'
+        loadChildren: () => import('@app/components/monitoring-group/fwlogs/fwlogpolicies/fwlogpolicies.module').then(m => m.FwlogpoliciesModule)
       }
     ]
   },

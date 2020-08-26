@@ -1,5 +1,5 @@
 import { Component, ViewEncapsulation, Input, forwardRef, ViewChild, TemplateRef, OnInit, AfterViewInit, AfterContentInit } from '@angular/core';
-import { Chips, AutoComplete } from 'primeng/primeng';
+import { Chips, AutoComplete } from 'primeng';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Utility } from '@app/common/Utility';
 import { ENTER, SPACE, BACKSPACE } from '@angular/cdk/keycodes';
@@ -112,13 +112,13 @@ export class ChipsComponent extends Chips implements OnInit, AfterViewInit, Afte
     if (this.useAutoComplete) {
       this.inputViewChild = this.autoComplete.inputEL;
       if (this.inputViewChild.nativeElement.value.length !== 0) {
-        this.addItem(event, this.inputViewChild.nativeElement.value);
+        this.addItem(event, this.inputViewChild.nativeElement.value, true);
         this.inputViewChild.nativeElement.value = '';
       }
     }
   }
 
-  onClick(event) {
+  onClick() {
     if (this.useAutoComplete) {
       this.inputViewChild = this.autoComplete.inputEL;
     }
@@ -134,7 +134,7 @@ export class ChipsComponent extends Chips implements OnInit, AfterViewInit, Afte
   onKeydown(event: KeyboardEvent): void {
     if (this.separatorKeyCodes.includes(event.which)) {
       // simulate enter key
-      this.addItem(event, this.inputViewChild.nativeElement.value);
+      this.addItem(event, this.inputViewChild.nativeElement.value, true);
       this.inputViewChild.nativeElement.value = '';
 
       event.preventDefault();
@@ -159,7 +159,7 @@ export class ChipsComponent extends Chips implements OnInit, AfterViewInit, Afte
 
   handleMouseLeaveEvent() {
     if (this.addOnBlur && this.inputViewChild.nativeElement.value) {
-      this.addItem(event, this.inputViewChild.nativeElement.value);
+      this.addItem(event, this.inputViewChild.nativeElement.value, false);
       this.inputViewChild.nativeElement.value = '';
       this.inputViewChild.nativeElement.focus();
       this.inputViewChild.nativeElement.blur();

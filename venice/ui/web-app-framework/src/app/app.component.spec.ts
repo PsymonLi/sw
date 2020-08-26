@@ -11,10 +11,6 @@ import { MaterialModule } from './material.module';
 import { AppComponent } from './app.component';
 import { TestbarchartComponent } from '@testapp/testbarchart/testbarchart.component';
 import { BarchartComponent } from '@modules/widgets/d3charts/barchart/barchart.component';
-import { TestplotlyComponent } from '@testapp/testplotly/testplotly.component';
-import { PlotlyComponent } from '@modules/widgets/plotlychart/plotly/plotly.component';
-import { PlotlyimageComponent } from '@modules/widgets/plotlychart/plotlyimage/plotlyimage.component';
-
 import { RecursivelistComponent } from '@modules/widgets/recursivelist/recursivelist/recursivelist.component';
 import { TestRecursiveListComponent } from '@testapp/test-recursive-list/test-recursive-list.component';
 
@@ -25,9 +21,6 @@ describe('AppComponent', () => {
         AppComponent,
         BarchartComponent,
         TestbarchartComponent,
-        TestplotlyComponent,
-        PlotlyComponent,
-        PlotlyimageComponent,
         RecursivelistComponent,
         TestRecursiveListComponent
       ],

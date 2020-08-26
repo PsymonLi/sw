@@ -16,7 +16,7 @@ import { WidgetsModule } from 'web-app-framework';
  Venice UI -  imports
  ------------------*/
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { WorkloadService as WorkloadServiceGen } from '@app/services/generated/workload.service';
 import { WorkloadService } from '@app/services/workload.service';
 
@@ -28,7 +28,7 @@ import { SharedModule } from '@app/components/shared//shared.module';
  Third-parties imports
  ------------------*/
 import { MomentModule } from 'angular2-moment';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 
 
 import { PrimengModule } from '@lib/primeng.module';
@@ -71,25 +71,28 @@ describe('WorkloadComponent', () => {
     },
     'spec': {
       'host-name': 'esx-host1.local',
-      'interfaces': {
-        '0050.5600.0003': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0003',
           'micro-seg-vlan': 103,
           'external-vlan': 1003
         },
-        '0050.5600.0004': {
+        {
+          'mac-address': '0050.5600.0004',
           'micro-seg-vlan': 103,
           'external-vlan': 1003
         }
-      }
+      ]
     },
     'status': {
-      'interfaces': {
-        '0050.5600.0003': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0003',
           'ip-addresses': [
             '10.1.1.1, 11.1.1.1'
           ]
         }
-      }
+      ]
     }
   });
 
@@ -104,30 +107,34 @@ describe('WorkloadComponent', () => {
     },
     'spec': {
       'host-name': 'esx-host1.local',
-      'interfaces': {
-        '0050.5600.0005': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0005',
           'micro-seg-vlan': 104,
           'external-vlan': 1004
         },
-        '0050.5600.0006': {
+        {
+          'mac-address': '0050.5600.0006',
           'micro-seg-vlan': 104,
           'external-vlan': 1004
         }
-      }
+      ]
     },
     'status': {
-      'interfaces': {
-        '0050.5600.0005': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0005',
           'ip-addresses': [
             '10.1.1.1'
           ]
         },
-        '0050.5600.0006': {
+        {
+          'mac-address': '0050.5600.0006',
           'ip-addresses': [
             '10.1.1.1', '11.1.1.1'
           ]
         }
-      }
+      ]
     }
   });
 
@@ -139,24 +146,28 @@ describe('WorkloadComponent', () => {
     },
     'spec': {
       'host-name': 'esx-host1.local',
-      'interfaces': {
-        '0050.5600.0005': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0005',
           'micro-seg-vlan': 104,
           'external-vlan': 1004
         },
-        '0050.5600.0006': {
+        {
+          'mac-address': '0050.5600.0006',
           'micro-seg-vlan': 104,
           'external-vlan': 1004
         }
-      }
+      ]
     },
     'status': {
-      'interfaces': {
-        '0050.5600.0005': {
+      'interfaces': [
+        {
+          'mac-address': '0050.5600.0005',
         },
-        '0050.5600.0006': {
+        {
+          'mac-address': '0050.5600.0006',
         }
-      }
+      ]
     }
   });
 
@@ -213,8 +224,8 @@ describe('WorkloadComponent', () => {
 
   it('should populate table', fakeAsync(() => {
     TestingUtility.setAllPermissions();
-    const service = TestBed.get(WorkloadServiceGen);
-    const searchService = TestBed.get(SearchService);
+    const service = TestBed.inject(WorkloadServiceGen);
+    const searchService = TestBed.inject(SearchService);
 
     const searchResp: ISearchSearchResponse = {
       'total-hits': '3'
@@ -223,7 +234,7 @@ describe('WorkloadComponent', () => {
     spyOn(searchService, 'PostQuery').and.returnValue(
       new BehaviorSubject({
         body: searchResp
-      })
+      }) as any
     );
     spyOn(service, 'ListWorkloadCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -245,13 +256,13 @@ describe('WorkloadComponent', () => {
 
     const caseMap = {
       'spec.interfaces': (field, rowData, rowIndex) => {
-        const macs = Object.keys(rowData.spec.interfaces);
-        macs.forEach((mac) => {
+        rowData.spec.interfaces.forEach((entry) => {
+          const mac = entry['mac-address'];
           expect(field.nativeElement.textContent)
             .toContain(mac, 'interface column did not contain ' + mac + ' for row ' + rowIndex);
-          const ips = rowData.status.interfaces[mac];
-          if (ips != null && ips['ip-addresses'] != null) {
-            ips['ip-addresses'].forEach((ip) => {
+          const ips = entry['ip-address'];
+          if (ips != null) {
+            ips.forEach((ip) => {
               expect(field.nativeElement.textContent)
                 .toContain(ip, 'interface column did not contain ' + mac + ' for row ' + rowIndex);
             });

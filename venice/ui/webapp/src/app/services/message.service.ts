@@ -1,4 +1,4 @@
-import { MessageService as PMessageService, Message as PMessage } from 'primeng/primeng';
+import { MessageService as PMessageService, Message as PMessage } from 'primeng';
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { ToolbarButton } from '@app/models/frontend/shared/toolbar.interface';

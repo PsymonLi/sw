@@ -31,6 +31,6 @@
         "../node_modules/@angular/*"
       ]
     },
-    "module": "es2015"
+    "module": "esnext"
   }
 }

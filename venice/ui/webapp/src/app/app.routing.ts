@@ -40,47 +40,47 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        loadChildren: '@components/dashboard/dashboard.module#DashboardModule',
+        loadChildren: () => import('@components/dashboard/dashboard.module').then(m => m.DashboardModule),
       },
       {
         path: 'workload',
-        loadChildren: '@components/workload/workload.module#WorkloadModule',
+        loadChildren: () => import('@components/workload/workload.module').then(m => m.WorkloadModule),
       },
       {
         path: 'network',
-        loadChildren: '@components/network/network.module#NetworkModule',
+        loadChildren: () => import('@components/network/network.module').then(m => m.NetworkModule),
       },
       {
         path: 'monitoring',
-        loadChildren: '@components/monitoring-group/monitoring-group.module#MonitoringGroupModule',
+        loadChildren: () => import('@components/monitoring-group/monitoring-group.module').then(m => m.MonitoringGroupModule),
       },
       {
         path: 'troubleshoot',
-        loadChildren: '@components/troubleshoot-group/troubleshoot-group.module#TroubleshootGroupModule',
+        loadChildren: () => import('@components/troubleshoot-group/troubleshoot-group.module').then(m => m.TroubleshootGroupModule),
       },
       {
         path: 'admin',
-        loadChildren: '@components/admin/admin.module#AdminModule',
+        loadChildren: () => import('@components/admin/admin.module').then(m => m.AdminModule),
       },
       {
         path: 'settings',
-        loadChildren: '@components/settings-group/settings-group.module#SettingsGroupModule',
+        loadChildren: () => import('@components/settings-group/settings-group.module').then(m => m.SettingsGroupModule),
       },
       {
         path: 'security',
-        loadChildren: '@components/security/security.module#SecurityModule',
+        loadChildren: () => import('@components/security/security.module').then(m => m.SecurityModule),
       },
       {
         path: 'network',
-        loadChildren: '@components/network/network.module#NetworkModule',
+        loadChildren: () => import('@components/network/network.module').then(m => m.NetworkModule),
       },
       {
         path: 'cluster',
-        loadChildren: '@components/cluster-group/cluster-group.module#ClusterGroupModule',
+        loadChildren: () => import('@components/cluster-group/cluster-group.module').then(m => m.ClusterGroupModule),
       },
       {
         path: 'controller',
-        loadChildren: '@components/controller/controller.module#ControllerModule',
+        loadChildren: () => import('@components/controller/controller.module').then(m => m.ControllerModule),
       },
       {
         path: 'searchresult',

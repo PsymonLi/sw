@@ -19,7 +19,7 @@ import { ViewChild, Component } from '@angular/core';
               <ng-container *ngTemplateOutlet="test">`,
 })
 class TestWrapperComponent {
-  @ViewChild(PenuitabComponent) tabComponent: PenuitabComponent;
+  @ViewChild(PenuitabComponent, { static: true}) tabComponent: PenuitabComponent;
 }
 
 describe('PenuitabComponent', () => {
@@ -36,10 +36,10 @@ describe('PenuitabComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(TestWrapperComponent);
     component = fixture.componentInstance.tabComponent;
-    fixture.detectChanges();
   });
 
   it('should find its content children', () => {
+    fixture.detectChanges();
     expect(component.content.length).toBeGreaterThan(0);
     expect(component.template).toBeDefined();
   });

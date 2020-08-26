@@ -1,14 +1,14 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { inject, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { AuthService } from './auth.service';
 import { ControllerService } from './controller.service';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MessageService } from './message.service';
 
 describe('AuthService', () => {

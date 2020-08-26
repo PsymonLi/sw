@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { ITelemetry_queryMetricsQueryResponse,Telemetry_queryMetricsQueryResponse,Telemetry_queryMetricsQueryList,ITelemetry_queryMetricsQueryList } from '../../models/generated/telemetry_query';
 
-@Injectable()
 export class Telemetry_queryv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

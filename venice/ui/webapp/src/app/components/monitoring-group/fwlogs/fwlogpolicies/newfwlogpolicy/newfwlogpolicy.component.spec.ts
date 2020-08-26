@@ -6,10 +6,10 @@ import { MonitoringGroupModule } from '@app/components/monitoring-group/monitori
 import { SharedModule } from '@app/components/shared/shared.module';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { MessageService } from '@app/services/message.service';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -68,7 +68,7 @@ describe('NewfwlogpolicyComponent', () => {
   });
 
   it('should create', () => {
-    const service = TestBed.get(MonitoringService);
+    const service = TestBed.inject(MonitoringService);
     const spy = spyOn(service, 'AddFwlogPolicy');
     fixture.detectChanges();
 
@@ -125,7 +125,7 @@ describe('NewfwlogpolicyComponent', () => {
       }
     };
     component.objectData = policy;
-    const service = TestBed.get(MonitoringService);
+    const service = TestBed.inject(MonitoringService);
     const spy = spyOn(service, 'UpdateFwlogPolicy');
     fixture.detectChanges();
 

@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IRolloutRolloutList,RolloutRolloutList,IApiStatus,ApiStatus,IRolloutRollout,RolloutRollout,IRolloutAutoMsgRolloutWatchHelper,RolloutAutoMsgRolloutWatchHelper } from '../../models/generated/rollout';
 
-@Injectable()
 export class Rolloutv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

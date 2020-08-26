@@ -18,8 +18,8 @@ import { DestinationpolicyComponent } from './destinations/destinations.componen
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AlertpoliciesComponent extends BaseComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('eventPolicy') eventPolicyComponent: EventalertpolicyComponent;
-  @ViewChild('eventDestination') eventDestinationComponent: DestinationpolicyComponent;
+  @ViewChild('eventPolicy', { static: true }) eventPolicyComponent: EventalertpolicyComponent;
+  @ViewChild('eventDestination', { static: true }) eventDestinationComponent: DestinationpolicyComponent;
 
   eventPolicies: ReadonlyArray<IMonitoringAlertPolicy> = [];
   destinations: ReadonlyArray<IMonitoringAlertDestination> = [];

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { MetricsUtility } from '@app/common/MetricsUtility';
 import { Utility } from '@app/common/Utility';
 import { BaseComponent } from '@app/components/base/base.component';

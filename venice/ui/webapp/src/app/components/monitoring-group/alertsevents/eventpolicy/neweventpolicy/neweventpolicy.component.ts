@@ -22,7 +22,7 @@ import { EventpolicyComponent } from '../eventpolicy.component';
 })
 export class NeweventpolicyComponent extends CreationForm<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, AfterViewInit {
   @ViewChild('fieldSelector') fieldSelector: FieldselectorComponent;
-  @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
+  @ViewChild('syslogComponent', { static: true }) syslogComponent: SyslogComponent;
   @Input() existingObjects: MonitoringEventPolicy[] = [];
   @Input() isInline: boolean = false;
   @Input() maxNewTargets: number;

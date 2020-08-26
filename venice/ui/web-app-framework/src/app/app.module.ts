@@ -12,7 +12,6 @@ import { AppComponent } from './app.component';
 // import our module
 import { WidgetsModule } from './modules/widgets/widgets.module';
 import { TestbarchartComponent } from './test/testbarchart/testbarchart.component';
-import { TestplotlyComponent } from './test/testplotly/testplotly.component';
 import { TestRecursiveListComponent } from './test/test-recursive-list/test-recursive-list.component';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { TestRepeaterComponent } from '@testapp/test-repeater/test-repeater.component';
@@ -23,7 +22,6 @@ import { TestTabsComponent, SampleTabComponent } from '@testapp/test-tabs/test-t
   declarations: [
     AppComponent,
     TestbarchartComponent,
-    TestplotlyComponent,
     TestRecursiveListComponent,
     TestRepeaterComponent,
     TestUniqueRepeaterComponent,

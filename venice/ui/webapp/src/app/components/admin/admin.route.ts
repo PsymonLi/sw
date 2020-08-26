@@ -12,7 +12,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/authpolicy/authpolicy.module#AuthpolicyModule'
+        loadChildren: () => import('@app/components/admin/authpolicy/authpolicy.module').then(m => m.AuthpolicyModule)
       }
     ]
   },
@@ -21,7 +21,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/users/users.module#UsersModule'
+        loadChildren: () => import('@app/components/admin/users/users.module').then(m => m.UsersModule)
       }
     ]
   },
@@ -30,7 +30,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/systemupgrade/systemupgrade.module#SystemupgradeModule'
+        loadChildren: () => import('@app/components/admin/systemupgrade/systemupgrade.module').then(m => m.SystemupgradeModule)
       }
     ]
   },
@@ -39,7 +39,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/techsupport/techsupport.module#TechsupportModule'
+        loadChildren: () => import('@app/components/admin/techsupport/techsupport.module').then(m => m.TechsupportModule)
       }
     ]
   },
@@ -48,7 +48,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/snapshots/snapshots.module#SnapshotsModule'
+        loadChildren: () => import('@app/components/admin/snapshots/snapshots.module').then(m => m.SnapshotsModule)
       }
     ]
   },
@@ -57,7 +57,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/updatecluster-tls/updatecluster-tls.module#UpdateclusterTLSModule'
+        loadChildren: () => import('@app/components/admin/updatecluster-tls/updatecluster-tls.module').then(m => m.UpdateclusterTLSModule)
       }
     ]
   },
@@ -66,7 +66,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/api-sample/api-sample.module#ApiSampleModule'
+        loadChildren: () => import('@app/components/admin/api-sample/api-sample.module').then(m => m.ApiSampleModule)
       }
     ]
   }

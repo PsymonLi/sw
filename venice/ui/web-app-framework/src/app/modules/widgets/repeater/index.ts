@@ -1,5 +1,5 @@
 import { FormGroup } from '@angular/forms';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 
 export enum ValueType {
   singleSelect = 'singleSelect',

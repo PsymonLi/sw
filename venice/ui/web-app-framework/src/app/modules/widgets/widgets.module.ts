@@ -5,8 +5,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MaterialModule } from '../../material.module';
 import { PrimengModule } from '../../primeng.module';
 import { BarchartComponent } from './d3charts/barchart/barchart.component';
-import { PlotlyComponent } from './plotlychart/plotly/plotly.component';
-import { PlotlyimageComponent } from './plotlychart/plotlyimage/plotlyimage.component';
 import { RecursivelistComponent } from './recursivelist/recursivelist/recursivelist.component';
 import { RepeaterComponent } from './repeater/repeater.component';
 import { UniquerepeaterComponent } from './repeater/uniquerepeater/uniquerepeater.component';
@@ -26,9 +24,7 @@ import { LabelDirective } from './directives/label.directive'
   ],
   declarations: [
     BarchartComponent,
-    PlotlyComponent,
     RecursivelistComponent,
-    PlotlyimageComponent,
     RepeaterComponent,
     UniquerepeaterComponent,
     PenuitabComponent,
@@ -38,8 +34,6 @@ import { LabelDirective } from './directives/label.directive'
   ],
   exports: [
     BarchartComponent, // <-- add widgets to here
-    PlotlyComponent,
-    PlotlyimageComponent,
     RecursivelistComponent,
     RepeaterComponent,
     UniquerepeaterComponent,

@@ -1,7 +1,7 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, async } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 import { MonitoringGroupModule } from '@app/components/monitoring-group/monitoring-group.module';
@@ -18,7 +18,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import * as _ from 'lodash';
 import { configureTestSuite } from 'ng-bullet';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { OrchestrationService } from '@app/services/generated/orchestration.service';
 import { NewnetworkComponent } from './newnetwork.component';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';

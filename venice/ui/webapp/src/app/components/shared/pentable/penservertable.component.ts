@@ -3,7 +3,7 @@ import { PentableComponent } from './pentable.component';
 import { Animations } from '@app/animations';
 import { ControllerService } from '@app/services/controller.service';
 import { ActivatedRoute } from '@angular/router';
-import { LazyLoadEvent } from 'primeng/primeng';
+import { LazyLoadEvent } from 'primeng';
 
 @Component({
     selector: 'app-penservertable',

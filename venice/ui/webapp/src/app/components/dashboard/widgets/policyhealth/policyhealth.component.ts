@@ -1,5 +1,4 @@
-import { Component, Input, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
-import { OnChanges, AfterViewInit, OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
+import { Component, Input, OnInit, ViewEncapsulation, ViewChild, OnChanges, AfterViewInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';

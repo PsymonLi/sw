@@ -200,11 +200,15 @@ export class LinegraphComponent implements OnInit, AfterViewInit {
       this.updatePointStyle();
       this.updateStatValues();
     } else {
-      this.chartsInitialized = true;
       this.stats.forEach((stat) => {
         const chart = this.genChart(stat);
+        if (chart == null) {
+          // Failed to create chart
+          return;
+        }
         this.charts.push(chart);
       });
+      this.chartsInitialized = true;
       this.updatePointStyle();
     }
   }
@@ -237,6 +241,9 @@ export class LinegraphComponent implements OnInit, AfterViewInit {
 
     const canvas: any = document.getElementById(id);
     const canvasContainer: any = document.getElementById(id + '-container');
+    if (canvasContainer == null) {
+      return;
+    }
     const canvasHeight = canvasContainer.clientHeight;
     const ctx = canvas.getContext('2d');
     const gradientFill = ctx.createLinearGradient(0, 0, 0, canvasHeight - this.graphPadding.bottom - 1);

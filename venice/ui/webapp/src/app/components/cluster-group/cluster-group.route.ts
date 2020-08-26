@@ -14,7 +14,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/cluster-group/cluster/cluster.module#ClusterModule'
+        loadChildren: () => import('@app/components/cluster-group/cluster/cluster.module').then(m => m.ClusterModule)
       }
     ]
   },
@@ -23,7 +23,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/cluster-group/naples/naples.module#NaplesModule'
+        loadChildren: () => import('@app/components/cluster-group/naples/naples.module').then(m => m.NaplesModule)
       }
     ]
   },
@@ -32,7 +32,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/cluster-group/dscprofiles/dscprofiles.module#DscprofilesModule'
+        loadChildren: () => import('@app/components/cluster-group/dscprofiles/dscprofiles.module').then(m => m.DscprofilesModule)
       }
     ]
   },
@@ -41,7 +41,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/cluster-group/networkinterfaces/networkinterfaces.module#NetworkinterfacesModule'
+        loadChildren: () => import('@app/components/cluster-group/networkinterfaces/networkinterfaces.module').then(m => m.NetworkinterfacesModule)
       }
     ]
   },
@@ -50,7 +50,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/cluster-group/hosts/hosts.module#HostsModule'
+        loadChildren: () => import('@app/components/cluster-group/hosts/hosts.module').then(m => m.HostsModule)
       }
     ]
   },

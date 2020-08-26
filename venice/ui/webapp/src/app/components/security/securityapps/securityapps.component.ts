@@ -37,7 +37,7 @@ interface PartialTableCol {
  */
 export class SecurityappsComponent extends DataComponent implements OnInit, OnDestroy {
 
-  @ViewChild('securityappsTable') securityappsTable: PentableComponent;
+  @ViewChild('securityappsTable',  { static: true }) securityappsTable: PentableComponent;
 
   dataObjects: ReadonlyArray<SecurityApp> = [];
 

@@ -3,7 +3,7 @@ import { FormArray, Validators, FormGroup, AbstractControl, ValidatorFn, Validat
 import { required } from '@sdk/v1/utils/validators';
 import { UsersComponent } from '../users.component';
 import { Animations } from '@app/animations';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { map, switchMap, tap, catchError } from 'rxjs/operators';
 import { ControllerService } from '@app/services/controller.service';
 import { AuthService } from '@app/services/generated/auth.service';

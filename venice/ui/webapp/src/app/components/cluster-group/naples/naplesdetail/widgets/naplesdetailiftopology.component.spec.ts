@@ -6,7 +6,7 @@ import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { PrimengModule } from '@app/lib/primeng.module';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { ControllerService } from '@app/services/controller.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { LogService } from '@app/services/logging/log.service';
@@ -17,7 +17,7 @@ import { LicenseService } from '@app/services/license.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { AuthService } from '@app/services/auth.service';
 import { AuthService as AuthServiceGen } from '@app/services/generated/auth.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MetricsqueryService } from '@app/services/metricsquery.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 

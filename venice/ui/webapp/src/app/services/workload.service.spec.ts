@@ -15,10 +15,10 @@ import { WorkloadService } from './workload.service';
 /**----
  Third Party imports
  ------------------*/
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { MessageService } from './message.service';
 
 /**
@@ -49,8 +49,8 @@ describe('WorkloadService', () => {
         RouterTestingModule]
     });
     injector = getTestBed();
-    service = injector.get(WorkloadService);
-    httpMock = injector.get(HttpTestingController);
+    service = injector.inject(WorkloadService);
+    httpMock = injector.inject(HttpTestingController);
   });
 
   it('should be created', inject([WorkloadService], (_service: WorkloadService) => {

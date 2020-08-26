@@ -93,7 +93,7 @@ interface RuleHitEntry {
   animations: [Animations]
 })
 export class SgpolicydetailComponent extends DataComponent implements OnInit, OnDestroy {
-  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PentableComponent;
+  @ViewChild('sgPolicyDetailTable', { static: true }) sgPolicyDetailTable: PentableComponent;
   searchPolicyInvoked: boolean = false;  // avoid loop caused by invokeSearchPolicy
   subscriptions = [];
   macToNameMap: { [key: string]: string } = {};

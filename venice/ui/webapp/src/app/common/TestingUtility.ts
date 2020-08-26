@@ -60,12 +60,12 @@ export class TestingUtility {
   }
 
   public static updateRoleGuards() {
-    const service = TestBed.get(ControllerService);
+    const service = TestBed.inject(ControllerService);
     service.publish(Eventtypes.NEW_USER_PERMISSIONS, null);
   }
 
   public static setAllPermissions() {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     serviceAny.uiPermissions = {};
     Object.keys(UIRolePermissions).forEach((p) => {
       serviceAny.uiPermissions[p] = true;
@@ -74,13 +74,13 @@ export class TestingUtility {
   }
 
   public static removeAllPermissions() {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     serviceAny.uiPermissions = {};
     this.updateRoleGuards();
   }
 
   public static addPermissions(permissions: UIRolePermissions[]) {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     permissions.forEach((p) => {
       serviceAny.uiPermissions[p] = true;
     });
@@ -88,7 +88,7 @@ export class TestingUtility {
   }
 
   public static removePermissions(permissions: UIRolePermissions[]) {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     permissions.forEach((p) => {
       delete serviceAny.uiPermissions[p];
     });
@@ -96,12 +96,12 @@ export class TestingUtility {
   }
 
   public static updateFeatureGuards() {
-    const service = TestBed.get(ControllerService);
+    const service = TestBed.inject(ControllerService);
     service.publish(Eventtypes.NEW_FEATURE_PERMISSIONS, null);
   }
 
   public static setFeatures(features: UIFeatures[]) {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     serviceAny.configFile = {};
     features.forEach((f) => {
       serviceAny.features[f] = true;
@@ -110,7 +110,7 @@ export class TestingUtility {
   }
 
   public static removeFeatures(features: UIFeatures[]) {
-    const serviceAny = TestBed.get(UIConfigsService) as any;
+    const serviceAny = TestBed.inject(UIConfigsService) as any;
     features.forEach((f) => {
       serviceAny.features[f] = false;
     });
@@ -267,12 +267,12 @@ export class TestingUtility {
     this.sendClick(selectedElem);
   }
 
-  setPsmSelectbox(dropdownCss, label) {
+  setPsmSelectbox(dropdownCss, dropdownCssOption, label) {
     const arrowCss = dropdownCss + ' .ui-dropdown-trigger > span';
     const arrowElem = this.getElemByCss(arrowCss);
     expect(arrowElem).toBeTruthy('Arrow elem was not found: ' + arrowCss);
     this.sendClick(arrowElem);
-    const options = this.getElemsByCss(dropdownCss + ' option');
+    const options = this.getElemsByCss(dropdownCssOption);
     const selectedElem = options.find((elem) => {
       return elem.nativeElement.textContent.includes(label);
     });
@@ -294,7 +294,7 @@ export class TestingUtility {
   }
 
   setSyslogData(data: IMonitoringSyslogExport) {
-    this.setPsmSelectbox('.syslog-override', MonitoringSyslogExportConfig_facility_override_uihint[data.config['facility-override']]);
+    this.setPsmSelectbox('.syslog-override', '.psm-form-select-box-dropdown-label', MonitoringSyslogExportConfig_facility_override_uihint[data.config['facility-override']]);
     if (data.config.prefix) {
       this.setInput('.syslog-prefix input', data.config.prefix);
     }

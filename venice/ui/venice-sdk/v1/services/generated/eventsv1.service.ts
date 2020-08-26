@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IEventsEventList,EventsEventList,IEventsEvent,EventsEvent } from '../../models/generated/events';
 
-@Injectable()
 export class Eventsv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

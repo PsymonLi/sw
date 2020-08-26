@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IAuditAuditEvent,AuditAuditEvent } from '../../models/generated/audit';
 
-@Injectable()
 export class Auditv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

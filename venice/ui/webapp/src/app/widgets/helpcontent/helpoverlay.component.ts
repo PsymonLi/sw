@@ -3,7 +3,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { OverlayRef, Overlay, GlobalPositionStrategy } from '@angular/cdk/overlay';
 import { Subscription } from 'rxjs';
-import { Portal, TemplatePortalDirective } from '@angular/cdk/portal';
+import { Portal, CdkPortal } from '@angular/cdk/portal';
 import { HttpClient } from '@angular/common/http';
 import { HelpLinkMap } from 'assets/generated/docs/help/linkMap';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
@@ -27,9 +27,9 @@ export class HelpoverlayComponent implements OnInit, OnDestroy, AfterViewInit {
   subscriptions: Subscription[] = [];
   urlContentSubscription: Subscription;
   helpPortal: Portal<any>;
-  @ViewChild('HelpShell') helpShell: TemplatePortalDirective;
-  @ViewChild('DefaultHelp') defaultHelp: TemplatePortalDirective;
-  @ViewChild('DefaultURLHelp') defaultURLHelp: TemplatePortalDirective;
+  @ViewChild('HelpShell', { static: true }) helpShell: CdkPortal;
+  @ViewChild('DefaultHelp', { static: true }) defaultHelp: CdkPortal;
+  @ViewChild('DefaultURLHelp', { static: true }) defaultURLHelp: CdkPortal;
 
   helpOverlayRef: OverlayRef;
   dialogMode: boolean;

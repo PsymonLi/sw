@@ -3,7 +3,7 @@ import { configureTestSuite } from 'ng-bullet';
 import { RrstatusComponent } from './rrstatus.component';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { ControllerService } from '@app/services/controller.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';

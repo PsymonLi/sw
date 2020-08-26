@@ -12,23 +12,23 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertseventspage.module#AlertsEventsPageModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertseventspage.module').then(m => m.AlertsEventsPageModule)
       },
       {
         path: 'alert/:alertname',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertseventspage.module#AlertsEventsPageModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertseventspage.module').then(m => m.AlertsEventsPageModule)
       },
       {
         path: 'event/:eventname',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertseventspage.module#AlertsEventsPageModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertseventspage.module').then(m => m.AlertsEventsPageModule)
       },
       {
         path: 'alert',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertseventspage.module#AlertsEventsPageModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertseventspage.module').then(m => m.AlertsEventsPageModule)
       },
       {
         path: 'event',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertseventspage.module#AlertsEventsPageModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertseventspage.module').then(m => m.AlertsEventsPageModule)
       }
     ]
   },
@@ -37,7 +37,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/fwlogs/fwlogs.module#FwlogsModule'
+        loadChildren: () => import('@app/components/monitoring-group/fwlogs/fwlogs.module').then(m => m.FwlogsModule)
       }
     ]
   },
@@ -46,7 +46,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/archivelogs/archivelog.module#ArchivelogModule'
+        loadChildren: () => import('@app/components/monitoring-group/archivelogs/archivelog.module').then(m => m.ArchivelogModule)
       }
     ]
   },
@@ -55,7 +55,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/auditevents/auditevents.module#AuditeventsModule'
+        loadChildren: () => import('@app/components/monitoring-group/auditevents/auditevents.module').then(m => m.AuditeventsModule)
       }
     ]
   },
@@ -64,7 +64,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/telemetry/telemetry.module#TelemetryModule'
+        loadChildren: () => import('@app/components/monitoring-group/telemetry/telemetry.module').then(m => m.TelemetryModule)
       }
     ]
   }

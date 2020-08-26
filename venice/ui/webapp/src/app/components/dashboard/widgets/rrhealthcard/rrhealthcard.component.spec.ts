@@ -15,9 +15,9 @@ import { LogService } from '@app/services/logging/log.service';
 import { MessageService } from '@app/services/message.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { DialogModule } from 'primeng/dialog';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { RrhealthcardComponent } from './rrhealthcard.component';
-import { MatTooltipModule } from '@angular/material';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 describe('RrhealthcardComponent', () => {
   let component: RrhealthcardComponent;

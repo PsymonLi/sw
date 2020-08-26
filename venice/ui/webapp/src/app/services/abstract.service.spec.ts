@@ -10,7 +10,7 @@ describe('AbstractService', () => {
       imports: [HttpClientTestingModule],
       providers: [AbstractService]
     });
-    httpMock = getTestBed().get(HttpTestingController);
+    httpMock = getTestBed().inject(HttpTestingController);
   });
 
   it('should be created', inject([AbstractService], (service: AbstractService) => {

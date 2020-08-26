@@ -15,7 +15,7 @@ import { BaseComponent } from '@app/components/base/base.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { PentableComponent } from '../pentable/pentable.component';
 import { PenServerTableComponent } from '../pentable/penservertable.component';
-import { LazyLoadEvent } from 'primeng/primeng';
+import { LazyLoadEvent } from 'primeng';
 
 export interface VerifyGetBufferResult {
   pass: boolean;

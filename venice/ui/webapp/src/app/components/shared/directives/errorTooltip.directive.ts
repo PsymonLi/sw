@@ -5,7 +5,7 @@ import { Platform } from '@angular/cdk/platform';
 import { ScrollDispatcher } from '@angular/cdk/scrolling';
 import { Directive, ElementRef, Inject, NgZone, Optional, ViewContainerRef, OnInit, Input } from '@angular/core';
 import { NgControl } from '@angular/forms';
-import { MatTooltip, MatTooltipDefaultOptions, MAT_TOOLTIP_DEFAULT_OPTIONS, MAT_TOOLTIP_SCROLL_STRATEGY } from '@angular/material';
+import { MatTooltip, MatTooltipDefaultOptions, MAT_TOOLTIP_DEFAULT_OPTIONS, MAT_TOOLTIP_SCROLL_STRATEGY } from '@angular/material/tooltip';
 import { HammerLoader, HAMMER_LOADER } from '@angular/platform-browser';
 
 @Directive({

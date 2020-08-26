@@ -2,7 +2,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Component, DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed, tick, fakeAsync, discardPeriodicTasks, flush } from '@angular/core/testing';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -24,7 +24,7 @@ import { LicenseService } from '@app/services/license.service';
 import { StagingService } from '@app/services/generated/staging.service';
 import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
 import { configureTestSuite } from 'ng-bullet';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { NaplesComponent } from './naples.component';
 import { BehaviorSubject } from 'rxjs';
 import { ISearchSearchResponse } from '@sdk/v1/models/generated/search';
@@ -232,9 +232,9 @@ describe('NaplesComponent', () => {
     fixture = TestBed.createComponent(NaplesComponent);
     component = fixture.componentInstance;
 
-    const serviceCluster = TestBed.get(ClusterService);
-    const searchService = TestBed.get(SearchService);
-    const serviceWorkload = TestBed.get(WorkloadService);
+    const serviceCluster = TestBed.inject(ClusterService);
+    const searchService = TestBed.inject(SearchService);
+    const serviceWorkload = TestBed.inject(WorkloadService);
 
     // component code sequence is getDSCcount -> watch (DSCs, Workload), we spyOn three REST calls.
     const searchResp: ISearchSearchResponse = {
@@ -244,7 +244,7 @@ describe('NaplesComponent', () => {
     spyOn(searchService, 'PostQuery').and.returnValue(
       new BehaviorSubject({
         body: searchResp
-      })
+      }) as any
     );
 
     const subjectWL = TestingUtility.createDataCacheSubject([

@@ -1,4 +1,4 @@
-import {  ComponentFixture, TestBed } from '@angular/core/testing';
+import {  ComponentFixture, TestBed, async } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 
 import { HerocardComponent } from './herocard.component';
@@ -14,11 +14,10 @@ import { CardStates, StatArrowDirection, BasecardComponent } from '../basecard/b
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { ControllerService } from '@app/services/controller.service';
-import { NgModuleFactoryLoader } from '@angular/core';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { MessageService } from '@app/services/message.service.ts';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { AuthService } from '@app/services/auth.service';
 import { HttpClient, HttpHandler } from '@angular/common/http';
 import { LinegraphComponent } from '../linegraph/linegraph.component';
@@ -54,7 +53,6 @@ describe('HerocardComponent', () => {
         UIConfigsService,
         LicenseService,
         ControllerService,
-        NgModuleFactoryLoader,
         LogService,
         LogPublishersService,
         MessageService,
@@ -115,7 +113,7 @@ describe('HerocardComponent', () => {
     });
   });
 
-  it('should hide parts of the display', () => {
+  it('should hide parts of the display', async(async () => {
     component.title = 'testCard';
     component.lineData = {
       title: '',
@@ -140,6 +138,8 @@ describe('HerocardComponent', () => {
     let spinner = fixture.debugElement.query(By.css('app-spinner'));
     expect(spinner).toBeTruthy();
     component.cardState = CardStates.READY;
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     spinner = fixture.debugElement.query(By.css('app-spinner'));
     expect(spinner).toBeNull();
@@ -232,6 +232,8 @@ describe('HerocardComponent', () => {
     component.cardState = CardStates.LOADING;
 
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
     graph = fixture.debugElement.query(By.css('app-linegraph'));
     expect(graph).toBeNull();
@@ -246,6 +248,6 @@ describe('HerocardComponent', () => {
 
     spinner = fixture.debugElement.query(By.css('app-spinner'));
     expect(spinner).toBeTruthy();
-  });
+  }));
 
 });

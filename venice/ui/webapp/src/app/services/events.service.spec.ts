@@ -2,10 +2,10 @@ import { TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
 
 import { EventsService } from './events.service';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { BehaviorSubject } from 'rxjs';
@@ -34,14 +34,14 @@ describe('EventsService', () => {
         HttpClientTestingModule,
         RouterTestingModule]
     });
-    const service = TestBed.get(EventsService);
+    const service = TestBed.inject(EventsService);
     service.POLLING_INTERVAL = 10000;
     postSpy = spyOn(service, 'PostGetEvents').and.returnValue(
       new BehaviorSubject({
         body: {
           items: [{ meta: { uuid: 'event1', 'mod-time': '2018-08-20T19:09:04.777255798Z' } }]
         }
-      })
+      }) as any
     );
   });
 

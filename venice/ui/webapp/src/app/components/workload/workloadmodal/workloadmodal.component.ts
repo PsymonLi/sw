@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit, ViewEncapsulation } from '@angular/core';
 import {BaseComponent} from '@components/base/base.component';
 import { AbstractControl, FormControl, FormGroupDirective, NgForm, ValidatorFn, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { Utility } from '@app/common/Utility';
 import { BehaviorSubject, Observable } from 'rxjs';

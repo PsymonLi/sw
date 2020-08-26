@@ -1,7 +1,6 @@
 import { ModuleWithProviders } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { TestbarchartComponent } from './test/testbarchart/testbarchart.component';
-import { TestplotlyComponent } from './test/testplotly/testplotly.component';
 import { TestRecursiveListComponent } from './test/test-recursive-list/test-recursive-list.component';
 import { TestRepeaterComponent } from '@testapp/test-repeater/test-repeater.component';
 import { TestUniqueRepeaterComponent } from '@testapp/test-uniquerepeater/test-uniquerepeater.component';
@@ -17,10 +16,6 @@ export const routes: Routes = [
     path: '',
     redirectTo: '/repeater',
     pathMatch: 'full'
-  },
-  {
-    path: 'plotly',
-    component: TestplotlyComponent
   },
   {
     path: 'barchart',
@@ -46,4 +41,4 @@ export const routes: Routes = [
 
 ];
 
-export const routing: ModuleWithProviders = RouterModule.forRoot(routes);
+export const routing: ModuleWithProviders<any> = RouterModule.forRoot(routes);

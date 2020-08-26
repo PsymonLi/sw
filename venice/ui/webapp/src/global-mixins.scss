@@ -1,93 +1,5 @@
 @import '~@angular/material/theming';
-
-/*********  Font Mixins  *********/
-@mixin primary-font($size: 14px, $color: #676763, $weight: normal) {
-  font-family: "Fira Sans Condensed";
-  font-size: $size;
-  font-weight: $weight;
-  color: $color;
-}
-
-@mixin secondary-font($size: 14px, $color: #676763, $weight: normal) {
-  font-family: "Roboto Condensed";
-  font-size: $size;
-  font-weight: $weight;
-  color: $color;
-}
-
-/*********  Material design related overrides  *********/
-@mixin global-mat-toggle($toggleBar, $toggleThumb, $toggleBarChecked, $toggleThumbChecked) {
-  &.mat-disabled {
-    opacity: 0.4 !important;
-  }
-
-  .mat-slide-toggle-content {
-    @include primary-font();
-  }
-
-  &.mat-slide-toggle.mat-accent .mat-slide-toggle-bar {
-    background-color: $toggleBar;
-  }
-
-  &.mat-slide-toggle.mat-accent .mat-slide-toggle-thumb {
-    background-color: $toggleThumb;
-  }
-
-  &.mat-slide-toggle.mat-accent.mat-checked .mat-slide-toggle-bar {
-    background-color: $toggleBarChecked;
-  }
-
-  &.mat-slide-toggle.mat-accent.mat-checked .mat-slide-toggle-thumb {
-    background-color: $toggleThumbChecked;
-  }
-}
-
-@mixin global-mat-radio($mat-radio-size) {
-
-  // Container for radio circles and ripple.
-  .mat-radio-container {
-    width: $mat-radio-size !important;
-    height: $mat-radio-size !important;
-  }
-
-  .mat-radio-button .mat-radio-ripple {
-    visibility: hidden;
-  }
-
-  // The outer circle for the radio, always present.
-  .mat-radio-outer-circle {
-    height: $mat-radio-size !important;
-    width: $mat-radio-size !important;
-  }
-
-  // The inner circle for the radio, shown when checked.
-  .mat-radio-inner-circle {
-    height: $mat-radio-size;
-    width: $mat-radio-size;
-
-    .mat-radio-checked & {
-      @include cdk-high-contrast {
-        // Since we use a background color to render the circle, it won't be
-        // displayed in high contrast mode. Use a border as a fallback.
-        border: solid $mat-radio-size / 2;
-      }
-    }
-  }
-}
-
-/**
-  * This is a mixin so that it will override Material's css rules
-  * when it is included in a css rule on that page 
-  */
-@mixin global-mat-form-field() {
-  @include primary-font(14px);
-  margin-left: 8px;
-  margin-top: 7px;
-
-  .mat-form-field-underline {
-    background-color: rgb(221, 221, 221);
-  }
-}
+@import 'import-mixins';
 
 /**
  * Overrides material's theming of tabs. Adapted from material's tab theming file.
@@ -282,6 +194,37 @@
     }
   }
 
+  .ui-dropdown-item {
+    font-family: "Fira Sans Condensed" !important;
+  }
+
+  .ui-multiselect-label {
+    padding-bottom: 4px !important;
+    padding-top: 4px !important;
+  }
+
+  p-dropdown span.ui-dropdown-label {
+    font-size: 16px;
+    padding-bottom: 4px;
+    padding-top: 4px;
+  }
+
+  p-multiselectitem {
+    font-family: "Fira Sans Condensed" !important;
+  }
+
+  // adding style for multi select box when the value is invalid
+  p-multiselect.ng-invalid {
+    .ui-multiselect {
+      border-color: #e57553 !important;
+    }
+
+    .ui-multiselect-open {
+      border: solid 1px #e57553 !important;
+      box-shadow: inset 5px 0 0 0 #e57553 !important;
+    }
+  }
+
   .ui-float-label {
 
     &>label {
@@ -335,53 +278,9 @@
   }
 }
 
-$sidenavWidthNum: 220;
-$sidenavWidth: #{$sidenavWidthNum}px;
-$sidenavPartialWidthNum: 80;
-$sidenavPartialWidth: #{$sidenavPartialWidthNum}px;
 
-@mixin adjust-inlinebuttons-boundry-screensize ($maxWidth, $mainContentClass, $formClass) {
-  @media only screen and (max-width: $maxWidth) {
-    .#{$mainContentClass} .#{$formClass} {
-      margin-top: 35px;
-    }
-  }
-}
-
-@mixin adjust-inlinebuttons-boundry($maxWidth, $formClass) {
-  @include adjust-inlinebuttons-boundry-screensize(#{$maxWidth}px, menufullopened, $formClass);
-  @include adjust-inlinebuttons-boundry-screensize(#{$maxWidth - $sidenavWidthNum + $sidenavPartialWidthNum}px, menupartialopened, $formClass);
-  @include adjust-inlinebuttons-boundry-screensize(#{$maxWidth - $sidenavWidthNum}px, menuclosed, $formClass);
-}
-
-@mixin global-mat-checkbox($checkboxChecked) {
-  .mat-checkbox-label {
-    @include primary-font(18px);
-  }
-
-  .mat-checkbox-ripple .mat-ripple-element {
-    background-color: $checkboxChecked !important;
-  }
-
-  &.mat-checkbox-checked {
-    .mat-checkbox-layout .mat-checkbox-inner-container .mat-checkbox-background {
-      background-color: $checkboxChecked;
-    }
-  }
-
-  &.mat-checkbox-inner-container {
-    margin-right: 10px;
-  }
-}
 
 // CSS for cards in object detail view
-
-$mediumGray: #676763;
-$backgroundGradient: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 250, 239, 0.5) 58%);
-$backgroundGradientBlue: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(238, 247, 255, 0.5) 58%);
-$backgroundGradientRed: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(247, 239, 243, 0.5) 58%);
-$backgroundGradientYellow: linear-gradient(to left, rgba(255, 255, 255, 0), #fffaef 58%);
-
 
 .detail-card-wrapper {
   margin-bottom: 10px;

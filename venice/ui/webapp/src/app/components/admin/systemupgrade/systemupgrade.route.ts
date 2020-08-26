@@ -14,7 +14,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/systemupgrade/imageupload/imageupload.module#ImageuploadModule'
+        loadChildren: () => import('@app/components/admin/systemupgrade/imageupload/imageupload.module').then(m => m.ImageuploadModule)
       }
     ]
   },
@@ -23,7 +23,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/admin/systemupgrade/rollouts/rollouts.module#RolloutsModule'
+        loadChildren: () => import('@app/components/admin/systemupgrade/rollouts/rollouts.module').then(m => m.RolloutsModule)
       }
     ]
   }

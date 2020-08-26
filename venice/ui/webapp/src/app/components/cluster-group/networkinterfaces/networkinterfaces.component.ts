@@ -61,7 +61,7 @@ interface NetworkInterfaceUiModel {
 export class NetworkinterfacesComponent extends DataComponent implements OnInit {
 
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
-  @ViewChild('networkInterfaceTable') networkInterfaceTable: PentableComponent;
+  @ViewChild('networkInterfaceTable', { static: true }) networkInterfaceTable: PentableComponent;
 
   maxSearchRecords: number = 8000;
 

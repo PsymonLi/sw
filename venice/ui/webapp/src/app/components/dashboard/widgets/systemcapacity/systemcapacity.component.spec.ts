@@ -7,11 +7,11 @@ import { SystemcapacitywidgetComponent } from './systemcapacity.component';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { SharedModule } from '@app/components/shared/shared.module';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { MessageService } from '@app/services/message.service';
@@ -169,7 +169,7 @@ describe('node cluster test', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SystemcapacitywidgetComponent);
     component = fixture.componentInstance;
-    const service = TestBed.get(ClusterService);
+    const service = TestBed.inject(ClusterService);
     watchSubject = TestingUtility.createWatchEventsSubject([node1, node2, node3, node4]) ;
     spyOn(service, 'WatchNode').and.returnValue(
       watchSubject

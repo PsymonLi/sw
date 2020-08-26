@@ -12,12 +12,12 @@ import { Component } from '@angular/core';
  ------------------*/
 import { SettingsGroupComponent } from './settings-group.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 
 /**-----
  Third-parties imports
  ------------------*/
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { MessageService } from '@app/services/message.service';

@@ -4,9 +4,8 @@ import {
   EmbeddedViewRef,
   Injectable,
   Injector,
-  NgModuleFactoryLoader,
 } from '@angular/core';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router, NavigationExtras } from '@angular/router';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
@@ -18,7 +17,7 @@ import { Subject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { LogService } from '@app/services/logging/log.service';
 import { AUTH_KEY, AUTH_BODY } from '@app/core/auth/auth.reducer';
-import { ConfirmationService, Confirmation } from 'primeng/primeng';
+import { ConfirmationService, Confirmation } from 'primeng';
 import { MessageService } from '@app/services/message.service';
 import { Utility } from '@app/common/Utility';
 import { HelpData } from '@app/models/frontend/shared/helpdata.interface';
@@ -86,7 +85,6 @@ export class ControllerService {
     private _injector: Injector,
     private _resolver: ComponentFactoryResolver,
     private _appRef: ApplicationRef,
-    private loader: NgModuleFactoryLoader,
     protected domSanitizer: DomSanitizer,
     protected matIconRegistry: MatIconRegistry,
     protected logger: LogService,
@@ -288,19 +286,21 @@ export class ControllerService {
    */
   _buildComponentFromModuleHelper(moduleName: string, componentName: string) {
     return Promise((resolve) => {
-      this.loader.load(moduleName).then((factory) => {
-        const module = factory.create(this._injector);
-        const r = module.componentFactoryResolver;
-        const factories = Array.from((<any>r)['_factories'].keys());
-        const factoryClass = factories.find((x: any) => x.name === componentName);
-        const component = <any>factoryClass;
-        const cmpFactory = r.resolveComponentFactory(component);
+      // Loader is deprecated now. Since this function is no longer used, function
+      // is commented out
+      // this.loader.load(moduleName).then((factory) => {
+      //   const module = factory.create(this._injector);
+      //   const r = module.componentFactoryResolver;
+      //   const factories = Array.from((<any>r)['_factories'].keys());
+      //   const factoryClass = factories.find((x: any) => x.name === componentName);
+      //   const component = <any>factoryClass;
+      //   const cmpFactory = r.resolveComponentFactory(component);
 
-        // create a component and attach it to the view
-        const componentRef = cmpFactory.create(this._injector);
-        resolve(componentRef);
+      //   // create a component and attach it to the view
+      //   const componentRef = cmpFactory.create(this._injector);
+      //   resolve(componentRef);
 
-      });
+      // });
     });
   }
 

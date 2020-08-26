@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { ISecurityAppList,SecurityAppList,IApiStatus,ApiStatus,ISecurityApp,SecurityApp,ApiLabel,IApiLabel,ISecurityFirewallProfileList,SecurityFirewallProfileList,ISecurityFirewallProfile,SecurityFirewallProfile,ISecurityNetworkSecurityPolicyList,SecurityNetworkSecurityPolicyList,ISecurityNetworkSecurityPolicy,SecurityNetworkSecurityPolicy,ISecuritySecurityGroupList,SecuritySecurityGroupList,ISecuritySecurityGroup,SecuritySecurityGroup,ISecurityAutoMsgAppWatchHelper,SecurityAutoMsgAppWatchHelper,ISecurityAutoMsgFirewallProfileWatchHelper,SecurityAutoMsgFirewallProfileWatchHelper,ISecurityAutoMsgNetworkSecurityPolicyWatchHelper,SecurityAutoMsgNetworkSecurityPolicyWatchHelper,ISecurityAutoMsgSecurityGroupWatchHelper,SecurityAutoMsgSecurityGroupWatchHelper } from '../../models/generated/security';
 
-@Injectable()
 export class Securityv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

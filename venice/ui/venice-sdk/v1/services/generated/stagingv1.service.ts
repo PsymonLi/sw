@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IStagingBufferList,StagingBufferList,IApiStatus,ApiStatus,IStagingBuffer,StagingBuffer,IStagingBulkEditAction,StagingBulkEditAction,IStagingClearAction,StagingClearAction,IStagingCommitAction,StagingCommitAction } from '../../models/generated/staging';
 
-@Injectable()
 export class Stagingv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

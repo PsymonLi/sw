@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { ISearchPolicySearchResponse,SearchPolicySearchResponse,SearchPolicySearchRequest,ISearchPolicySearchRequest,ISearchSearchResponse,SearchSearchResponse,SearchSearchRequest,ISearchSearchRequest } from '../../models/generated/search';
 
-@Injectable()
 export class Searchv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

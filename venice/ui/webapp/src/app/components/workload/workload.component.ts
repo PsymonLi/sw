@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { ObjectsRelationsUtility, WorkloadDSCHostSecurityTuple } from '@app/common/ObjectsRelationsUtility';
@@ -18,7 +18,7 @@ import { SecuritySecurityGroup } from '@sdk/v1/models/generated/security';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { IApiStatus, IWorkloadWorkload, WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Observable, Subscription } from 'rxjs';
 import { SearchUtil } from '../search/SearchUtil';
 import { LabelEditorMetadataModel } from '../shared/labeleditor';
@@ -61,7 +61,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
   // Feature Flags
   hideWorkloadWidgets: boolean = !this.uiconfigsService.isFeatureEnabled('workloadWidgets');
 
-  @ViewChild('workloadTable') workloadTable: PentableComponent;
+  @ViewChild('workloadTable', { static: true }) workloadTable: PentableComponent;
   maxSearchRecords: number = 8000;
 
   // Workload Widget vars

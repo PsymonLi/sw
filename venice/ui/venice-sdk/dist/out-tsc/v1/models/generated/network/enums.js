@@ -5,6 +5,7 @@
 */
 /* tslint:disable */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.AllEnums = exports.ApiListWatchOptions_sort_order_uihint = exports.NetworkVirtualRouterSpec_type = exports.NetworkTransceiverStatus_pid = exports.NetworkTransceiverStatus_cable_type = exports.NetworkTransceiverStatus_state = exports.NetworkTLSServerPolicySpec_client_authentication = exports.NetworkRouteDistinguisher_type = exports.NetworkRDSpec_address_family = exports.NetworkPolicerAction_policer_action = exports.NetworkPauseSpec_type = exports.NetworkNetworkStatus_oper_state = exports.NetworkNetworkSpec_type = exports.NetworkNetworkInterfaceStatus_oper_status = exports.NetworkNetworkInterfaceStatus_type = exports.NetworkNetworkInterfaceSpec_ip_alloc_type = exports.NetworkNetworkInterfaceSpec_type = exports.NetworkNetworkInterfaceSpec_admin_status = exports.NetworkIPAMPolicySpec_type = exports.NetworkBGPNeighbor_enable_address_families = exports.NetworkBGPAuthStatus_status = exports.ApiListWatchOptions_sort_order = void 0;
 // generate enum based on strings instead of numbers
 // (see https://blog.rsuter.com/how-to-implement-an-enum-with-string-values-in-typescript/)
 var ApiListWatchOptions_sort_order;
@@ -214,7 +215,7 @@ var AllEnums = /** @class */ (function () {
         get: function () {
             return AllEnums._instance;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     AllEnums._instance = new AllEnums();

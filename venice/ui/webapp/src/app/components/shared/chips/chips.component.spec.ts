@@ -3,7 +3,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { ChipsComponent } from './chips.component';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ChipsModule, DomHandler, AutoCompleteModule } from 'primeng/primeng';
+import { ChipsModule, AutoCompleteModule } from 'primeng';
 
 describe('ChipsComponent', () => {
   let component: ChipsComponent;
@@ -18,9 +18,6 @@ describe('ChipsComponent', () => {
         ChipsModule,
         AutoCompleteModule,
       ],
-      providers: [
-        DomHandler
-      ]
     })
     .compileComponents();
   }));

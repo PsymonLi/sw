@@ -5,7 +5,7 @@ import { Animations } from '@app/animations';
 import { IAuthRadius, AuthRadius, AuthRadiusServer, AuthRadiusDomain } from '@sdk/v1/models/generated/auth';
 import { RadiusSave } from '@app/components/admin/authpolicy/.';
 import { FormArray, AbstractControl } from '@angular/forms';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Utility } from '@app/common/Utility';
 import { ControllerService } from '@app/services/controller.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';

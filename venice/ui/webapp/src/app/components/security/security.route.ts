@@ -12,7 +12,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/security/sgpolicies/sgpolicies.module#SgpoliciesModule'
+        loadChildren: () => import('@app/components/security/sgpolicies/sgpolicies.module').then(m => m.SgpoliciesModule)
       }
     ]
   },
@@ -21,7 +21,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/security/securityapps/securityapps.module#SecurityappsModule'
+        loadChildren: () => import('@app/components/security/securityapps/securityapps.module').then(m => m.SecurityappsModule)
       }
     ]
   },
@@ -30,7 +30,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/security/securitygroups/securitygroups.module#SecuritygroupsModule'
+        loadChildren: () => import('@app/components/security/securitygroups/securitygroups.module').then(m => m.SecuritygroupsModule)
       }
     ]
   },
@@ -39,7 +39,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/security/firewallprofiles/firewallprofiles.module#FirewallprofilesModule'
+        loadChildren: () => import('@app/components/security/firewallprofiles/firewallprofiles.module').then(m => m.FirewallprofilesModule)
       }
     ]
   }

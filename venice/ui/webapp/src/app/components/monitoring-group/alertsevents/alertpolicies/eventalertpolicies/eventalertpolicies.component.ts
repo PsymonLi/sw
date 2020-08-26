@@ -25,7 +25,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 })
 export class EventalertpolicyComponent extends DataComponent implements OnInit {
 
-  @ViewChild('alertPolicyTable') alertPolicyTable: PentableComponent;
+  @ViewChild('alertPolicyTable', { static: true }) alertPolicyTable: PentableComponent;
 
   @Input() dataObjects: MonitoringAlertPolicy[] = [];
 

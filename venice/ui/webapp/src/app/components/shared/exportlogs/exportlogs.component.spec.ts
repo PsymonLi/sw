@@ -13,7 +13,7 @@ import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { SecurityService } from '@app/services/generated/security.service';
 import { LogService } from '@app/services/logging/log.service';
 import { MessageService } from '@app/services/message.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { AuthService } from '@app/services/auth.service';
 import { HttpClient, HttpHandler } from '@angular/common/http';

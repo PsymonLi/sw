@@ -29,7 +29,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 export class SecuritygroupsComponent extends DataComponent implements OnInit {
   public static SECURITYGROUP_FIELD_WORKLOADS: string = 'securityworkloads';
 
-  @ViewChild('securityPolicyGroupTable') securityPolicyGroupTable: PentableComponent;
+  @ViewChild('securityPolicyGroupTable', { static: true }) securityPolicyGroupTable: PentableComponent;
 
   bodyicon: Icon = {
     margin: {

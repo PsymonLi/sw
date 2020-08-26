@@ -2,10 +2,8 @@ import { Component, EventEmitter, Input, Output, OnInit, ViewEncapsulation, OnCh
 import { ElementRef, Renderer2, IterableDiffers, ChangeDetectorRef, forwardRef } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import { DomHandler } from 'primeng/primeng';
 import { AutoComplete } from 'primeng/autocomplete';
-import { ObjectUtils } from 'primeng/components/utils/objectutils';
-
+import { ObjectUtils } from 'primeng/utils';
 import { Utility } from '@app/common/Utility';
 
 import { SearchsuggestionsComponent } from '@app/components/search/searchsuggestions/searchsuggestions.component';
@@ -38,7 +36,7 @@ import { GuidesearchComponent } from '@components/search/guidedsearch/guidedsear
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => SearchComponent),
     multi: true
-  }, DomHandler, ObjectUtils]
+  }]
 })
 export class SearchComponent extends AutoComplete implements OnInit, OnChanges {
   @ViewChild('suggestionWidget') _suggestionWidget: SearchsuggestionsComponent;
@@ -59,10 +57,10 @@ export class SearchComponent extends AutoComplete implements OnInit, OnChanges {
   scrollHeight = '1000px';
   guidesearchInput: any;
 
-  constructor(public el: ElementRef, public domHandler: DomHandler, public differs: IterableDiffers,
-    public renderer: Renderer2, public objectUtils: ObjectUtils, public changeDetector: ChangeDetectorRef,
+  constructor(public el: ElementRef, public differs: IterableDiffers,
+    public renderer: Renderer2, public changeDetector: ChangeDetectorRef,
   ) {
-    super(el, domHandler, renderer, objectUtils, changeDetector, differs);
+    super(el, renderer, changeDetector, differs);
   }
   ngOnInit() {
 
@@ -171,6 +169,9 @@ export class SearchComponent extends AutoComplete implements OnInit, OnChanges {
     }
   }
 
+  objUtilsResolveFieldData(option: any, field: any): any {
+    return ObjectUtils.resolveFieldData(option, field);
+  }
 
   /**
    * Override Super.API
@@ -184,7 +185,7 @@ export class SearchComponent extends AutoComplete implements OnInit, OnChanges {
         this.onModelChange(this.value);
       }
     } else {
-      this.inputEL.nativeElement.value = this.field ? this.objectUtils.resolveFieldData(option, this.field) || '' : option;
+      this.inputEL.nativeElement.value = this.field ? ObjectUtils.resolveFieldData(option, this.field) || '' : option;
       this.value = option;
       this.onModelChange(this.value);
     }

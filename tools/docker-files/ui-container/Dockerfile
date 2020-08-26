@@ -1,4 +1,4 @@
-FROM node:10.15.3-stretch
+FROM node:10.22.0-stretch
 MAINTAINER "Rohan Sikdar" <rsikdar@pensando.io>
 
 # Install ng
@@ -6,7 +6,7 @@ USER node
 RUN mkdir /home/node/.npm-global
 ENV PATH=/home/node/.npm-global/bin:$PATH
 ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
-RUN npm install -g @angular/cli@7.0.4
+RUN npm install -g @angular/cli@9.1.12
 # Install spectacle-docs for venice docs generation
 RUN npm install -g spectacle-docs
 RUN ng -v
@@ -53,6 +53,7 @@ RUN cd /usr/local/lib/venice-sdk && tar zcf node_modules.tgz node_modules
 RUN rm -rf /usr/local/lib/venice-sdk/node_modules
 
 RUN cd /usr/local/lib/web-app-framework && yarn install --frozen-lockfile --network-timeout 100000
+RUN cd /usr/local/lib/web-app-framework && yarn run ngcc
 RUN cd /usr/local/lib/web-app-framework && tar zcf node_modules.tgz node_modules
 RUN rm -rf /usr/local/lib/web-app-framework/node_modules
 
@@ -73,6 +74,7 @@ COPY web-app-framework/web-app-framework.tgz /usr/local/lib/web-app-framework/we
 RUN cd /usr/local/lib/web-app-framework/ && tar xvf web-app-framework.tgz && cd dist && yalc publish --private
 RUN cd /usr/local/lib/webapp && yalc add web-app-framework
 RUN cd /usr/local/lib/webapp && yarn install --offline
+RUN cd /usr/local/lib/webapp && yarn run ngcc
 
 RUN cd /usr/local/lib/webapp && tar zcf node_modules.tgz node_modules
 RUN rm -rf /usr/local/lib/webapp/node_modules

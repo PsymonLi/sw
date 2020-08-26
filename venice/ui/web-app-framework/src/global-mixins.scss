@@ -62,6 +62,14 @@
   $fontColor: currentColor;
   $matchFontColor: $matchColor;
 
+  .ui-dropdown {
+    min-width: 0px !important;
+  }
+
+  body app-root .ui-inputtext {
+    padding: 5px;
+  }
+
   .ui-dropdown-label {
     // Disabling primeng transitions so that the elements change color in sync
     background: rgb(247, 247, 247) !important;

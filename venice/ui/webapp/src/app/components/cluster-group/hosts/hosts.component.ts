@@ -79,7 +79,7 @@ interface HostUiModel {
 })
 
 export class HostsComponent extends DataComponent implements OnInit {
-  @ViewChild('hostTable') hostTable: PentableComponent;
+  @ViewChild('hostTable', { static: true }) hostTable: PentableComponent;
   maxSearchRecords: number = 8000;
 
   bodyicon: Icon = {

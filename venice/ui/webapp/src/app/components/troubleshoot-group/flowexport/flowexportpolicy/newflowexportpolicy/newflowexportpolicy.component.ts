@@ -7,7 +7,7 @@ import {
   IMonitoringSyslogExport, MonitoringFlowExportPolicySpec,
   MonitoringMatchRule, MonitoringMirrorSessionSpec, MonitoringMirrorSessionSpec_packet_filters
 } from '@sdk/v1/models/generated/monitoring';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog/syslog.component';
 import { Utility } from '@app/common/Utility';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -29,7 +29,7 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy> {
-  @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
+  @ViewChild('syslogComponent', { static: true }) syslogComponent: SyslogComponent;
   @Input() maxTargets: number;
   @Input() existingObjects: IMonitoringFlowExportPolicy[] = [];
   syslogConfig: IMonitoringSyslogExport;

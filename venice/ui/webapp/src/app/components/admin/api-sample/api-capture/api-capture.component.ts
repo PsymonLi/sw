@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, OnChanges } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
-import { Utility, RestAPIRequestResponse, UrlData, Method } from '@app/common/Utility';
+import { Utility, RestAPIRequestResponse, UrlData } from '@app/common/Utility';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { TableMenuItem } from '@app/components/shared/tableheader/tableheader.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';

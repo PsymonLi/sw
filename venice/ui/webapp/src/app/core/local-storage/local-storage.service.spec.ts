@@ -3,8 +3,8 @@ import { configureTestSuite } from 'ng-bullet';
 
 import { LocalStorageService } from './local-storage.service';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
-import { MatIconRegistry } from '@angular/material';
+import { ConfirmationService } from 'primeng';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { RouterTestingModule } from '@angular/router/testing';

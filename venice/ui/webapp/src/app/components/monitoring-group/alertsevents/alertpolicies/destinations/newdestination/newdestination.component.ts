@@ -6,7 +6,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { IMonitoringAlertDestination, MonitoringAlertDestination, MonitoringAuthConfig, MonitoringPrivacyConfig, MonitoringSNMPTrapServer, MonitoringSyslogExport } from '@sdk/v1/models/generated/monitoring';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog/syslog.component';
 import { FieldselectorComponent } from '@app/components/shared/fieldselector/fieldselector.component';
 import { ValidatorFn } from '@angular/forms';

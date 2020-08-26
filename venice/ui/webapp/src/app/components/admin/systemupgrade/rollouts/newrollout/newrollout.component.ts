@@ -18,7 +18,7 @@ import { IApiStatus, IRolloutRollout, RolloutRollout, RolloutRolloutSpec } from 
 import { LabelsSelector } from '@sdk/v1/models/generated/security';
 import { required } from '@sdk/v1/utils/validators';
 import { Checkbox } from 'primeng/checkbox';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { Observable } from 'rxjs';
 import { RepeaterData, RepeaterItem, ValueType } from 'web-app-framework';
 import { EnumRolloutOptions, RolloutImageLabel, RolloutImageOption } from '../index';

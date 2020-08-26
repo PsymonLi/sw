@@ -1,6 +1,6 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
@@ -29,7 +29,7 @@ import { LicenseService } from '@app/services/license.service';
 import { NetworkService } from '@app/services/generated/network.service';
 import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase_uihint, IClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
 import { configureTestSuite } from 'ng-bullet';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { BehaviorSubject, Observable, ReplaySubject } from 'rxjs';
 import { NaplesdetailComponent } from './naplesdetail.component';
 import { NaplesdetailchartsComponent } from './widgets/naplesdetailcharts.component';
@@ -72,7 +72,7 @@ describe('NaplesdetailComponent', () => {
   const colLengthEnterprise = 16;
   function verifyMeta(naples: IClusterDistributedServiceCard, columnLen) {
     const fields = fixture.debugElement.queryAll(By.css('.naplesdetail-node-value'));
-    const uiConfigsService = TestBed.get(UIConfigsService);
+    const uiConfigsService = TestBed.inject(UIConfigsService);
     console.log('Is enterprise : ' + uiConfigsService.isFeatureEnabled('enterprise'));
     console.log('Is cloud : ' + uiConfigsService.isFeatureEnabled('cloud'));
     expect(fields.length).toBe(columnLen); // there are 15 columns defined in naplesdetail.c.ts
@@ -193,7 +193,7 @@ describe('NaplesdetailComponent', () => {
     componentEnterprise = fixture.componentInstance;
     componentCloud = fixture.componentInstance;
 
-    const clusterService = TestBed.get(ClusterService);
+    const clusterService = TestBed.inject(ClusterService);
 
     naples1 = {
       'kind': 'DistributedServiceCard',
@@ -281,7 +281,7 @@ describe('NaplesdetailComponent', () => {
     naplesGetSpy = spyOn(clusterService, 'GetDistributedServiceCard').and.returnValue(
       new BehaviorSubject({
         body: naples2
-      })
+      }) as any
     );
   });
 
@@ -293,7 +293,7 @@ describe('NaplesdetailComponent', () => {
     testingUtilityCloud = new TestingUtility(fixture);
     TestingUtility.setCloudMode();
     // change param id
-    const mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    const mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setId('3333.3333.0002');
     const policyWatchObserver = new ReplaySubject();
     const policyGetObserver = new Observable((observable) => {
@@ -367,13 +367,17 @@ describe('NaplesdetailComponent', () => {
   });
 
   it('cloud mode - should rerender when user navigates to same page with different id and use field selectors', () => {
+    let mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
+    mockActivatedRoute.setId('4444.4444.0002');
     TestingUtility.setCloudMode();
+    fixture.detectChanges();
+    fixture.whenRenderingDone();
     fixture.detectChanges();
     verifyMeta(naples1, colLengthCloud);
     verifyServiceCalls('4444.4444.0002');
 
     // change param id
-    let mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     naplesWatchSpy.and.returnValue(
       new BehaviorSubject({
         events: [
@@ -382,7 +386,7 @@ describe('NaplesdetailComponent', () => {
             object: naples3
           }
         ]
-      })
+      }) as any
     );
     mockActivatedRoute.setId('3333.3333.0003');
 
@@ -422,7 +426,7 @@ describe('NaplesdetailComponent', () => {
     naplesGetSpy.and.returnValue(
       policyGetObserver
     );
-    mockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setId('policy3');
 
     verifyServiceCalls('policy3');
@@ -433,14 +437,13 @@ describe('NaplesdetailComponent', () => {
     emptyNaples.status['admission-phase'] = null;
     verifyMeta(emptyNaples, colLengthCloud);
     expect(getOverlay()).toBeTruthy();
-
   });
 
   it('enterprise mode - should display missing policy overlay and deleted policy overlay', () => {
     TestingUtility.setEnterpriseMode();
     testingUtilityEnterprise = new TestingUtility(fixture);
     // change param id
-    const mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    const mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setId('3333.3333.0002');
     const policyWatchObserver = new ReplaySubject();
     const policyGetObserver = new Observable((observable) => {
@@ -519,13 +522,15 @@ describe('NaplesdetailComponent', () => {
 
   });
   it('enterprise mode - should rerender when user navigates to same page with different id and use field selectors', () => {
+    let mockActivatedRoute: MockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
+    mockActivatedRoute.setId('4444.4444.0002');
+
     TestingUtility.setEnterpriseMode();
     fixture.detectChanges();
     verifyMeta(naples1, colLengthEnterprise); // Column Length = colLength
     verifyServiceCalls('4444.4444.0002');
 
     // change param id
-    let mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
     naplesWatchSpy.and.returnValue(
       new BehaviorSubject({
         events: [
@@ -574,7 +579,7 @@ describe('NaplesdetailComponent', () => {
     naplesGetSpy.and.returnValue(
       policyGetObserver
     );
-    mockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute = TestBed.inject(ActivatedRoute) as any;
     mockActivatedRoute.setId('policy3');
 
     verifyServiceCalls('policy3');

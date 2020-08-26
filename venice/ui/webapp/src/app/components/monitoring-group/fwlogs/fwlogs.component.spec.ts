@@ -2,10 +2,10 @@
  Angular imports
  ------------------*/
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed, fakeAsync, tick, discardPeriodicTasks, flush } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, discardPeriodicTasks, flush, async } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 import { SharedModule } from '@app/components/shared/shared.module';
@@ -19,7 +19,7 @@ import { LogService } from '@app/services/logging/log.service';
 import { MessageService } from '@app/services/message.service';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { PrimengModule } from '@lib/primeng.module';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { WidgetsModule } from 'web-app-framework';
 import { MonitoringGroupModule } from '../monitoring-group.module';
 import { FwlogpoliciesComponent } from './fwlogpolicies/fwlogpolicies.component';
@@ -177,10 +177,15 @@ describe('fwlogsComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(FwlogsComponent);
     component = fixture.componentInstance;
-    securityService = TestBed.get(SecurityService);
+    securityService = TestBed.inject(SecurityService);
   });
 
-  it('check if sgicon onhover details are displayed correctly', fakeAsync(() => {
+  function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
+  it('check if sgicon onhover details are displayed correctly', async(async() => {
+    securityService = TestBed.inject(SecurityService);
     TestingUtility.setAllPermissions();
 
     sgPolicyObserver = new BehaviorSubject({
@@ -194,38 +199,42 @@ describe('fwlogsComponent', () => {
     spyOn(securityService, 'WatchNetworkSecurityPolicy').and.returnValue(
       sgPolicyObserver
     );
-    const fwlogService = TestBed.get(FwlogService);
+    const fwlogService = TestBed.inject(FwlogService);
     spyOn(fwlogService, 'PostGetLogs').and.returnValue(
-      new BehaviorSubject({body: fwlog})
+      new BehaviorSubject({body: fwlog}) as any
     );
 
     fixture.detectChanges();
-    tick(1000);
+    await delay(1000);
+    fixture.detectChanges();
+    await fixture.whenRenderingDone();
     fixture.detectChanges();
     expect(component).toBeTruthy();
 
     const row = fixture.debugElement.query(By.css('tr'));
     row.triggerEventHandler('mouseenter', null);
     fixture.detectChanges();
+    await fixture.whenRenderingDone();
+    fixture.detectChanges();
 
     const icon = fixture.debugElement.query(By.css('mat-icon.global-table-action-svg-icon'));
     icon.triggerEventHandler('mouseenter', icon);
+    fixture.detectChanges();
+    await fixture.whenRenderingDone();
     fixture.detectChanges();
 
     const overlay = fixture.debugElement.query(By.css('.fwlogs-ruletext'));
     const rulehashdiv = overlay.children[1].childNodes[2];
     expect(rulehashdiv.nativeNode.textContent).toBe(fwlog.items[0]['rule-id']);
     fixture.destroy();
-    discardPeriodicTasks();
-    flush();
   }));
 
- it('should map reporter from mac address to host name', fakeAsync(() => {
+ it('should map reporter from mac address to host name', async(async () => {
     TestingUtility.setAllPermissions();
-    const clusterService = TestBed.get(ClusterService);
-    const fwlogService = TestBed.get(FwlogService);
+    const clusterService = TestBed.inject(ClusterService);
+    const fwlogService = TestBed.inject(FwlogService);
     spyOn(fwlogService, 'PostGetLogs').and.returnValue(
-      new BehaviorSubject({body: fwlog})
+      new BehaviorSubject({body: fwlog}) as any
     );
     spyOn(clusterService, 'ListDistributedServiceCardCache').and.returnValue(
       TestingUtility.createDataCacheSubject([
@@ -244,9 +253,17 @@ describe('fwlogsComponent', () => {
       sgPolicyObserver
     );
     fixture.detectChanges();
-    tick(1000);
+    await delay(1000);
+    fixture.detectChanges();
+    await fixture.whenRenderingDone();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(component).toBeTruthy();
+
+    // fixture.detectChanges();
+    await fixture.whenRenderingDone();
+    await fixture.whenStable();
+    // fixture.detectChanges();
     // check table header
     const title = fixture.debugElement.query(By.css('.tableheader-title'));
     expect(title.nativeElement.textContent).toContain('Firewall Logs (1)');
@@ -283,9 +300,8 @@ describe('fwlogsComponent', () => {
     const routerLinks = linkDes.map(de => de.injector.get(RouterLinkStubDirective));
     expect(routerLinks.length).toBe(2, 'Should have 2 routerLinks');
     expect(routerLinks[0].linkParams).toBe('/cluster/dscs/00ae.cd00.1142');
+
     fixture.destroy();
-    discardPeriodicTasks();
-    flush();
   }));
 
   describe('RBAC', () => {
@@ -293,7 +309,7 @@ describe('fwlogsComponent', () => {
 
     beforeEach(() => {
       TestingUtility.removeAllPermissions();
-      const controllerService = TestBed.get(ControllerService);
+      const controllerService = TestBed.inject(ControllerService);
       toolbarSpy = spyOn(controllerService, 'setToolbarData');
     });
 
@@ -332,9 +348,9 @@ describe('fwlogsComponent', () => {
       spyOn(securityService, 'WatchNetworkSecurityPolicy').and.returnValue(
         sgPolicyObserver
       );
-      const fwlogService = TestBed.get(FwlogService);
+      const fwlogService = TestBed.inject(FwlogService);
       spyOn(fwlogService, 'PostGetLogs').and.returnValue(
-        new BehaviorSubject({body: fwlog})
+        new BehaviorSubject({body: fwlog}) as any
       );
 
       fixture.detectChanges();

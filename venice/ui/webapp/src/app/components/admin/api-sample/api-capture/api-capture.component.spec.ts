@@ -11,12 +11,12 @@ import { TableheaderComponent } from '../../../shared/tableheader/tableheader.co
 import { ApiCaptureComponent, ApiData } from './api-capture.component';
 import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe.js';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { LogService } from '@app/services/logging/log.service';
 import { MessageService } from '@app/services/message.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { AuthService } from '@app/services/auth.service';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';

@@ -1,14 +1,14 @@
-import {  ComponentFixture, TestBed } from '@angular/core/testing';
+import {  ComponentFixture, TestBed, async } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 
 import { SharedModule } from '@app/components/shared/shared.module';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
+import { ConfirmationService } from 'primeng';
 import { LogService } from '@app/services/logging/log.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -368,7 +368,7 @@ describe('LdapComponent', () => {
 
     });
 
-    it('edit mode', () => {
+    it('edit mode', async(async() => {
       TestingUtility.addPermissions([UIRolePermissions.authauthenticationpolicy_update, UIRolePermissions.authauthenticationpolicy_delete]);
       component.LDAPData = new AuthLdap({
         enabled: true,
@@ -485,6 +485,9 @@ describe('LdapComponent', () => {
       // deleting server
       and_container[1].children[0].nativeElement.click();
       fixture.detectChanges();
+      await fixture.whenRenderingDone();
+      fixture.detectChanges();
+
       let servers = fixture.debugElement.queryAll(By.css('.ldap-servergroup'));
       expect(servers.length).toBe(1);
       // add server
@@ -492,6 +495,8 @@ describe('LdapComponent', () => {
       expect(and_container.length).toBe(1);
       expect(and_container[0].children.length).toBe(1); // add only
       and_container[0].children[0].nativeElement.click();
+      fixture.detectChanges();
+      await fixture.whenRenderingDone();
       fixture.detectChanges();
       servers = fixture.debugElement.queryAll(By.css('.ldap-servergroup'));
       expect(servers.length).toBe(2);
@@ -508,6 +513,9 @@ describe('LdapComponent', () => {
 
       cancelButton = fixture.debugElement.query(By.css('.authpolicy-cancel'));
       cancelButton.nativeElement.click();
+
+      fixture.detectChanges();
+      await fixture.whenRenderingDone();
       fixture.detectChanges();
 
       toggles = fixture.debugElement.queryAll(By.css('.mat-checked'));
@@ -520,7 +528,7 @@ describe('LdapComponent', () => {
       expect(serversViewmode).toBeTruthy();
       expect(serversViewmode.children.length).toBe(4);
 
-    });
+    }));
 
     it('should add an empty server if there is none provided', () => {
       TestingUtility.addPermissions([UIRolePermissions.authauthenticationpolicy_update, UIRolePermissions.authauthenticationpolicy_delete]);

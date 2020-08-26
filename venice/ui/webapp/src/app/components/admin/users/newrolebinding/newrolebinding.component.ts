@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, OnDestroy, OnChanges, V
 import { FormArray, AbstractControl, Validators, FormGroup, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { required } from '@sdk/v1/utils/validators';
 import { UsersComponent } from '../users.component';
-import { ErrorStateMatcher } from '@angular/material';
+import { ErrorStateMatcher } from '@angular/material/core';
 import { Animations } from '@app/animations';
 import { ControllerService } from '@app/services/controller.service';
 import { AuthService } from '@app/services/generated/auth.service';

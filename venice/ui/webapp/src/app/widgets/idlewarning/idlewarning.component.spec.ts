@@ -9,14 +9,14 @@ import { RouterTestingModule } from '@angular/router/testing';
 ----------------------------------------------------- */
 import { IdleWarningComponent } from './idlewarning.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
-import { MatIconRegistry } from '@angular/material';
+import { ConfirmationService } from 'primeng';
+import { MatIconRegistry } from '@angular/material/icon';
 /* ---------------------------------------------------
     Third-party libraries
 ----------------------------------------------------- */
 import { PrimengModule } from '@lib/primeng.module';
 import { MaterialdesignModule } from '@lib/materialdesign.module';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { NgModule } from '@angular/core';
@@ -58,7 +58,7 @@ describe('IdleWarningComponent', () => {
 
   beforeEach(() => {
     // fixture = TestBed.createComponent(IdleWarningComponent);
-    const dialog = TestBed.get(MatDialog);
+    const dialog = TestBed.inject(MatDialog);
     const componentRef = dialog.open(IdleWarningComponent, {
       data: { countdown: 0 }
     });

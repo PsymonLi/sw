@@ -1,4 +1,4 @@
-import { MenuItem, SelectItem } from 'primeng/primeng';
+import { MenuItem, SelectItem } from 'primeng';
 
 export interface BreadcrumbItem {
   label: string;

@@ -24,7 +24,7 @@ import { SelectItem, LazyLoadEvent } from 'primeng/api';
     animations: [Animations]
 })
 export class PentableComponent extends BaseComponent implements AfterViewInit, OnChanges, OnDestroy, OnInit {
-  @ViewChild('primengTable') table: Table;
+  @ViewChild('primengTable', { static: true }) table: Table;
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
 
   @Input() actionTemplate: TemplateRef<any>;

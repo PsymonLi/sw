@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, OnChanges, ViewEncapsulation, ViewChild } from '@angular/core';
 import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
-import { SelectItem, MultiSelect } from 'primeng/primeng';
 import { RepeaterData, RepeaterItem, ValueType } from './index';
 import { Animations } from '../../../animations';
 import * as _ from 'lodash';
+import { SelectItem } from 'primeng/api';
 
 
 /**

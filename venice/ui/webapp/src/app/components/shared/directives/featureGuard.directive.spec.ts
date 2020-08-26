@@ -10,7 +10,7 @@ import { configureTestSuite } from 'ng-bullet';
   Venice web-app imports
   ------------------*/
  import { ControllerService } from '@app/services/controller.service';
- import { ConfirmationService } from 'primeng/primeng';
+ import { ConfirmationService } from 'primeng';
  import { LogPublishersService } from '@app/services/logging/log-publishers.service';
  import { LogService } from '@app/services/logging/log.service';
  import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -45,7 +45,6 @@ import { TestingUtility } from '@app/common/TestingUtility';
                   <div id='div5Else'></div>
                 </ng-template>
 
-                <!-- Empty guard should always show content-->
                 <div *featureGuard="'cloud'" class='mode mode_cloud'></div>
 
                 <!-- Checking test utility -->
@@ -92,8 +91,8 @@ describe('featureGuard directive', () => {
       });
 
   beforeEach(() => {
-    uiConfigs = TestBed.get(UIConfigsService);
-    controllerService = TestBed.get(ControllerService);
+    uiConfigs = TestBed.inject(UIConfigsService);
+    controllerService = TestBed.inject(ControllerService);
     fixture = TestBed.createComponent(DummyComponent);
     component = fixture.componentInstance;
   });

@@ -1,7 +1,6 @@
-import {ChangeDetectorRef, Component, Input, ViewEncapsulation, ViewChild, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, ViewEncapsulation, ViewChild, OnInit} from '@angular/core';
 import {Animations} from '@app/animations';
 import {Utility} from '@app/common/Utility';
-import { TablevieweditAbstract, TablevieweditHTMLComponent } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import {ControllerService} from '@app/services/controller.service';
 import {ObjstoreService} from '@app/services/generated/objstore.service';
 import {RolloutService} from '@app/services/generated/rollout.service';
@@ -9,7 +8,6 @@ import {IApiStatus, IRolloutRollout, RolloutRollout, RolloutRolloutStatus_state}
 import { IObjstoreObjectList  } from '@sdk/v1/models/generated/objstore';
 import {Observable} from 'rxjs';
 import {Router} from '@angular/router';
-import {HttpEventUtility} from '@common/HttpEventUtility';
 import { ToolbarData } from '@app/models/frontend/shared/toolbar.interface';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -17,7 +15,6 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { RolloutUtil } from '@app/components/admin/systemupgrade/rollouts/RolloutUtil.ts';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 /**
  * This component let user manage Venice Rollouts.
@@ -33,8 +30,8 @@ import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
   encapsulation: ViewEncapsulation.None
 })
 export class RolloutsComponent extends DataComponent implements OnInit {
-  @ViewChild('pendingRolloutTable') pendingRolloutTable: PentableComponent;
-  @ViewChild('pastRolloutTable') pastRolloutTable: PentableComponent;
+  @ViewChild('pendingRolloutTable', { static: true }) pendingRolloutTable: PentableComponent;
+  @ViewChild('pastRolloutTable', { static: true }) pastRolloutTable: PentableComponent;
   tableLoading: boolean;
 
   dataObjects: ReadonlyArray<RolloutRollout> = [];

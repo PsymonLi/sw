@@ -1,6 +1,5 @@
 import { animate, animateChild, query, state, style, transition, trigger } from '@angular/animations';
-import { Component, OnInit, Input, ViewEncapsulation, OnDestroy } from '@angular/core';
-import { DomHandler } from 'primeng/primeng';
+import { Component, OnInit, Input, ViewEncapsulation, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { ToastItem, Toast } from 'primeng/toast';
 import { Utility } from '@app/common/Utility';
 import { MessageService, Message } from '@app/services/message.service';
@@ -34,14 +33,15 @@ import { Subscription } from 'rxjs';
       ])
     ])
   ],
-  providers: [DomHandler]
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToasterComponent extends Toast implements OnInit, OnDestroy {
   removeSubscription: Subscription;
 
-  constructor(messageService: MessageService, domHandler: DomHandler) {
+  constructor(messageService: MessageService, cd: ChangeDetectorRef) {
     // Casting to any since our message service redeclares private properties
-    super(<any>messageService, domHandler);
+    super(<any>messageService,  cd);
   }
 
   addMessage(message) {
@@ -165,14 +165,15 @@ export class ToasterComponent extends Toast implements OnInit, OnDestroy {
       ])
     ])
   ],
-  providers: [DomHandler]
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToasterItemComponent extends ToastItem implements OnInit {
   @Input() message: Message;
   onCloseIconClickWrapper;
 
-  constructor() {
-    super();
+  constructor(zone: NgZone) {
+    super(zone);
   }
 
   ngOnInit() {

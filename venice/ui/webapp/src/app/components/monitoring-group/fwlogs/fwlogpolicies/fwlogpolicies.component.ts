@@ -25,7 +25,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 export class FwlogpoliciesComponent extends DataComponent implements OnInit {
   public static MAX_TARGETS_PER_POLICY = 2;
   public static MAX_TOTAL_TARGETS = 8;
-  @ViewChild('fwpLogPolicyTable') fwpLogPolicyTable: PentableComponent;
+  @ViewChild('fwpLogPolicyTable', { static: true }) fwpLogPolicyTable: PentableComponent;
 
   isTabComponent = false;
   disableTableWhenRowExpanded = true;

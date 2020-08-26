@@ -11,8 +11,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 ----------------------------------------------------- */
 import { ToolbarComponent } from './toolbar.component';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng';
-import { MatIconRegistry } from '@angular/material';
+import { ConfirmationService } from 'primeng';
+import { MatIconRegistry } from '@angular/material/icon';
 /* ---------------------------------------------------
     Third-party libraries
 ----------------------------------------------------- */

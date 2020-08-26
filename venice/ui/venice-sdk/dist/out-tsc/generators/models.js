@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.genModelAndServices = void 0;
 var fs = require("fs");
 var rmdir = require("rimraf");
 var utils = require("./utils");

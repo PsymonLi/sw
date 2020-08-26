@@ -10,7 +10,7 @@ import {  ComponentFixture, TestBed, inject } from '@angular/core/testing'
 import { configureTestSuite } from 'ng-bullet';;
 import { WidgetsModule } from 'web-app-framework';
 import { ControllerService } from '@app/services/controller.service';
-import { ConfirmationService } from 'primeng/primeng'
+import { ConfirmationService } from 'primeng'
 import { WorkloadService } from '@app/services/workload.service';
 
 import { Observable } from 'rxjs/Observable';
@@ -92,7 +92,7 @@ describe('WorkloadwidgetComponent', () => {
     fixture.detectChanges();
 
     // WorkloadService provided to the TestBed.overrideComponent(..)
-    testBedService = TestBed.get(WorkloadService);
+    testBedService = TestBed.inject(WorkloadService);
 
     // WorkloadService provided by Component, (should return MockAuthService)
     componentService = fixture.debugElement.injector.get(WorkloadService);
@@ -108,7 +108,7 @@ describe('WorkloadwidgetComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('Service injected via inject(...) and TestBed.get(...) should be the same instance',
+  it('Service injected via inject(...) and TestBed.inject(...) should be the same instance',
       inject([WorkloadService], (injectService: WorkloadService) => {
         expect(injectService).toBe(testBedService);
       })

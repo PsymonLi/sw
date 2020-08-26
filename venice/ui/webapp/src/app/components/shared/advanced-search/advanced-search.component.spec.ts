@@ -15,7 +15,7 @@ import {LogService} from '@app/services/logging/log.service';
 import {ConfirmationService} from 'primeng/api';
 import {LogPublishersService} from '@app/services/logging/log-publishers.service';
 import {ClusterService} from '@app/services/generated/cluster.service';
-import {MatIconRegistry} from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import {MetricsqueryService} from '@app/services/metricsquery.service';
 import {MessageService} from '@app/services/message.service';
 import {By} from '@angular/platform-browser';

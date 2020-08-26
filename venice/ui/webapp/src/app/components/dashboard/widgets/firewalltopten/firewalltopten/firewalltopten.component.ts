@@ -9,7 +9,7 @@ import { SecurityService } from '@app/services/generated/security.service';
 import { MetricsqueryService, TelemetryPollingMetricQueries } from '@app/services/metricsquery.service';
 import { ISecurityNetworkSecurityPolicyList, SecurityNetworkSecurityPolicy, ISecuritySGRule } from '@sdk/v1/models/generated/security';
 import { ITelemetry_queryMetricsQueryResponse, ITelemetry_queryMetricsQuerySpec, Telemetry_queryMetricsQuerySpec_function, Telemetry_queryMetricsQuerySpec_sort_order } from '@sdk/v1/models/generated/telemetry_query';
-import { UIChart } from 'primeng/primeng';
+import { UIChart } from 'primeng';
 import { Subscription } from 'rxjs';
 
 const MS_PER_MINUTE: number = 60000;

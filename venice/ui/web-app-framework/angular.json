@@ -2,6 +2,9 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "newProjectRoot": "projects",
+  "cli": {
+    "packageManager": "yarn"
+  },
   "projects": {
     "web-app-framework": {
       "root": "",
@@ -11,6 +14,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "aot": true,
             "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -23,18 +27,20 @@
             "styles": [
               "src/styles.css",
               "src/theme.scss",
-              "node_modules/font-awesome/css/font-awesome.css",
-              "node_modules/primeng/resources/themes/omega/theme.css",
-              "node_modules/primeng/resources/primeng.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/material-design-icons/iconfont/material-icons.css"
+              "node_modules/primeng/resources/themes/nova-light/theme.css",
+              "node_modules/primeng/resources/primeng.min.css"
             ],
-            "scripts": [
-              "node_modules/plotly.js/dist/plotly.min.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {
+              "budgets": [
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb"
+                }
+              ],
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
@@ -77,17 +83,13 @@
             "karmaConfig": "./karma.conf.js",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.spec.json",
-            "scripts": [
-              "node_modules/plotly.js/dist/plotly.min.js"
-            ],
+            "scripts": [],
             "styles": [
               "src/styles.css",
               "src/theme.scss",
-              "node_modules/font-awesome/css/font-awesome.css",
-              "node_modules/primeng/resources/themes/omega/theme.css",
-              "node_modules/primeng/resources/primeng.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/material-design-icons/iconfont/material-icons.css"
+              "node_modules/primeng/resources/themes/nova-light/theme.css",
+              "node_modules/primeng/resources/primeng.min.css"
             ],
             "assets": [
               "src/assets",
@@ -150,7 +152,7 @@
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
-      "styleext": "css"
+      "style": "css"
     },
     "@schematics/angular:directive": {
       "prefix": "app"

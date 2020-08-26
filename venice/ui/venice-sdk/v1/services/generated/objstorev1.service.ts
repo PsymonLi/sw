@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IObjstoreStreamChunk,ObjstoreStreamChunk,IObjstoreObjectList,ObjstoreObjectList,IApiStatus,ApiStatus,IObjstoreObject,ObjstoreObject,IObjstoreAutoMsgObjectWatchHelper,ObjstoreAutoMsgObjectWatchHelper } from '../../models/generated/objstore';
 
-@Injectable()
 export class Objstorev1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

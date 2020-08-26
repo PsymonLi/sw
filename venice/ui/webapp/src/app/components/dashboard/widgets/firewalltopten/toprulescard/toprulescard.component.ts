@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, ViewChild, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
-import { UIChart } from 'primeng/primeng';
+import { UIChart } from 'primeng';
 import { TopRulesUtil, RuleHitCount } from '@app/components/dashboard/widgets/firewalltopten/TopRulesUtil';
 import { ControllerService } from '@app/services/controller.service';
 import { BaseComponent} from '@app/components/base/base.component';

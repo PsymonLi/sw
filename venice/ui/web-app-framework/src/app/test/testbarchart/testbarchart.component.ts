@@ -7,7 +7,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class TestbarchartComponent implements OnInit {
 
-  private chartData: Array<any>;
+  public chartData: Array<any>;
 
   constructor() { }
 

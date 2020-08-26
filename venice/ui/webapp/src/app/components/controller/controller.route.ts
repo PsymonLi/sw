@@ -13,7 +13,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/controller/vcenterIntegrations/vcenterIntegrations.module#VcenterIntegrationsModule'
+        loadChildren: () => import('@app/components/controller/vcenterIntegrations/vcenterIntegrations.module').then(m => m.VcenterIntegrationsModule)
       }
     ]
   }

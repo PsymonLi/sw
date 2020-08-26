@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IWorkloadEndpointList,WorkloadEndpointList,IApiStatus,ApiStatus,IWorkloadEndpoint,WorkloadEndpoint,IWorkloadWorkloadList,WorkloadWorkloadList,IWorkloadWorkload,WorkloadWorkload,ApiLabel,IApiLabel,IWorkloadAutoMsgEndpointWatchHelper,WorkloadAutoMsgEndpointWatchHelper,IWorkloadAutoMsgWorkloadWatchHelper,WorkloadAutoMsgWorkloadWatchHelper } from '../../models/generated/workload';
 
-@Injectable()
 export class Workloadv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

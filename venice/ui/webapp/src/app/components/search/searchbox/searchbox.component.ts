@@ -95,7 +95,7 @@ export class SearchboxComponent extends BaseComponent implements OnInit, OnDestr
   searchVeniceApplication: any;
   noSearchSuggestion: String = 'no search suggestion';
   searchSuggestions: SearchSuggestion[] = [];
-  @ViewChild('search') _searchwidget: SearchComponent;
+  @ViewChild('search', { static: true }) _searchwidget: SearchComponent;
 
   constructor(
     protected _controllerService: ControllerService,

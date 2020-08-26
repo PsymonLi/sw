@@ -1,4 +1,4 @@
-@import 'src/global-mixins';
+@import 'src/import-mixins';
 
 .alert-indication-widget {
   @include primary-font(12);

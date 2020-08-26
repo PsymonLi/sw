@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IRoutingHealth,RoutingHealth,IRoutingNeighborList,RoutingNeighborList,IRoutingRouteList,RoutingRouteList,RoutingRouteFilter,IRoutingRouteFilter } from '../../models/generated/routing';
 
-@Injectable()
 export class Routingv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

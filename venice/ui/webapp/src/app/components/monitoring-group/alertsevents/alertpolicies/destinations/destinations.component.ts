@@ -26,7 +26,7 @@ import { PentableComponent } from '@app/components/shared/pentable/pentable.comp
 export class DestinationpolicyComponent extends DataComponent implements OnInit, OnChanges {
   public static MAX_TOTAL_TARGETS = 8;
 
-  @ViewChild('alertDestinationTable') alertDestinationTable: PentableComponent;
+  @ViewChild('alertDestinationTable', { static: true }) alertDestinationTable: PentableComponent;
 
   @Input() dataObjects: MonitoringAlertDestination[] = [];
   @Input() eventPolices: MonitoringAlertPolicy[] = [];

@@ -17,7 +17,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/alertsevents/alertpolicies/alertpolicies.module#AlertPoliciesModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/alertpolicies/alertpolicies.module').then(m => m.AlertPoliciesModule)
       }
     ]
   },
@@ -26,7 +26,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: '@app/components/monitoring-group/alertsevents/eventpolicy/eventpolicy.module#EventPolicyModule'
+        loadChildren: () => import('@app/components/monitoring-group/alertsevents/eventpolicy/eventpolicy.module').then(m => m.EventPolicyModule)
       }
     ]
   }

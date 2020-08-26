@@ -31,7 +31,6 @@ export interface ServerEvent<T> {
   connIsErrorState: boolean;
 }
 
-@Injectable()
 export class AbstractService {
   protected O_Tenant: string = "";
 

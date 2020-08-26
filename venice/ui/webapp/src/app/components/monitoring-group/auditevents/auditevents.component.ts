@@ -11,7 +11,7 @@ import { AuditService } from '@app/services/generated/audit.service';
 import { LRUMap } from 'lru_map';
 import { AuditAuditEvent, IAuditAuditEvent, AuditAuditEvent_outcome } from '@sdk/v1/models/generated/audit';
 import { SearchSearchRequest, SearchSearchResponse, SearchSearchRequest_sort_order } from '@sdk/v1/models/generated/search';
-import { LazyLoadEvent } from 'primeng/primeng';
+import { LazyLoadEvent } from 'primeng';
 import { Subscription } from 'rxjs';
 import { RowClickEvent, TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { Icon } from '@app/models/frontend/shared/icon.interface';

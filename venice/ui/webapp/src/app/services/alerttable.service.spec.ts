@@ -19,8 +19,8 @@ describe('AlerttableService', () => {
         RouterTestingModule]
     });
     injector = getTestBed();
-    service = injector.get(AlerttableService);
-    httpMock = injector.get(HttpTestingController);
+    service = injector.inject(AlerttableService);
+    httpMock = injector.inject(HttpTestingController);
   });
 
   it('should be created', inject([AlerttableService], (_service: AlerttableService) => {

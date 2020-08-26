@@ -6,7 +6,6 @@ import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/util
 
 import { IOrchestrationOrchestratorList,OrchestrationOrchestratorList,IApiStatus,ApiStatus,IOrchestrationOrchestrator,OrchestrationOrchestrator,ApiLabel,IApiLabel,IOrchestrationAutoMsgOrchestratorWatchHelper,OrchestrationAutoMsgOrchestratorWatchHelper } from '../../models/generated/orchestration';
 
-@Injectable()
 export class Orchestrationv1Service extends AbstractService {
   constructor(protected _http: HttpClient) {
     super(_http);

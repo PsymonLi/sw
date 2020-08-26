@@ -6,7 +6,7 @@ import { ToolbarButton } from '@app/models/frontend/shared/toolbar.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { IMonitoringAlertDestination, IMonitoringAlertPolicy, MonitoringAlertPolicy, MonitoringAlertPolicySpec, MonitoringAlertDestination } from '@sdk/v1/models/generated/monitoring';
-import { SelectItem } from 'primeng/primeng';
+import { SelectItem } from 'primeng';
 import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ValidatorFn } from '@angular/forms';
@@ -21,7 +21,7 @@ import { ValidatorFn } from '@angular/forms';
 })
 export class NeweventalertpolicyComponent extends CreationForm<IMonitoringAlertPolicy, MonitoringAlertPolicy> implements OnInit, AfterViewInit , OnChanges {
 
-  @ViewChild('fieldSelector') fieldSelector: FieldselectorComponent;
+  @ViewChild('fieldSelector', { static: true }) fieldSelector: FieldselectorComponent;
 
   @Input() destinations: IMonitoringAlertDestination[] = [];
   @Input() existingObjects: MonitoringAlertDestination[] = [];
