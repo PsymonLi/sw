@@ -1,6 +1,6 @@
 {
     "svc": {
-        "names": [ "pciemgr", "pdsagent", "vpp" ],
+        "names": [ "sysmgr", "pciemgr", "pdsagent", "vpp" ],
         "event_sequence": "parallel",
         "rsp_timeout": "60000ms",
         "domain": "A",

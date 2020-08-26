@@ -9,7 +9,6 @@
 //----------------------------------------------------------------------------
 
 #include "nic/infra/upgrade/api/include/version.hpp"
-#include "nic/apollo/api/upgrade_state.hpp"
 
 namespace api {
 
