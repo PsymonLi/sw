@@ -65,6 +65,8 @@ device_conf_update (pds_device_spec_t *spec)
         output.put("memory-profile", "default");
     } else if (spec->memory_profile == PDS_MEMORY_PROFILE_ROUTER) {
         output.put("memory-profile", "router");
+    } else if (spec->memory_profile == PDS_MEMORY_PROFILE_IPSEC) {
+        output.put("memory-profile", "ipsec");
     }
 
     // update the forwarding mode

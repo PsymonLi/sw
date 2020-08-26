@@ -16,7 +16,8 @@ namespace test {
 namespace api {
 
 // globals
-static uint16_t g_num_policy;
+static uint16_t k_max_v4_policy;
+static uint16_t k_max_v6_policy;
 static constexpr uint16_t g_num_stateful_rules = 512;
 
 //----------------------------------------------------------------------------
@@ -35,12 +36,15 @@ protected:
         g_trace_level = sdk::types::trace_verbose;
         // the scale number should be based on memory profile
         if (apulu()) {
-            // for 4G profile, we can only support 64
-            g_num_policy = 32;
+            // for 4G profile, we can only support 128
+            k_max_v4_policy = 128;
+            k_max_v6_policy = 32;
         } else if (apollo()) {
-            g_num_policy = 2048;
+            k_max_v4_policy = 2048;
+            k_max_v6_policy = k_max_v4_policy;
         } else {
-            g_num_policy = PDS_MAX_SECURITY_POLICY;
+            k_max_v4_policy = PDS_MAX_SECURITY_POLICY;
+            k_max_v6_policy = k_max_v4_policy;
         }
         pds_batch_ctxt_t bctxt = batch_start();
         sample_vpc_setup(bctxt, PDS_VPC_TYPE_TENANT);
@@ -110,12 +114,12 @@ TEST_F(policy, policy_workflow_1) {
     policy_feeder feeder;
 
     feeder.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.0/16",
-                g_num_policy);
+                k_max_v4_policy);
     workflow_1<policy_feeder>(feeder);
 
     if (apulu()) {
         feeder.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                    g_num_policy);
+                    k_max_v6_policy);
         workflow_1<policy_feeder>(feeder);
     }
 }
@@ -128,13 +132,13 @@ TEST_F(policy, policy_workflow_2) {
 
     // setup
     feeder.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                g_num_policy);
+                k_max_v4_policy);
     // trigger
     workflow_2<policy_feeder>(feeder);
 
     if (apulu()) {
         feeder.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                    g_num_policy);
+                    k_max_v6_policy);
         workflow_2<policy_feeder>(feeder);
     }
 }
@@ -206,21 +210,21 @@ TEST_F(policy, policy_workflow_6) {
     policy_feeder feeder1, feeder1A, feeder1B;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-		 g_num_policy);
+		 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-		  g_num_policy);
+		  k_max_v4_policy);
     feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV4, "12.0.0.1/16",
-		  g_num_policy);
+		  k_max_v4_policy);
     workflow_6<policy_feeder>(feeder1, feeder1A, feeder1B);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV6, "4001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_6<policy_feeder>(feeder1, feeder1A, feeder1B);
     }
 #endif
@@ -233,21 +237,21 @@ TEST_F(policy, policy_workflow_7) {
     policy_feeder feeder1, feeder1A, feeder1B;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-		 g_num_policy);
+		 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-		  g_num_policy);
+		  k_max_v4_policy);
     feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV4, "12.0.0.1/16",
-		  g_num_policy);
+		  k_max_v4_policy);
     workflow_7<policy_feeder>(feeder1, feeder1A, feeder1B);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV6, "4001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_7<policy_feeder>(feeder1, feeder1A, feeder1B);
     }
 #endif
@@ -262,21 +266,21 @@ TEST_F(policy, DISABLED_policy_workflow_8) {
     policy_feeder feeder1, feeder1A, feeder1B;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV4, "12.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     workflow_8<policy_feeder>(feeder1, feeder1A, feeder1B);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         feeder1B.init(key, g_num_stateful_rules, IP_AF_IPV6, "4001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_8<policy_feeder>(feeder1, feeder1A, feeder1B);
     }
 #endif
@@ -291,17 +295,17 @@ TEST_F(policy, DISABLED_policy_workflow_9) {
     policy_feeder feeder1, feeder1A;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     workflow_9<policy_feeder>(feeder1, feeder1A);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_9<policy_feeder>(feeder1, feeder1A);
     }
 #endif
@@ -359,13 +363,13 @@ TEST_F(policy, policy_workflow_neg_1) {
     policy_feeder feeder;
 
     feeder.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                g_num_policy);
+                k_max_v4_policy);
     workflow_neg_1<policy_feeder>(feeder);
 
 #if 0
     if (apulu()) {
         feeder.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                    g_num_policy);
+                    k_max_v6_policy);
         workflow_neg_1<policy_feeder>(feeder);
     }
 #endif
@@ -383,13 +387,13 @@ TEST_F(policy, policy_workflow_neg_2) {
     policy_feeder feeder;
 
     feeder.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                g_num_policy + 3);
+                k_max_v4_policy + 3);
     workflow_neg_2<policy_feeder>(feeder);
 
 #if 0
     if (apulu()) {
         feeder.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                    g_num_policy + 3);
+                    k_max_v6_policy + 3);
         workflow_neg_2<policy_feeder>(feeder);
     }
 #endif
@@ -402,13 +406,13 @@ TEST_F(policy, policy_workflow_neg_3) {
     policy_feeder feeder;
 
     feeder.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                g_num_policy);
+                k_max_v4_policy);
     workflow_neg_3<policy_feeder>(feeder);
 
 #if 0
     if (apulu()) {
         feeder.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                    g_num_policy);
+                    k_max_v6_policy);
         workflow_neg_3<policy_feeder>(feeder);
     }
 #endif
@@ -443,17 +447,17 @@ TEST_F(policy, DISABLED_policy_workflow_neg_5) {
     policy_feeder feeder1, feeder1A;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     workflow_neg_5<policy_feeder>(feeder1, feeder1A);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_neg_5<policy_feeder>(feeder1, feeder1A);
     }
 #endif
@@ -466,17 +470,17 @@ TEST_F(policy, policy_workflow_neg_6) {
     policy_feeder feeder1, feeder1A;
 
     feeder1.init(key, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     workflow_neg_6<policy_feeder>(feeder1, feeder1A);
 
 #if 0
     if (apulu()) {
         feeder1.init(key, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         workflow_neg_6<policy_feeder>(feeder1, feeder1A);
     }
 #endif
@@ -489,21 +493,21 @@ TEST_F(policy, policy_workflow_neg_7) {
     policy_feeder feeder1, feeder1A, feeder2;
 
     feeder1.init(key1, g_num_stateful_rules, IP_AF_IPV4, "10.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     feeder1A.init(key1, g_num_stateful_rules, IP_AF_IPV4, "11.0.0.1/16",
-                  g_num_policy);
+                  k_max_v4_policy);
     feeder2.init(key2, g_num_stateful_rules, IP_AF_IPV4, "12.0.0.1/16",
-                 g_num_policy);
+                 k_max_v4_policy);
     workflow_neg_7<policy_feeder>(feeder1, feeder1A, feeder2);
 
 #if 0
     if (apulu()) {
         feeder1.init(key1, g_num_stateful_rules, IP_AF_IPV6, "2001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         feeder1A.init(key1, g_num_stateful_rules, IP_AF_IPV6, "3001::1/64",
-                      g_num_policy);
+                      k_max_v6_policy);
         feeder2.init(key2, g_num_stateful_rules, IP_AF_IPV6, "4001::1/64",
-                     g_num_policy);
+                     k_max_v6_policy);
         workflow_neg_7<policy_feeder>(feeder1, feeder1A, feeder2);
     }
 #endif

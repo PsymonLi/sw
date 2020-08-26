@@ -373,7 +373,7 @@ mpartition::region_init(const char *mpart_json_file, shmmgr *mmgr)
             p4_tbl.second.get<std::string>(JKEY_CACHE_PIPE1, "null");
 
         // Allow P4 and P4+ cache combinations;
-        int cache_pipe = cache_pipe_eval(cache_pipe_name) | 
+        int cache_pipe = cache_pipe_eval(cache_pipe_name) |
                          cache_pipe_eval(cache_pipe_name1);
         reg->cache_pipe = (cache_pipe_t)cache_pipe;
 
@@ -395,7 +395,8 @@ mpartition::region_init(const char *mpart_json_file, shmmgr *mmgr)
         reg->block_size =
             extract_size(p4_tbl.second.get<std::string>(JKEY_BLKSIZE,
                                                         "4294967295B")); // -1 default
-        reg->block_count = std::stol(p4_tbl.second.get<std::string>(JKEY_BLKCOUNT, "1")); // default = 1
+        reg->block_count =
+            std::stol(p4_tbl.second.get<std::string>(JKEY_BLKCOUNT, "1")); // default = 1
         reg->max_elements =
             extract_size(p4_tbl.second.get<std::string>(JKEY_MAX_ELEMENTS,
                                                         "4294967295B")); // -1 default
@@ -503,7 +504,7 @@ mem_addr_t
 mpartition::start_offset(const char *name)
 {
     mpartition_region_t *reg = region(name);
-    return reg ? reg->start_offset : INVALID_MEM_ADDRESS;
+    return (reg && (reg->size > 0)) ? reg->start_offset : INVALID_MEM_ADDRESS;
 }
 
 mem_addr_t

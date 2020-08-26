@@ -8,10 +8,11 @@ source ${CUR_DIR}/../setup_gtests.sh
 setup
 
 # run all gtests
-run_gtest batch
-run_gtest policy_rule
-run_gtest policy LOG="/dev/null"
-run_gtest rte_bitmap
+#run_gtest batch
+#run_gtest policy_rule
+#run_gtest policy LOG="/dev/null"
+run_gtest policy
+#run_gtest rte_bitmap
 
 # end of script
 clean_exit

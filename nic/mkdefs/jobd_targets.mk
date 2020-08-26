@@ -518,7 +518,7 @@ jobd/dol/apulu/vxlan: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/ipsec
 jobd/dol/apulu/ipsec: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo ipsec --feature ipsec
+	IPSEC=1 ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo ipsec --feature ipsec
 
 .PHONY: jobd/dol/apulu/upgrade
 jobd/dol/apulu/upgrade: ${JOBD_PREREQS}

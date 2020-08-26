@@ -185,6 +185,7 @@ init_ipsec_lif (uint32_t lif_id)
     qstate.lif_id = lif_id;
     qstate.hbm_address =
         api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
+
     SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
     qstate.params_in.type[0].entries = PDS_MAX_IPSEC_SA_SHIFT;
     qstate.params_in.type[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
@@ -194,12 +195,12 @@ init_ipsec_lif (uint32_t lif_id)
 
     // initialize ipsec lif mgr
     lif_mgr *ipsec_lif_mgr;
-    lif_qstate_t *lif_qstate = (lif_qstate_t *)SDK_CALLOC(
-                               PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
-                               sizeof(lif_qstate_t));
+    lif_qstate_t *lif_qstate =
+        (lif_qstate_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
+                                   sizeof(lif_qstate_t));
     lif_qstate->lif_id = lif_id;
-    lif_qstate->hbm_address = api::g_pds_state.mempartition()->start_addr(
-                              JIPSEC_LIF2QSTATE_MAP_NAME);
+    lif_qstate->hbm_address =
+        api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
     lif_qstate->type[0].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
     lif_qstate->type[0].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
     lif_qstate->type[0].hbm_offset = 0;
@@ -391,12 +392,12 @@ sdk_ret_t
 ipsec_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
 {
 
-   lif_qstate_t *lif_qstate = (lif_qstate_t *)SDK_CALLOC(
-                               PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
-                               sizeof(lif_qstate_t));
+   lif_qstate_t *lif_qstate =
+       (lif_qstate_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
+                                  sizeof(lif_qstate_t));
     lif_qstate->lif_id = lif_id;
-    lif_qstate->hbm_address = api::g_pds_state.mempartition()->start_addr(
-                              JIPSEC_LIF2QSTATE_MAP_NAME);
+    lif_qstate->hbm_address =
+        api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
     lif_qstate->type[0].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
     lif_qstate->type[0].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
     lif_qstate->type[0].hbm_offset = 0;

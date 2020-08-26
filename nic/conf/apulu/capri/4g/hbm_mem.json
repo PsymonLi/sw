@@ -54,14 +54,14 @@
             "name": "asq",
             "kind": "static",
             "size": "256K",
-            "cc"     : "true"
+            "cc": "true"
         },
         {
             "_comment" : "keep this to make cache coherent region order of 2 - currently 64MB from beg(hbm base) including this region",
             "name" : "unused cache coherent",
             "kind": "static",
             "size" : "29696K",
-            "cc"      : "true"
+            "cc": "true"
         },
         {
             "_comment" : "This reserved region is hardcoded to HBM base + 64MB(above cc regions)",
@@ -155,201 +155,6 @@
             "_comment": "1K descriptors of size 128B"
         },
         {
-              "name": "ipsec-global-drop-stats",
-              "kind": "static",
-              "size": "2K"
-        },
-        {
-             "name": "ipsec-cb-encrypt",
-             "kind": "static",
-             "size": "32M",
-             "comment": "8 * 256 * 16K",
-             "cache": "p4plus-all"
-        },
-        {
-             "name": "ipsec-cb-decrypt",
-             "kind": "static",
-             "size": "32M",
-             "comment": "8 * 256 * 16K",
-             "cache": "p4plus-all"
-        },
-        {
-             "name": "ipsec-cb-barco-encrypt",
-             "kind": "static",
-             "size": "32M",
-             "comment": "8 * 256 * 16K",
-             "cache": "p4plus-all"
-        },
-        {
-             "name": "ipsec-cb-barco-decrypt",
-             "kind": "static",
-             "size": "32M",
-             "comment": "8 * 256 * 16K",
-             "cache": "p4plus-all"
-        },
-        {
-             "name": "ipsec-nmdpr-encrypt-tx",
-             "kind": "static",
-             "comment": "8 * 2K",
-             "size": "16K"
-        },
-        {
-            "name": "ipsec-nmdpr-encrypt-rx",
-            "kind": "static",
-             "comment": "8 * 2K",
-             "size": "16K"
-        },
-        {
-            "name": "ipsec-nmdpr-decrypt-tx",
-            "kind": "static",
-             "comment": "8 * 2K",
-             "size": "16K"
-        },
-        {
-            "name": "ipsec-nmdpr-decrypt-rx",
-            "kind": "static",
-             "comment": "8 * 2K",
-             "size": "16K"
-        },
-        {
-            "name": "enc-page-big-tx",
-            "kind": "static",
-            "size": "19200K"
-        },
-        {
-            "name": "enc-page-big-rx",
-            "kind": "static",
-            "size": "19200K"
-        },
-        {
-            "name": "dec-page-big-tx",
-            "kind": "static",
-            "size": "19200K"
-        },
-        {
-            "name": "dec-page-big-rx",
-            "kind": "static",
-            "size": "19200K"
-        },
-        {
-            "name": "key-mem",
-            "kind": "static",
-            "size": "4096K"
-        },
-        {
-            "name": "crypto-asym-key-desc-array",
-            "kind": "static",
-            "size": "1024K"
-        },
-        {
-            "name": "ipsec_pad_table",
-            "kind": "static",
-            "size": "1K"
-        },
-        {
-            "name": "brq-ring-gcm0",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-gcm1",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-asym",
-            "kind": "static",
-            "size": "32K"
-        },
-        {
-            "name": "crypto-asym-dma-descr",
-            "kind": "static",
-            "size": "24K"
-        },
-        {
-            "name": "brq-ring-mpp0",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-mpp1",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-mpp2",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-mpp3",
-            "kind": "static",
-            "size": "128K"
-        },
-        {
-            "name": "brq-ring-cp",
-            "kind": "static",
-            "size": "256K"
-        },
-        {
-            "name": "brq-ring-cp-hot",
-            "kind": "static",
-            "size": "256K"
-        },
-        {
-            "name": "brq-ring-dc",
-            "kind": "static",
-            "size": "256K"
-        },
-        {
-            "name": "brq-ring-dc-hot",
-            "kind": "static",
-            "size": "256K"
-        },
-        {
-            "name": "crypto-sym-msg-descr",
-            "kind": "static",
-            "size": "64K"
-        },
-        {
-            "name": "crypto-hbm-mem",
-            "kind": "static",
-            "size": "512K"
-        },
-        {
-            "name": "crypto-hbm-mem-big",
-            "kind": "static",
-            "size": "5120K"
-        },
-	{
-            "name": "tls_proxy_pad_table",
-            "kind": "static",
-            "size": "1K"
-        },
-        {   "name": "key-desc-array",
-            "kind": "static",
-            "size": "1024K"
-        },
-        {
-            "name": "brq-ring-xts0",
-            "kind": "static",
-            "size": "512K",
-            "reset": true
-        },
-        {
-            "name": "brq-ring-xts1",
-            "kind": "static",
-            "size": "512K",
-            "reset": true
-        },
-        {
-            "_comment" : "32 entries of 64 Bytes each",
-            "name": "opaque_tag",
-            "kind": "static",
-            "size": "2K",
-            "reset": true
-        },
-        {
             "name": "p4_program",
             "kind": "cfgtbl",
             "size": "1024K"
@@ -369,8 +174,8 @@
         {
             "name": "lpm_v4",
             "kind": "cfgtbl",
-            "_comment": "(8+1) * (64 + 16 * 64 + 16 * 16 * 64 + 16 * 16 * 16 * 64)",
-            "size": "2458K",
+            "_comment": "(64+1) * (64 + 16 * 64 + 16 * 16 * 64 + 16 * 16 * 16 * 64)",
+            "size": "17750K",
             "block_size": "279616B",
             "max_elements": "16K",
             "cache": "p4plus-txdma"
@@ -430,12 +235,12 @@
             "_comment": "RFC tables: round64(2^17 * 64/51) + round64(2^18 * 64/51) + round64(2^20 * 64/51) = round64(164482) + round64(328965) + round64(1315860) = 164544 + 329024 + 1315904 = 1809472",
             "_comment": "RSLT table: round64(2^10 * 64/32) = 2048",
             "_comment": "Block Size: 89472 + 1809472 + 2048 = 1900992 = 1857K",
-            "_comment": "Block Count: 8 subnets, 2 policies per subnet per direction = ((8 * 2 * 2) + 1) = 33",
-            "_comment": "Size: 33 * 1857K = 61281K",
-            "block_count": "33",
+            "_comment": "Block Count: 32 subnets, 2 policies per subnet per direction = ((32 * 2 * 2) + 1) = 129",
+            "_comment": "Size: 129 * 1857K = 239553K",
+            "block_count": "129",
             "block_size": "1857K",
             "max_elements": "1K",
-            "size": "61281K",
+            "size": "239553K",
             "cache": "p4plus-rxdma",
             "cache1": "p4plus-txdma"
         },

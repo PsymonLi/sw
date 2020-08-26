@@ -57,7 +57,7 @@ protected:
             // create max TEPs which can be used as NHs for routes
             sample_tep_setup(bctxt);
         } else if (apulu()) {
-            k_max_v4_route_table = 8;
+            k_max_v4_route_table = 64;
             k_max_route_per_tbl = ((16*1024)-1);
             // device and security policy config required for vnic
             sample_device_setup(bctxt);

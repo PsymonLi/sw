@@ -61,6 +61,8 @@ pds_memory_profile_to_string (pds_memory_profile_t profile)
     switch (profile) {
     case PDS_MEMORY_PROFILE_ROUTER:
         return std::string("router");
+    case PDS_MEMORY_PROFILE_IPSEC:
+        return std::string("ipsec");
     case PDS_MEMORY_PROFILE_DEFAULT:
     default:
         return std::string("");

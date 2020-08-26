@@ -108,8 +108,9 @@ asic_asm_init (asic_cfg_t *cfg, bool write_to_mem)
         }
 
         symbols = NULL;
-        if(cfg->asm_cfg[i].symbols_func) {
-            num_symbols = cfg->asm_cfg[i].symbols_func((void **)&symbols, cfg->platform);
+        if (cfg->asm_cfg[i].symbols_func) {
+            num_symbols = cfg->asm_cfg[i].symbols_func((void **)&symbols,
+                                                       cfg->platform);
         }
 
         base_addr = asic_get_mem_addr(cfg->asm_cfg[i].base_addr.c_str());
@@ -141,4 +142,4 @@ asic_asm_init (asic_cfg_t *cfg, bool write_to_mem)
 
 
 }    // asic
-}    // sdk 
+}    // sdk

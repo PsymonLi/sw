@@ -21,6 +21,9 @@
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/esp_ipv4_tunnel_h2n_rxdma/include/esp_ipv4_tunnel_h2n_rxdma_p4plus_ingress.h"
 
+#define MEM_REGION_IPSEC_CB_ENCRYPT          "ipsec-cb-encrypt"
+#define MEM_REGION_IPSEC_CB_BARCO_ENCRYPT    "ipsec-cb-barco-encrypt"
+
 using namespace sdk::asic::pd;
 
 namespace api {
@@ -53,7 +56,7 @@ add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 
     ret = get_ipsec_rx_stage0_prog_addr(&pc_offset);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Could not get ipsec stage 0 addr, ret = %d", ret);
+        PDS_TRACE_ERR("Could not get ipsec stage 0 addr, err %u", ret);
         return ret;
     }
     data.action_id = pc_offset;
@@ -61,32 +64,39 @@ add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.ipsec_encap_rxdma_initial_table_d.iv = ctxt->encrypt_spec->iv;
     data.u.ipsec_encap_rxdma_initial_table_d.iv_salt = ctxt->encrypt_spec->salt;
     data.u.ipsec_encap_rxdma_initial_table_d.iv_size = IPSEC_DEF_IV_SIZE;
-    data.u.ipsec_encap_rxdma_initial_table_d.icv_size = IPSEC_AES_GCM_DEF_ICV_SIZE;
+    data.u.ipsec_encap_rxdma_initial_table_d.icv_size =
+        IPSEC_AES_GCM_DEF_ICV_SIZE;
     data.u.ipsec_encap_rxdma_initial_table_d.esn_lo = 0;
-    data.u.ipsec_encap_rxdma_initial_table_d.spi = htonl(ctxt->encrypt_spec->spi);
+    data.u.ipsec_encap_rxdma_initial_table_d.spi =
+        htonl(ctxt->encrypt_spec->spi);
     data.u.ipsec_encap_rxdma_initial_table_d.ipsec_cb_index = htons(ctxt->hw_id);
 
-    PDS_TRACE_DEBUG("iv 0x%lx salt 0x%x iv_size %d icv_size %d esn_lo %d spi %d",
-            ctxt->encrypt_spec->iv, ctxt->encrypt_spec->salt, IPSEC_DEF_IV_SIZE, IPSEC_AES_GCM_DEF_ICV_SIZE,
-            0, ctxt->encrypt_spec->spi);
+    PDS_TRACE_DEBUG("iv 0x%lx salt 0x%x iv_size %d icv_size %d esn_lo %d spi %u",
+                    ctxt->encrypt_spec->iv, ctxt->encrypt_spec->salt,
+                    IPSEC_DEF_IV_SIZE, IPSEC_AES_GCM_DEF_ICV_SIZE,
+                    0, ctxt->encrypt_spec->spi);
 
     data.u.ipsec_encap_rxdma_initial_table_d.key_index = htons(ctxt->key_index);
     PDS_TRACE_DEBUG("key_index = %d", ctxt->key_index);
 
-    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_ENCRYPT_NAME) +
-                         ctxt->hw_id * IPSEC_DEFAULT_RING_SIZE * IPSEC_PER_CB_RING_SIZE;
+    ipsec_cb_ring_addr =
+        asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_ENCRYPT) + ctxt->hw_id *
+        IPSEC_DEFAULT_RING_SIZE * IPSEC_PER_CB_RING_SIZE;
     PDS_TRACE_DEBUG("CB ring addr 0x%lx", ipsec_cb_ring_addr);
 
-    data.u.ipsec_encap_rxdma_initial_table_d.cb_ring_base_addr = htonl((uint32_t)(ipsec_cb_ring_addr & 0xFFFFFFFF));
+    data.u.ipsec_encap_rxdma_initial_table_d.cb_ring_base_addr =
+        htonl((uint32_t)(ipsec_cb_ring_addr & 0xFFFFFFFF));
     data.u.ipsec_encap_rxdma_initial_table_d.cb_cindex = 0;
     data.u.ipsec_encap_rxdma_initial_table_d.cb_pindex = 0;
 
-    ipsec_barco_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_ENCRYPT_NAME) +
+    ipsec_barco_ring_addr =
+        asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_ENCRYPT) +
                             ctxt->hw_id * IPSEC_BARCO_SLOT_ELEM_SIZE *
                             IPSEC_BARCO_RING_SIZE;
     PDS_TRACE_DEBUG("Barco ring addr 0x%lx", ipsec_barco_ring_addr);
 
-    data.u.ipsec_encap_rxdma_initial_table_d.barco_ring_base_addr = htonl((uint32_t) (ipsec_barco_ring_addr & 0xFFFFFFFF));
+    data.u.ipsec_encap_rxdma_initial_table_d.barco_ring_base_addr =
+        htonl((uint32_t) (ipsec_barco_ring_addr & 0xFFFFFFFF));
     data.u.ipsec_encap_rxdma_initial_table_d.barco_cindex = 0;
     data.u.ipsec_encap_rxdma_initial_table_d.barco_pindex = 0;
 
@@ -150,16 +160,22 @@ get_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
                                             sizeof(data));
-    ctxt->encrypt_info->spec.iv = ntohll(data.u.ipsec_encap_rxdma_initial_table_d.iv);
-    ctxt->encrypt_info->spec.salt = data.u.ipsec_encap_rxdma_initial_table_d.iv_salt;
-    ctxt->encrypt_info->spec.spi = ntohl(data.u.ipsec_encap_rxdma_initial_table_d.spi);
-    ctxt->encrypt_info->status.key_index = ntohs(data.u.ipsec_encap_rxdma_initial_table_d.key_index);
-    ipsec_cb_ring_addr = ntohl(data.u.ipsec_encap_rxdma_initial_table_d.cb_ring_base_addr);
+    ctxt->encrypt_info->spec.iv =
+        ntohll(data.u.ipsec_encap_rxdma_initial_table_d.iv);
+    ctxt->encrypt_info->spec.salt =
+        data.u.ipsec_encap_rxdma_initial_table_d.iv_salt;
+    ctxt->encrypt_info->spec.spi =
+        ntohl(data.u.ipsec_encap_rxdma_initial_table_d.spi);
+    ctxt->encrypt_info->status.key_index =
+        ntohs(data.u.ipsec_encap_rxdma_initial_table_d.key_index);
+    ipsec_cb_ring_addr =
+        ntohl(data.u.ipsec_encap_rxdma_initial_table_d.cb_ring_base_addr);
 
-    ipsec_barco_ring_addr  = ntohl(data.u.ipsec_encap_rxdma_initial_table_d.barco_ring_base_addr);
+    ipsec_barco_ring_addr =
+        ntohl(data.u.ipsec_encap_rxdma_initial_table_d.barco_ring_base_addr);
 
-    PDS_TRACE_DEBUG("CB ring addr 0x%lx barco ring addr 0x%lx pindex %ld cindex %ld",
-                    ipsec_cb_ring_addr, ipsec_barco_ring_addr,
+    PDS_TRACE_DEBUG("CB ring addr 0x%lx barco ring addr 0x%lx pindex %ld "
+                    "cindex %ld", ipsec_cb_ring_addr, ipsec_barco_ring_addr,
                     data.u.ipsec_encap_rxdma_initial_table_d.barco_pindex,
                     data.u.ipsec_encap_rxdma_initial_table_d.barco_cindex);
     return SDK_RET_OK;
@@ -303,9 +319,11 @@ ipseccb_encrypt_set_mode (uint32_t hw_id, mem_addr_t base_pa,
                                             sizeof(data));
 
     if (mode == IPSEC_MODE_TRANSPORT) {
-        cb->u.ipsec_encap_rxdma_initial_table_d.flags |= IPSEC_FLAGS_MODE_TRANSPORT;
+        cb->u.ipsec_encap_rxdma_initial_table_d.flags |=
+            IPSEC_FLAGS_MODE_TRANSPORT;
     } else {
-        cb->u.ipsec_encap_rxdma_initial_table_d.flags &= ~IPSEC_FLAGS_MODE_TRANSPORT;
+        cb->u.ipsec_encap_rxdma_initial_table_d.flags &=
+            ~IPSEC_FLAGS_MODE_TRANSPORT;
     }
 
     PDS_TRACE_DEBUG("Programming mode cb %u, mode %u", hw_id, mode);

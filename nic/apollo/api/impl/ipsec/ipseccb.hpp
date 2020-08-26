@@ -59,6 +59,28 @@
 #define IPSEC_DEC_DB_ADDR_SET_PI_PARAM_NAME     "IPSEC_DEC_DB_ADDR_SET_PI"
 #define IPSEC_DEC_DB_ADDR_NOP_PARAM_NAME        "IPSEC_DEC_DB_ADDR_NOP"
 
+// IPSec memory regions
+#define MEM_REGION_IPSEC_CB_ENCRYPT             "ipsec-cb-encrypt"
+#define MEM_REGION_IPSEC_CB_BARCO_ENCRYPT       "ipsec-cb-barco-encrypt"
+#define MEM_REGION_IPSEC_CB_DECRYPT             "ipsec-cb-decrypt"
+#define MEM_REGION_IPSEC_CB_BARCO_DECRYPT       "ipsec-cb-barco-decrypt"
+#define MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX       "ipsec-nmdpr-encrypt-tx"
+#define MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX       "ipsec-nmdpr-encrypt-rx"
+#define MEM_REGION_IPSEC_GLOBAL_DROP_STATS      "ipsec-global-drop-stats"
+#define MEM_REGION_ENC_PAGE_BIG_TX              "enc-page-big-tx"
+#define MEM_REGION_ENC_PAGE_BIG_RX              "enc-page-big-rx"
+#define MEM_REGION_DEC_PAGE_BIG_TX              "dec-page-big-tx"
+#define MEM_REGION_DEC_PAGE_BIG_RX              "dec-page-big-rx"
+#define MEM_REGION_IPSEC_PAD_TABLE              "ipsec-pad-table"
+#define MEM_REGION_TLS_PROXY_PAD_TABLE          "tls-proxy-pad-table"
+#define MEM_REGION_IPSEC_NMDPR_DECRYPT_TX       "ipsec-nmdpr-decrypt-tx"
+#define MEM_REGION_IPSEC_NMDPR_DECRYPT_RX       "ipsec-nmdpr-decrypt-rx"
+#define MEM_REGION_IPSEC_GLOBAL_DROP_STATS      "ipsec-global-drop-stats"
+#define MEM_REGION_BRQ_RING_GCM0                "brq-ring-gcm0"
+#define MEM_REGION_BRQ_RING_GCM1                "brq-ring-gcm1"
+#define MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX       "ipsec-nmdpr-encrypt-tx"
+#define MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX       "ipsec-nmdpr-encrypt-rx"
+
 //------------------------------------------------------------------------------
 // Data structures
 //------------------------------------------------------------------------------

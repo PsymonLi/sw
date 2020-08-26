@@ -1022,9 +1022,8 @@ sacl_result_table_entry_pack (uint32_t table_idx, uint32_t entry_num,
                               uint8_t alg_type, uint8_t stateful,
                               uint16_t priority, uint8_t action)
 {
-    PDS_TRACE_DEBUG("SACL Result table[0x%x] <- alg_type: %u, stateful: %u, "
-                    "priority: %u, action: %u",
-                    table_idx, alg_type, stateful, priority, action);
+    PDS_TRACE_VERBOSE("RFC result table[0x%x] <- alg %u, priority %u, "
+                      "action %u", table_idx, alg_type, priority, action);
     switch (entry_num) {
     case 0:
         entry->action_u.sacl_result_sacl_action_result.alg_type00 = alg_type;
@@ -1219,7 +1218,7 @@ sacl_result_table_entry_pack (uint32_t table_idx, uint32_t entry_num,
         entry->action_u.sacl_result_sacl_action_result.action31 = action;
         break;
     default:
-    PDS_TRACE_ERR("Invalid entry number %u while packing SACL Result table",
+    PDS_TRACE_ERR("Invalid entry number %u while packing RFC result table",
                   entry_num);
         break;
     }

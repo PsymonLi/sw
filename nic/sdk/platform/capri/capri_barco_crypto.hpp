@@ -11,7 +11,7 @@ namespace capri {
 
 #define CAPRI_BARCO_KEY_MEM              "key-mem"
 #define CAPRI_BARCO_KEY_DESC             "key-desc-array"
-#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls_proxy_pad_table"
+#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls-proxy-pad-table"
 #define ASIC_HBM_REG_IPSEC_PAD_TABLE     "ipsec_pad_table"
 
 #define BARCO_CRYPTO_DESC_SZ                128 /* 1024 bits */
@@ -295,7 +295,7 @@ sdk_ret_t capri_barco_asym_write_key(int32_t key_idx, capri_barco_asym_key_desc_
 		  << CAPRI_BARCO_SYM_COMMAND_AES_CCM_NONCE_SHIFT) |              \
 		 (Tag_size & CAPRI_BARCO_SYM_COMMAND_AES_CCM_TAG_SIZE_MASK))
 
-                                                 
+
 #define CAPRI_BARCO_SYM_COMMAND_DES_ECB_Encrypt \
   (CAPRI_BARCO_SYM_COMMAND_ALGO_DES_ECB | (0x0 << CAPRI_BARCO_SYM_COMMAND_OPER_SHIFT))
 #define CAPRI_BARCO_SYM_COMMAND_DES_ECB_Decrypt \

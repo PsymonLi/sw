@@ -1,11 +1,9 @@
 {
     "guideline": {
         "_comment"  : "Regions are categorized to 'static','upgrade','opertbl' and 'cfgtbl'",
-        "_comment" : "For non-disruptive sw upgrades, the static* should not be modified across releases",
-        "_comment" : "Memory fragmentation and upgrade issues, all static regions should be placed adjacent",
-        "_comment" : "Memory fragmentation and upgrade issues, all opertbl regions should be placed adjacent",
-		"_comment_" : "this profile can support 32 IPv4 route tables, each with",
-		"_comment_" : "a max of 256K IPv4 routes"
+        "_comment1" : "For non-disruptive sw upgrades, the static* should not be modified across releases",
+        "_comment2" : "Memory fragmentation and upgrade issues, all static regions should be placed adjacent",
+        "_comment2" : "Memory fragmentation and upgrade issues, all opertbl regions should be placed adjacent"
     },
     "meta": {
         "total_size" : "6G"
@@ -87,12 +85,13 @@
             "_comment2": "Allocation unit is 8 MiB",
             "_comment3": "Alignment is naturally-aligned",
             "name": "eth_cmb",
-            "size": "32M",
+            "size": "64M",
             "kind": "static",
             "cache": "p4plus-all"
         },
         {
             "name": "nicmgrqstate_map",
+            "align": "4K",
             "size": "32M",
             "kind": "static",
             "cache": "p4plus-all"
@@ -101,6 +100,12 @@
             "name": "nicmgr",
             "kind": "static",
             "size" : "32M"
+        },
+        {
+            "name": "qos-hbm-fifo",
+            "kind": "static",
+            "size": "256M",
+            "align": "256B"
         },
         {
             "name": "fwupdate",
@@ -132,8 +137,21 @@
         {
             "name": "lif2qstate_map",
             "kind": "static",
+            "align": "4K",
             "size": "4K",
             "cache": "p4plus-all"
+        },
+        {
+            "name": "edma",
+            "kind": "static",
+            "size" : "4K"
+        },
+        {
+            "name": "ipsec_lif2qstate_map",
+            "kind": "static",
+            "align": "4K",
+            "size": "8M",
+            "comment": "256B * 16K * 2 sessions"
         },
         {
             "name": "rxdma_to_txdma_buf",
@@ -153,106 +171,77 @@
               "size": "2K"
         },
         {
-             "name": "ipsec-cb",
+             "name": "ipsec-cb-encrypt",
              "kind": "static",
-             "size": "128K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec_cb_barco",
+             "name": "ipsec-cb-decrypt",
              "kind": "static",
-             "size": "8192K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-nmdr-tx",
+             "name": "ipsec-cb-barco-encrypt",
              "kind": "static",
-             "size": "128K"
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
+             "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-nmdr-rx",
+             "name": "ipsec-cb-barco-decrypt",
              "kind": "static",
-             "size": "128K"
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
+             "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-big-nmdr-tx",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "ipsec-big-nmdr-rx",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "nmdr-tx-gc",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "nmdr-rx-gc",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-            "name": "ipsec-nmpr-tx",
+            "name": "ipsec-nmdpr-encrypt-tx",
             "kind": "static",
-            "size": "1024K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-rx",
+            "name": "ipsec-nmdpr-encrypt-rx",
             "kind": "static",
-            "size": "1024K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-big-tx",
+            "name": "ipsec-nmdpr-decrypt-tx",
             "kind": "static",
-            "size": "10240K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-big-rx",
+            "name": "ipsec-nmdpr-decrypt-rx",
             "kind": "static",
-            "size": "10240K"
-        },
-        {
-            "name": "ipsec-descriptor-tx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-descriptor-rx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-big-descriptor-tx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-big-descriptor-rx",
-            "kind": "static",
-            "size": "2048K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
             "name": "enc-page-big-tx",
             "kind": "static",
-            "size": "40960K"
+            "comment": "2K * 9600",
+            "size": "19200K"
         },
         {
             "name": "enc-page-big-rx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "dec-page-big-tx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "dec-page-big-rx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "key-mem",
@@ -393,19 +382,19 @@
         {
             "name": "lpm_v4",
             "kind": "cfgtbl",
-            "_comment": "(32+1) * (64 + 16 * 64 + 16^2 * 64 + 16^3 * 64 + 16^4 * 64)",
-            "size": "141M",
-            "block_size": "4473920B",
-            "max_elements": "256K",
+            "_comment": "(1024+1) * (64 + 16 * 64 + 16 * 16 * 64)",
+            "size": "18M",
+            "block_size": "17472B",
+            "max_elements": "1K",
             "cache": "p4plus-txdma"
         },
         {
             "name": "lpm_v6",
             "kind": "cfgtbl",
-            "_comment": "(32+1) * (64 + 8 * 64 + 8^2 * 64 + 8^3 * 64)",
+            "_comment": "(1024+1) * (64 + 8 * 64 + 8 * 8 * 64 + 8 * 8 * 8 * 64)",
             "size": "1K",
             "block_size": "1B",
-            "max_elements": "256K",
+            "max_elements": "1K",
             "cache": "p4plus-txdma"
         },
         {
@@ -451,7 +440,7 @@
             "name": "sacl_v4",
             "kind": "cfgtbl",
             "_comment": "LPM tables: 17472 + 17472 + 17472 + 17472 + 17472 + 2112 = 89472",
-            "_comment": "RFC tables: round64(2^17 * 64/51) + round64(2^18 * 64/51) + round64(2^20 * 64/46) = round64(164482) + round64(328965) + round64(1315860) = 164544 + 329024 + 1315904 = 1809472",
+            "_comment": "RFC tables: round64(2^17 * 64/51) + round64(2^18 * 64/51) + round64(2^20 * 64/51) = round64(164482) + round64(328965) + round64(1315860) = 164544 + 329024 + 1315904 = 1809472",
             "_comment": "RSLT table: round64(2^10 * 64/32) = 2048",
             "_comment": "Block Size: 89472 + 1809472 + 2048 = 1900992 = 1857K",
             "_comment": "Scale Reqd: 32 vnics, 32 subnets, 5 policies per vnic per direction, 1 policy per subnet per direction",
@@ -460,6 +449,23 @@
             "block_size": "1857K",
             "block_count": "385",
             "size": "714945K",
+            "max_elements": "1K",
+            "cache": "p4plus-rxdma",
+            "cache1": "p4plus-txdma"
+        },
+        {
+            "name": "sacl_v6",
+            "kind": "cfgtbl",
+            "_comment": "LPM tables:87360 + 87360 + 17472 + 17472 + 17472 + 2112 = 229248",
+            "_comment": "RFC tables: round64(2^17 * 64/51) + round64(2^18 * 64/51) + round64(2^20 * 64/46) = round64(164482) + round64(328965) + round64(1315860) = 164544 + 329024 + 1315904 = 1809472",
+            "_comment": "RSLT table: round64(2^10 * 64/32) = 2048",
+            "_comment": "Block Size: 229248 + 1809472 + 2048 = 2040768 = 1993K",
+            "_comment": "Scale Reqd: 1K vnics, 1K subnets, 5 policies per vnic per direction, 1 policy per subnet per direction",
+            "_comment": "Block Count:((1K * 5) * 2) + ((1K * 1) * 2) + 1 = 12K +1 blocks = 12289 blocks",
+            "_comment": "Size: 12289 * 1993K = 24491977K",
+            "block_size": "1B",
+            "block_count": "12289",
+            "size": "1K",
             "max_elements": "1K",
             "cache": "p4plus-rxdma",
             "cache1": "p4plus-txdma"
@@ -474,23 +480,6 @@
             "max_elements": "1K",
             "size": "3080K",
             "cache": "p4plus-txdma"
-        },
-        {
-            "name": "sacl_v6",
-            "kind": "cfgtbl",
-            "_comment": "LPM tables:87360 + 87360 + 17472 + 17472 + 17472 + 2112 = 229248",
-            "_comment": "RFC tables: round64(2^17 * 64/51) + round64(2^18 * 64/51) + round64(2^20 * 64/51) = round64(164482) + round64(328965) + round64(1315860) = 164544 + 329024 + 1315904 = 1809472",
-            "_comment": "RSLT table: round64(2^10 * 64/32) = 2048",
-            "_comment": "Block Size: 229248 + 1809472 + 2048 = 2040768 = 1993K",
-            "_comment": "Scale Reqd: 1K vnics, 1K subnets, 5 policies per vnic per direction, 1 policy per subnet per direction",
-            "_comment": "Block Count:((1K * 5) * 2) + ((1K * 1) * 2) + 1 = 12K +1 blocks = 12289 blocks",
-            "_comment": "Size: 12289 * 1993K = 24491977K",
-            "block_count": "12289",
-            "block_size": "1B",
-            "max_elements": "1K",
-            "size": "1K",
-            "cache": "p4plus-rxdma",
-            "cache1": "p4plus-txdma"
         },
         {
             "name": "vnic_info_rxdma",
@@ -577,6 +566,14 @@
             "_comment": "1M * 32B"
         },
         {
+            "name": "flow_info",
+            "kind": "opertbl",
+            "size": "32M",
+            "cache": "p4ig",
+            "reset": true,
+            "_comment": "4M * 8B"
+        },
+        {
             "name": "ip_mac_binding",
             "kind": "opertbl",
             "size": "512K",
@@ -649,9 +646,9 @@
         {
             "name": "nat",
             "kind": "cfgtbl",
-            "size": "131072K",
+            "size": "32M",
             "cache": "p4eg",
-            "_comment": "TBD"
+            "_comment": "1M * 32B"
         },
         {
             "name": "nat2",
@@ -659,12 +656,6 @@
             "size": "256K",
             "cache": "p4eg",
             "_comment": "8K * 32B"
-        },
-        {
-            "name": "qos-hbm-fifo",
-            "kind": "cfgtbl",
-            "size": "256M",
-            "align": "256B"
         },
         {
             "name": "tx-scheduler",

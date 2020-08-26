@@ -321,7 +321,7 @@
             "reset": true
         },
         {
-            "name": "tls_proxy_pad_table",
+            "name": "tls-proxy-pad-table",
             "size": "1K"
         },
         {

@@ -164,6 +164,8 @@ init_pds (std::string cfg_file, std::string memory_profile,
     if (!memory_profile.empty()) {
         if (memory_profile.compare("router") == 0) {
             init_params.memory_profile = PDS_MEMORY_PROFILE_ROUTER;
+        } else if (memory_profile.compare("ipsec") == 0) {
+            init_params.memory_profile = PDS_MEMORY_PROFILE_IPSEC;
         }
     }
     init_params.device_profile = PDS_DEVICE_PROFILE_DEFAULT;

@@ -67,7 +67,7 @@ namespace hal  {
 #define ASIC_HBM_REG_CRYPTO_HBM_MEM_BIG  "crypto-hbm-mem-big"
 #define ASIC_HBM_REG_ASYM_KEY_DESCR     "crypto-asym-key-desc-array"
 #define ASIC_HBM_REG_IPSEC_PAD_TABLE    "ipsec_pad_table"
-#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls_proxy_pad_table"
+#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls-proxy-pad-table"
 #define ASIC_HBM_REG_TLS_PROXY_BARCO_GCM0_PI "tls_proxy_barco_gcm0_pi"
 #define ASIC_HBM_REG_BSQ                "bsq"
 #define ASIC_HBM_REG_SERQ               "serq"

@@ -59,7 +59,7 @@ get_pipeline_file_path (std::string cfg_path)
 /// \param[in] pipeline name of the pipeline
 /// \param[in] catalog pointer to catalog object
 /// \param[in] profile feature or memory profile
-/// \param[in] plaform_type type of platform 
+/// \param[in] plaform_type type of platform
 /// \return    return absolute path to memory partition file, if
 ///            successful, else empty string
 static inline __attribute__((always_inline)) std::string
@@ -82,12 +82,14 @@ get_mpart_file_path (std::string cfg_path, std::string pipeline,
         if (datapath_mem == 0x80000000) { //2G
             mem_str = "4g";
         }
-    }    
-    hbm_file = profile.length() ? "hbm_mem_" + profile + ".json" : "hbm_mem.json";
+    }
+    hbm_file =
+        profile.length() ? "hbm_mem_" + profile + ".json" : "hbm_mem.json";
     if (likely((platform_type == platform_type_t::PLATFORM_TYPE_HW))) {
         return cfg_path + "/" + pipeline + "/" + mem_str + "/" + hbm_file;
     } else {
-        return cfg_path + "/" + pipeline + "/" + catalog->asic_type_str(0) + "/" + mem_str + "/" + hbm_file;
+        return cfg_path + "/" + pipeline + "/" + catalog->asic_type_str(0) +
+                   "/" + mem_str + "/" + hbm_file;
     }
 }
 

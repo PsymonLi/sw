@@ -68,7 +68,7 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     PDS_TRACE_DEBUG("key_index %d", ctxt->key_index);
     // the below may have to use a different range for the reverse direction
 
-    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_DECRYPT_NAME);
+    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_DECRYPT);
     PDS_TRACE_DEBUG("CB ring addr 0x%lx", ipsec_cb_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_ring_base_addr =
@@ -77,7 +77,7 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_pindex = 0;
 
     ipsec_barco_ring_addr =
-        asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_DECRYPT_NAME);
+        asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_DECRYPT);
     PDS_TRACE_DEBUG("Barco ring addr 0x%lx", ipsec_barco_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_ring_base_addr = htonll(ipsec_barco_ring_addr);

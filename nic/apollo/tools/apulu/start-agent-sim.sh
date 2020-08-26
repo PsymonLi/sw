@@ -23,6 +23,10 @@ if [[ -n ${DEVICE_OPER_MODE} ]]; then
     CMDARGS+=" --oper-mode=$DEVICE_OPER_MODE "
 fi
 
+if [[ $IPSEC ]]; then
+    CMDARGS+=" --memory-profile=ipsec"
+fi
+
 source $CUR_DIR/../setup_env_sim.sh apulu $LOGDIR
 
 # mount hugetlbfs

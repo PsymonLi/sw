@@ -23,7 +23,7 @@ namespace elba {
 
 #define ELBA_BARCO_KEY_MEM              "key-mem"
 #define ELBA_BARCO_KEY_DESC             "key-desc-array"
-#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls_proxy_pad_table"
+#define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls-proxy-pad-table"
 
 #define BARCO_CRYPTO_DESC_SZ                128 /* 1024 bits */
 #define BARCO_CRYPTO_DESC_ALIGN_BYTES       128

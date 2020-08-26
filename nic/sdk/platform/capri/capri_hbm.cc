@@ -276,7 +276,6 @@ capri_hbm_cache_program_region (mpartition_region_t *reg,
         pics_csr.picc.filter_addr_ctl_m.value[filter_idx].value(0xd);
         pics_csr.picc.filter_addr_ctl_m.value[filter_idx].write();
     }
-
     return SDK_RET_OK;
 }
 

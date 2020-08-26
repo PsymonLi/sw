@@ -34,6 +34,7 @@
 #include "nic/apollo/api/impl/apulu/qos_impl.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/apulu/qos_impl.hpp"
+#include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
@@ -129,7 +130,7 @@ uint32_t
 apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
                                 platform_type_t platform_type)
 {
-    uint32_t    i = 0;
+    uint32_t i = 0;
 
     *p4plus_symbols =
         (sdk::p4::p4_param_info_t *)SDK_CALLOC(SDK_MEM_ALLOC_PDS_RXDMA_SYMBOLS,
@@ -145,72 +146,92 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
 
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_TNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_PAGE_ADDR_RX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX) +
         IPSEC_NMDPR_RING_SIZE * IPSEC_NMDPR_OBJ_SIZE;;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_PAD_BYTES_HBM_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_PAD_TABLE_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_PAD_TABLE);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_ENC_NMDR_PI;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_ENC_NMDR_ALLOC_PI;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + CAPRI_IPSEC_ENC_NMDR_ALLOC_PI;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_DEC_NMDR_PI;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_PI;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + CAPRI_IPSEC_DEC_NMDR_ALLOC_PI;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_BIG_RNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_RX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_RX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
@@ -235,7 +256,6 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
     symbols[i].val = APULU_IPSEC_LIF;
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-
     return i;
 }
 
@@ -260,101 +280,129 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
 
     symbols[i].name = BRQ_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_BRQ_RING_GCM0_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_BRQ_RING_GCM0);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_PAGE_ADDR_RX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX) +
         IPSEC_NMDPR_RING_SIZE * IPSEC_NMDPR_OBJ_SIZE;;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_PAGE_ADDR_TX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX) +
         IPSEC_NMDPR_RING_SIZE * IPSEC_NMDPR_OBJ_SIZE;;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_BIG_RNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_RX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_RX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_ENC_NMDR_CI;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_ENC_NMDR_ALLOC_CI;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + CAPRI_IPSEC_ENC_NMDR_ALLOC_CI;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_DEC_NMDR_CI;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_CI;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + CAPRI_IPSEC_DEC_NMDR_ALLOC_CI;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_TNMPR_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = TLS_PROXY_BARCO_GCM0_PI_HBM_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + BARCO_GCM0_PI_HBM_TABLE_OFFSET;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + BARCO_GCM0_PI_HBM_TABLE_OFFSET;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = TLS_PROXY_BARCO_GCM1_PI_HBM_TABLE_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + BARCO_GCM1_PI_HBM_TABLE_OFFSET;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE) + BARCO_GCM1_PI_HBM_TABLE_OFFSET;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = BRQ_GCM1_BASE;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_BRQ_RING_GCM1_NAME);
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_BRQ_RING_GCM1);
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
-    SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
+    if (symbols[i].val == INVALID_MEM_ADDRESS) {
+        symbols[i].val = 0;
+    }
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
@@ -513,16 +561,26 @@ void
 apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     int i = 0;
 
+    if (asic_cfg->mempartition->size("ipsec-cb-encrypt") == 0) {
+        // ipsec is not enabled in this memory profile
+        asic_cfg->num_rings = 0;
+        return;
+    }
+
+    // set the ring configuration
     asic_cfg->num_rings = 4;
-    asic_cfg->ring_meta = (sdk::platform::ring_meta_t *)SDK_CALLOC(
-            SDK_MEM_ALLOC_PDS_RINGS, asic_cfg->num_rings *
-            sizeof(sdk::platform::ring_meta_t));
+    asic_cfg->ring_meta =
+        (sdk::platform::ring_meta_t *)SDK_CALLOC(
+                                          SDK_MEM_ALLOC_PDS_RINGS,
+                                          asic_cfg->num_rings *
+                                              sizeof(sdk::platform::ring_meta_t));
 
     SDK_ASSERT(i < asic_cfg->num_rings);
     asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_RNMPR";
     asic_cfg->ring_meta[i].is_global = true;
-    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX_NAME;
-    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_RX_NAME;
+    asic_cfg->ring_meta[i].hbm_reg_name =
+        MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_RX;
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMDPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMDPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
@@ -533,8 +591,8 @@ apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     SDK_ASSERT(i < asic_cfg->num_rings);
     asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_TNMPR";
     asic_cfg->ring_meta[i].is_global = true;
-    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX_NAME;
-    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_TX_NAME;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_ENCRYPT_TX;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_TX;
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMDPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMDPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
@@ -545,8 +603,8 @@ apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     SDK_ASSERT(i < asic_cfg->num_rings);
     asic_cfg->ring_meta[i].ring_name = "IPSEC_DEC_RNMPR";
     asic_cfg->ring_meta[i].is_global = true;
-    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_DECRYPT_RX_NAME;
-    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_RX_NAME;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_DECRYPT_RX;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_RX;
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMDPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMDPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
@@ -557,8 +615,8 @@ apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     SDK_ASSERT(i < asic_cfg->num_rings);
     asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_TNMPR";
     asic_cfg->ring_meta[i].is_global = true;
-    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_DECRYPT_TX_NAME;
-    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_TX_NAME;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMDPR_DECRYPT_TX;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_TX;
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMDPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMDPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
@@ -1069,7 +1127,7 @@ apulu_impl::program_ipsec_lif_(void) {
                             PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true,
                             P4_LIF_DIR_UPLINK);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program lif table for ipsec, ret=%u", ret);
+        PDS_TRACE_ERR("Failed to program lif table for ipsec, err %u", ret);
     }
 
     return SDK_RET_OK;
