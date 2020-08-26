@@ -3252,7 +3252,6 @@ elba_tm_disable_hbm_for_all_ports()
 {
     elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_pf_csr_t &pf_csr = elb0.pf.pf;
-    elb_pbc_csr_t &pbc_csr = elb0.pb.pbc;
 
 //:: for p in range(TM_PORTS):
 //::     pinfo = port_info[p]
