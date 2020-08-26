@@ -138,6 +138,14 @@ class DolVerifEngineObject(VerifEngineObject):
             agid = adescr.GID()
 
         logger.info("Comparing Descriptors: %s <--> %s " % (egid, agid))
+        if adescr is not None:
+            abuf = self.__get_buffer(adescr, tc)
+            if abuf is not None:
+                apktbuf = self.__get_pktbuffer(abuf, tc)
+        if edescr is not None:
+            ebuf = self.__get_buffer(edescr, tc)
+            if ebuf is not None:
+                epktbuf = self.__get_pktbuffer(ebuf, tc)
         return edescr == adescr
 
     def __verify_one_descriptor(self, edescr, adescr, negtest, tc):

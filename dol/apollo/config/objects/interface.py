@@ -278,6 +278,9 @@ class HostInterfaceObject(InterfaceObject):
     def GetInterfaceNetwork(self):
         return self.Network
 
+    def GetLifId(self):
+        return self.lif.id
+
     def SetIfNameFromAgentData(self, ifname):
         # Netagent uses <mac>-<pfid> as key for host interfaces
         # for example 00ae.cd00.ff18-pf-71.

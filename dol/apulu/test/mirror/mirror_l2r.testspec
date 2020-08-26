@@ -233,12 +233,39 @@ packets:
             payload :                                                                                                                           
                 data: callback://mirror/packets/GetRSPANPayload/pktid=RSPAN_MIRROR_PKT_TX_BASE_8,direction=TX,id=8 
 
-    - packet:
+    - packet: 
         id          : ERSPAN_MIRROR_PKT_TX_BASE # Expected ERSPAN tx mirrored packet base
         payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO70/size
         template    : ref://testcase/packets/id=RAW
         encaps      :
             - ref://factory/packets/id=ENCAP_ERSPAN_TYPE_3_NO_QTAG
+        headers     :
+            erspaneth:
+                src    : callback://networking/packets/GetUplinkPortMac
+                dst    : 00:00:00:00:00:00 
+            erspanipv4:
+                tos    : 0
+                id     : 0
+            erspangre:
+            erspan:
+                sessionid : 0
+                ver       : const/2
+                d         : callback://mirror/packets/GetERSPANDirection/direction=TX
+                gra       : 0x3
+                t         : 0
+                vlan      : callback://networking/packets/GetVnicQTag
+                cos       : callback://mirror/packets/GetERSPANCos/pktid=FROM_HOST_PKT
+            erspantype3opt:
+                port_id    : 1
+            payload :
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO70/data
+
+    - packet:
+        id          : ERSPAN_QTAG_MIRROR_PKT_TX_BASE # Expected ERSPAN tx mirrored packet base
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO70/size
+        template    : ref://testcase/packets/id=RAW
+        encaps      :
+            - ref://factory/packets/id=ENCAP_ERSPAN_TYPE_3
         headers     :
             erspaneth:
                 src    : callback://networking/packets/GetUplinkPortMac
@@ -265,14 +292,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_1 # Expected ERSPAN tx mirrored packet for session 1
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=1
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=1
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=1
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=1
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=1
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=1
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=1
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=1
@@ -290,14 +317,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_2 # Expected ERSPAN tx mirrored packet for session 2
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=2
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=2
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=2
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=2
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=2
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=2
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=2
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=2
@@ -315,14 +342,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_3 # Expected ERSPAN tx mirrored packet for session 3
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=3
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=3
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=3
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=3
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=3
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=3
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=3
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=3
@@ -340,14 +367,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_4 # Expected ERSPAN tx mirrored packet for session 4
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=4
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=4
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=4
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=4
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=4
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=4
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=4
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=4
@@ -365,14 +392,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_5 # Expected ERSPAN tx mirrored packet for session 5
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=5
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=5
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=5
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=5
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=5
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=5
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=5
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=5
@@ -390,14 +417,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_6 # Expected ERSPAN tx mirrored packet for session 6
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=6
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=6
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=6
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=6
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=6
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=6
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=6
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=6
@@ -415,14 +442,14 @@ packets:
                  
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_7 # Expected ERSPAN tx mirrored packet for session 7
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=7
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=7
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=7
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=7
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=7
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=7
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=7
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=7
@@ -440,14 +467,14 @@ packets:
 
     - packet:
          id          : ERSPAN_MIRROR_PKT_TX_8 # Expected ERSPAN tx mirrored packet for session 8
-         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         clone       : callback://mirror/packets/GetERSPANType3TemplateFromMapping/direction=TX,id=8
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=8
          headers     :
              erspaneth:
                  dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=8
                  src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=8
              erspanqtag:
-                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=8
+                 vlan   : callback://mirror/packets/GetERSPANOuterVlanID/direction=TX,id=8
              erspanipv4:
                  tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=8
                  src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=8
@@ -463,7 +490,144 @@ packets:
              payload :
                  data    : callback://mirror/packets/GetERSPANPayload/basepktid=FROM_HOST_PKT,direction=TX,id=8
 
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_1 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 1
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_1
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=1
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=1
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=1
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_2 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_2
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=2
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=2
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=2
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_3 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_3
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=3
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=3
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=3
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_4 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_4
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=4
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=4
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=4
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_5 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_5
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=5
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=5
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=5
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_6 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_6
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=6
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=6
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=6
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_7 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_7
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=7
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=7
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=7
+
+    - packet:
+         id          : ERSPAN_TENANT_REMOTE_MIRROR_PKT_TX_8 # Expected ERSPAN to Tenant Vpc and remote mapping tx mirrored packet for session 7
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_8
+         encaps      : callback://networking/packets/GetPacketEncapFromMapping
+         headers     :
+             outereth:
+                 src     : callback://networking/packets/GetUplinkPortMac
+                 dst     : callback://mirror/packets/GetERSPANUnderlayRemoteMac/direction=TX,id=8
+             outeripv4:
+                 src     : ref://testcase/config/devicecfg/IP
+                 dst     : callback://mirror/packets/GetERSPANTunnelIPFromMapping/direction=TX,id=8
+                 ttl     : 64
+                 tos     : 0
+                 id      : 0
+             vxlan:
+                 vni     : callback://mirror/packets/GetERSPANVxlanVniFromMapping/direction=TX,id=8
+
 buffers:
+    # From host buffer
     - buffer:
         id      : BUF1
         template: ref://factory/templates/id=ETH_BUFFER
@@ -478,7 +642,81 @@ buffers:
         fields          :
             status     : 0x0
 
+    # ERSPAN to Tenant VPC local mapping Buffers
+    - buffer            :
+        id              : BUF3  # Input Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields          :
+            bind        : True
+            size        : 1518
+            data        : None
+
+    - buffer            :
+        id              : ERSPAN_BUF1  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_1/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_1/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF2  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_2/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_2/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF3  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_3/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_3/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF4  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_4/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_4/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF5  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_5/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_5/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF6  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_6/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_6/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF7  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_7/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_7/rawbytes
+
+    - buffer            :
+        id              : ERSPAN_BUF8  # Expected Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields:
+            bind        : False
+            size        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_8/size
+            data        : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_8/rawbytes
+
 descriptors:
+    # Input descriptors for From-host packet
     - descriptor:
         id      : DESC1
         template: ref://factory/templates/id=DESCR_ETH_TX
@@ -492,11 +730,78 @@ descriptors:
         template: ref://factory/templates/id=DESCR_ETH_TX_CQ
         fields:
             status     : 0x0
+    # Descriptors for Erspan to Tenant Vpc local mapping packets
+    - descriptor        :
+        id              : DESC3 # Input Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX
+        fields          :
+            _buf        : ref://testcase/buffers/id=BUF3
+            addr        : ref://testcase/buffers/id=BUF3/addr
+            len         : ref://testcase/buffers/id=BUF3/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC1 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF1
+            len         : ref://testcase/buffers/id=ERSPAN_BUF1/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC2 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF2
+            len         : ref://testcase/buffers/id=ERSPAN_BUF2/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC3 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF3
+            len         : ref://testcase/buffers/id=ERSPAN_BUF3/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC4 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF4
+            len         : ref://testcase/buffers/id=ERSPAN_BUF4/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC5 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF5
+            len         : ref://testcase/buffers/id=ERSPAN_BUF5/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC6 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF6
+            len         : ref://testcase/buffers/id=ERSPAN_BUF6/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC7 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF7
+            len         : ref://testcase/buffers/id=ERSPAN_BUF7/size
+
+    - descriptor        :
+        id              : ERSPAN_DESC8 # Expected Descriptor
+        template        : ref://factory/templates/id=DESCR_ETH_RX_CQ
+        fields          :
+            _buf        : ref://testcase/buffers/id=ERSPAN_BUF8
+            len         : ref://testcase/buffers/id=ERSPAN_BUF8/size
 
 session:
     - step:
         trigger:
             descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC3
+                    ring    : callback://mirror/packets/GetERSPANRingFromMapping/type=local,qid=RX,direction=TX,id=6
                 - descriptor:
                     object  : ref://testcase/descriptors/id=DESC1
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
@@ -534,3 +839,6 @@ session:
                 - descriptor:
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=ERSPAN_DESC6
+                    ring    : callback://mirror/packets/GetERSPANRingFromMapping/type=local,qid=RX,direction=TX,id=6

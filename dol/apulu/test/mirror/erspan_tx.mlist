@@ -39,7 +39,7 @@ modules:
     - module:
         name    : MIRROR_IPV4_TCP_ERSPAN_TX_2 
         spec    : mirror_l2r.testspec
-        enable  : False
+        ignore  : True
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
               vnic : filter://VnicEncapType=none,TxErspanMirrorCount=2,TxRspanMirrorCount=0
@@ -53,7 +53,7 @@ modules:
     - module:
         name    : MIRROR_IPV4_TCP_ERSPAN_TX_3
         spec    : mirror_l2r.testspec
-        enable  : False
+        ignore  : True
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
               vnic : filter://VnicEncapType=none,TxErspanMirrorCount=3,TxRspanMirrorCount=0

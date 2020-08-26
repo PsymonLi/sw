@@ -209,7 +209,7 @@ class LocalMappingObjectClient(base.MappingClientBase):
     def GetLmappingV6Tags(self, node):
         return self.GetTags(node, af="v6")
 
-    def GetLocalMapObjByEpIpKey(self, node, ip, vpcid):
+    def GetLMapObjByEpIpKey(self, node, ip, vpcid):
         return self.__epip_objs[node].get((ip, vpcid), None)
 
     def IsReadSupported(self):
@@ -237,7 +237,7 @@ class LocalMappingObjectClient(base.MappingClientBase):
             mac_str = utils.Int2MacStr(yamlOp['macinfo']['macaddr'])
 
             # verifying if the info learnt is expected from config
-            lmap_obj = self.GetLocalMapObjByEpIpKey(node, ip_str, vpc_uuid)
+            lmap_obj = self.GetLMapObjByEpIpKey(node, ip_str, vpc_uuid)
             if lmap_obj == None:
                 logger.error(f"lmap not found in client object store for key {vpc_uuid_str}, {ip_str}")
                 return False

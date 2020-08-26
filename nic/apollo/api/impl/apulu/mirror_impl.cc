@@ -238,20 +238,19 @@ mirror_impl::program_overlay_erspan_(pds_epoch_t epoch,
                       ipaddr2str(&spec->erspan_spec.ip_addr));
         return SDK_RET_INVALID_ARG;
     }
-    subnet = ((mapping_impl *)(mapping->impl()))->subnet();
     mapping_impl_obj = (mapping_impl *)mapping->impl();
     subnet = mapping_impl_obj->subnet();
 
     mirror_data.action_id = MIRROR_ERSPAN_ID;
     // forwarding mirror packet takes same forwarding path as any
-    // other traffic to this mappping
+    // other traffic to this mapping
     mirror_data.erspan_action.nexthop_type =
         mapping_impl_obj->nexthop_type();
     mirror_data.erspan_action.nexthop_id =
         mapping_impl_obj->nexthop_id();
     mirror_data.erspan_action.egress_bd_id =
         mapping_impl_obj->subnet_hw_id();
-    // ERSPAN Eth header SMAC = VR IP
+    // ERSPAN Eth header SMAC = VR MAC 
     sdk::lib::memrev(mirror_data.erspan_action.smac,
                      &subnet->vr_mac()[0], ETH_ADDR_LEN);
     // ERSPAN Eth header DMAC = mapping's DMAC
@@ -264,7 +263,7 @@ mirror_impl::program_overlay_erspan_(pds_epoch_t epoch,
         spec->erspan_spec.ip_addr.addr.v4_addr;
     if (mapping->is_local()) {
         // local vnic
-        mirror_data.erspan_action.rewrite_flags = P4_SET_REWRITE(ENCAP, VXLAN);
+        mirror_data.erspan_action.rewrite_flags = P4_SET_REWRITE(VLAN, ENCAP);
     } else {
         // remote vnic
         mirror_data.erspan_action.rewrite_flags =

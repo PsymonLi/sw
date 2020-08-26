@@ -188,7 +188,6 @@ class Packet(objects.FrameworkObject):
         self.tcid = 0
         self.step_id = 0
         self.LockAttributes()
-
         pktspec = PacketSpec(testspec_packet)
         self.pktspec = pktspec
         self.icrc = pktspec.icrc
@@ -220,7 +219,10 @@ class Packet(objects.FrameworkObject):
 
     def __get_packet_base(self, tc, pktspec):
         if pktspec.clone:
-            basepkt = pktspec.clone.Get(tc)
+            if objects.IsReference(self.pktspec.clone):
+                basepkt = self.pktspec.clone.Get(tc)
+            elif objects.IsCallback(self.pktspec.clone):
+                basepkt = self.pktspec.clone.call(tc, self)
             self.Clone(basepkt)
 
             if pktspec.paddingsize != 0:

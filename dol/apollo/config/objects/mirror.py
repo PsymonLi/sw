@@ -69,7 +69,7 @@ class MirrorSessionObject(base.ConfigObjectBase):
             else:
                 tunobj = tunnel.client.GetTunnelObject(node, self.TunnelId)
                 self.DstIP = ipaddress.ip_address(tunobj.RemoteIP)
-            self.SpanID = self.Id
+            self.SpanID = int(getattr(spec, 'spanid'))
             self.Dscp = getattr(spec, 'dscp', 0) 
             self.VlanStripEn = getattr(spec, 'vlanstripen', False) 
         else:

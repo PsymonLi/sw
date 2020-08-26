@@ -167,10 +167,10 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
                                   ipaddr2str(&mytep_ip));
                     return SDK_RET_INVALID_ARG;
                 }
-                erspan_.ip_ = spec->erspan_spec.ip_addr;
             } else {
                 // TODO: make sure the mapping is known
             }
+            erspan_.ip_ = spec->erspan_spec.ip_addr;
         }
         break;
 

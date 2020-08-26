@@ -218,7 +218,7 @@ class RemoteMappingObjectClient(base.MappingClientBase):
     def GetRmappingV4Tags(self, node):
         return self.GetTags(node, af="v4")
 
-    def GetRMapObjByEpKey(self, node, ip, vpcid):
+    def GetRMapObjByEpIpKey(self, node, ip, vpcid):
         return self.__rmap_objs[node].get((ip, vpcid), None)
 
     def IsReadSupported(self):
@@ -229,7 +229,7 @@ class RemoteMappingObjectClient(base.MappingClientBase):
 
     def ValidateRemoteMappingInfo(self, node, ip_str, vpc_uuid, mac, subnet_uuid):
         # verifying if the info learnt is expected from the dol object
-        rmap_obj = self.GetRMapObjByEpKey(node, ip_str, vpc_uuid)
+        rmap_obj = self.GetRMapObjByEpIpKey(node, ip_str, vpc_uuid)
         if rmap_obj == None:
             logger.error(f"rmap not found in client object store "
                          f"in {node} for key {vpc_uuid_str} {ip_str}")

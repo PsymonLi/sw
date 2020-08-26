@@ -962,6 +962,9 @@ class Encap():
     def VlanId(self):
         return self.Value if self.Type == 'dot1q' else 0
 
+    def Vnid(self):
+        return self.Value if self.Type == 'vxlan' else 0
+
     def GetType(self):
         return self.Type
 

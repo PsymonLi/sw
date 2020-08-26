@@ -60,7 +60,7 @@ node:
           interface  : 285343745 #RSPAN session with collector interface eth 1/2 
           vlanid     : 40 
 
-          # ERSPAN session to underlay vpc using tunnel as dest without truncation                                                                     >
+          # ERSPAN session to underlay vpc using tunnel as dest 
         - id         : 5
           spantype   : 'ERSPAN' # span type                                                                                                           
           erspantype : 3        # erspan protocol version                                                                                             
@@ -69,12 +69,38 @@ node:
           vpcid      : 1        # the vpc to which we want to mirror session                                                                   >      
           erspandsttype : 'tep' # erspan destination type tunnel, remote ip                                                                           
           tunnelid   : 3                                                                                                                              
-          dstip      : '172.16.0.1' #dstip is redundant if erspandsttype is tep                                                                       
-          spanid     : 0        # taken care by Resource manager                                                                                      
+          dstip      : '0.0.0.0' #dstip is redundant if erspandsttype is tep                                                                       
+          spanid     : 1 
           vlanstripen : false   # If set true strips q-tag from inner packet before spanning    
 
-          # ERSPAN session to underlay vpc using ip as dest without truncation                                                                         >
+         # ERSPAN session to tenant vpc using local mapping as dest                                                                                  >
         - id         : 6
+          spantype   : 'ERSPAN'                                                                                                                      
+          erspantype : 3                                                                                                                             
+          snaplen    : 128                                                                                                                           
+          dscp       : 0                                                                                                                             
+          vpcid      : 2                                                                                                                             
+          erspandsttype : 'ip'                                                                                                                      
+          tunnelid   : 5                                                                                                                             
+          dstip      : '12.0.0.10' #dst ip will be set to local mapping 
+          spanid     : 2                                                                                                                             
+          vlanstripen : false                                                                                                                        
+                                                                                                                                                     
+        # ERSPAN session to tenant vpc using remote mapping as dest                                                                                 
+        - id         : 7
+          spantype   : 'ERSPAN'                                                                                                                      
+          erspantype : 3                                                                                                                             
+          snaplen    : 128                                                                                                                           
+          dscp       : 0                                                                                                                             
+          vpcid      : 2                                                                                                                             
+          erspandsttype : 'ip'                                                                                                                      
+          tunnelid   : 5                                                                                                                             
+          dstip      : '12.0.0.14' #dst ip will be set to remote mapping 
+          spanid     : 3                                                                                                                             
+          vlanstripen : false                                         
+
+          # ERSPAN session to underlay vpc using ip as dest >
+        - id         : 8
           spantype   : 'ERSPAN'                                                                                                                       
           erspantype : 3                                                                                                                              
           snaplen    : 128                                                                                                                            
@@ -82,59 +108,9 @@ node:
           vpcid      : 1                                                                                                                              
           erspandsttype : 'ip'                                                                                                                        
           tunnelid   : 5                                                                                                                              
-          dstip      : '220.0.0.10'                                                                                                                   
-          spanid     : 0                                                                                                                              
+          dstip      : '220.0.0.10'  #dst ip is in underlay vpc                                                                                                                  
+          spanid     : 4                                                                                                                              
           vlanstripen : false    
-
-          # Uncomment these mirror sessions post tenant vpc asm fix
-          # ERSPAN session to tenant vpc using local mapping as dest                                                                                  >
-#        - spantype   : 'ERSPAN'                                                                                                                      
-#          erspantype : 3                                                                                                                             
-#          snaplen    : 128                                                                                                                           
-#          dscp       : 0                                                                                                                             
-#          vpcid      : 2                                                                                                                             
-#          erspandsttype : 'tep'                                                                                                                      
-#          tunnelid   : 5                                                                                                                             
-#          dstip      : '172.16.0.1' #dst ip will be set to local mapping 
-#          spanid     : 0                                                                                                                             
-#          vlanstripen : false                                                                                                                        
-#                                                                                                                                                     
-#        # ERSPAN session to tenant vpc using remote mapping as dest                                                                                 
-#        - spantype   : 'ERSPAN'                                                                                                                      
-#          erspantype : 3                                                                                                                             
-#          snaplen    : 128                                                                                                                           
-#          dscp       : 0                                                                                                                             
-#          vpcid      : 2                                                                                                                             
-#          tunnelid   : 5                                                                                                                             
-#          dstip      : '172.16.0.1' #dst ip will be set to remote mapping 
-#          spanid     : 0                                                                                                                             
-#          vlanstripen : false                                         
-        # Adding these ERSPAN sessions temporarily till tenant vpc asm fix
-        # ERSPAN session to underlay vpc using tep as dest
-        - id         : 7
-          spantype   : 'ERSPAN'                                                                                                                      
-          erspantype : 3                                                                                                                             
-          snaplen    : 128                                                                                                                           
-          dscp       : 0                                                                                                                             
-          vpcid      : 1                                                                                                                             
-          erspandsttype : 'tep'                                                                                                                      
-          tunnelid   : 5                                                                                                                             
-          dstip      : '172.16.0.1' 
-          spanid     : 0                                                                                                                             
-          vlanstripen : false                                                                                                                        
-                                                                                                                                                     
-        # ERSPAN session to underlay vpc using ip as dest                                                                                 >
-        - id         : 8
-          spantype   : 'ERSPAN'                                                                                                                      
-          erspantype : 3                                                                                                                             
-          snaplen    : 128                                                                                                                           
-          dscp       : 0                                                                                                                             
-          vpcid      : 1                                                                                                                             
-          erspandsttype : 'ip'                                                                                                                      
-          tunnelid   : 5                                                                                                                             
-          dstip      : '220.0.0.20' 
-          spanid     : 0                                                                                                                             
-          vlanstripen : false                                         #
 
     vpc:
         # If dual stack true, VPC and Subnet will have both v4 & v6 based on the prefixlen.

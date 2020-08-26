@@ -25,19 +25,35 @@ def GetSPANPortID(testcase, args=None):
     if mirrorObj.SpanType == 'RSPAN':
         return utils.GetPortIDfromInterface(mirrorObj.Interface)
     elif mirrorObj.SpanType == 'ERSPAN':
-        # underlay vpc, return switchport
         spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
-        if spanvpc.IsUnderlayVPC():
-            return topo.PortTypes.SWITCH
-        # TODO: tenant vpc support post impl & p4 support
-        # tenant vpc and local mapping, return hostport
-        # tenant vpc and remote mapping, return switchport
+        spantunnel = None
+        nh = None
+        if spanvpc.IsUnderlayVPC() and mirrorObj.ErSpanDstType == 'tep':
+            spantunnel = utils.GetConfigObjectById(ObjectTypes.TUNNEL, mirrorObj.TunnelId)
+        elif spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+            rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+            rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+            if rmapping != None: 
+                spantunnel = rmapping.TUNNEL 
+        if spantunnel != None and spantunnel.IsUnderlay():
+            nh = spantunnel.NEXTHOP
+            if nh != None:
+                l3if = nh.L3Interface
+                return utils.GetPortIDfromInterface(l3if.EthIfIdx) 
     return topo.PortTypes.NONE
 
-def GetSPANVlanID(testcase, packet, args=None):
+def GetERSPANOuterVlanID(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
-    # For ERSPAN, vlan is 0
-    return mirrorObj.VlanId if mirrorObj and mirrorObj.SpanType == 'RSPAN' else 0
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return 0
+    # underlay vpc, return TEP MAC
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+        lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if lmapping != None and lmapping.VNIC.VnicEncap.Type == "dot1q": 
+            return lmapping.VNIC.VlanId()
+    return 0
 
 def GetRSPANVlanID(testcase, packet, args=None):                                                                                               
     mirrorObj = __get_mirror_object(testcase, args)                                                                                           
@@ -91,12 +107,16 @@ def GetERSPANSrcIP(testcase, packet, args=None):
         if mirrorObj.ErSpanDstType == 'tep':
             spantunnel = utils.GetConfigObjectById(ObjectTypes.TUNNEL, mirrorObj.TunnelId)
             return str(spantunnel.LocalIPAddr)
-        # Need to add to erspandsttype ip as well
-    elif spanvpc.IsTenantVPC():
-        if testcase.config.localmapping.IsV6():
-            return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterIPAddr[0].packed)
-        else:
-            return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterIPAddr[1])
+    elif spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+        lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if lmapping != None: 
+            return str(lmapping.VNIC.SUBNET.VirtualRouterIPAddr[1])
+        elif rmapping != None: 
+            return rmapping.SUBNET.GetIPv4VRIP()
+    return "0"
 
 def GetERSPANDstIP(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
@@ -114,16 +134,34 @@ def GetERSPANDstMac(testcase, packet, args=None):
             return str(spantunnel.NEXTHOP.GetUnderlayMacAddr())
         elif mirrorObj.ErSpanDstType == 'ip':
             return "00:00:00:00:00:00"
-    # TODO: tenant vpc support post impl & p4 support
-    # tenant vpc and local mapping, return localmapping/VNIC/MACAddr
-    # tenant vpc and remote mapping, return TEP MAC behind remotemapping
+    elif spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+        lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if lmapping != None: 
+            return lmapping.VNIC.MACAddr
+        elif rmapping != None: 
+            return rmapping.MACAddr
     return "00:00:00:00:00:00"
 
 def GetExpectedPacket(testcase, args):
     mirrorObj = __get_mirror_object(testcase, args)
     if not mirrorObj:
         return None
-    return testcase.packets.Get(mirrorObj.SpanType + '_MIRROR_PKT_' + args.direction + '_' + str(args.id))
+    if mirrorObj.SpanType == "RSPAN":
+        return testcase.packets.Get(mirrorObj.SpanType + '_MIRROR_PKT_' + args.direction + '_' + str(args.id))
+    elif mirrorObj.SpanType == "ERSPAN":
+        spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+        if spanvpc.IsUnderlayVPC():
+            return testcase.packets.Get(mirrorObj.SpanType + '_MIRROR_PKT_' + args.direction + '_' + str(args.id))
+        elif spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+            rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+            rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+            # Remove args.direction after adding RX packets
+            if rmapping != None and args.direction == 'TX':
+                return testcase.packets.Get(mirrorObj.SpanType + '_TENANT_REMOTE' + '_MIRROR_PKT_' + args.direction + '_' + str(args.id))
+    return None
 
 def GetERSPANCos(testcase, inpkt, args):
     pkt = testcase.packets.db[args.pktid].GetScapyPacket()
@@ -213,15 +251,7 @@ def GetERSPANType3PortID(testcase, inpkt, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
         return topo.PortTypes.NONE
-    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
-    if spanvpc.IsUnderlayVPC():
-        lif = testcase.config.localmapping.VNIC.SUBNET.HostIf.lif                                                                                              
-        lifId = str(lif.GID())
-        # lifId is in lif74 format
-        return int(lifId[len("lif"):])
-    # tenant vpc and local mapping, return hostport
-    # tenant vpc and remote mapping, return switchport
-    return topo.PortTypes.NONE
+    return testcase.config.localmapping.VNIC.SUBNET.HostIf.GetLifId()
 
 def GetERSPANSrcMac(testcase, inpkt, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
@@ -236,3 +266,80 @@ def GetERSPANSrcMac(testcase, inpkt, args=None):
                 nh = spantunnel.NEXTHOP
             l3if = nh.L3Interface
             return l3if.GetInterfaceMac().get()
+    elif spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+        lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if lmapping != None: 
+            return lmapping.VNIC.SUBNET.GetVRMacAddr()
+        elif rmapping != None: 
+            return rmapping.SUBNET.GetVRMacAddr()
+    return "00:00:00:00:00:00"
+
+def GetERSPANTunnelIPFromMapping(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return "0"
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if rmapping != None: 
+            return str(rmapping.TUNNEL.RemoteIPAddr)
+    return "0"
+
+def GetERSPANUnderlayRemoteMac(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return "00:00:00:00:00:00"
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if rmapping != None: 
+            tunnel = rmapping.TUNNEL 
+            nh = None
+            if tunnel != None and tunnel.IsUnderlay():
+                nh = tunnel.NEXTHOP
+                if nh != None:
+                    return nh.underlayMACAddr.get()
+    return "00:00:00:00:00:00"
+
+def GetERSPANRingFromMapping(testcase, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return None
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+        lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if lmapping != None: 
+            hostIf = lmapping.VNIC.SUBNET.HostIf
+            return hostIf.lif.GetQt(args.qid)
+    return None
+
+def GetERSPANVxlanVniFromMapping(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return 0 
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+        rmappingclient = utils.GetClientObject(ObjectTypes.RMAPPING)
+        rmapping = rmappingclient.GetRMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+        if rmapping != None: 
+            return rmapping.SUBNET.FabricEncap.Value
+    return 0
+
+def GetERSPANType3TemplateFromMapping(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType == "RSPAN":
+        return testcase.packets.Get('ERSPAN_MIRROR_PKT_' + args.direction + '_' + 'BASE')
+    if mirrorObj.SpanType == "ERSPAN":
+        spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+        if spanvpc.IsTenantVPC() and mirrorObj.ErSpanDstType == 'ip':
+            lmappingclient = utils.GetClientObject(ObjectTypes.LMAPPING)
+            lmapping = lmappingclient.GetLMapObjByEpIpKey(mirrorObj.Node, str(mirrorObj.DstIP), spanvpc.UUID.GetUuid())
+            if lmapping != None and lmapping.VNIC.VnicEncap.Type == 'dot1q':
+                return testcase.packets.Get(mirrorObj.SpanType + '_QTAG_MIRROR_PKT_' + args.direction + '_' + 'BASE')
+    return testcase.packets.Get(mirrorObj.SpanType + '_MIRROR_PKT_' + args.direction + '_' + 'BASE')

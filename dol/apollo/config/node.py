@@ -167,8 +167,8 @@ class NodeObject(base.ConfigObjectBase):
         IpsecDecryptClient.CreateObjects(node)
         TunnelClient.CreateObjects(node)
         NHGroupClient.CreateObjects(node)
-        MirrorClient.CreateObjects(node)
         VpcClient.CreateObjects(node)
+        MirrorClient.CreateObjects(node)
         SecurityProfileClient.CreateObjects(node)
         BatchClient.Commit(node)
 
