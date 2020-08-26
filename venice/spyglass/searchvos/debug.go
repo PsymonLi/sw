@@ -22,7 +22,7 @@ func HandleDebugFwlogsQuery(ctx context.Context, vosFinder *SearchFwLogsOverVos,
 		case "GET":
 			logger.Infof("GET params: %+v", r.URL.Query())
 			var err error
-			var shID, searchID, bucket, dataBucket, prefix, ipSrc, ipDest, sport, dport, proto, act, sort string
+			var shID, searchID, bucket, dataBucket, vpcName, prefix, ipSrc, ipDest, sport, dport, proto, act, sort string
 			var startTs, endTs time.Time
 			var loadFiles, returnFiles, returnFlows bool
 			var purgeDuration time.Duration
@@ -63,6 +63,8 @@ func HandleDebugFwlogsQuery(ctx context.Context, vosFinder *SearchFwLogsOverVos,
 					proto = v[0]
 				case "act":
 					act = v[0]
+				case "vpc":
+					vpcName = v[0]
 				case "returnFiles":
 					returnFiles, err = strconv.ParseBool(v[0])
 					if err != nil {
@@ -121,10 +123,11 @@ func HandleDebugFwlogsQuery(ctx context.Context, vosFinder *SearchFwLogsOverVos,
 				if ipSrc != "" || ipDest != "" {
 					searchID, flowsCh, filesCh, err := vosFinder.SearchFlows(ctx,
 						searchID, bucket, dataBucket,
-						prefix, ipSrc, ipDest,
-						sport, dport, proto,
-						act, startTs, endTs,
-						sort == "ascending", -1, returnFiles, purgeDuration)
+						prefix, vpcName, ipSrc,
+						ipDest, sport, dport,
+						proto, act, startTs,
+						endTs, sort == "ascending", -1,
+						returnFiles, purgeDuration)
 					if err != nil {
 						log.Errorf("Error in searching flows: %v", err)
 						http.Error(w, "error in searching flows:"+err.Error(), http.StatusInternalServerError)

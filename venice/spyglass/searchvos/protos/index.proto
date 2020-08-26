@@ -69,14 +69,20 @@ message DestMapFlowPtr {
     map<uint32, FilePtr> destMap = 2 [(gogoproto.nullable) = false];
 }
 
+// VpcIndex represents per VPC index of flow logs
+message VpcIndex {
+    map<string, uint32> ipid = 5;
+    map<uint32, FlowPtrMap> destidxsTemp = 6 [(gogoproto.nullable) = false];
+    map<uint32, FilePtr> destidxs = 7 [(gogoproto.nullable) = false];
+    map<uint32, DestMapFlowPtr> srcdestidxs = 8 [(gogoproto.nullable) = false];
+}
+
 // RawLogsShard represents a sharded index of raw logs
 message RawLogsShard {
     int64 startts  = 1;
     int64 endts  = 2;
     uint32 id = 3;
     string datafilename = 4;
-    map<string, uint32> ipid = 5;
-    map<uint32, FlowPtrMap> destidxsTemp = 6 [(gogoproto.nullable) = false];
-    map<uint32, FilePtr> destidxs = 7 [(gogoproto.nullable) = false];
-    map<uint32, DestMapFlowPtr> srcdestidxs = 8 [(gogoproto.nullable) = false];
+    map<string, uint32> vpcid = 6 [(gogoproto.nullable) = false];
+    map<uint32, VpcIndex> vpcIndex = 7 [(gogoproto.nullable) = false];
 }

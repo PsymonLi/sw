@@ -201,13 +201,13 @@ func (s *SearchFwLogsOverVos) allocateNewSearchID() (string, error) {
 
 // SearchFlows searches flow records
 func (s *SearchFwLogsOverVos) SearchFlows(ctx context.Context,
-	id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	id, bucket, dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool,
 	purgeDuration time.Duration) (string, <-chan []string, <-chan string, error) {
 	if id == "" {
 		ctxNew, cancelFunc := context.WithCancel(ctx)
 		return s.startNewSearchFlows(ctxNew, cancelFunc, bucket,
-			dataBucket, prefix, sip, dip, sport, dport, proto, act,
+			dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act,
 			startTs, endTs, ascending, maxResults, returnObjectNames, purgeDuration)
 	}
 	qc := s.scache.addorGetQueryCache(ctx, func() {}, id, false, purgeDuration)
@@ -218,7 +218,7 @@ func (s *SearchFwLogsOverVos) SearchFlows(ctx context.Context,
 }
 
 func (s *SearchFwLogsOverVos) startNewSearchFlows(ctx context.Context,
-	cancelFunc func(), bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	cancelFunc func(), bucket, dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool,
 	purgeDuration time.Duration) (string, <-chan []string, <-chan string, error) {
 	id, err := s.allocateNewSearchID()
@@ -232,8 +232,12 @@ func (s *SearchFwLogsOverVos) startNewSearchFlows(ctx context.Context,
 		return "", nil, nil, fmt.Errorf("startTs is zero, but endTs is not zero")
 	}
 
+	if vpcName == "" {
+		vpcName = globals.DefaultVrf
+	}
+
 	qc := s.scache.addorGetQueryCache(ctx, cancelFunc, id, true, purgeDuration)
-	go s.searchFlowsHelper(ctx, qc, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+	go s.searchFlowsHelper(ctx, qc, id, bucket, dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act,
 		startTs, endTs, ascending, maxResults, returnObjectNames)
 	return qc.id, qc.logsChannel, qc.objectsChannel, nil
 }
@@ -246,11 +250,11 @@ func (s *SearchFwLogsOverVos) startNewSearchFlows(ctx context.Context,
 // 4. If startTs is not set by the user then the system sets it to the current time.
 // 5. If the endts is not set by the user then the system sets it to the startTs + defaultEndTsDuration.
 func (s *SearchFwLogsOverVos) searchFlowsHelper(ctx context.Context,
-	qc *queryCache, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	qc *queryCache, id, bucket, dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool) error {
 
-	s.logger.Infof("Search params %s %s %s %s %s %s %s %s %s %s %s %s %t %d %t",
-		id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+	s.logger.Infof("Search params %s %s %s %s %s %s %s %s %s %s %s %s %s %t %d %t",
+		id, bucket, dataBucket, prefix, vpcName, sip, dip, sport, dport, proto, act,
 		startTs.String(), endTs.String(), ascending, maxResults, returnObjectNames)
 
 	// If both startTs and endTs are zero then we will search the last 24 hours
@@ -274,16 +278,16 @@ func (s *SearchFwLogsOverVos) searchFlowsHelper(ctx context.Context,
 		(s.mi.getIndexRecreationStatus() == indexRecreationFinished) &&
 		(startTs.After(nowUTC.Add(-1*time.Hour*24)) || startTs.Equal(nowUTC.Add(-1*time.Hour*24)) ||
 			strings.Contains(dataBucket, rawlogsBucketName)) {
-		return s.queryRawLogs(ctx, qc, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+		return s.queryRawLogs(ctx, qc, tenantName, vpcName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
 			startTs, endTs, ascending, maxResults, returnObjectNames)
 	}
 
-	return s.queryCSVLogs(ctx, qc, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
+	return s.queryCSVLogs(ctx, qc, tenantName, vpcName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act,
 		startTs, endTs, ascending, maxResults, returnObjectNames)
 }
 
 func (s *SearchFwLogsOverVos) queryCSVLogs(ctx context.Context,
-	qc *queryCache, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	qc *queryCache, tenantName, vpcName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool) error {
 	getDataHelper := func(client objstore.Client,
 		bucket, file, expr string) ([][]string, error) {
@@ -471,7 +475,7 @@ mainSearchLoop:
 }
 
 func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
-	qc *queryCache, tenantName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
+	qc *queryCache, tenantName, vpcName, id, bucket, dataBucket, prefix, sip, dip, sport, dport, proto, act string,
 	startTs, endTs time.Time, ascending bool, maxResults int, returnObjectNames bool) error {
 	files := map[string]struct{}{}
 	var ipSrc, ipDest uint32
@@ -491,7 +495,7 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 	// first try to query the logs present in memory
 	if s.mi != nil {
 		flows, err := s.mi.SearchRawLogsFromMemory(ctx,
-			tenantName, id, sip, dip, sport, dport, proto, act,
+			tenantName, vpcName, id, sip, dip, sport, dport, proto, act,
 			ipSrc, ipDest, startTs, endTs, maxResults, files)
 		if err != nil {
 			return err
@@ -596,7 +600,7 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 
 					flowsObjName := rls.Datafilename + flowsExtension
 					flows := s.getLogsForIPFromRawLogs(ctx, stUnix, enUnix, s.logger, clients[i%numClients],
-						dataBucket, sip, dip, sport, dport, proto, act, rls, flowsObjName)
+						dataBucket, vpcName, sip, dip, sport, dport, proto, act, rls, flowsObjName)
 
 					if len(flows) > 0 {
 						lock.Lock()
@@ -886,10 +890,15 @@ func (s *SearchFwLogsOverVos) sendFlowsHelper(ctx context.Context,
 
 func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 	startTs, endTs int64, logger log.Logger,
-	client objstore.Client, dataBucket string,
+	client objstore.Client, dataBucket, vpcName string,
 	srcIP, destIP, sport, dport, proto, act string,
 	rls *protos.RawLogsShard, flowObjName string) map[string][][]string {
 	result := map[string][][]string{}
+	vpcIndex := getVpcIndex(rls, vpcName)
+	if vpcIndex == nil {
+		return result
+	}
+
 	objReader, err := getLocalFileReader(dataBucket, flowObjName)
 	if err != nil {
 		logger.Errorf("error in getting object", dataBucket, flowObjName, err)
@@ -898,17 +907,17 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 	defer objReader.Close()
 
 	if srcIP != "" && destIP != "" {
-		srcIPID, ok := rls.Ipid[srcIP]
+		srcIPID, ok := vpcIndex.Ipid[srcIP]
 		if !ok {
 			return result
 		}
 
-		destIPID, ok := rls.Ipid[destIP]
+		destIPID, ok := vpcIndex.Ipid[destIP]
 		if !ok {
 			return result
 		}
 
-		destMap, ok := rls.Srcdestidxs[srcIPID]
+		destMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if !ok {
 			return result
 		}
@@ -968,12 +977,12 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 			}
 		}
 	} else if srcIP != "" {
-		srcIPID, ok := rls.Ipid[srcIP]
+		srcIPID, ok := vpcIndex.Ipid[srcIP]
 		if !ok {
 			return result
 		}
 
-		destMap, ok := rls.Srcdestidxs[srcIPID]
+		destMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if !ok {
 			return result
 		}
@@ -1034,12 +1043,12 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 			}
 		}
 	} else if destIP != "" {
-		destIPID, ok := rls.Ipid[destIP]
+		destIPID, ok := vpcIndex.Ipid[destIP]
 		if !ok {
 			return result
 		}
 
-		filePtr := rls.Destidxs[destIPID]
+		filePtr := vpcIndex.Destidxs[destIPID]
 		cacheKey := flowObjName + ":" + strconv.FormatUint(uint64(filePtr.Offset), 10)
 		flowPtrMap := s.scache.indexCache.getFlowPtrMap(cacheKey)
 		if flowPtrMap == nil {

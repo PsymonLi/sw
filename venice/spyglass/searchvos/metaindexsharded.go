@@ -230,11 +230,19 @@ func newRawLogsShardIndex() *rawLogsShardIndex {
 
 func newRawLogsShard() *protos.RawLogsShard {
 	return &protos.RawLogsShard{
-		Id:           0,
+		Id:       0,
+		Vpcid:    map[string]uint32{},
+		VpcIndex: map[uint32]protos.VpcIndex{},
+	}
+}
+
+func newVpcIndex() protos.VpcIndex {
+	return protos.VpcIndex{
 		Ipid:         map[string]uint32{},
 		DestidxsTemp: map[uint32]protos.FlowPtrMap{},
 		Destidxs:     map[uint32]protos.FilePtr{},
-		Srcdestidxs:  map[uint32]protos.DestMapFlowPtr{}}
+		Srcdestidxs:  map[uint32]protos.DestMapFlowPtr{},
+	}
 }
 
 func newRawLogs() *rawLogs {
@@ -306,7 +314,7 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 			// Trim the key length, saves space in index, remove duplicate characters
 			// Remove the extension as its always .csv.gzip
 			// Remove the y/m/d/h characets as they are present in the file name as well
-			key := getTrimmedCSVObjectKey(logs.Key)
+			key, vpcName := getTrimmedCSVObjectKey(logs.Key)
 
 			mi.lock.Lock()
 			// Update start and end Ts
@@ -405,8 +413,16 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 							updatedRawLogsShards[shard] = struct{}{}
 							updatedRawLogsShards[destShard] = struct{}{}
 							temp := tnRLogs.previousOffset + offset
-							mi.updateShardWithRawLogsFlowKeyHelper(tnRLogs, clockHour, key, logs.Tenant, logs.DscID, shard, log, log[2], log[3], temp, size)
-							mi.updateShardWithRawLogsDestIPHelper(tnRLogs, clockHour, key, logs.Tenant, logs.DscID, destShard, log, log[3], temp, size)
+							mi.updateShardWithRawLogsDestIPHelper(tnRLogs,
+								clockHour, key, logs.Tenant,
+								vpcName, logs.DscID, destShard,
+								log, log[3], temp,
+								size)
+							mi.updateShardWithRawLogsFlowKeyHelper(tnRLogs,
+								clockHour, key, logs.Tenant,
+								vpcName, logs.DscID, shard,
+								log, log[2], log[3],
+								temp, size)
 						}
 					} else {
 						mi.logger.Errorf("error in parsing ip", log[2], log[3])
@@ -459,10 +475,16 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 							updatedRawLogsShards[shard] = struct{}{}
 							updatedRawLogsShards[destShard] = struct{}{}
 							temp := tnRLogs.previousOffset + offset
-							mi.updateShardWithRawLogsFlowKeyHelper(tnRLogs,
-								clockHour, key, logs.Tenant, logs.DscID, shard, logs.Logs[i], logs.Logs[i][2], logs.Logs[i][3], temp, size)
 							mi.updateShardWithRawLogsDestIPHelper(tnRLogs,
-								clockHour, key, logs.Tenant, logs.DscID, destShard, logs.Logs[i], logs.Logs[i][3], temp, size)
+								clockHour, key, logs.Tenant,
+								vpcName, logs.DscID, destShard,
+								logs.Logs[i], logs.Logs[i][3], temp,
+								size)
+							mi.updateShardWithRawLogsFlowKeyHelper(tnRLogs,
+								clockHour, key, logs.Tenant,
+								vpcName, logs.DscID, shard,
+								logs.Logs[i], logs.Logs[i][2], logs.Logs[i][3],
+								temp, size)
 						}
 					} else {
 						mi.logger.Errorf("error in parsing ip", logs.Logs[i][2], logs.Logs[i][3])
@@ -597,8 +619,8 @@ func (mi *MetaIndexer) updateShardWithIPHelper(tnIndex *metaIndex,
 }
 
 func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
-	clockHour time.Time, key string, tenant string, nodeID string, shard byte, log []string,
-	srcIP, destIP string, offset int64, size int64) {
+	clockHour time.Time, key, tenant, vpcName, nodeID string, shard byte, log []string,
+	srcIP, destIP string, offset, size int64) {
 	clockHourMap, ok := tnRLogs.index[shard]
 	if !ok {
 		tnRLogs.index[shard] = map[time.Time]*rawLogsShardIndex{}
@@ -613,29 +635,42 @@ func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
 
 	rLogsShard := shIndex.index
 
+	// Set perVpc index
+	vpcID, ok := rLogsShard.Vpcid[vpcName]
+	if !ok {
+		vpcID = rLogsShard.Id
+		rLogsShard.Vpcid[vpcName] = vpcID
+		rLogsShard.Id++
+	}
+
+	vpcIndex, ok := rLogsShard.VpcIndex[vpcID]
+	if !ok {
+		vpcIndex = newVpcIndex()
+	}
+
 	// Get IPID
-	srcIPID, ok := rLogsShard.Ipid[srcIP]
+	srcIPID, ok := vpcIndex.Ipid[srcIP]
 	if !ok {
 		srcIPID = rLogsShard.Id
-		rLogsShard.Ipid[srcIP] = srcIPID
+		vpcIndex.Ipid[srcIP] = srcIPID
 		rLogsShard.Id++
 	}
 
-	destIPID, ok := rLogsShard.Ipid[destIP]
+	destIPID, ok := vpcIndex.Ipid[destIP]
 	if !ok {
 		destIPID = rLogsShard.Id
-		rLogsShard.Ipid[destIP] = destIPID
+		vpcIndex.Ipid[destIP] = destIPID
 		rLogsShard.Id++
 	}
 
-	_, ok = rLogsShard.Srcdestidxs[srcIPID]
+	_, ok = vpcIndex.Srcdestidxs[srcIPID]
 	if !ok {
 		dm := protos.DestMapFlowPtr{}
 		dm.DestMapTemp = map[uint32]protos.FlowPtrMap{}
-		rLogsShard.Srcdestidxs[srcIPID] = dm
+		vpcIndex.Srcdestidxs[srcIPID] = dm
 	}
 
-	dm := rLogsShard.Srcdestidxs[srcIPID]
+	dm := vpcIndex.Srcdestidxs[srcIPID]
 	flowPtrMap := dm.DestMapTemp[destIPID]
 	if flowPtrMap.Flowptrs == nil {
 		flowPtrMap.Flowptrs = []*protos.FlowPtr{}
@@ -645,7 +680,8 @@ func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
 	flowPtr := &protos.FlowPtr{Offset: offset, Size_: size}
 	flowPtrMap.Flowptrs = append(flowPtrMap.Flowptrs, flowPtr)
 	dm.DestMapTemp[destIPID] = flowPtrMap
-	rLogsShard.Srcdestidxs[srcIPID] = dm
+	vpcIndex.Srcdestidxs[srcIPID] = dm
+	rLogsShard.VpcIndex[vpcID] = vpcIndex
 
 	if tnRLogs.flowsCount == flowsChunkSize {
 		mi.persistFlows(tnRLogs)
@@ -653,8 +689,8 @@ func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
 }
 
 func (mi *MetaIndexer) updateShardWithRawLogsDestIPHelper(tnRLogs *rawLogs,
-	clockHour time.Time, key string, tenant string, nodeID string, shard byte, log []string,
-	destIP string, offset int64, size int64) {
+	clockHour time.Time, key string, tenant, vpcName, nodeID string, shard byte, log []string,
+	destIP string, offset, size int64) {
 	clockHourMap, ok := tnRLogs.index[shard]
 	if !ok {
 		tnRLogs.index[shard] = map[time.Time]*rawLogsShardIndex{}
@@ -668,14 +704,28 @@ func (mi *MetaIndexer) updateShardWithRawLogsDestIPHelper(tnRLogs *rawLogs,
 	}
 
 	rLogsShard := shIndex.index
-	destIPID, ok := rLogsShard.Ipid[destIP]
+
+	// Set perVpc index
+	vpcID, ok := rLogsShard.Vpcid[vpcName]
 	if !ok {
-		destIPID = rLogsShard.Id
-		rLogsShard.Ipid[destIP] = destIPID
+		vpcID = rLogsShard.Id
+		rLogsShard.Vpcid[vpcName] = vpcID
 		rLogsShard.Id++
 	}
 
-	flowPtrMap := rLogsShard.DestidxsTemp[destIPID]
+	vpcIndex, ok := rLogsShard.VpcIndex[vpcID]
+	if !ok {
+		vpcIndex = newVpcIndex()
+	}
+
+	destIPID, ok := vpcIndex.Ipid[destIP]
+	if !ok {
+		destIPID = rLogsShard.Id
+		vpcIndex.Ipid[destIP] = destIPID
+		rLogsShard.Id++
+	}
+
+	flowPtrMap := vpcIndex.DestidxsTemp[destIPID]
 	if flowPtrMap.Flowptrs == nil {
 		flowPtrMap.Flowptrs = []*protos.FlowPtr{}
 		flowPtrMap.PreviousOffset = -1
@@ -683,7 +733,8 @@ func (mi *MetaIndexer) updateShardWithRawLogsDestIPHelper(tnRLogs *rawLogs,
 
 	flowPtr := &protos.FlowPtr{Offset: offset, Size_: size}
 	flowPtrMap.Flowptrs = append(flowPtrMap.Flowptrs, flowPtr)
-	rLogsShard.DestidxsTemp[destIPID] = flowPtrMap
+	vpcIndex.DestidxsTemp[destIPID] = flowPtrMap
+	rLogsShard.VpcIndex[vpcID] = vpcIndex
 
 	if tnRLogs.flowsCount == flowsChunkSize {
 		mi.persistFlows(tnRLogs)
@@ -764,7 +815,7 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 			if len(tnIndex.index) > 0 {
 				for shID, hourIndex := range tnIndex.index {
 					for clockHour, shIndex := range hourIndex {
-						destIdxCount := len(shIndex.index.Destidxs)
+						// destIdxCount := len(shIndex.index.Destidxs)
 						fStartTs := time.Unix(shIndex.index.Startts, 0).Format(timeFormatWithColon)
 						fEndTs := time.Unix(shIndex.index.Endts, 0).Format(timeFormatWithColon)
 						jitter := time.Now().UTC().Format(timeFormatWithColon)
@@ -803,11 +854,10 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 							continue
 						}
 
-						mi.logger.Debugf("persisted raw logs %d, %d, %s, %s, %d, %d",
-							destIdxCount, len(shIndex.index.Srcdestidxs),
+						mi.logger.Debugf("persisted raw logs %s, %s, %d, %d",
 							bucketName, fileName, len(data), len(dataZipped))
 
-						metric.addDestIdxsCountPerShard(int(shID), int64(destIdxCount))
+						// metric.addDestIdxsCountPerShard(int(shID), int64(destIdxCount))
 
 						if mi.testChannel != nil {
 							mi.rawLogsTestChannel <- fileName
@@ -906,27 +956,10 @@ func GetShard(ip uint32) byte {
 
 func (mi *MetaIndexer) persistRawLogsFlowPtrMap(ctx context.Context, shID byte, rls *protos.RawLogsShard, tnRLogs *rawLogs) {
 	location := fmt.Sprintf(localFlowsLocationForTempFiles, tnRLogs.flowsFileName)
-	rls.Destidxs = map[uint32]protos.FilePtr{}
 	offset := tnRLogs.previousOffset
-	for destipid, flowPtrMap := range rls.DestidxsTemp {
-		data, err := (&flowPtrMap).Marshal()
-		if err != nil {
-			mi.logger.Errorf("error in marshling flowptrmap, file %s, err %s", location, err.Error())
-			continue
-		}
-		lastOffset, err := appendToFile(location, data)
-		if err != nil {
-			mi.logger.Errorf("error in appending to file %s, err %s", location, err.Error())
-			continue
-		}
-		rls.Destidxs[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
-		offset = lastOffset
-	}
-	rls.DestidxsTemp = nil
-
-	for srcipid, destFlowPtrMap := range rls.Srcdestidxs {
-		destFlowPtrMap.DestMap = map[uint32]protos.FilePtr{}
-		for destipid, flowPtrMap := range destFlowPtrMap.DestMapTemp {
+	for vpcID, vpcIndex := range rls.VpcIndex {
+		vpcIndex.Destidxs = map[uint32]protos.FilePtr{}
+		for destipid, flowPtrMap := range vpcIndex.DestidxsTemp {
 			data, err := (&flowPtrMap).Marshal()
 			if err != nil {
 				mi.logger.Errorf("error in marshling flowptrmap, file %s, err %s", location, err.Error())
@@ -937,12 +970,33 @@ func (mi *MetaIndexer) persistRawLogsFlowPtrMap(ctx context.Context, shID byte, 
 				mi.logger.Errorf("error in appending to file %s, err %s", location, err.Error())
 				continue
 			}
-			destFlowPtrMap.DestMap[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
+			vpcIndex.Destidxs[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
 			offset = lastOffset
 		}
-		destFlowPtrMap.DestMapTemp = nil
-		rls.Srcdestidxs[srcipid] = destFlowPtrMap
+		vpcIndex.DestidxsTemp = nil
+
+		for srcipid, destFlowPtrMap := range vpcIndex.Srcdestidxs {
+			destFlowPtrMap.DestMap = map[uint32]protos.FilePtr{}
+			for destipid, flowPtrMap := range destFlowPtrMap.DestMapTemp {
+				data, err := (&flowPtrMap).Marshal()
+				if err != nil {
+					mi.logger.Errorf("error in marshling flowptrmap, file %s, err %s", location, err.Error())
+					continue
+				}
+				lastOffset, err := appendToFile(location, data)
+				if err != nil {
+					mi.logger.Errorf("error in appending to file %s, err %s", location, err.Error())
+					continue
+				}
+				destFlowPtrMap.DestMap[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
+				offset = lastOffset
+			}
+			destFlowPtrMap.DestMapTemp = nil
+			vpcIndex.Srcdestidxs[srcipid] = destFlowPtrMap
+		}
+		rls.VpcIndex[vpcID] = vpcIndex
 	}
+
 	tnRLogs.previousOffset = offset
 }
 
@@ -1230,13 +1284,14 @@ func writeToFile(fileName string, data []byte) error {
 	return err
 }
 
-func getTrimmedCSVObjectKey(key string) string {
+// getTrimmedCSVObjectKey returns trimmed CSV key and VPC name
+func getTrimmedCSVObjectKey(key string) (string, string) {
 	// Trim the key length, saves space in index, remove duplicate characters
 	// Remove the extension as its always .csv.gzip
 	// Remove the y/m/d/h characets as they are present in the file name as well
 	temp := strings.TrimSuffix(key, ".csv.gzip")
 	tokens := strings.Split(temp, "/")
-	return tokens[0] + "/" + tokens[1] + "/" + tokens[6]
+	return tokens[0] + "/" + tokens[1] + "/" + tokens[6], tokens[1]
 }
 
 func (mi *MetaIndexer) persistFlows(tnRLogs *rawLogs) {
@@ -1357,7 +1412,7 @@ func listFilesLocally(bucketName, prefix string) ([]string, error) {
 
 // SearchRawLogsFromMemory searches raw logs index/logs present in memory
 func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
-	tenant, id, sip, dip, sport, dport, proto, act string,
+	tenant, vpc, id, sip, dip, sport, dport, proto, act string,
 	ipSrc, ipDest uint32, startTs, endTs time.Time, maxResults int,
 	files map[string]struct{}) ([][]string, error) {
 
@@ -1446,17 +1501,24 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 			return result, nil
 		}
 
-		srcIPID, ok := rls.Ipid[sip]
+		vpcID, ok := rls.Vpcid[vpc]
 		if !ok {
 			return result, nil
 		}
 
-		destIPID, ok := rls.Ipid[dip]
+		vpcIndex := rls.VpcIndex[vpcID]
+
+		srcIPID, ok := vpcIndex.Ipid[sip]
 		if !ok {
 			return result, nil
 		}
 
-		destMap, ok := rls.Srcdestidxs[srcIPID]
+		destIPID, ok := vpcIndex.Ipid[dip]
+		if !ok {
+			return result, nil
+		}
+
+		destMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if !ok {
 			return result, nil
 		}
@@ -1481,12 +1543,19 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 
 		rls := index.index
 
-		srcIPID, ok := rls.Ipid[sip]
+		vpcID, ok := rls.Vpcid[vpc]
 		if !ok {
 			return result, nil
 		}
 
-		destMap, ok := rls.Srcdestidxs[srcIPID]
+		vpcIndex := rls.VpcIndex[vpcID]
+
+		srcIPID, ok := vpcIndex.Ipid[sip]
+		if !ok {
+			return result, nil
+		}
+
+		destMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if !ok {
 			return result, nil
 		}
@@ -1511,12 +1580,19 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 
 		rls := index.index
 
-		destIPID, ok := rls.Ipid[dip]
+		vpcID, ok := rls.Vpcid[vpc]
 		if !ok {
 			return result, nil
 		}
 
-		flowPtrMap, ok := rls.DestidxsTemp[destIPID]
+		vpcIndex := rls.VpcIndex[vpcID]
+
+		destIPID, ok := vpcIndex.Ipid[dip]
+		if !ok {
+			return result, nil
+		}
+
+		flowPtrMap, ok := vpcIndex.DestidxsTemp[destIPID]
 		if !ok {
 			return result, nil
 		}
@@ -1525,6 +1601,15 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 	}
 
 	return result, nil
+}
+
+func getVpcIndex(rls *protos.RawLogsShard, vpcName string) *protos.VpcIndex {
+	vpcID, ok := rls.Vpcid[vpcName]
+	if !ok {
+		return nil
+	}
+	vpcIndex := rls.VpcIndex[vpcID]
+	return &vpcIndex
 }
 
 func gzipAndUpload(ctx context.Context,

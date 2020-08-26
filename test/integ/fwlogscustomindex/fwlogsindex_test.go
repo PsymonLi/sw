@@ -163,11 +163,11 @@ func SkipTestFlowlogsCustomIndexingFunctionality(t *testing.T) {
 		testSearchLatestRawLogs(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
 	})
 
-	// // // TODO: Reenable - failed in sanity
-	// // // This test is to make verify that all search operations return the same result set
-	// // t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
-	// // 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
-	// // })
+	// // TODO: Reenable - failed in sanity
+	// // This test is to make verify that all search operations return the same result set
+	// t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
+	// 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
+	// })
 
 	// TestIndexDownloadAndQuery tests redownload of an index and compares query results before and after
 	t.Run("TestIndexDownloadAndQuery", func(t *testing.T) {
@@ -1041,7 +1041,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 			}
 
 			flows, err := mi.SearchRawLogsFromMemory(ctx,
-				"default", "dummy", src, dest, sport, dport, proto, "",
+				"default", "default", "dummy", src, dest, sport, dport, proto, "",
 				ipSrc, ipDest, startTs, endTs, -1, map[string]struct{}{})
 
 			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
@@ -1052,7 +1052,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 			}
 
 			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
-				"", "default.indexmeta", "default.indexmeta", "", src, dest, sport, dport, proto, "",
+				"", "default.indexmeta", "default.indexmeta", "", "default", src, dest, sport, dport, proto, "",
 				startTs, endTs, true, -1, false, time.Second*15)
 
 			AssertOk(t, err, "error in searching csv flows, err %+v", err)
@@ -1087,7 +1087,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 				ipDest = binary.BigEndian.Uint32(ip.To4())
 			}
 			flows, err := mi.SearchRawLogsFromMemory(ctx,
-				"default", "dummy", "", dest, sport, dport, proto, "",
+				"default", "default", "dummy", "", dest, sport, dport, proto, "",
 				0, ipDest, startTs, endTs, -1, map[string]struct{}{})
 
 			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
@@ -1097,7 +1097,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 			}
 
 			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
-				"", "default.indexmeta", "default.indexmeta", "", "", dest, sport, dport, proto, "",
+				"", "default.indexmeta", "default.indexmeta", "", "default", "", dest, sport, dport, proto, "",
 				startTs, endTs, true, -1, false, time.Second*15)
 
 			AssertOk(t, err, "error in searching csv flows, err %+v", err)
@@ -1131,7 +1131,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 				ipSrc = binary.BigEndian.Uint32(ip.To4())
 			}
 			flows, err := mi.SearchRawLogsFromMemory(ctx,
-				"default", "dummy", src, "", sport, dport, proto, "",
+				"default", "default", "dummy", src, "", sport, dport, proto, "",
 				ipSrc, 0, startTs, endTs, -1, map[string]struct{}{})
 
 			AssertOk(t, err, "error in searching raw logs from memory %+v", err)
@@ -1141,7 +1141,7 @@ func testSearchFromMetaIndexerMemory(t *testing.T,
 			}
 
 			_, csvFlowsChannel, _, err := vosFinder.SearchFlows(ctx,
-				"", "default.indexmeta", "default.indexmeta", "", src, "", sport, dport, proto, "",
+				"", "default.indexmeta", "default.indexmeta", "", "default", src, "", sport, dport, proto, "",
 				startTs, endTs, true, -1, false, time.Second*15)
 
 			AssertOk(t, err, "error in searching csv flows, err %+v", err)
@@ -1887,7 +1887,7 @@ func generateLogs(t *testing.T,
 			y, m, d := startTs.Date()
 			h, _, _ := startTs.Clock()
 			// fileName := fmt.Sprintf("%d/default/2006/1/2/15/%s_%s.csv", j, fStartTs, fEndTs)
-			fileName := fmt.Sprintf("%d/default/%d/%d/%d/%d/%s_%s.csv", y, m, d, h, j, fStartTs, fEndTs)
+			fileName := fmt.Sprintf("%d/default/%d/%d/%d/%d/%s_%s.csv", j, y, m, d, h, fStartTs, fEndTs)
 			if zip {
 				zw := gzip.NewWriter(&zippedBuf)
 				zw.Write(buf.Bytes())
