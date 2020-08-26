@@ -128,6 +128,7 @@ rfc_compute_p0_itree_classes (rfc_ctxt_t *rfc_ctxt, rfc_tree_t *rfc_tree,
                               rfc_p0_tree_inode_eq_cb_t inode_eq_cb,
                               uint32_t max_tree_nodes)
 {
+#if 0
     uint32_t       num_intervals = 0;
     itable_t       *itable = &rfc_tree->itable;
     rfc_table_t    *rfc_table = &rfc_tree->rfc_table;
@@ -170,6 +171,7 @@ rfc_compute_p0_itree_classes (rfc_ctxt_t *rfc_ctxt, rfc_tree_t *rfc_tree,
                       rfc_table->num_classes, rfc_table->max_classes);
         return sdk::SDK_RET_NO_RESOURCE;
     }
+#endif
     return SDK_RET_OK;
 }
 

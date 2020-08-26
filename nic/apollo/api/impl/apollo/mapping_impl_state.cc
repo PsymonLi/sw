@@ -127,6 +127,7 @@ mapping_dump_cb (sdk_table_api_params_t *params)
             data->vpc_id,
             data->xlate_index,
             (data->ip_type == IP_TYPE_OVERLAY) ? "overlay" : "public");
+    return 0;
 }
 
 sdk_ret_t

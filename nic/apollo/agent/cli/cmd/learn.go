@@ -2,7 +2,7 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
 
-// +build apulu
+// +build apulu apollo
 
 package cmd
 

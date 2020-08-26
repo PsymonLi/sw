@@ -1,6 +1,7 @@
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
 //
+#include <nic/vpp/impl/flow_info.h>
 
 #include <nic/vpp/impl/flow_info.h>
 

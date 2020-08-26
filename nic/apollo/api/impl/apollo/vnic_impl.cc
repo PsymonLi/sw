@@ -230,11 +230,13 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
             egress_vnic_data.egress_local_vnic_info_action.src_slot_id =
                 spec->fabric_encap.val.vnid;
         }
+#if 0
         if (spec->rx_mirror_session_bmap) {
             egress_vnic_data.egress_local_vnic_info_action.mirror_en = TRUE;
             egress_vnic_data.egress_local_vnic_info_action.mirror_session =
                 spec->rx_mirror_session_bmap;
         }
+#endif
         PDS_IMPL_FILL_TABLE_API_ACTION_PARAMS(&api_params, hw_id_,
                                               &egress_vnic_data, NULL);
         ret = vnic_impl_db()->egress_local_vnic_info_tbl()->insert_atid(&api_params);
@@ -338,14 +340,14 @@ vnic_impl::activate_vnic_by_vlan_tx_table_create_(pds_epoch_t epoch,
     if (v4_route_table) {
         addr =
             ((impl::route_table_impl *)(v4_route_table->impl()))->lpm_root_addr();
-        PDS_TRACE_DEBUG("IPv4 lpm root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("IPv4 lpm root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.lpm_v4addr1,
                                 addr, 5);
     }
     if (v6_route_table) {
         addr =
             ((impl::route_table_impl *)(v6_route_table->impl()))->lpm_root_addr();
-        PDS_TRACE_DEBUG("IPv6 lpm root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("IPv6 lpm root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.lpm_v6addr1,
                                 addr, 5);
     }
@@ -353,13 +355,13 @@ vnic_impl::activate_vnic_by_vlan_tx_table_create_(pds_epoch_t epoch,
     // program security policy block's base address
     if (v4_policy) {
         addr = ((impl::security_policy_impl *)(v4_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Egress IPv4 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Egress IPv4 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.sacl_v4addr1,
                                 addr, 5);
     }
     if (v6_policy) {
         addr = ((impl::security_policy_impl *)(v6_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Egress IPv6 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Egress IPv6 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.sacl_v6addr1,
                                 addr, 5);
     }
@@ -369,11 +371,13 @@ vnic_impl::activate_vnic_by_vlan_tx_table_create_(pds_epoch_t epoch,
     vnic_by_vlan_data.local_vnic_by_vlan_tx_info.epoch2_valid = false;
     sdk::lib::memrev(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.overlay_mac1,
                      spec->mac_addr, ETH_ADDR_LEN);
+#if 0
     if (spec->tx_mirror_session_bmap) {
         vnic_by_vlan_data.local_vnic_by_vlan_tx_info.mirror_en = TRUE;
         vnic_by_vlan_data.local_vnic_by_vlan_tx_info.mirror_session =
             spec->tx_mirror_session_bmap;
     }
+#endif
     if (!spec->switch_vnic) {
         if (spec->vnic_encap.type == PDS_ENCAP_TYPE_DOT1Q) {
             vnic_by_vlan_key.ctag_1_vid = spec->vnic_encap.val.vlan_tag;
@@ -427,13 +431,13 @@ vnic_impl::activate_vnic_by_slot_rx_table_create_(pds_epoch_t epoch,
     // program security policy block's base address
     if (v4_policy) {
         addr = ((impl::security_policy_impl *)(v4_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Ingress IPv4 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Ingress IPv4 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_slot_data.local_vnic_by_slot_rx_info.sacl_v4addr1,
                                 addr, 5);
     }
     if (v6_policy) {
         addr = ((impl::security_policy_impl *)(v6_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Ingress IPv6 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Ingress IPv6 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_slot_data.local_vnic_by_slot_rx_info.sacl_v6addr1,
                                 addr, 5);
     }
@@ -693,14 +697,14 @@ vnic_impl::reactivate_hw(api_base *api_obj, pds_epoch_t epoch,
     if (v4_route_table) {
         addr =
             ((impl::route_table_impl *)(v4_route_table->impl()))->lpm_root_addr();
-        PDS_TRACE_DEBUG("IPv4 lpm root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("IPv4 lpm root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.lpm_v4addr1,
                                 addr, 5);
     }
     if (v6_route_table) {
         addr =
             ((impl::route_table_impl *)(v6_route_table->impl()))->lpm_root_addr();
-        PDS_TRACE_DEBUG("IPv6 lpm root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("IPv6 lpm root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.lpm_v6addr1,
                                 addr, 5);
     }
@@ -708,13 +712,13 @@ vnic_impl::reactivate_hw(api_base *api_obj, pds_epoch_t epoch,
     // program security policy block's base address
     if (egr_v4_policy) {
         addr = ((impl::security_policy_impl *)(egr_v4_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Egress IPv4 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Egress IPv4 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.sacl_v4addr1,
                                 addr, 5);
     }
     if (egr_v6_policy) {
         addr = ((impl::security_policy_impl *)(egr_v6_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Egress IPv6 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Egress IPv6 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_vlan_data.local_vnic_by_vlan_tx_info.sacl_v6addr1,
                                 addr, 5);
     }
@@ -747,13 +751,13 @@ vnic_impl::reactivate_hw(api_base *api_obj, pds_epoch_t epoch,
     // program security policy block's base address
     if (ing_v4_policy) {
         addr = ((impl::security_policy_impl *)(ing_v4_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Ingress IPv4 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Ingress IPv4 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_slot_data.local_vnic_by_slot_rx_info.sacl_v4addr1,
                                 addr, 5);
     }
     if (ing_v6_policy) {
         addr = ((impl::security_policy_impl *)(ing_v6_policy->impl()))->security_policy_root_addr();
-        PDS_TRACE_DEBUG("Ingress IPv6 policy root addr 0x%llx", addr);
+        PDS_TRACE_DEBUG("Ingress IPv6 policy root addr 0x%lx", addr);
         MEM_ADDR_TO_P4_MEM_ADDR(vnic_by_slot_data.local_vnic_by_slot_rx_info.sacl_v6addr1,
                                 addr, 5);
     }
@@ -841,8 +845,8 @@ vnic_impl::fill_spec_(pds_vnic_spec_t *spec) {
     //spec->subnet.id =
         //egress_vnic_data.egress_local_vnic_info_action.subnet_id;
     if (egress_vnic_data.egress_local_vnic_info_action.mirror_en == true) {
-        spec->rx_mirror_session_bmap =
-            egress_vnic_data.egress_local_vnic_info_action.mirror_session;
+        //spec->rx_mirror_session_bmap =
+            //egress_vnic_data.egress_local_vnic_info_action.mirror_session;
     }
 
     // read LOCAL_VNIC_BY_VLAN_TX table
@@ -870,8 +874,8 @@ vnic_impl::fill_spec_(pds_vnic_spec_t *spec) {
         vnic_by_vlan_data.local_vnic_by_vlan_tx_info.skip_src_dst_check1 == true
             ? false : true;
     if (vnic_by_vlan_data.local_vnic_by_vlan_tx_info.mirror_en == true) {
-        spec->tx_mirror_session_bmap =
-            vnic_by_vlan_data.local_vnic_by_vlan_tx_info.mirror_session;
+        //spec->tx_mirror_session_bmap =
+            //vnic_by_vlan_data.local_vnic_by_vlan_tx_info.mirror_session;
     }
 
     // read LOCAL_VNIC_BY_SLOT_RX table, this is to get encap type

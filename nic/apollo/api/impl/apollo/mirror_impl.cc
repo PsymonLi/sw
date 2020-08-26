@@ -155,8 +155,8 @@ mirror_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
                                        &mirror_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program mirror session %u at idx %u",
-                      spec->key.id, hw_id_);
+        //PDS_TRACE_ERR("Failed to program mirror session %u at idx %u",
+                      //spec->key.id, hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
     return SDK_RET_OK;
@@ -196,7 +196,7 @@ mirror_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id, NULL, NULL,
                                       &mirror_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to read mirror session %s at idx %u", mkey->str());
+        //PDS_TRACE_ERR("Failed to read mirror session %s at idx %u", mkey->str());
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
     minfo->spec.key = *mkey;

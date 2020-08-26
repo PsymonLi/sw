@@ -44,6 +44,13 @@ pds_dst_mac_get (uint16_t vpc_id, uint16_t bd_id, mac_addr_t mac_addr,
     return 0;
 }
 
+static inline int
+pds_local_mapping_vnic_id_get(uint16_t vpc_id, uint32_t addr, uint16_t *vnic_id)
+{
+    *vnic_id = 0;
+    return 0;
+}
+
 #ifdef __cplusplus
 }
 #endif

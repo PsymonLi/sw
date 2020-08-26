@@ -235,7 +235,7 @@ rfc_p1_action_data_flush (mem_addr_t addr, void *actiondata)
     sdk_ret_t                        ret;
     sacl_ip_sport_p1_actiondata_t    *action_data;
 
-    PDS_TRACE_DEBUG("Flushing action data to 0x%llx", addr);
+    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
     action_data = (sacl_ip_sport_p1_actiondata_t *)actiondata;
     ret = impl_base::pipeline_impl()->write_to_rxdma_table(addr,
                                                            P4_P4PLUS_RXDMA_TBL_ID_SACL_IP_SPORT_P1,
@@ -1093,7 +1093,7 @@ rfc_p2_action_data_flush (mem_addr_t addr, void *actiondata)
     sdk_ret_t               ret;
     sacl_p2_actiondata_t    *action_data;
 
-    PDS_TRACE_DEBUG("Flushing action data to 0x%llx", addr);
+    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
     action_data = (sacl_p2_actiondata_t *)actiondata;
     ret = impl_base::pipeline_impl()->write_to_rxdma_table(addr,
                                                            P4_P4PLUS_RXDMA_TBL_ID_SACL_P2,
@@ -1285,6 +1285,7 @@ rfc_compute_eq_class_tables (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table1,
     static inline sdk_ret_t
     rfc_compute_p1_eq_class_tables (rfc_ctxt_t *rfc_ctxt)
     {
+#if 0
         sacl_ip_sport_p1_actiondata_t action_data = { 0 };
 
         PDS_TRACE_DEBUG("Starting RFC P1");
@@ -1297,6 +1298,7 @@ rfc_compute_eq_class_tables (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table1,
                                     rfc_compute_p1_next_cl_addr_entry_num,
                                     rfc_compute_class_id, rfc_p1_table_entry_pack,
                                     rfc_p1_action_data_flush);
+#endif
         return SDK_RET_OK;
     }
 
@@ -1310,6 +1312,7 @@ rfc_compute_eq_class_tables (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table1,
 static inline sdk_ret_t
 rfc_compute_p2_tables (rfc_ctxt_t *rfc_ctxt)
 {
+#if 0
     sacl_p2_actiondata_t     action_data = { 0 };
 
     PDS_TRACE_DEBUG("Starting RFC P2");
@@ -1320,6 +1323,7 @@ rfc_compute_p2_tables (rfc_ctxt_t *rfc_ctxt)
                                 rfc_compute_p2_next_cl_addr_entry_num,
                                 rfc_compute_p2_result, rfc_p2_table_entry_pack,
                                 rfc_p2_action_data_flush);
+#endif
     return SDK_RET_OK;
 }
 

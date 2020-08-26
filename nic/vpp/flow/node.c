@@ -13,6 +13,7 @@
 #include "pdsa_uds_hdlr.h"
 #include <nic/vpp/infra/utils.h>
 #include <nic/vpp/impl/nh.h>
+#include <nic/vpp/impl/sess.h>
 #include <feature.h>
 #include <flow_info.h>
 #include "sess_repl_state_tp.h"

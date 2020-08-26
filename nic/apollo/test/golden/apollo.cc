@@ -1626,7 +1626,7 @@ TEST_F(apollo_test, test1)
     cfg.completion_func = NULL;
     hal::utils::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 1}};
-    cfg.device_profile = &device_profile;
+    cfg.qos_profile = &device_profile.qos_profile;
 
     printf("Doing asic init ...\n");
     ret = sdk::asic::pd::asicpd_init(&cfg);

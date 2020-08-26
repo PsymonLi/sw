@@ -99,7 +99,7 @@ header vxlan_t vxlan_0;
 header gre_t gre_0;
 header mpls_t mpls_src_0;
 header mpls_t mpls_dst_0;
-header erspan_header_t3_t erspan;
+header erspan_t3_t erspan;
 
 // layer 1
 header ethernet_t ethernet_1;

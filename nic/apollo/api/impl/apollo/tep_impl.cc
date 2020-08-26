@@ -52,6 +52,7 @@ tep_impl::destroy(tep_impl *impl) {
 sdk_ret_t
 tep_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
                             api_obj_ctxt_t *obj_ctxt) {
+#if 0
     sdk_ret_t ret;
     uint32_t idx;
     sdk_table_api_params_t tparams;
@@ -76,6 +77,7 @@ tep_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
     }
     idx = tparams.handle.pindex();
     nh_id_ = idx & 0xFFFF;
+#endif
     return SDK_RET_OK;
 }
 
@@ -115,6 +117,7 @@ tep_impl::nuke_resources(api_base *api_obj) {
 
 sdk_ret_t
 tep_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
+#if 0
     sdk_ret_t               ret;
     tep_entry               *tep;
     device_entry            *device;
@@ -200,6 +203,9 @@ tep_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
                     ipaddr2str(&tep_ip_addr),
                     PDS_REMOTE_TEP_MAC, hw_id_, nh_id_);
     return ret;
+#else
+    return SDK_RET_OK;
+#endif
 }
 
 sdk_ret_t

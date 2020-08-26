@@ -89,7 +89,7 @@ security_policy_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     pds_policy_spec_t    *spec;
     rfc::policy_params_t policy_params;
 
-    PDS_TRACE_DEBUG("Processing security policy %s", spec->key.str());
+    //PDS_TRACE_DEBUG("Processing security policy %s", spec->key.str());
     spec = &obj_ctxt->api_params->policy_spec;
     memset(&policy_params, 0, sizeof(policy_params));
     policy_params.policy.af = spec->rule_info->af;

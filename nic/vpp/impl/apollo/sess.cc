@@ -3,7 +3,7 @@
 //
 
 #include <stdint.h>
-#include <nic/vpp/impl/session.h>
+#include <nic/vpp/impl/sess.h>
 #include <pds_table.h>
 
 uint64_t

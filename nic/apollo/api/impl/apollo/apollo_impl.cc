@@ -500,7 +500,7 @@ sdk_ret_t
 apollo_impl::pipeline_init(void) {
     sdk_ret_t           ret;
     p4pd_cfg_t          p4pd_cfg;
-    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
+    sdk::asic::pd::p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
 
     std::string cfg_path = api::g_pds_state.cfg_path();
 
@@ -553,6 +553,7 @@ apollo_impl::pipeline_init(void) {
 sdk_ret_t
 apollo_impl::write_to_rxdma_table(mem_addr_t addr, uint32_t tableid,
                                   uint8_t action_id, void *actiondata) {
+    sdk_ret_t    ret;
     uint32_t     len;
     uint8_t      packed_bytes[CACHE_LINE_SIZE];
     uint8_t      *packed_entry = packed_bytes;
@@ -583,6 +584,7 @@ apollo_impl::write_to_rxdma_table(mem_addr_t addr, uint32_t tableid,
 sdk_ret_t
 apollo_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
                                   uint8_t action_id, void *actiondata) {
+    sdk_ret_t    ret;
     uint32_t     len;
     uint8_t      packed_bytes[CACHE_LINE_SIZE];
     uint8_t      *packed_entry = packed_bytes;
@@ -656,8 +658,8 @@ apollo_impl::meter_stats(debug::meter_stats_get_cb_t cb, uint32_t lowidx,
     uint64_t start_addr = 0;
 
     if (highidx > (METER_STATS_TABLE_SIZE >> 1)) {
-        PDS_TRACE_ERR("Read meter stats failed, invalid index {} specified",
-                highidx);
+        //PDS_TRACE_ERR("Read meter stats failed, invalid index {} specified",
+                //highidx);
         return SDK_RET_ERR;
     }
 
@@ -671,16 +673,16 @@ apollo_impl::meter_stats(debug::meter_stats_get_cb_t cb, uint32_t lowidx,
         ret = sdk::asic::asic_mem_read(start_addr + tx_offset,
                 (uint8_t *)&stats.tx_bytes, 8);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Read meter TX stats for index {} failed with err %u",
-                    idx, ret);
+            //PDS_TRACE_ERR("Read meter TX stats for index {} failed with err %u",
+                    //idx, ret);
             return ret;
         }
 
         ret = sdk::asic::asic_mem_read(start_addr + rx_offset,
                 (uint8_t *)&stats.rx_bytes, 8);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Read meter RX stats for index {} failed with err %u",
-                    idx, ret);
+            //PDS_TRACE_ERR("Read meter RX stats for index {} failed with err %u",
+                    //idx, ret);
             return ret;
         }
         cb (&stats, ctxt);

@@ -153,7 +153,7 @@ pds_l2l_flow_extract_nexthop_info (vlib_buffer_t *p0,
 
 always_inline void
 pds_flow_extract_nexthop_info(vlib_buffer_t *p0, u8 is_ip4, 
-                              u8 iflow, u16 thread_index)
+                              u8 iflow, bool bitw_svc, u16 thread_index)
 {
     return;
 }

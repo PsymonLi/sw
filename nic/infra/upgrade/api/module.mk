@@ -2,8 +2,10 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libpdsupgapi.lib
-MODULE_PIPELINE = apulu athena
-ifeq ($(findstring $PIPELINE, apulu athena), "")
+MODULE_PIPELINE = apulu athena apollo
+ifeq (${PIPELINE},apollo)
+MODULE_SRCS += $(wildcard ${MODULE_SRC_DIR}/impl/stub/*.cc)
+else ifeq ($(findstring $PIPELINE, apulu athena), "")
 MODULE_SRCS += $(wildcard ${MODULE_SRC_DIR}/impl/stub/*.cc)
 else
 MODULE_SRCS += $(wildcard ${MODULE_SRC_DIR}/impl/${PIPELINE}/*.cc)
