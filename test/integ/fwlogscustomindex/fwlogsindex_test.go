@@ -110,12 +110,12 @@ func TestFlowlogsCustomIndexingFunctionality(t *testing.T) {
 	vosFinder.SetMetaIndexer(mi)
 	setupSpyglassRESTServer(ctx, vosFinder, logger)
 
-	// var flowsToUseForSearchTest [][]string
+	var flowsToUseForSearchTest [][]string
 	var generatedFiles []string
 	if writeDataFiles {
 		ts, err := time.Parse(time.RFC3339, "2006-01-02T15:00:00Z")
 		AssertOk(t, err, "error in parsing startTs")
-		_, generatedFiles = generateLogs(t, ts, client, bucketName, true)
+		flowsToUseForSearchTest, generatedFiles = generateLogs(t, ts, client, bucketName, true)
 	}
 
 	if createIndices {
@@ -125,58 +125,60 @@ func TestFlowlogsCustomIndexingFunctionality(t *testing.T) {
 	// Waiting for spyglass rest server to start
 	time.Sleep(time.Second * 20)
 
-	// // Test meta index debug handle
-	// t.Run("TestMetaIndexDebugRESTHandle", func(t *testing.T) {
-	// 	testMetaIndexDebugRESTHandle(t, flowsToUseForSearchTest)
-	// })
+	// Test meta index debug handle
+	t.Run("TestMetaIndexDebugRESTHandle", func(t *testing.T) {
+		testMetaIndexDebugRESTHandle(t, flowsToUseForSearchTest)
+	})
 
-	// // Test query cache
-	// t.Run("TestQueryCache", func(t *testing.T) {
-	// 	testQueryCache(t, flowsToUseForSearchTest)
-	// })
+	// Test query cache
+	t.Run("TestQueryCache", func(t *testing.T) {
+		testQueryCache(t, flowsToUseForSearchTest)
+	})
 
-	// // All queries should have got purged
-	// t.Run("TestQueryCachePurge", func(t *testing.T) {
-	// 	testQueryCachePurge(t)
-	// })
+	// All queries should have got purged
+	t.Run("TestQueryCachePurge", func(t *testing.T) {
+		testQueryCachePurge(t)
+	})
 
-	// // All queries should have got purged
-	// t.Run("TestConcurrentQueries", func(t *testing.T) {
-	// 	testConcurrentQueries(t, flowsToUseForSearchTest)
-	// })
+	// All queries should have got purged
+	t.Run("TestConcurrentQueries", func(t *testing.T) {
+		testConcurrentQueries(t, flowsToUseForSearchTest)
+	})
 
-	// // Tests search for the last 24 hours of logs using the raw logs index
-	// t.Run("TestSearchRawLogs", func(t *testing.T) {
-	// 	testSearchRawLogs(t, flowsToUseForSearchTest)
-	// })
+	// Tests search for the last 24 hours of logs using the raw logs index
+	t.Run("TestSearchRawLogs", func(t *testing.T) {
+		testSearchRawLogs(t, logger, flowsToUseForSearchTest)
+	})
 
 	// Tests searching the logs/index present in MetaIndexer's memory
-	t.Run("TestSearchRawLogsFromMetaIndexerMemory", func(t *testing.T) {
-		testSearchRawLogsFromMetaIndexerMemory(t,
+	// The system writes to disk every 10 mins, so queries requesting
+	// latest data need to search from memory as well.
+	t.Run("TestSearchFromMetaIndexerMemory", func(t *testing.T) {
+		testSearchFromMetaIndexerMemory(t,
 			r, mockCredentialManager, logger, bucketName)
 	})
 
-	// // This test generates logs at the current time and searches them
-	// t.Run("TestSearchLatestRawLogs", func(t *testing.T) {
-	// 	testSearchLatestRawLogs(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
-	// })
+	// This test generates logs at the current time and searches them
+	t.Run("TestSearchLatestRawLogs", func(t *testing.T) {
+		testSearchLatestRawLogs(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
+	})
 
 	// // // TODO: Reenable - failed in sanity
-	// // // // This test is to make verify that all search operations return the same result set
-	// // // t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
-	// // // 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
-	// // // })
+	// // // This test is to make verify that all search operations return the same result set
+	// // t.Run("TestCompareFlowsBetweenSlowIndexAndFastIndexAndMinio", func(t *testing.T) {
+	// // 	testCompareFlowsBetweenAllSearchOperation(t, r, mockCredentialManager, logger, mi, vosFinder, flowsToUseForSearchTest, bucketName)
+	// // })
 
-	// // TestIndexDownloadAndQuery tests redownload of an index and compares query results before and after
-	// t.Run("TestIndexDownloadAndQuery", func(t *testing.T) {
-	// 	testIndexDownloadAndQuery(t, r, mockCredentialManager, logger, mi, flowsToUseForSearchTest, logsChannel, bucketName)
-	// })
+	// TestIndexDownloadAndQuery tests redownload of an index and compares query results before and after
+	t.Run("TestIndexDownloadAndQuery", func(t *testing.T) {
+		testIndexDownloadAndQuery(t, r, mockCredentialManager, logger, mi, flowsToUseForSearchTest, logsChannel, bucketName)
+	})
 
-	// // TestDoubleIndexing tests that if the same set of logs gets indexed twice, still the search should be able
-	// // to de-duplicate the search results
-	// t.Run("TestDoubleIndexing", func(t *testing.T) {
-	// 	testDoubleIndexing(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
-	// })
+	// TestDoubleIndexing tests that if the same set of logs gets indexed twice, still the search should be able
+	// to de-duplicate the search results
+	t.Run("TestDoubleIndexing", func(t *testing.T) {
+		testDoubleIndexing(t, r, mockCredentialManager, logger, mi, vosFinder, logsChannel, bucketName)
+	})
 }
 
 func testConcurrentQueries(t *testing.T, flowsToUseForSearchTest [][]string) {
@@ -224,8 +226,8 @@ func testConcurrentQueries(t *testing.T, flowsToUseForSearchTest [][]string) {
 				"&sort=ascending" +
 				"&purge=15s" +
 				"&maxresults=100" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00"),
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z"),
 			strings.TrimSpace("http://127.0.0.1:9021/debug/fwlogs/query" +
 				"?" + "bucket=" + bucket + "&dataBucket=" + dataBucket +
 				"&dest=" + flowsToUseForSearchTest[1][3] +
@@ -233,8 +235,8 @@ func testConcurrentQueries(t *testing.T, flowsToUseForSearchTest [][]string) {
 				"&sort=ascending" +
 				"&purge=15s" +
 				"&maxresults=100" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00"),
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z"),
 			strings.TrimSpace("http://127.0.0.1:9021/debug/fwlogs/query" +
 				"?" + "bucket=" + bucket + "&dataBucket=" + dataBucket +
 				"&dest=" + flowsToUseForSearchTest[2][3] +
@@ -242,8 +244,8 @@ func testConcurrentQueries(t *testing.T, flowsToUseForSearchTest [][]string) {
 				"&sort=ascending" +
 				"&purge=15s" +
 				"&maxresults=100" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00"),
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z"),
 		}
 
 		wg := sync.WaitGroup{}
@@ -280,8 +282,8 @@ func testQueryCachePurge(t *testing.T) {
 func testQueryCache(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestSearchFlowsInParts", func(t *testing.T) {
 		flow := flowsToUseForSearchTest[0]
-		startTs := "2006-01-02T15:00:00"
-		endTs := "2006-01-02T15:05:00"
+		startTs := "2006-01-02T15:00:00Z"
+		endTs := "2006-01-02T15:05:00Z"
 		bucket := "default.indexmeta"
 		dataBucket := "default.indexmeta"
 
@@ -368,8 +370,8 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 	t.Run("TestSearchFlows", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.indexmeta"
 			dataBucket := "default.indexmeta"
 
@@ -405,8 +407,8 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 	t.Run("TestDescendingOrder", func(t *testing.T) {
 		// Search by destip in descending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.indexmeta"
 			dataBucket := "default.indexmeta"
 			dest := flow[3]
@@ -447,8 +449,8 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 	t.Run("TestAscendingOrder", func(t *testing.T) {
 		// Search by destip in ascending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.indexmeta"
 			dataBucket := "default.indexmeta"
 			dest := flow[3]
@@ -489,8 +491,8 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 	t.Run("TestCompareAscendingAndDescendingOrderResult", func(t *testing.T) {
 		// Search by destip in ascending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.indexmeta"
 			dataBucket := "default.indexmeta"
 			dest := flow[3]
@@ -554,7 +556,7 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 
 			// Dont pass endTs
 			// If we dont pass endTs then its set as startTs+24 hours, so it should return the results as usual
-			startTs := "2006-01-02T15:00:00"
+			startTs := "2006-01-02T15:00:00Z"
 			uri = strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
 				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
@@ -568,7 +570,7 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 
 			// Dont pass startTs
 			// If endTs != "" && startTs == "", it should return an error
-			endTs := "2006-01-02T15:05:00"
+			endTs := "2006-01-02T15:05:00Z"
 			uri = strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
 				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
@@ -582,14 +584,45 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 				strings.Contains(string(body[:]), "startTs is zero, but endTs is not zero"), "error not returned")
 		}
 	})
+
+	t.Run("TestSearchNonExistingPort", func(t *testing.T) {
+		// Search for flows
+		for _, flow := range flowsToUseForSearchTest {
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
+			bucket := "default.indexmeta"
+			dataBucket := "default.indexmeta"
+
+			src := flow[2]
+			dest := flow[3]
+			sport := "200" // source port 200 is not existing in logs
+			dport := "100"
+			proto := "TCP"
+			returnFiles := "true"
+			returnFlows := "true"
+			uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&src=" + src + "&dest=" + dest +
+				"&sport=" + sport + "&dport=" + dport + "&proto=" + proto + "&returnFiles=" + returnFiles + "&returnFlows=" + returnFlows +
+				"&sort=descending" + "&purge=5s")
+			if startTs != "" && endTs != "" {
+				uri += "&startts=" + startTs + "&endts=" + endTs
+			}
+			result := getHelper(t, uri)
+			flowsInterface, ok := result["flows"]
+			Assert(t, ok, "flows key is not present in the returned data")
+			flows, ok := flowsInterface.([]interface{})
+			Assert(t, ok, "flows expected type is []interface{}")
+			Assert(t, len(flows) == 0, "flows got returned for non existing port %s", sport)
+		}
+	})
 }
 
-func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
+func testSearchRawLogs(t *testing.T, logger log.Logger, flowsToUseForSearchTest [][]string) {
 	t.Run("TestSearchFlows", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 
@@ -625,8 +658,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestSearchByDestIP", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 
@@ -658,8 +691,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestSearchBySrcIP", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 
@@ -691,8 +724,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestDescendingOrder", func(t *testing.T) {
 		// Search by destip in descending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 			dest := flow[3]
@@ -733,8 +766,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestAscendingOrder", func(t *testing.T) {
 		// Search by destip in ascending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 			dest := flow[3]
@@ -775,8 +808,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 	t.Run("TestCompareAscendingAndDescendingOrderResult", func(t *testing.T) {
 		// Search by destip in ascending order
 		for _, flow := range flowsToUseForSearchTest {
-			startTs := "2006-01-02T15:00:00"
-			endTs := "2006-01-02T15:05:00"
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
 			bucket := "default.rawlogs"
 			dataBucket := "default.rawlogs"
 			dest := flow[3]
@@ -818,8 +851,8 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 
 	t.Run("TestSearchFlowsInParts", func(t *testing.T) {
 		flow := flowsToUseForSearchTest[0]
-		startTs := "2006-01-02T15:00:00"
-		endTs := "2006-01-02T15:05:00"
+		startTs := "2006-01-02T15:00:00Z"
+		endTs := "2006-01-02T15:05:00Z"
 		bucket := "default.rawlogs"
 		dataBucket := "default.rawlogs"
 
@@ -900,9 +933,64 @@ func testSearchRawLogs(t *testing.T, flowsToUseForSearchTest [][]string) {
 			fmt.Sprintf("&maxresults=%d", maxResults))
 		shouldError(t, uri, "search context expired, unknown query id")
 	})
+
+	t.Run("TestSearchFlowsForDifferentTimeRanges", func(t *testing.T) {
+		helper := func(flow []string, startTs, endTs string) {
+			flowTs := flow[4]
+			expectNonZeroOuput := false
+			if flowTs >= startTs && flowTs <= endTs {
+				expectNonZeroOuput = true
+			}
+
+			bucket := "default.rawlogs"
+			dataBucket := "default.rawlogs"
+			dest := flow[3]
+			returnFlows := "true"
+			uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&dest=" + dest +
+				"&returnFlows=" + returnFlows + "&sort=ascending" + "&purge=5s")
+			if startTs != "" && endTs != "" {
+				uri += "&startts=" + startTs + "&endts=" + endTs
+			}
+			result := getHelper(t, uri)
+
+			flowsInterface, ok := result["flows"]
+			Assert(t, ok, "flows key is not present in the returned data")
+			flows, ok := flowsInterface.([]interface{})
+			Assert(t, ok, "flows expected type is []interface{}")
+			if expectNonZeroOuput {
+				Assert(t, len(flows) > 0, "no flows returned for dest %s", dest)
+				for _, flowI := range flows {
+					flow := flowI.([]interface{})
+					_, err := time.Parse(time.RFC3339, flow[4].(string))
+					AssertOk(t, err, "error in parsing flow time %s, err: %+v", flow[4].(string), err)
+					Assert(t, flow[4].(string) >= startTs && flow[4].(string) <= endTs,
+						"flow's ts is not within the given time period, startTs %s, endTs %s, flowTs %s",
+						startTs, endTs, flow[4].(string))
+				}
+			} else {
+				// Flows with same ip could also be present within the queried time period, verify that only
+				// those flows are returned
+				for _, flowI := range flows {
+					flow := flowI.([]interface{})
+					if !(flow[4].(string) >= startTs && flow[4].(string) <= endTs) {
+						Assert(t, false,
+							"flows returned for dest %s, within the given time period, startTs %s, endTs %s, flowTs %s",
+							dest, startTs, endTs, flow[4].(string))
+					}
+				}
+			}
+		}
+
+		// Search flows from 15:00:30 to 15:00:45, veirfy that no flows are returned with ts > 15:00:30
+		for _, flow := range flowsToUseForSearchTest {
+			helper(flow, "2006-01-02T15:00:00Z", "2006-01-02T15:00:30Z")
+			helper(flow, "2006-01-02T15:00:30Z", "2006-01-02T15:00:45Z")
+		}
+	})
 }
 
-func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
+func testSearchFromMetaIndexerMemory(t *testing.T,
 	r *mock.ResolverClient, mockCredentialManager minio.CredentialsManager, logger log.Logger,
 	bucketName string) {
 	ctx := context.Background()
@@ -985,9 +1073,9 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 	t.Run("TestSearchByDestIP", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
+			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00Z")
 			// AssertOk(t, err, "error in parsing time %+v", err)
-			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
+			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00Z")
 			// AssertOk(t, err, "error in parsing time %+v", err)
 			dest := flow[3]
 			sport := "100"
@@ -1029,9 +1117,9 @@ func testSearchRawLogsFromMetaIndexerMemory(t *testing.T,
 	t.Run("TestSearchBySrcIP", func(t *testing.T) {
 		// Search for flows
 		for _, flow := range flowsToUseForSearchTest {
-			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00")
+			// startTs, err := time.Parse(timeFormat, "2006-01-02T15:00:00Z")
 			// AssertOk(t, err, "error in parsing time %+v", err)
-			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00")
+			// endTs, err := time.Parse(timeFormat, "2006-01-02T15:05:00Z")
 			// AssertOk(t, err, "error in parsing time %+v", err)
 			src := flow[2]
 			sport := "100"
@@ -1110,7 +1198,7 @@ func testSearchLatestRawLogs(t *testing.T,
 			// Dont pass endTs
 			// If we dont pass endTs then its set as startTs+24 hours, so it should return the results as usual
 			// Including previous 5 minutes for search because it has been some time since the logs were generated.
-			startTs := time.Now().Add(-5 * time.Minute).Format("2006-01-02T15:04:00")
+			startTs := time.Now().Add(-5 * time.Minute).Format("2006-01-02T15:04:00Z")
 			uri = strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
 				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
@@ -1124,7 +1212,7 @@ func testSearchLatestRawLogs(t *testing.T,
 
 			// Dont pass startTs
 			// If endTs != "" && startTs == "", it should return an error
-			endTs := "2006-01-02T15:05:00"
+			endTs := "2006-01-02T15:05:00Z"
 			uri = strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
 				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
@@ -1154,8 +1242,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"&returnFiles=true" +
 				"&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result := getHelper(t, uri)
 			flowsInterface, ok := result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1167,8 +1255,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"?" + "&bucket=default.indexmeta" + "&dataBucket=default.indexmeta" + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result = getHelper(t, uri)
 			flowsInterface, ok = result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1193,8 +1281,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"&returnFiles=true" +
 				"&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result := getHelper(t, uri)
 			flowsInterface, ok := result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1206,8 +1294,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"?" + "&bucket=default.indexmeta" + "&dataBucket=default.indexmeta" + "&src=" + src +
 				"&returnFiles=true" + "&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result = getHelper(t, uri)
 			flowsInterface, ok = result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1232,8 +1320,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"&returnFiles=true" +
 				"&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result := getHelper(t, uri)
 			flowsInterface, ok := result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1245,8 +1333,8 @@ func testCompareFlowsBetweenAllSearchOperation(t *testing.T,
 				"?" + "&bucket=default.indexmeta" + "&dataBucket=default.indexmeta" + "&src=" + src + "&dest=" + dest +
 				"&returnFiles=true" + "&returnFlows=true" +
 				"&sort=ascending" + "&purge=5s" +
-				"&startts=2006-01-02T15:00:00" +
-				"&endts=2006-01-02T15:05:00")
+				"&startts=2006-01-02T15:00:00Z" +
+				"&endts=2006-01-02T15:05:00Z")
 			result = getHelper(t, uri)
 			flowsInterface, ok = result["flows"]
 			Assert(t, ok, "flows key is not present in the returned data")
@@ -1548,14 +1636,14 @@ func testIndexDownloadAndQuery(t *testing.T,
 			"&returnFiles=true" +
 			"&returnFlows=true" +
 			"&sort=ascending" + "&purge=5s" +
-			"&startts=2006-01-02T15:00:00" +
-			"&endts=2006-01-02T15:05:00")
+			"&startts=2006-01-02T15:00:00Z" +
+			"&endts=2006-01-02T15:05:00Z")
 		result := getHelper(t, uri)
 		flowsInterface, ok := result["flows"]
 		Assert(t, ok, "flows key is not present in the returned data")
 		rawFlows, ok := flowsInterface.([]interface{})
 		Assert(t, ok, "flows expected type is []interface{}")
-		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00, 2006-01-02T15:05:00")
+		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00Z, 2006-01-02T15:05:00Z")
 		results[dest] = rawFlows
 	}
 
@@ -1580,14 +1668,14 @@ func testIndexDownloadAndQuery(t *testing.T,
 			"&returnFiles=true" +
 			"&returnFlows=true" +
 			"&sort=ascending" + "&purge=5s" +
-			"&startts=2006-01-02T15:00:00" +
-			"&endts=2006-01-02T15:05:00")
+			"&startts=2006-01-02T15:00:00Z" +
+			"&endts=2006-01-02T15:05:00Z")
 		result := getHelper(t, uri)
 		flowsInterface, ok := result["flows"]
 		Assert(t, ok, "flows key is not present in the returned data")
 		rawFlows, ok := flowsInterface.([]interface{})
 		Assert(t, ok, "flows expected type is []interface{}")
-		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00, 2006-01-02T15:05:00")
+		Assert(t, len(rawFlows) > 0, "no flows returned for time 2006-01-02T15:00:00Z, 2006-01-02T15:05:00Z")
 		resultsNew[dest] = rawFlows
 	}
 

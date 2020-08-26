@@ -1,6 +1,8 @@
 package searchvos
 
 import (
+	"fmt"
+
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/pensando/sw/venice/spyglass/searchvos/protos"
@@ -17,7 +19,7 @@ type resultsCache struct {
 func newResultsCache() *resultsCache {
 	cache, err := lru.New(resultsCacheSize)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("error in creating resultsCache, err %s", err.Error()))
 	}
 	return &resultsCache{
 		cache: cache,

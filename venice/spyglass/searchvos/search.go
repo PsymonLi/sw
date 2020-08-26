@@ -511,6 +511,7 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 		return fmt.Errorf("search system is not initialized yet")
 	}
 	for {
+		stUnix, enUnix := st.Unix(), en.Unix()
 		if ipSrc != 0 && ipDest != 0 {
 			filePrefix := getRawLogsFilePrefix(st, en, srcShID, ascending)
 			objs, err = listFilesLocally(bucket, filePrefix)
@@ -559,9 +560,11 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 
 			if !(((fst.After(st) || fst.Equal(st)) &&
 				(fen.Before(en) || fen.Equal(en))) ||
+				((st.After(fst) || fst.Equal(st)) &&
+					(en.Before(fen) || fen.Equal(en))) ||
 				(fst.After(st) && fst.Before(en) && fen.After(en)) ||
 				(fst.Before(st) && fen.After(st) && fen.Before(en))) {
-				s.logger.Debugf("id %s, objName %s, no index found for the given time %s, %s", qc.id, obj, st.String(), en.String())
+				s.logger.Infof("id %s, objName %s, no index found for the given time %s, %s", qc.id, obj, st.String(), en.String())
 				continue
 			}
 
@@ -574,12 +577,17 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 						rls = newRawLogsShard()
 						objReader, err := getLocalFileReader(dataBucket, object)
 						if err != nil {
-							s.logger.Errorf("error in getting object %s, %s, %+v",
-								dataBucket, object, err)
+							s.logger.Errorf("error in getting raw logs index file %s, %s, %s",
+								dataBucket, object, err.Error())
 							return
 						}
 						defer objReader.Close()
-						decodeRawLogsProtobuf(objReader, rls)
+						err = decodeRawLogsProtobuf(objReader, rls)
+						if err != nil {
+							s.logger.Errorf("error in decoding raw logs index, file %s, %s, err %s",
+								dataBucket, object, err.Error())
+							return
+						}
 
 						if enableCache {
 							s.scache.indexCache.addRawLogsShard(object, rls)
@@ -587,8 +595,8 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 					}
 
 					flowsObjName := rls.Datafilename + flowsExtension
-					flows := s.getLogsForIPFromRawLogs(ctx, s.logger, clients[i%numClients],
-						dataBucket, sip, dip, rls, flowsObjName)
+					flows := s.getLogsForIPFromRawLogs(ctx, stUnix, enUnix, s.logger, clients[i%numClients],
+						dataBucket, sip, dip, sport, dport, proto, act, rls, flowsObjName)
 
 					if len(flows) > 0 {
 						lock.Lock()
@@ -877,8 +885,10 @@ func (s *SearchFwLogsOverVos) sendFlowsHelper(ctx context.Context,
 }
 
 func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
-	logger log.Logger, client objstore.Client, dataBucket string,
-	srcIP, destIP string, rls *protos.RawLogsShard, flowObjName string) map[string][][]string {
+	startTs, endTs int64, logger log.Logger,
+	client objstore.Client, dataBucket string,
+	srcIP, destIP, sport, dport, proto, act string,
+	rls *protos.RawLogsShard, flowObjName string) map[string][][]string {
 	result := map[string][][]string{}
 	objReader, err := getLocalFileReader(dataBucket, flowObjName)
 	if err != nil {
@@ -908,10 +918,15 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 		flowPtrMap := s.scache.indexCache.getFlowPtrMap(cacheKey)
 		if flowPtrMap == nil {
 			flowPtrMap = &protos.FlowPtrMap{}
-			filePtrChunk := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+			filePtrChunk, err := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+			if err != nil {
+				logger.Errorf("error in reading fileptr chunk, file %s, err %s", flowObjName, err.Error())
+				return result
+			}
 			err = flowPtrMap.Unmarshal(filePtrChunk)
 			if err != nil {
-				panic("error in fetching flowptr: " + err.Error())
+				logger.Errorf("error in unmarshling flowPtrMap, file %s, err %s", flowObjName, err.Error())
+				return result
 			}
 			if enableCache {
 				s.scache.indexCache.addFlowPtrMap(cacheKey, flowPtrMap)
@@ -925,8 +940,12 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 			flowRec, ok := s.scache.resultsCache.getFlowsProto(cacheKey)
 			if !ok {
 				flowRec = &protos.FlowRec{}
-				chunk := getChunkFromFile(objReader, offset, size)
-				err := decodeFlowWithSnappy(flowRec, chunk)
+				chunk, err := getChunkFromFile(objReader, offset, size)
+				if err != nil {
+					logger.Errorf("error in reading flow chunk, file %s, err %s", flowObjName, err.Error())
+					continue
+				}
+				err = decodeFlowWithSnappy(flowRec, chunk)
 				if err != nil {
 					continue
 				}
@@ -935,11 +954,18 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 				}
 			}
 
-			flowString, err := convertFlowToString(srcIP, destIP, flowRec)
-			if err != nil {
-				panic("error in converting flow to string: " + err.Error())
+			if flowRec.Ts < startTs || flowRec.Ts > endTs {
+				continue
 			}
-			result[flowRec.Id] = append(result[flowRec.Id], flowString)
+
+			flowString, err := convertFlowToString(srcIP, destIP, sport, dport, proto, act, flowRec)
+			if err != nil {
+				logger.Errorf("error in converting flow to string, err %s", err.Error())
+				continue
+			}
+			if flowString != nil {
+				result[flowRec.Id] = append(result[flowRec.Id], flowString)
+			}
 		}
 	} else if srcIP != "" {
 		srcIPID, ok := rls.Ipid[srcIP]
@@ -957,10 +983,15 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 			flowPtrMap := s.scache.indexCache.getFlowPtrMap(cacheKey)
 			if flowPtrMap == nil {
 				flowPtrMap = &protos.FlowPtrMap{}
-				filePtrChunk := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+				filePtrChunk, err := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+				if err != nil {
+					logger.Errorf("error in reading fileptr chunk, file %s, err %s", flowObjName, err.Error())
+					return result
+				}
 				err = flowPtrMap.Unmarshal(filePtrChunk)
 				if err != nil {
-					panic("error in fetching flowptr: " + err.Error())
+					logger.Errorf("error in unmarshling flowPtrMap, file %s, err %s", flowObjName, err.Error())
+					return result
 				}
 				if enableCache {
 					s.scache.indexCache.addFlowPtrMap(cacheKey, flowPtrMap)
@@ -974,8 +1005,12 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 				flowRec, ok := s.scache.resultsCache.getFlowsProto(cacheKey)
 				if !ok {
 					flowRec = &protos.FlowRec{}
-					chunk := getChunkFromFile(objReader, offset, size)
-					err := decodeFlowWithSnappy(flowRec, chunk)
+					chunk, err := getChunkFromFile(objReader, offset, size)
+					if err != nil {
+						logger.Errorf("error in reading flow chunk, file %s, err %s", flowObjName, err.Error())
+						continue
+					}
+					err = decodeFlowWithSnappy(flowRec, chunk)
 					if err != nil {
 						continue
 					}
@@ -984,11 +1019,18 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 					}
 				}
 
-				flowString, err := convertFlowToString(srcIP, destIP, flowRec)
-				if err != nil {
-					panic("error in converting flow to string: " + err.Error())
+				if flowRec.Ts < startTs || flowRec.Ts > endTs {
+					continue
 				}
-				result[flowRec.Id] = append(result[flowRec.Id], flowString)
+
+				flowString, err := convertFlowToString(srcIP, destIP, sport, dport, proto, act, flowRec)
+				if err != nil {
+					logger.Errorf("error in converting flow to string, err %s", err.Error())
+					continue
+				}
+				if flowString != nil {
+					result[flowRec.Id] = append(result[flowRec.Id], flowString)
+				}
 			}
 		}
 	} else if destIP != "" {
@@ -1002,10 +1044,14 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 		flowPtrMap := s.scache.indexCache.getFlowPtrMap(cacheKey)
 		if flowPtrMap == nil {
 			flowPtrMap = &protos.FlowPtrMap{}
-			filePtrChunk := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+			filePtrChunk, err := getChunkFromFile(objReader, filePtr.Offset, filePtr.Size_)
+			if err != nil {
+				logger.Errorf("error in reading fileptr chunk, file %s, err %s", flowObjName, err.Error())
+				return result
+			}
 			err = flowPtrMap.Unmarshal(filePtrChunk)
 			if err != nil {
-				panic("error in fetching flowptr: " + err.Error())
+				logger.Errorf("error in unmarshling flowPtrMap, file %s, err %s", flowObjName, err.Error())
 			}
 			if enableCache {
 				s.scache.indexCache.addFlowPtrMap(cacheKey, flowPtrMap)
@@ -1019,8 +1065,12 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 			flowRec, ok := s.scache.resultsCache.getFlowsProto(cacheKey)
 			if !ok {
 				flowRec = &protos.FlowRec{}
-				chunk := getChunkFromFile(objReader, offset, size)
-				err := decodeFlowWithSnappy(flowRec, chunk)
+				chunk, err := getChunkFromFile(objReader, offset, size)
+				if err != nil {
+					logger.Errorf("error in reading flow chunk, file %s, err %s", flowObjName, err.Error())
+					continue
+				}
+				err = decodeFlowWithSnappy(flowRec, chunk)
 				if err != nil {
 					continue
 				}
@@ -1030,11 +1080,18 @@ func (s *SearchFwLogsOverVos) getLogsForIPFromRawLogs(ctx context.Context,
 				}
 			}
 
-			flowString, err := convertFlowToString(srcIP, destIP, flowRec)
-			if err != nil {
-				panic("error in converting flow to string: " + err.Error())
+			if flowRec.Ts < startTs || flowRec.Ts > endTs {
+				continue
 			}
-			result[flowRec.Id] = append(result[flowRec.Id], flowString)
+
+			flowString, err := convertFlowToString(srcIP, destIP, sport, dport, proto, act, flowRec)
+			if err != nil {
+				logger.Errorf("error in converting flow to string, err %s", err.Error())
+				continue
+			}
+			if flowString != nil {
+				result[flowRec.Id] = append(result[flowRec.Id], flowString)
+			}
 		}
 	}
 	return result

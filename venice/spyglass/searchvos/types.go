@@ -143,17 +143,6 @@ func (s ascendingLogs) Swap(i, j int) {
 }
 
 func (s ascendingLogs) Less(i, j int) bool {
-	// t1, err := time.Parse(time.RFC3339, s[i][4])
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// t2, err := time.Parse(time.RFC3339, s[j][4])
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// return t1.Before(t2)
-
 	return s[i][4] < s[j][4]
 }
 
@@ -168,17 +157,6 @@ func (s descendingLogs) Swap(i, j int) {
 }
 
 func (s descendingLogs) Less(i, j int) bool {
-	// t1, err := time.Parse(time.RFC3339, s[i][4])
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// t2, err := time.Parse(time.RFC3339, s[j][4])
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// return t2.Before(t1)
-
 	return s[i][4] > s[j][4]
 }
 

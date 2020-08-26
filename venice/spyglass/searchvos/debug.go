@@ -17,7 +17,7 @@ import (
 // Its exported for testing.
 func HandleDebugFwlogsQuery(ctx context.Context, vosFinder *SearchFwLogsOverVos, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		timeFormat := "2006-01-02T15:04:05"
+		timeFormat := "2006-01-02T15:04:05Z"
 		switch r.Method {
 		case "GET":
 			logger.Infof("GET params: %+v", r.URL.Query())

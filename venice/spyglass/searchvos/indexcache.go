@@ -1,6 +1,8 @@
 package searchvos
 
 import (
+	"fmt"
+
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/pensando/sw/venice/spyglass/searchvos/protos"
@@ -17,7 +19,7 @@ type indexCache struct {
 func newIndexCache() *indexCache {
 	cache, err := lru.New(indexCacheSize)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("error in creating indexCache, err %s", err.Error()))
 	}
 	return &indexCache{
 		cache: cache,

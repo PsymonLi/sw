@@ -54,7 +54,7 @@ func RecreateRawLogsIndex(ctx context.Context,
 	logger.Infof("starting scrolling %+v, %s", query, index)
 	scroller, err := elasticClient.Scroll(ctxNew, index, query, 8000)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("error in setting a elastic scroll, err %s", err.Error())
 	}
 	scroller.Sort("creationts", true)
 	wg := sync.WaitGroup{}
@@ -68,7 +68,7 @@ func RecreateRawLogsIndex(ctx context.Context,
 		}
 
 		if err != nil {
-			panic(err)
+			return 0, fmt.Errorf("error in scrolling over elastic, err %s", err.Error())
 		}
 
 		if len(result.Hits.Hits) == 0 {

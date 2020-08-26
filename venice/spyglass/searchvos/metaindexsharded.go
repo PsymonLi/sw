@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"encoding/csv"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -313,11 +312,13 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 			// Update start and end Ts
 			startTs, err := time.Parse(time.RFC3339, logs.StartTs)
 			if err != nil {
-				panic(fmt.Sprintf("error is parsing startts %s, key %s", logs.StartTs, logs.Key))
+				mi.logger.Errorf("error is parsing startts %s, key %s", logs.StartTs, logs.Key)
+				continue
 			}
 			endTs, err := time.Parse(time.RFC3339, logs.EndTs)
 			if err != nil {
-				panic(fmt.Sprintf("error is parsing startts %s, key %s", logs.EndTs, logs.Key))
+				mi.logger.Errorf("error is parsing endts %s, key %s", logs.EndTs, logs.Key)
+				continue
 			}
 
 			y, m, d := startTs.Date()
@@ -341,13 +342,15 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 			if logs.LoadObject {
 				objReader, err := logs.Client.GetObjectExplicit(mi.ctx, "default.indexmeta", logs.Key)
 				if err != nil {
-					panic(err)
+					mi.logger.Errorf("error in getting object %s, err %s", logs.Key, err.Error())
+					continue
 				}
 				defer objReader.Close()
 
 				zipReader, err := gzip.NewReader(objReader)
 				if err != nil {
-					panic(err)
+					mi.logger.Errorf("error in unzipping object %s, err %s", logs.Key, err.Error())
+					continue
 				}
 
 				rd := csv.NewReader(zipReader)
@@ -390,7 +393,11 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 								continue
 							}
 							// flow data is not sharded, only index is sharded
-							flowEncoded := encodeFlowWithSnappy(flowRec)
+							flowEncoded, err := encodeFlowWithSnappy(flowRec)
+							if err != nil {
+								mi.logger.Errorf("error in snappy encoding flow, err %", err.Error())
+								continue
+							}
 							offset := int64(tnRLogs.flowsData.Len())
 							size := int64(len(flowEncoded))
 							tnRLogs.flowsData.Write(flowEncoded)
@@ -440,7 +447,11 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 								continue
 							}
 							// flow data is not sharded, only index is sharded
-							flowEncoded := encodeFlowWithSnappy(flowRec)
+							flowEncoded, err := encodeFlowWithSnappy(flowRec)
+							if err != nil {
+								mi.logger.Errorf("error in snappy encoding flow, err %", err.Error())
+								continue
+							}
 							offset := int64(tnRLogs.flowsData.Len())
 							size := int64(len(flowEncoded))
 							tnRLogs.flowsData.Write(flowEncoded)
@@ -637,7 +648,7 @@ func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
 	rLogsShard.Srcdestidxs[srcIPID] = dm
 
 	if tnRLogs.flowsCount == flowsChunkSize {
-		persistFlows(tnRLogs)
+		mi.persistFlows(tnRLogs)
 	}
 }
 
@@ -675,7 +686,7 @@ func (mi *MetaIndexer) updateShardWithRawLogsDestIPHelper(tnRLogs *rawLogs,
 	rLogsShard.DestidxsTemp[destIPID] = flowPtrMap
 
 	if tnRLogs.flowsCount == flowsChunkSize {
-		persistFlows(tnRLogs)
+		mi.persistFlows(tnRLogs)
 	}
 }
 
@@ -741,7 +752,7 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 		for tnName, tnIndex := range rl {
 			// Persist any remaining flows
 			if tnIndex.flowsCount != 0 {
-				persistFlows(tnIndex)
+				mi.persistFlows(tnIndex)
 			}
 
 			bucketName := tnName + "." + rawlogsBucketName
@@ -760,15 +771,14 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 						fileName := fmt.Sprintf("%s/%d/%s/", rawlogsBucketName, shID, clockHour.Format(time.RFC3339)) +
 							fStartTs + "_" + fEndTs + "_" + jitter + protoEtension
 
-						err := persistRawLogsFlowPtrMap(mi.ctx, shID, shIndex.index, tnIndex)
-						if err != nil {
-							panic(err)
-						}
+						mi.persistRawLogsFlowPtrMap(mi.ctx, shID, shIndex.index, tnIndex)
 
 						shIndex.index.Datafilename = flowsFileName
 						data, err := shIndex.index.Marshal()
 						if err != nil {
-							panic(err)
+							mi.logger.Errorf("error is marshling index, tenant %s, shID %s, clockHour %s, err %s",
+								tnName, shID, clockHour, err.Error())
+							continue
 						}
 
 						// What if it fails in persisting an index, should we throw away the index?
@@ -776,8 +786,8 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 						// FIXME: Add a retryer around it
 						err = storeObjectLocally(bucketName, fileName+indexExtension, data)
 						if err != nil {
-							mi.logger.Errorf("error in persisting meta index file %s", fileName)
-							panic(fmt.Sprintf("error in persisting meta index file %s", fileName))
+							mi.logger.Errorf("error in persisting meta index file %s, err %s", fileName, err.Error())
+							continue
 						}
 
 						var zippedIndexBuf bytes.Buffer
@@ -789,8 +799,8 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 						_, err = client.PutObjectExplicit(mi.ctx, bucketName, fileName+indexExtension+gzipExtension,
 							bytes.NewReader(dataZipped), int64(len(dataZipped)), map[string]string{}, "application/gzip")
 						if err != nil {
-							mi.logger.Errorf("error in persisting meta index file %s", fileName)
-							panic(fmt.Sprintf("error in persisting meta index file %s", fileName))
+							mi.logger.Errorf("error in persisting meta index in vos, file %s, err %s", fileName, err.Error())
+							continue
 						}
 
 						mi.logger.Debugf("persisted raw logs %d, %d, %s, %s, %d, %d",
@@ -809,14 +819,14 @@ func (mi *MetaIndexer) persistLogs(client objstore.Client, rl map[string]*rawLog
 			// Also upload the flows file
 			err := gzipAndUpload(mi.ctx, client, flowsTempFileName, bucketName, flowsFileName+flowsExtension+gzipExtension)
 			if err != nil {
-				mi.logger.Errorf("error in persisting flows file %s", flowsTempFileName+", error: "+err.Error())
-				panic(fmt.Sprintf("error in persisting flows file %s", flowsTempFileName+", error: "+err.Error()))
+				mi.logger.Errorf("error in persisting flows file %s, err %s", flowsTempFileName, err.Error())
+				continue
 			}
 
 			err = copyObjectLocally(bucketName, flowsFileName+flowsExtension, flowsTempFileName)
 			if err != nil {
-				mi.logger.Errorf("error in persisting flows file %s", flowsTempFileName+", error: "+err.Error())
-				panic(fmt.Sprintf("error in persisting flows file %s", flowsTempFileName+", error: "+err.Error()))
+				mi.logger.Errorf("error in persisting flows file %s, err %s", flowsTempFileName, err.Error())
+				continue
 			}
 		}
 	}
@@ -831,7 +841,12 @@ func (mi *MetaIndexer) persistIndex(client objstore.Client,
 					for clockHour, shIndex := range hourIndex {
 						indexCount := len(shIndex.Index)
 						flowCount := len(shIndex.FlowIndex)
-						data := shIndex.encode()
+						data, err := shIndex.encode()
+						if err != nil {
+							mi.logger.Errorf("error in encoding shard index, tenant %s, shID %s, clockHour %+v, err %s",
+								tnName, shID, clockHour, err.Error())
+							continue
+						}
 						fStartTs := shIndex.startTs.Format(timeFormatWithColon)
 						fEndTs := shIndex.endTs.Format(timeFormatWithColon)
 						jitter := time.Now().UTC().Format(timeFormatWithColon)
@@ -853,11 +868,11 @@ func (mi *MetaIndexer) persistIndex(client objstore.Client,
 						// What if it fails in persisting an index, should we throw away the index?
 						// No, an index should never be thrown, we should endlessly try to persist the index.
 						// FIXME: Add a retryer around it
-						_, err := client.PutObjectExplicit(mi.ctx, bucketName, fileName,
+						_, err = client.PutObjectExplicit(mi.ctx, bucketName, fileName,
 							rd, int64(len(dataInBytes)), map[string]string{}, contentType)
 						if err != nil {
-							mi.logger.Errorf("error in persisting meta index file %s", fileName)
-							panic(fmt.Sprintf("error in persisting meta index file %s", fileName))
+							mi.logger.Errorf("error in persisting meta index in vos, file %s, err %s", fileName, err.Error())
+							continue
 						}
 
 						// mi.recoveryChannel <- objectToDeleteForRecovery{bucket: bucketName, object: fileName}
@@ -889,16 +904,21 @@ func GetShard(ip uint32) byte {
 	return byte(ip % numShards)
 }
 
-func persistRawLogsFlowPtrMap(ctx context.Context, shID byte, rls *protos.RawLogsShard, tnRLogs *rawLogs) error {
+func (mi *MetaIndexer) persistRawLogsFlowPtrMap(ctx context.Context, shID byte, rls *protos.RawLogsShard, tnRLogs *rawLogs) {
 	location := fmt.Sprintf(localFlowsLocationForTempFiles, tnRLogs.flowsFileName)
 	rls.Destidxs = map[uint32]protos.FilePtr{}
 	offset := tnRLogs.previousOffset
 	for destipid, flowPtrMap := range rls.DestidxsTemp {
 		data, err := (&flowPtrMap).Marshal()
 		if err != nil {
-			return err
+			mi.logger.Errorf("error in marshling flowptrmap, file %s, err %s", location, err.Error())
+			continue
 		}
-		lastOffset := appendToFile(location, data)
+		lastOffset, err := appendToFile(location, data)
+		if err != nil {
+			mi.logger.Errorf("error in appending to file %s, err %s", location, err.Error())
+			continue
+		}
 		rls.Destidxs[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
 		offset = lastOffset
 	}
@@ -909,9 +929,14 @@ func persistRawLogsFlowPtrMap(ctx context.Context, shID byte, rls *protos.RawLog
 		for destipid, flowPtrMap := range destFlowPtrMap.DestMapTemp {
 			data, err := (&flowPtrMap).Marshal()
 			if err != nil {
-				return err
+				mi.logger.Errorf("error in marshling flowptrmap, file %s, err %s", location, err.Error())
+				continue
 			}
-			lastOffset := appendToFile(location, data)
+			lastOffset, err := appendToFile(location, data)
+			if err != nil {
+				mi.logger.Errorf("error in appending to file %s, err %s", location, err.Error())
+				continue
+			}
 			destFlowPtrMap.DestMap[destipid] = protos.FilePtr{Offset: offset, Size_: int64(len(data))}
 			offset = lastOffset
 		}
@@ -919,45 +944,34 @@ func persistRawLogsFlowPtrMap(ctx context.Context, shID byte, rls *protos.RawLog
 		rls.Srcdestidxs[srcipid] = destFlowPtrMap
 	}
 	tnRLogs.previousOffset = offset
-	return nil
 }
 
-func (shi *shardIndex) encode() []byte {
+func (shi *shardIndex) encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	encoder := gob.NewEncoder(buf)
 	err := encoder.Encode(shi)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error in gob encoding err %s", err.Error())
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
-func (shi *shardIndex) decode(data []byte) {
+func (shi *shardIndex) decode(data []byte) error {
 	rd := bytes.NewReader(data)
 	decoder := gob.NewDecoder(rd)
-	err := decoder.Decode(shi)
-	if err != nil {
-		panic(err)
-	}
-	return
+	return decoder.Decode(shi)
 }
 
-func decodeRawLogsProtobuf(rd io.Reader, rls *protos.RawLogsShard) {
+func decodeRawLogsProtobuf(rd io.Reader, rls *protos.RawLogsShard) error {
 	data, err := ioutil.ReadAll(rd)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("decodeRawLogsProtobuf, error in reading data from reader, err %s", err.Error())
 	}
 	err = rls.Unmarshal(data)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("decodeRawLogsProtobuf, error in unmarshaling, err %s", err.Error())
 	}
-}
-
-func decodeRawLogs(data []byte, rls *protos.RawLogsShard) {
-	err := json.Unmarshal(data, rls)
-	if err != nil {
-		panic(err)
-	}
+	return nil
 }
 
 func (shi *shardIndex) getFileNames(qc *queryCache, srcIP, destIP string, dir direction, logger log.Logger) []fileInfo {
@@ -1117,32 +1131,45 @@ func parseRawLogs(tenant string, key string, nodeID string, line []string, logge
 	return obj, nil
 }
 
-func convertFlowToString(srcIP, destIP string, flow *protos.FlowRec) ([]string, error) {
+func convertFlowToString(srcIP, destIP, sport, dport, proto, act string, flow *protos.FlowRec) ([]string, error) {
+	sourcePort := strconv.FormatUint(uint64(flow.Sport), 10)
+	destPort := strconv.FormatUint(uint64(flow.Dport), 10)
+	protocol := flow.Protocol
+	// TODO: Fix me, either convert act to a string or define the type in proto
+	var action string
+	switch flow.Action {
+	case 0:
+		action = "deny"
+	case 1:
+		action = "allow"
+	case 2:
+		action = "reject"
+	case 3:
+		action = "implicit_deny"
+	}
+
+	// filter the flows
+	switch {
+	case sport != "" && sport != sourcePort:
+		return nil, nil
+	case dport != "" && dport != destPort:
+		return nil, nil
+	case proto != "" && proto != protocol:
+		return nil, nil
+	case act != "" && act != action:
+		return nil, nil
+	}
+
 	result := make([]string, 20)
 	result[0] = strconv.FormatUint(uint64(flow.Sourcevrf), 10)
 	result[1] = strconv.FormatUint(uint64(flow.Destvrf), 10)
 	result[2] = flow.Sip
 	result[3] = flow.Dip
 	result[4] = time.Unix(flow.Ts, 0).Format(time.RFC3339)
-	result[5] = strconv.FormatUint(uint64(flow.Sport), 10)
-	result[6] = strconv.FormatUint(uint64(flow.Dport), 10)
-	result[7] = flow.Protocol
-
-	// TODO: Fix me, either convert act to a string or define the type in proto
-	var act string
-	switch flow.Action {
-	case 0:
-		act = "deny"
-	case 1:
-		act = "allow"
-	case 2:
-		act = "reject"
-	case 3:
-		act = "implicit_deny"
-	}
-
-	// result = append(result, strconv.FormatUint(uint64(flow.Action), 10))
-	result[8] = act
+	result[5] = sourcePort
+	result[6] = destPort
+	result[7] = protocol
+	result[8] = action
 	result[9] = flow.Direction
 	result[10] = strconv.FormatUint(flow.Ruleid, 10)
 	result[11] = strconv.FormatUint(flow.Sessionid, 10)
@@ -1157,34 +1184,34 @@ func convertFlowToString(srcIP, destIP string, flow *protos.FlowRec) ([]string, 
 	return result, nil
 }
 
-func appendToFile(fileName string, data []byte) int64 {
+func appendToFile(fileName string, data []byte) (int64, error) {
 	err := createFilePathIfNotExisting(fileName)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("error in creating file %s, err %s", fileName, err.Error())
 	}
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		panic("error in opening file:" + err.Error())
+		return 0, fmt.Errorf("error in opening file %s, err %s", fileName, err.Error())
 	}
 	defer file.Close()
 
 	currentOffset, err := file.Seek(0, io.SeekEnd)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("error in seeking file %s, err %s", fileName, err.Error())
 	}
 
 	_, err = file.WriteAt(data, currentOffset)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("error in writing to file %s, err %s", fileName, err.Error())
 	}
 
 	currentOffset, err = file.Seek(0, io.SeekEnd)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("error in seeking file %s, err %s", fileName, err.Error())
 	}
 
-	return currentOffset
+	return currentOffset, nil
 }
 
 func writeToFile(fileName string, data []byte) error {
@@ -1212,67 +1239,52 @@ func getTrimmedCSVObjectKey(key string) string {
 	return tokens[0] + "/" + tokens[1] + "/" + tokens[6]
 }
 
-func persistFlows(tnRLogs *rawLogs) {
+func (mi *MetaIndexer) persistFlows(tnRLogs *rawLogs) {
 	// append to flows file of this shard
 	// reset flows
-	tnRLogs.previousOffset = appendToFile(fmt.Sprintf(localFlowsLocationForTempFiles, tnRLogs.flowsFileName), tnRLogs.flowsData.Bytes())
+	var err error
+	tnRLogs.previousOffset, err = appendToFile(fmt.Sprintf(localFlowsLocationForTempFiles, tnRLogs.flowsFileName), tnRLogs.flowsData.Bytes())
+	if err != nil {
+		// Should we raise an event in such situations?
+		// Also append to metrics?
+		mi.logger.Errorf("could not persist flows, time %s, err: %s", time.Now().String(), err.Error())
+	}
 	tnRLogs.flowsData = bytes.NewBuffer(make([]byte, 0, flowsBlockSize))
 	tnRLogs.flowsCount = 0
 }
 
-func getChunkFromFile(objReader io.ReadCloser, offset int64, size int64) []byte {
+func getChunkFromFile(objReader io.ReadCloser, offset int64, size int64) ([]byte, error) {
 	buff := make([]byte, size)
 	temp := (objReader).(interface{})
 	readerAt := temp.(io.ReaderAt)
 	if readerAt == nil {
-		panic("readerAt is Nil")
+		return nil, fmt.Errorf("could not open reader, readerAt is nil")
 	}
 	_, err := readerAt.ReadAt(buff, offset)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error in reading file, err %s", err.Error())
 	}
-	// fmt.Println("Shrey buffer", buff)
-	return buff
+	return buff, nil
 }
 
-func encodeFlowWithSnappy(flow protos.FlowRec) []byte {
+func encodeFlowWithSnappy(flow protos.FlowRec) ([]byte, error) {
 	data, err := (&flow).Marshal()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error in marshling flow %+v, err %s", flow, err.Error())
 	}
-	return snappy.Encode(nil, data)
-}
-
-func encodeFlowsWithSnappy(flows protos.Flows) []byte {
-	data, err := (&flows).Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return snappy.Encode(nil, data)
+	return snappy.Encode(nil, data), nil
 }
 
 func decodeFlowWithSnappy(flow *protos.FlowRec, data []byte) error {
 	decoded, err := snappy.Decode(nil, data)
 	if err != nil {
-		// panic(err)
-		return err
+		return fmt.Errorf("error in snappy decoding flow, err %s", err.Error())
 	}
 	err = flow.Unmarshal(decoded)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error in unmarshling flow, err %s", err.Error())
 	}
 	return nil
-}
-
-func decodeFlowsWithSnappy(flows *protos.Flows, data []byte) {
-	decoded, err := snappy.Decode(nil, data)
-	if err != nil {
-		panic(err)
-	}
-	err = flows.Unmarshal(decoded)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func storeObjectLocally(bucketName, fileName string, data []byte) error {
@@ -1281,19 +1293,19 @@ func storeObjectLocally(bucketName, fileName string, data []byte) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(location), 0755)
 		if err != nil {
-			panic("error in creating file path: " + location + ", error:" + err.Error())
+			return fmt.Errorf("error in creating file path %s, err %s", location, err.Error())
 		}
 	}
 
 	file, err := os.OpenFile(location, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		panic("error in opening file:" + err.Error())
+		return fmt.Errorf("error in opening file %s err %s", location, err.Error())
 	}
 	defer file.Close()
 
 	_, err = file.Write(data)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error in writing to file %s err %s", location, err.Error())
 	}
 
 	return nil
@@ -1305,13 +1317,13 @@ func copyObjectLocally(bucketName, fileName string, sourcefile string) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(location), 0755)
 		if err != nil {
-			panic("error in creating file path: " + location + ", error:" + err.Error())
+			return fmt.Errorf("error in creating file path %s, err %s", location, err.Error())
 		}
 	}
 
 	err = os.Rename(sourcefile, location)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error in renaming file source %s, dest %s, err %s", sourcefile, location, err.Error())
 	}
 
 	return nil
@@ -1321,33 +1333,9 @@ func getLocalFileReader(bucketName, fileName string) (io.ReadCloser, error) {
 	location := LocalFlowsLocation + bucketName + "/" + fileName
 	file, err := os.OpenFile(location, os.O_RDONLY, 0644)
 	if err != nil {
-		panic("error in opening file:" + err.Error())
+		return nil, fmt.Errorf("error in opening file location %s, err %s", location, err.Error())
 	}
 	return file, nil
-}
-
-func readObjectLocally(bucketName, fileName string, offset int64, size int64) ([]byte, error) {
-	location := LocalFlowsLocation + bucketName + "/" + fileName
-	file, err := os.OpenFile(location, os.O_RDONLY, 0644)
-	if err != nil {
-		panic("error in opening file:" + err.Error())
-	}
-	defer file.Close()
-
-	if offset == 0 && size == 0 {
-		data, err := ioutil.ReadAll(file)
-		if err != nil {
-			panic(err)
-		}
-		return data, nil
-	}
-
-	buff := make([]byte, size)
-	_, err = file.ReadAt(buff, offset)
-	if err != nil {
-		panic(err)
-	}
-	return buff, nil
 }
 
 func listFilesLocally(bucketName, prefix string) ([]string, error) {
@@ -1361,7 +1349,8 @@ func listFilesLocally(bucketName, prefix string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error in listing files, bucket %s, prefix %s, err %s",
+			bucketName, prefix, err.Error())
 	}
 	return files, nil
 }
@@ -1392,7 +1381,12 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 			} else {
 				mi.logger.Debugf("getLogsForIPFromRawLogs start download and unmarshal %d %d %s",
 					offset, size, location)
-				decodeFlowWithSnappy(flowRec, getChunkFromFile(objReader, offset, size))
+				chunk, err := getChunkFromFile(objReader, offset, size)
+				if err != nil {
+					mi.logger.Errorf("error in reading file chunk, file %s, err %s", location, err.Error())
+					continue
+				}
+				decodeFlowWithSnappy(flowRec, chunk)
 			}
 
 			// There is no need to filter based on file for the logs that are in memory because
@@ -1409,11 +1403,14 @@ func (mi *MetaIndexer) SearchRawLogsFromMemory(ctx context.Context,
 				continue
 			}
 
-			flowString, err := convertFlowToString(sip, dip, flowRec)
+			flowString, err := convertFlowToString(sip, dip, sport, dport, proto, act, flowRec)
 			if err != nil {
-				panic("error in converting flow to string: " + err.Error())
+				mi.logger.Errorf("error in converting flow to string, err %s ", err.Error())
+				continue
 			}
-			result = append(result, flowString)
+			if flowString != nil {
+				result = append(result, flowString)
+			}
 		}
 		return result, nil
 	}
@@ -1562,12 +1559,12 @@ func downloadAndUnzip(ctx context.Context,
 	client objstore.Client, fileName string, bucketName string, objectName string) error {
 	err := createFilePathIfNotExisting(fileName)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("downloadAndUnzip, file could not be created locally, file %s, err %s", fileName, err.Error())
 	}
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("downloadAndUnzip, error in opening file %s, err %s", fileName, err.Error())
 	}
 	defer file.Close()
 
@@ -1582,9 +1579,9 @@ func downloadAndUnzip(ctx context.Context,
 	// }, waitIntvl, ctxTimeout, maxRetries)
 
 	objectReader, err := client.GetObjectExplicit(ctx, bucketName, objectName)
-
 	if err != nil {
-		return err
+		return fmt.Errorf("downloadAndUnzip, error in getting object from vos bucket %s, object %s, err %s",
+			bucketName, objectName, err.Error())
 	}
 
 	go func() {
@@ -1597,7 +1594,9 @@ func downloadAndUnzip(ctx context.Context,
 
 		gzReader, err := gzip.NewReader(objectReader)
 		if err != nil {
-			panic(err)
+			log.Errorf("downloadAndUnzip, error in opening gzip reader on minio object %s %s, err %s",
+				bucketName, objectName, err.Error())
+			return
 		}
 		defer gzReader.Close()
 		io.Copy(ioWriter, gzReader)
