@@ -45,7 +45,7 @@ namespace asic {
                     (ASIC_MEM_SEMA_START + ASIC_SEM_ATOMIC_ADD_BYTE_OFFSET)
 
 #define ASIC_MEM_SEM_RAW_ADDR(x) \
-                    (ASIC_MEM_SEMA_START + (x) * 4)
+                    (ASIC_MEM_SEM_RAW_START + (x) * 4)
 
 /*
  *  HW supports 1024 32 bit semaphores or 512 PI/CI (inc not full) pairs
