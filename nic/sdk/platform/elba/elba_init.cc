@@ -575,6 +575,9 @@ elba_init (asic_cfg_t *cfg)
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                                 "elba TM init failure, err %u", ret);
 
+        SDK_TRACE_DEBUG("elba TM Disable HBM overflow");
+        elba_tm_disable_hbm_for_all_ports();
+
     } else {
         SDK_TRACE_DEBUG("elba TM Init ");
         ret = elba_tm_init(cfg->catalog, cfg->qos_profile);

@@ -364,6 +364,7 @@ uint32_t elba_tm_get_xon_threshold(uint32_t ctx);
 uint32_t elba_tm_get_xoff_threshold(uint32_t ctx);
 sdk_ret_t elba_tm_get_current_credits(tm_port_t tm_port, tm_q_t oq, 
                                       uint32_t *val);
+void elba_tm_disable_hbm_for_all_ports();
 
 }    // namespace elba
 }    // namespace platform

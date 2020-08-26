@@ -3247,6 +3247,33 @@ elba_tm_soft_init (sdk::lib::catalog* catalog,
     return ret;
 }
 
+void
+elba_tm_disable_hbm_for_all_ports()
+{
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_pf_csr_t &pf_csr = elb0.pf.pf;
+    elb_pbc_csr_t &pbc_csr = elb0.pb.pbc;
+
+//:: for p in range(TM_PORTS):
+//::     pinfo = port_info[p]
+//::     if pinfo["type"] == "uplink" and p<TM_HBM_OVFL_PORTS:
+
+    pf_csr.hbm_port_${p}.cfg_hbm_context.read();
+    pf_csr.hbm_port_${p}.cfg_hbm_context.enable(0);
+    pf_csr.hbm_port_${p}.cfg_hbm_context.write();
+
+//::     #endif
+//:: #endfor
+
+    // TODO: Disable repl at P4 ports until the MC setup issues are resolved
+    pbc_csr.port_6.cfg_oq.read();
+    pbc_csr.port_7.cfg_oq.read();
+    pbc_csr.port_6.cfg_oq.replication_enable(0);
+    pbc_csr.port_7.cfg_oq.replication_enable(0);
+    pbc_csr.port_6.cfg_oq.write();
+    pbc_csr.port_7.cfg_oq.write();
+}
+
 sdk_ret_t
 elba_tm_init (sdk::lib::catalog* catalog,
               sdk::qos::qos_profile_t *qos_profile)

@@ -485,8 +485,7 @@
         },
         {
             "name": "qos-hbm-fifo",
-            "size": "262144K",
-            "align": "256B"
+            "size": "0K"
         },
         {
             "name": "brq-ring-gcm0",
