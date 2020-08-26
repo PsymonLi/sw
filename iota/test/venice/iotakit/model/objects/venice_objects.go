@@ -2,10 +2,12 @@ package objects
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/fields"
@@ -502,8 +504,12 @@ func (vnc *VeniceNodeCollection) QueryMetricsByReporter(kind, reporter, timestr 
 		return nil, err
 	}
 	stime := &api.Timestamp{}
-	if err := stime.Parse(timestr); err != nil {
-		return nil, fmt.Errorf("invalid time %v", timestr)
+	if timestr == "" {
+		stime = nil
+	} else {
+		if err := stime.Parse(timestr); err != nil {
+			return nil, fmt.Errorf("invalid time %v", timestr)
+		}
 	}
 
 	// build the query
@@ -526,7 +532,7 @@ func (vnc *VeniceNodeCollection) QueryMetricsByReporter(kind, reporter, timestr 
 					},
 				},
 				StartTime: stime,
-				SortOrder: "descending",
+				SortOrder: "ascending",
 				Pagination: &telemetry_query.PaginationSpec{
 					Count: 1,
 				},
@@ -550,9 +556,13 @@ func (vnc *VeniceNodeCollection) QueryMetricsByReporter(kind, reporter, timestr 
 // QueryMetricsSelector query metrics selector
 func (vnc *VeniceNodeCollection) QueryMetricsSelector(kind, timestr string, sel fields.Selector) (*telemetryclient.MetricsQueryResponse, error) {
 	stime := &api.Timestamp{}
-	if err := stime.Parse(timestr); err != nil {
-		log.Errorf("failed to parse time %v", timestr)
-		return nil, err
+	if timestr == "" {
+		stime = nil
+	} else {
+		if err := stime.Parse(timestr); err != nil {
+			log.Errorf("failed to parse time %v", timestr)
+			return nil, err
+		}
 	}
 
 	// build the query
@@ -642,9 +652,13 @@ func (vnc *VeniceNodeCollection) QueryMetrics(kind, name, timestr string, count 
 // QueryMetricsFields query metrics fields
 func (vnc *VeniceNodeCollection) QueryMetricsFields(kind, timestr string) (*telemetryclient.MetricsQueryResponse, error) {
 	stime := &api.Timestamp{}
-	if err := stime.Parse(timestr); err != nil {
-		log.Errorf("failed to parse time %v", timestr)
-		return nil, err
+	if timestr == "" {
+		stime = nil
+	} else {
+		if err := stime.Parse(timestr); err != nil {
+			log.Errorf("failed to parse time %v", timestr)
+			return nil, err
+		}
 	}
 
 	// build the query
@@ -730,6 +744,86 @@ func (vnc *VeniceNodeCollection) QueryDropMetricsForWorkloadPairs(wpc *WorkloadP
 		}
 	}
 	return nil
+}
+
+// ValidateMetricsQueryResponse validate if given response has all fields in given list or not
+func (vnc *VeniceNodeCollection) ValidateMetricsQueryResponse(resp *telemetryclient.MetricsQueryResponse, fields []string, tms string) error {
+	if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+		res, err := json.Marshal(resp)
+		fmt.Printf("query ts %v returned(%v) %+v \n", tms, err, string(res))
+		return fmt.Errorf("no results")
+	}
+
+	for _, r := range resp.Results[0].Series {
+
+		// get index
+		cIndex := map[string]int{}
+		for i, c := range r.Columns {
+			cIndex[c] = i
+		}
+
+		for _, f := range fields {
+			if f == "RESERVED" {
+				fmt.Printf("\tskip checking %v\n", f)
+				continue
+			}
+			if _, ok := cIndex[f]; !ok {
+				fmt.Printf("failed to find %v \n", f)
+				return fmt.Errorf("failed to find %v", f)
+			}
+			fmt.Printf("\tcheck %v \u2714 \n", f)
+		}
+	}
+
+	return nil
+}
+
+// GetMetricsQueryResponseFirstTimeString get first time string in metrics query response
+func (vnc *VeniceNodeCollection) GetMetricsQueryResponseFirstTimeString(resp *telemetryclient.MetricsQueryResponse) (string, error) {
+	if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+		return "", fmt.Errorf("no resp results")
+	}
+
+	for _, r := range resp.Results[0].Series {
+
+		// get time column index
+		timeColumnIndex := -1
+		for i, c := range r.Columns {
+			if strings.ToLower(c) == "time" {
+				timeColumnIndex = i
+				break
+			}
+		}
+		if timeColumnIndex == -1 {
+			return "", fmt.Errorf("Cannot get time column in response %+v", resp)
+		}
+		if len(r.Values) > 0 && timeColumnIndex <= len(r.Values[0])-1 {
+			timeValue := r.Values[0][timeColumnIndex]
+			if timeString, ok := timeValue.(string); ok {
+				return timeString, nil
+			}
+			return "", fmt.Errorf("Cannot convert time value to timestring")
+		}
+		return "", fmt.Errorf("Cannot find value on time column")
+	}
+
+	return "", nil
+}
+
+// CalcTimeDiffDuration calculate time diff between two time string
+func (vnc *VeniceNodeCollection) CalcTimeDiffDuration(timeStringA, timeStringB string) (time.Duration, error) {
+	timeA, err := time.Parse(time.RFC3339Nano, timeStringA)
+	if err != nil {
+		return -1, err
+	}
+	timeB, err := time.Parse(time.RFC3339Nano, timeStringB)
+	if err != nil {
+		return -1, err
+	}
+	if timeA.After(timeB) {
+		return timeA.Sub(timeB), nil
+	}
+	return timeB.Sub(timeA), nil
 }
 
 //RunCommand runs command int the container

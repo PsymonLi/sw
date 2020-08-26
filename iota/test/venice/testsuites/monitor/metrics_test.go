@@ -1,7 +1,6 @@
 package monitor_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,13 +10,17 @@ import (
 	"github.com/pensando/sw/metrics/types"
 	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
 	cmdtypes "github.com/pensando/sw/venice/cmd/types"
-	"github.com/pensando/sw/venice/utils/telemetryclient"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/pensando/sw/venice/utils/log"
 )
+
+var timeDiffTolerance = 1 * time.Minute
+var firstTimestampMapBeforeReloading = map[string]string{}
+var firstTimestampMapAfterReloading = map[string]string{}
+var hasRunNodeReloadTest = false
 
 var _ = Describe("metrics test", func() {
 	var startTime time.Time
@@ -79,6 +82,8 @@ var _ = Describe("metrics test", func() {
 		It("Check cluster metrics", checkClusterMetrics)
 
 		It("Reloading venice nodes", func() {
+			hasRunNodeReloadTest = true
+
 			// get node collection and init telemetry client
 			vnc := ts.model.VeniceNodes()
 			err := vnc.InitTelemetryClient()
@@ -102,6 +107,29 @@ var _ = Describe("metrics test", func() {
 		It("Check CQ metrics fields after reloading nodes", checkCQMetricsFields)
 
 		It("Check cluster metrics after reloading nodes", checkClusterMetrics)
+
+		It("Check data loss for all metrics", func() {
+			vnc := ts.model.VeniceNodes()
+			Eventually(func() error {
+				for m, timeStampAfterReloading := range firstTimestampMapAfterReloading {
+					if timeStampBeforeReloading, ok := firstTimestampMapBeforeReloading[m]; !ok {
+						By(fmt.Sprintf("Cannot find saved timestamp for %v before reloading nodes", m))
+						return fmt.Errorf("Cannot find saved timestamp for %v before reloading nodes", m)
+					} else {
+						diffDuration, err := vnc.CalcTimeDiffDuration(timeStampBeforeReloading, timeStampAfterReloading)
+						if err != nil {
+							By(fmt.Sprintf("Error parse time string %v and %v. Err: %v", timeStampBeforeReloading, timeStampAfterReloading, err))
+							return fmt.Errorf("Error parse time string %v and %v. Err: %v", timeStampBeforeReloading, timeStampAfterReloading, err)
+						}
+						if diffDuration > timeDiffTolerance {
+							By(fmt.Sprintf("Data loss detected for %v based on first timestamp. Before: %v, After: %v", m, timeStampBeforeReloading, timeStampAfterReloading))
+							return fmt.Errorf("Data loss detected for %v based on first timestamp. Before: %v, After: %v", m, timeStampBeforeReloading, timeStampAfterReloading)
+						}
+					}
+				}
+				return nil
+			}).Should(Succeed())
+		})
 	})
 })
 
@@ -109,7 +137,6 @@ func checkMetricsFields() {
 	if !ts.tb.HasNaplesHW() {
 		Skip("No naples hw detected, skip checking metrics")
 	}
-	tms := time.Now().UTC().Add(time.Second * -60).Format(time.RFC3339)
 
 	// get node collection and init telemetry client
 	vnc := ts.model.VeniceNodes()
@@ -127,18 +154,31 @@ func checkMetricsFields() {
 				for _, name := range n.Names() {
 					By(fmt.Sprintf("checking %v in naples %v", k, name))
 
-					resp, err := vnc.QueryMetricsByReporter(k, name, tms)
+					resp, err := vnc.QueryMetricsByReporter(k, name, "")
 					if err != nil {
 						fmt.Printf("query failed %v \n", err)
 						return err
 					}
 
-					if err := validateResp(resp, flds, tms); err != nil {
+					if err := vnc.ValidateMetricsQueryResponse(resp, flds, ""); err != nil {
 						return err
 					}
 
-					if err := checkIntfMetrics(vnc, k, name, tms); err != nil {
+					if err := checkIntfMetrics(vnc, k, name, ""); err != nil {
 						return err
+					}
+
+					if timeString, err := vnc.GetMetricsQueryResponseFirstTimeString(resp); err != nil {
+						if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
+							By(fmt.Sprintf("Error extracting timestamp. Resp: %+v, Err: %+v", resp.Results[0].Series[0], err))
+						}
+						return err
+					} else if timeString != "" {
+						if !hasRunNodeReloadTest {
+							firstTimestampMapBeforeReloading[k] = timeString
+						} else {
+							firstTimestampMapAfterReloading[k] = timeString
+						}
 					}
 
 				}
@@ -180,7 +220,7 @@ func checkIntfMetrics(vnc *objects.VeniceNodeCollection, kind string, reporterID
 				return err
 			}
 
-			err = validateResp(resp, flds, tms)
+			err = vnc.ValidateMetricsQueryResponse(resp, flds, tms)
 			if err != nil {
 				return err
 			}
@@ -194,8 +234,6 @@ func checkClusterMetrics() {
 	if !ts.tb.HasNaplesHW() {
 		Skip("No naples hw detected, skip checking metrics")
 	}
-	tms := time.Now().UTC().Add(time.Second * -60).Format(time.RFC3339)
-	cqtms := time.Now().UTC().Add(time.Minute * -10).Format(time.RFC3339)
 
 	// get node collection and init telemetry client
 	vnc := ts.model.VeniceNodes()
@@ -212,14 +250,14 @@ func checkClusterMetrics() {
 		By(fmt.Sprintf("checking %v\n", kind))
 
 		// query cluster metrics
-		resp, err := vnc.QueryMetricsFields(kind, tms)
+		resp, err := vnc.QueryMetricsFields(kind, "")
 		if err != nil {
 			fmt.Printf("query failed %v \n", err)
 			return err
 		}
 
 		// make sure cluster metrics exists
-		err = validateResp(resp, fields, tms)
+		err = vnc.ValidateMetricsQueryResponse(resp, fields, "")
 		if err != nil {
 			return err
 		}
@@ -231,14 +269,14 @@ func checkClusterMetrics() {
 			}
 			cq := kind + "_" + s
 			By(fmt.Sprintf("checking %v\n", cq))
-			resp, err := vnc.QueryMetricsFields(cq, cqtms)
+			resp, err := vnc.QueryMetricsFields(cq, "")
 			if err != nil {
 				fmt.Printf("query failed %v \n", err)
 				return err
 			}
 
 			// make sure cluster metrics exists
-			err = validateResp(resp, fields, cqtms)
+			err = vnc.ValidateMetricsQueryResponse(resp, fields, "")
 			if err != nil {
 				return err
 			}
@@ -252,7 +290,6 @@ func checkCQMetricsFields() {
 	if !ts.tb.HasNaplesHW() {
 		Skip("No naples hw detected, skip checking metrics")
 	}
-	tms := time.Now().Add(time.Minute * -10).Format(time.RFC3339)
 
 	// get node collection and init telemetry client
 	vnc := ts.model.VeniceNodes()
@@ -275,18 +312,31 @@ func checkCQMetricsFields() {
 					for _, name := range n.Names() {
 						By(fmt.Sprintf("checking %v in naples %v", cq, name))
 
-						resp, err := vnc.QueryMetricsByReporter(cq, name, tms)
+						resp, err := vnc.QueryMetricsByReporter(cq, name, "")
 						if err != nil {
 							fmt.Printf("query failed %v \n", err)
 							return err
 						}
-						err = validateResp(resp, fields, tms)
+						err = vnc.ValidateMetricsQueryResponse(resp, fields, "")
 						if err != nil {
 							return err
 						}
 
-						if err := checkIntfMetrics(vnc, cq, name, tms); err != nil {
+						if err := checkIntfMetrics(vnc, cq, name, ""); err != nil {
 							return err
+						}
+
+						if timeString, err := vnc.GetMetricsQueryResponseFirstTimeString(resp); err != nil {
+							if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
+								By(fmt.Sprintf("Error extracting timestamp. Resp: %+v, Err: %+v", resp.Results[0].Series[0], err))
+							}
+							return err
+						} else if timeString != "" {
+							if !hasRunNodeReloadTest {
+								firstTimestampMapBeforeReloading[cq] = timeString
+							} else {
+								firstTimestampMapAfterReloading[cq] = timeString
+							}
 						}
 					}
 					return nil
@@ -294,31 +344,4 @@ func checkCQMetricsFields() {
 			}, time.Duration(10)*time.Minute, time.Duration(30)*time.Second).Should(Succeed())
 		}
 	}
-}
-
-func validateResp(resp *telemetryclient.MetricsQueryResponse, fields []string, tms string) error {
-	if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
-		res, err := json.Marshal(resp)
-		fmt.Printf("query ts %v returned(%v) %+v \n", tms, err, string(res))
-		return fmt.Errorf("no results")
-	}
-
-	for _, r := range resp.Results[0].Series {
-
-		// get index
-		cIndex := map[string]int{}
-		for i, c := range r.Columns {
-			cIndex[c] = i
-		}
-
-		for _, f := range fields {
-			if _, ok := cIndex[f]; !ok {
-				fmt.Printf("failed to find %v \n", f)
-				return fmt.Errorf("failed to find %v", f)
-			}
-			fmt.Printf("\tcheck %v \u2714 \n", f)
-		}
-	}
-
-	return nil
 }
