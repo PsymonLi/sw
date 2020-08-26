@@ -250,6 +250,9 @@ const (
 	PerseusGRPCPort    = "9060"
 	PerseusMonitorPort = "9061"
 
+	// Turret
+	TurretRPCPort = "9049"
+
 	// Alertmgr
 	AlertMgrRPCPort = "9050"
 

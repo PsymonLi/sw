@@ -1,4 +1,4 @@
-package statsalertmgr
+package turret
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/pensando/sw/venice/citadel/broker/mock"
 	"github.com/pensando/sw/venice/citadel/query"
 	types "github.com/pensando/sw/venice/cmd/types/protos"
-	"github.com/pensando/sw/venice/ctrler/evtsmgr/memdb"
+	"github.com/pensando/sw/venice/ctrler/turret/memdb"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	mockevtsrecorder "github.com/pensando/sw/venice/utils/events/recorder/mock"
@@ -34,8 +34,8 @@ var (
 	_ = recorder.Override(mockevtsrecorder.NewRecorder("stats_alert_mgr_test", logger))
 )
 
-// TestStatsAlertMgr tests stats alert mgr
-func TestStatsAlertMgr(t *testing.T) {
+// TestTurret tests stats alert mgr
+func TestTurret(t *testing.T) {
 	mDb, resolverClient, apiServer, citadelSever, statsAlertPolicy, logger, err := setup(t)
 	AssertOk(t, err, "failed to setup test, err: %v", err)
 	defer apiServer.Stop()

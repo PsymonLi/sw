@@ -19,7 +19,6 @@ import (
 	"github.com/pensando/sw/venice/ctrler/evtsmgr/apiclient"
 	emmemdb "github.com/pensando/sw/venice/ctrler/evtsmgr/memdb"
 	"github.com/pensando/sw/venice/ctrler/evtsmgr/rpcserver"
-	"github.com/pensando/sw/venice/ctrler/evtsmgr/statsalertmgr"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/diagnostics"
@@ -71,7 +70,6 @@ type EventsManager struct {
 	diagSvc        diagnostics.Service
 	moduleWatcher  module.Watcher
 	AlertsGCConfig *AlertsGCConfig
-	statsAlertMgr  *statsalertmgr.StatsAlertMgr
 	wg             sync.WaitGroup // for GC routine
 }
 
@@ -187,16 +185,6 @@ func NewEventsManager(serverName, serverURL string, resolverClient resolver.Inte
 
 	em.configWatcher.StartWatcher()
 
-	// TODO: this is a temp. place holder for stats alert mgr, it needs to be moved to a different location (alert mgr)
-	if !globals.IsFeatureDisabled(globals.StatsBasedAlerts) {
-		em.statsAlertMgr, err = statsalertmgr.NewStatsAlertMgr(ctx, em.memDb, resolverClient, logger.WithContext("pkg",
-			"stats-alert-mgr"))
-		if err != nil {
-			em.logger.Error("failed to create stats alert mgr, err: %v", err)
-			return nil, err
-		}
-	}
-
 	em.wg.Add(1)
 	go em.gcAlerts()
 
@@ -229,12 +217,6 @@ func (em *EventsManager) Stop() {
 	if em.configWatcher != nil {
 		em.configWatcher.Stop()
 		em.configWatcher = nil
-	}
-
-	// TODO: this is a temp. place holder for stats alert mgr, it needs to be moved to a different location (alert mgr)
-	if em.statsAlertMgr != nil {
-		em.statsAlertMgr.Stop()
-		em.statsAlertMgr = nil
 	}
 
 	if em.RPCServer != nil {

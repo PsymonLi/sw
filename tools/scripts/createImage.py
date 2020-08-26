@@ -79,7 +79,7 @@ static_images = {
 
 # images which are compiled every time
 dynamic_images = [
-    "cmd", "apiserver", "apigw",  "npm",  "tpm", "spyglass", "evtsmgr", "tsm", "evtsproxy", "vos", "citadel", "rollout", "vtsa", "orchhub", "alertmgr"
+    "cmd", "apiserver", "apigw",  "npm",  "tpm", "spyglass", "evtsmgr", "tsm", "evtsproxy", "vos", "citadel", "rollout", "vtsa", "orchhub", "alertmgr", "turret"
 ]
 
 # check if the control plane components need to be bundled
@@ -136,7 +136,7 @@ imageConfig['imageMap'] = imageMap
 imageConfig['upgradeOrder'] = ['pen-cmd', 'pen-apiserver', 'pen-apigw',  'pen-npm', 'pen-tpm', 'pen-spyglass', 'pen-evtsmgr', 'pen-tsm', 'pen-evtsproxy',
                                'pen-kube-controller-manager', 'pen-kube-scheduler', 'pen-kube-apiserver', 'pen-etcd',
                                'pen-filebeat', 'pen-ntp',  'pen-elastic', 'pen-elastic-curator', "pen-vos",
-                               "pen-citadel", "pen-vtsa", "pen-rollout", "pen-orchhub", "pen-pegasus", "pen-alertmgr"]
+                               "pen-citadel", "pen-vtsa", "pen-rollout", "pen-orchhub", "pen-pegasus", "pen-alertmgr", "pen-turret"]
 
 # installInfo is used by the installer during installation of this image.
 # This has 2 steps. Preload and LoadAndInstall.

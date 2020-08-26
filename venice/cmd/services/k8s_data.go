@@ -813,4 +813,35 @@ var k8sModules = map[string]protos.Module{
 			},
 		},
 	},
+	globals.Turret: {
+		TypeMeta: api.TypeMeta{
+			Kind: "Module",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.Turret,
+		},
+		Spec: protos.ModuleSpec{
+			Type:      protos.ModuleSpec_Deployment,
+			NumCopies: 1,
+			Submodules: []protos.ModuleSpec_Submodule{
+				{
+					Name:    globals.Turret,
+					EnvVars: map[string]string{},
+					Services: []protos.ModuleSpec_Submodule_Service{
+						{
+							Name: globals.Turret,
+							Port: runtime.MustUint32(globals.TurretRPCPort),
+						},
+					},
+					Args: []string{
+						"-resolver-urls", "$RESOLVER_URLS",
+					},
+				},
+			},
+			Volumes: []protos.ModuleSpec_Volume{
+				logVolume,
+				eventsVolume,
+			},
+		},
+	},
 }

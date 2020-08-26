@@ -297,19 +297,6 @@ func (m *MemDb) StopWatchVersion(watcher *memdb.Watcher) {
 	m.StopWatchObjects("Version", watcher)
 }
 
-// WatchStatsAlertPolicy returns the watcher to watch for stats alert policy events
-func (m *MemDb) WatchStatsAlertPolicy() *memdb.Watcher {
-	watcher := memdb.Watcher{Name: "stats-alert-policy"}
-	watcher.Channel = make(chan memdb.Event, memdb.WatchLen)
-	m.WatchObjects("StatsAlertPolicy", &watcher)
-	return &watcher
-}
-
-// StopWatchStatsAlertPolicy stops the stats alert policy watcher
-func (m *MemDb) StopWatchStatsAlertPolicy(watcher *memdb.Watcher) {
-	m.StopWatchObjects("StatsAlertPolicy", watcher)
-}
-
 // NewMemDb creates a new mem DB
 func NewMemDb() *MemDb {
 	amemDb := &MemDb{

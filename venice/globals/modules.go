@@ -38,4 +38,5 @@ const (
 	Perseus               = "pen-perseus"
 	Pegasus               = "pen-pegasus"
 	AlertMgr              = "pen-alertmgr"
+	Turret                = "pen-turret"
 )

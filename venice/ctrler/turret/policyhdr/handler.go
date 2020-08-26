@@ -9,8 +9,8 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/telemetry_query"
-	"github.com/pensando/sw/venice/ctrler/evtsmgr/statsalertmgr/alertengine"
-	"github.com/pensando/sw/venice/ctrler/evtsmgr/statsalertmgr/types"
+	"github.com/pensando/sw/venice/ctrler/turret/alertengine"
+	"github.com/pensando/sw/venice/ctrler/turret/types"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
