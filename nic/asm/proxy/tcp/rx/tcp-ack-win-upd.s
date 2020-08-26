@@ -10,11 +10,11 @@
 #include "tcp-constants.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s2_t0_tcp_rx_k.h"
+#include "INGRESS_s3_t0_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t0_tcp_rx_k_ k;
-struct s2_t0_tcp_rx_tcp_ack_d d;
+struct s3_t0_tcp_rx_k_ k;
+struct s3_t0_tcp_rx_tcp_ack_d d;
 
 %%
     .align

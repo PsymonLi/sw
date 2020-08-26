@@ -144,14 +144,16 @@ tcp_retx_cleanup_sesq:
     // increment retx_ci before writing
     add             r2, k.to_s3_sesq_retx_ci, 0
     mincr           r2, ASIC_SESQ_RING_SLOTS_SHIFT, r5
+    // Set SESQ End Marker state. We use 16th bit of sesq_retx_ci
+    or              r3, r2, d.sesq_end_marker_flag, SESQ_END_MARK_FLAG_BIT_SHIFT
     // write new sesq retx ci value into TCP CB
-    memwr.h         r1, r2
+    memwr.h         r1, r3
     // remove barrier
     add             r1, r1, 4
     memwr.b         r1, 0
-    // write new sesq retx ci into TCP producer (TLS for example)
-    add             r1, r0, d.sesq_ci_addr
-    memwr.h         r1, r2
+    // Delegate writing new sesq retx ci to TCP producer (TLS for eg) to s4
+    phvwr           p.to_s4_sesq_ci_update, 1
+    phvwr           p.to_s4_clean_retx_ci, r2
 
 tcp_retx_cleanup_sesq_end:
     // First check if a read notification has been requested by the receive 
@@ -210,6 +212,13 @@ tcp_retx_handle_window_opening_up:
     memwr.dx        r4, r3
 
 tcp_retx_clean_retx_doorbell:
+    /*
+     * In case this is a run to final cleanup (Sesq end marker is received),
+     * we need to send TCB Cleanup msg at the end of the cleanup.
+     * For this, we do not hit clean retx consumer DB and let clean retx schedule
+     * continuously until stage0 stops recheduling based on sesq retx ci
+     */
+    bbeq            d.sesq_end_marker_flag, 1, free_descriptor
     addi            r4, r0, CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_CIDX_SET,
                         DB_SCHED_UPD_EVAL, 0, LIF_TCP)
     //tbladd          d.tx_ring_pi, 1
@@ -225,14 +234,7 @@ free_descriptor:
     seq             c1, k.common_phv_pending_asesq, 1
     b.c1            skip_free_descriptor
 
-    seq             c1, k.common_phv_debug_dol_bypass_barco, 1
-    b.c1            free_rnmdr
-free_tnmdr:
-    CAPRI_NEXT_TABLE_READ(1, TABLE_LOCK_EN, tcp_tx_read_nmdr_gc_idx_start,
-                        d.gc_base, TABLE_SIZE_32_BITS)
-    nop.e
-    nop
-free_rnmdr:
+free_nmdr:
     CAPRI_NEXT_TABLE_READ(1, TABLE_LOCK_EN, tcp_tx_read_nmdr_gc_idx_start,
                         d.gc_base, TABLE_SIZE_32_BITS)
     nop.e
@@ -273,14 +275,16 @@ tcp_retx_rst_cleanup_sesq:
     // increment retx_ci before writing
     add             r2, k.to_s3_sesq_retx_ci, 0
     mincr           r2, ASIC_SESQ_RING_SLOTS_SHIFT, 1
+    // Set SESQ End Marker state. We use 16th bit of sesq_retx_ci
+    or              r3, r2, d.sesq_end_marker_flag, SESQ_END_MARK_FLAG_BIT_SHIFT
     // write new sesq retx ci value into TCP CB
-    memwr.h         r1, r2
+    memwr.h         r1, r3
     // remove barrier
     add             r1, r1, 4
     memwr.h         r1, 0
-    // write new sesq retx ci into TCP producer (TLS for example)
-    add             r1, r0, d.sesq_ci_addr
-    memwr.h         r1, r2
+    // Delegate writing new sesq retx ci to TCP producer (TLS for eg) to s4
+    phvwr           p.to_s4_sesq_ci_update, 1
+    phvwr           p.to_s4_clean_retx_ci, r2
 tcp_retx_rst_cleanup_sesq_end:
 
     b               free_descriptor
@@ -338,6 +342,13 @@ tcp_retx_remove_barrier_and_end_program:
     phvwri          p.p4_intr_global_drop, 1
     CAPRI_CLEAR_TABLE_VALID(0)
 
+    /*
+     * In case this is a run to final cleanup (Sesq end marker is received),
+     * we need to send TCB Cleanup msg at the end of the cleanup.
+     * For this, we do not hit clean retx consumer DB and let clean retx schedule
+     * continuously until stage0 stops recheduling based on sesq retx ci
+     */
+    bbeq            d.sesq_end_marker_flag, 1, skip_clean_retx_cons_db_update
     // ring doorbell to set clean_retx_ci
     addi            r4, r0, CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_CIDX_SET,
                         DB_SCHED_UPD_EVAL, 0, LIF_TCP)
@@ -345,6 +356,8 @@ tcp_retx_remove_barrier_and_end_program:
     CAPRI_RING_DOORBELL_DATA(0, k.common_phv_fid,
                         TCP_SCHED_RING_CLEAN_RETX, k.to_s3_clean_retx_pi)
     memwr.dx        r4, r3
+
+skip_clean_retx_cons_db_update:
 
     // get barrier offset in TCP CB
     add             r1, k.common_phv_qstate_addr, TCP_TCB_RX2TX_RETX_PENDING_OFFSET

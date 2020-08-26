@@ -10,11 +10,11 @@
 #include "tcp_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s3_t2_tcp_rx_k.h"
+#include "INGRESS_s4_t2_tcp_rx_k.h"
 
 struct phv_ p;
-struct s3_t2_tcp_rx_k_ k;
-struct s3_t2_tcp_rx_ooo_qbase_sem_idx_d d;
+struct s4_t2_tcp_rx_k_ k;
+struct s4_t2_tcp_rx_ooo_qbase_sem_idx_d d;
     
 %%
     .param          tcp_rx_ooq_alloc_start
@@ -51,7 +51,7 @@ tcp_ooq_alloc_fatal_error:
     addui           r3, r0, hiword(TCP_PROXY_STATS)
     addi            r3, r3, loword(TCP_PROXY_STATS)
     CAPRI_ATOMIC_STATS_INCR1_NO_CHECK(r3, TCP_PROXY_STATS_OOQ_FULL, 1)
-    phvwr p.common_phv_ooo_alloc_fail, 1
-    phvwri p.p4_intr_global_drop, 1
+    phvwr           p.common_phv_ooo_alloc_fail, 1
+    phvwri          p.p4_intr_global_drop, 1
     nop.e
     nop

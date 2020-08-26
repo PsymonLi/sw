@@ -50,7 +50,7 @@ dma_slow_cmd_data:
     b.c1        dma_slow_cmd_data_skip
 
     /* Set the DMA_WRITE CMD for data */
-    add         r3, k.to_s6_page, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
+    add         r3, d.page_headroom, k.to_s6_page
 
     CAPRI_DMA_CMD_PKT2MEM_SETUP(pkt_dma_dma_cmd, r3, k.s1_s2s_payload_len)
     b           dma_slow_cmd_descr
@@ -72,9 +72,8 @@ dma_slow_cmd_descr:
     /* Set the DMA_WRITE CMD for descr */
     add         r1, k.to_s6_descr, NIC_DESC_ENTRY_0_OFFSET
 
-    addi        r3, r0, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
     phvwr       p.aol_A0, k.{to_s6_page}.dx
-    phvwr       p.aol_O0, r3.wx
+    phvwr       p.aol_O0, d.{page_headroom}.wx
     phvwr       p.aol_L0, k.{to_s6_payload_len}.wx
 
     CAPRI_DMA_CMD_PHV2MEM_SETUP(pkt_descr_dma_dma_cmd, r1, aol_A0, aol_next_pkt)
@@ -121,15 +120,11 @@ slow_flow_write_serq_process_done:
 
 slow_flow_write_serq_drop:
     sne         c1, k.common_phv_pending_txdma, 0
-    phvwri.!c1  p.p4_intr_global_drop, 1
-    b.!c1       slow_flow_write_serq_process_done
-    nop
+    phvwri.!c1.e p.p4_intr_global_drop, 1
     phvwri.c1   p.p4_rxdma_intr_dma_cmd_ptr, TCP_PHV_RXDMA_COMMANDS_START
     seq         c2, k.to_s6_payload_len, 0
-    setcf       c3, [c1 & c2]
-    b.c3        dma_slow_cmd_descr
+    b.c2        dma_slow_cmd_descr
     nop
     b.c1        dma_slow_cmd_data_skip
     nop
-    phvwri      p.p4_rxdma_intr_dma_cmd_ptr, (CAPRI_PHV_START_OFFSET(cpu_hdr_dma_dma_cmd_type) / 16)
-    nop
+

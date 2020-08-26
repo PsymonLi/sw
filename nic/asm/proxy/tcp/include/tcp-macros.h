@@ -5,7 +5,10 @@
 #include "cpu-macros.h"
 #include "tcp_common.h"
 
-#define TCP_ACTL_Q
+//XXXX To be Enabled after ACTL-Q verification in Apollo
+#if !(defined(APOLLO) || defined(ARTEMIS))
+#define TCP_RXPKT_2_ACTL_Q
+#endif
 
 #define TCP_NEXT_TABLE_READ  CAPRI_NEXT_TABLE_READ
 
@@ -22,11 +25,11 @@
 
 #define TCP_READ_IDX CAPRI_READ_IDX
 
-#ifdef TCP_ACTL_Q
 #define TCP_ACTL_Q_BASE          tcp_actl_q_base
 
+// MUST match CAPRI_TCP_ACTL_Q_RING_SIZE
 #define TCP_ACTL_Q_TABLE_SIZE             (1 << TCP_ACTL_Q_TABLE_SHIFT)
-#define TCP_ACTL_Q_TABLE_SHIFT            12
+#define TCP_ACTL_Q_TABLE_SHIFT            14
 
 #define TCP_ACTL_Q_ENTRY_SIZE_SHIFT       3          /* for 8B */
 #define TCP_ACTL_Q_ENTRY_SIZE             (1 << TCP_ACTL_Q_ENTRY_SIZE_SHIFT)
@@ -67,6 +70,10 @@
     phvwri  p.##_dma_cmd_prefix##_phv_end_addr, CAPRI_PHV_END_OFFSET(_phv_desc_efield_name); \
     phvwri  p.##_dma_cmd_prefix##_eop, _eop_;                           \
     phvwri  p.##_dma_cmd_prefix##_wr_fence, _wr_fence_
-#endif
 
+#define TCP_ACTL_MSG_TYPE_PKT               0
+#define TCP_ACTL_MSG_TYPE_CLEANUP           1
+#define TCP_ACTL_MSG_TYPE_SHIFT             0
+#define TCP_ACTL_MSG_CLOSE_REASON_SHIFT     24
+#define TCP_ACTL_MSG_QID_SHIFT              32
 #endif /* #ifndef _TCP_MACROS_H_ */

@@ -18,7 +18,11 @@ struct s5_t0_tcp_rx_tcp_fc_d d;
 %%
     .param          tcp_rx_dma_serq_stage_start
     .param          tcp_rx_dma_rx2tx_stage_start
+    .param          tcp_rx_dma_drop_packet
+    .param          tcp_rx_s6_t0_bubble_launch_stats 
+#ifdef IRIS
     .param          tcp_rx_write_arq_stage_start
+#endif
     .align
 
 tcp_rx_fc_stage_start:
@@ -135,6 +139,14 @@ window_calc_done:
     sle.s       c3, r3, 0
     add.c3      r3, r0, r0
 
+#if 0
+    /*
+     * Adding this quantization factor causes the window to increase
+     * when we are sending small packets (size < 2 ^ wscale - 1)
+     * This prevents the window from ever decreasing causing bad
+     * performance for these packets. Skip this step for now
+     */
+
     /* r3 is the current window. Add ( 2 ^ wscale ) - 1 to
     * current window to avoid shrinking the window when we
     * apply scale
@@ -143,14 +155,21 @@ window_calc_done:
     sll.!c3     r2, 1, d.rcv_scale
     sub.!c3     r2, r2, 1
     add.!c3     r3, r3, r2
+#endif
 
-    /* Now compare the calculated window and the previosly advertised
-    * window. In order to avoid silly window syndrome open the right
-    * edge only if we can move it at least by one MSS (receiver side
-    * SWS). */
-    add         r2, r3, d.rcv_mss
-    sle         c3, r4, r2
+    /*
+     * Now compare the calculated window and the previously advertised
+     * window. 
+     */
+    sle         c3, r4, r3
     add.c3      r4, r0, r3
+    
+    /*
+     * In order to avoid silly window syndrome if calculated window is
+     * less than 1 MSS, then advertise 0
+     */
+    slt         c1, r4, d.rcv_mss
+    add.c1      r4, r0, r0
 
     /* r4 is the window we want to advertise */
     tblwr       d.rcv_wnd, r4
@@ -184,6 +203,10 @@ flow_fc_process_done:
     seq.!c1     c2, r0, r4
     memwr.h.c2  r2, 5
 
+    seq         c1, k.common_phv_rx_drop_pkt, 1
+    // If drop rx packet indication, launch dma_drop_pkt alongside dma_rx2tx
+    b.c1        flow_fc_skip_serq_drop_packet
+
     seq         c1, k.common_phv_ooo_rcv, 1
     seq         c2, k.common_phv_ooq_tx2rx_win_upd, 1
     seq.!c2     c2, k.common_phv_ooq_tx2rx_last_ooo_pkt, 1
@@ -198,24 +221,44 @@ flow_fc_process_done:
 
 flow_fc_skip_serq:
     // Skip serq launch for OOO pkt or win_upd packet
-    CAPRI_CLEAR_TABLE_VALID(0)
-
-    nop.e
+    seq         c1, k.common_phv_ooo_alloc_fail, 1
+    b.c1        flow_fc_skip_serq_drop_pkt_n_clear_pend_txdma
+    nop
+    // Launch bubble stage to launch stats update stage
+    CAPRI_NEXT_TABLE_READ_OFFSET_e(0, TABLE_LOCK_DIS,
+                tcp_rx_s6_t0_bubble_launch_stats, k.common_phv_qstate_addr,
+                TCP_TCB_RX_DMA_OFFSET, TABLE_SIZE_512_BITS)
+    // Check if we can launch stats for win upd   
     nop
 
+flow_fc_skip_serq_drop_pkt_n_clear_pend_txdma:
+    // Clear pending DMAs. No other DMAs than dma_rx_drop 
+    CAPRI_CLEAR_TABLE_VALID(1)
+    // Reset pending txdma flags to hint dma_drop_pkt, so it can set EOP
+    phvwri      p.common_phv_pending_txdma, 0
+flow_fc_skip_serq_drop_packet:
+    // We need to free the descriptor if ooo alloc fails
+    CAPRI_NEXT_TABLE_READ_e(0, TABLE_LOCK_EN, tcp_rx_dma_drop_packet,
+                        d.rnmdr_gc_base, TABLE_SIZE_32_BITS)
+
+    // Reset drop bit since we want to free the descriptor
+    phvwri      p.p4_intr_global_drop, 0
+
 tcp_cpu_rx:
-#ifdef TCP_ACTL_Q
+#ifdef TCP_RXPKT_2_ACTL_Q
     CPU_TCP_ACTL_Q_SEM_INF_ADDR(d.cpu_id, r3)
 #else
     CPU_ARQ_SEM_INF_ADDR(d.cpu_id, r3)
 #endif
     phvwr       p.s6_t1_s2s_cpu_id, d.cpu_id
 
+#ifdef IRIS
     CAPRI_NEXT_TABLE_READ(1,
                           TABLE_LOCK_DIS,
                           tcp_rx_write_arq_stage_start,
                           r3,
                           TABLE_SIZE_64_BITS)
+#endif
 
     b           flow_fc_process
     nop

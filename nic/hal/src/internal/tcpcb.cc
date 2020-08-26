@@ -559,7 +559,7 @@ tcpcb_get (TcpCbGetRequest& req, TcpCbGetResponseMsg *resp)
     rsp->mutable_stats()->set_partial_pkt_ack_cnt(rtcpcb.partial_pkt_ack_cnt);
     rsp->mutable_stats()->set_rto_deadline(rtcpcb.rto_deadline);
     rsp->mutable_stats()->set_ato_deadline(rtcpcb.ato_deadline);
-    rsp->mutable_stats()->set_idle_deadline(rtcpcb.idle_deadline);
+    rsp->mutable_stats()->set_keepa_deadline(rtcpcb.keepa_deadline);
     rsp->mutable_stats()->set_cc_flags(rtcpcb.cc_flags);
     rsp->mutable_stats()->set_window_full_cnt(rtcpcb.window_full_cnt);
     rsp->mutable_stats()->set_retx_cnt(rtcpcb.retx_cnt);

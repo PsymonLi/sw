@@ -11,4 +11,8 @@
 #define TLS_PROXY_GLOBAL_STATS_IDX(x)       (x << 3)
 #define TLS_PROXY_GLOBAL_STATS_TNMDPR_EMPTY TLS_PROXY_GLOBAL_STATS_IDX(0)
 
+#ifndef TLS_NIC_PAGE_HEADROOM
+#define TLS_NIC_PAGE_HEADROOM               128
+#endif
+
 #endif /* #ifndef __TLS_COMMON_H__ */

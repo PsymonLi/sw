@@ -8,11 +8,11 @@
 #include "tcp-table.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s4_t0_tcp_rx_k.h"
+#include "INGRESS_s5_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s4_t0_tcp_rx_k_ k;
-struct s4_t0_tcp_rx_tcp_cc_cubic_d d;
+struct s5_t1_tcp_rx_k_ k;
+struct s5_t1_tcp_rx_tcp_cc_cubic_d d;
 
 
 %%
@@ -22,8 +22,8 @@ struct s4_t0_tcp_rx_tcp_cc_cubic_d d;
 tcp_cc_cubic:
     srl             r4, r4, 13   //r4 now in 10us ticks
    /* Handle RTO from TX pipeline*/
-    seq             c1, k.s1_s2s_cc_rto_signal, 1
-    bal.c1            r7, tcp_cc_cubic_rto_event
+    seq             c1, k.to_s5_cc_rto_signal, 1
+    bal.c1          r7, tcp_cc_cubic_rto_event
     nop
 
 
@@ -31,8 +31,8 @@ tcp_cc_cubic:
     * Regular ack received when not in recovery
     * todo : allow every ack and recovery acks for srtt recording
     */
-    seq             c1, k.to_s4_cc_flags, 0
-    seq             c2, k.to_s4_cc_ack_signal, TCP_CC_ACK_SIGNAL
+    seq             c1, k.s4_t1_s2s_cc_flags, 0
+    seq             c2, k.s4_t1_s2s_cc_ack_signal, TCP_CC_ACK_SIGNAL
     seq             c3, d.cc_flags, 0
     bcf             [c1 & c2 & c3], tcp_cc_cubic_ack_recvd
     nop
@@ -45,21 +45,21 @@ tcp_cc_cubic:
      * Entering recovery due to fast retransmit
      */
     smeqb           c4, d.cc_flags, TCP_CCF_FAST_RECOVERY, TCP_CCF_FAST_RECOVERY
-    seq             c6, k.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
+    seq             c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
     bcf             [c6 & !c4], tcp_cc_enter_cubic_fast_recovery
 
     /*
      * dup_ack/partial_ack in fast retransmit
      */
-    seq             c6, k.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
-    seq.!c6         c6, k.to_s4_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL
+    seq             c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
+    seq.!c6         c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL
     bcf             [c6 & c4], tcp_cc_dupack_fast_recovery
     nop
 
     /*
      * Enter cong recovery
      */
-    bbeq            k.to_s4_cc_ack_signal[TCP_CC_ECE_SIGNAL_BIT], 1, tcp_cc_enter_cong_recovery
+    bbeq            k.s4_t1_s2s_cc_ack_signal[TCP_CC_ECE_SIGNAL_BIT], 1, tcp_cc_enter_cong_recovery
     nop
 
     j               tcp_rx_cc_stage_end
@@ -77,13 +77,13 @@ cubic_record_rtt:
      * XXXLAS: Should there be some hysteresis for minrtt?
      */
 
-    seq            c1, k.to_s4_srtt_valid, r0
+    seq            c1, k.to_s5_srtt_valid, r0
 //todo allow the branch below for srtt convergance issues 
 //    b.c1           cubic_ack_rec
 
     //record rtt
     //(t_srtt_ticks = srtt/32)
-    srl            r1, k.to_s4_t_srtt, 5
+    srl            r1, k.to_s5_t_srtt, 5
     slt            c1, r1, d.min_rtt_ticks
     //compare to TCPTV_SRTTBASE (0)
     seq            c2, d.min_rtt_ticks, r0
@@ -123,14 +123,14 @@ cubic_ack_rec:
 //        (V_tcp_do_rfc3465 && ccv->flags & CCF_ABC_SENTAWND))) {`
 
    //todo..remove comments below 
-    seq             c1, d.snd_cwnd, k.to_s4_snd_wnd //c1 contains CCF_CWND_LIMITED check
-   // seq             c2, k.to_s4_cc_ack_signal, TCP_CC_ACK_SIGNAL
+    seq             c1, d.snd_cwnd, k.s4_t1_s2s_snd_wnd //c1 contains CCF_CWND_LIMITED check
+   // seq             c2, k.s4_t1_s2s_cc_ack_signal, TCP_CC_ACK_SIGNAL
     //or              r2, TCP_CCF_CONG_RECOVERY,TCP_CCF_FAST_RECOVERY
     //or              r2, d.cc_flags, r2
     //seq             c3, r2, r0
     seq             c4, d.abc_l_var, 0
     sle             c5, d.snd_cwnd,d.snd_ssthresh
-    //slt             c6, d.snd_cwnd, k.to_s4_bytes_acked  //todo..is this CCF_ABC_SENTAWND
+    //slt             c6, d.snd_cwnd, k.s4_t1_s2s_bytes_acked  //todo..is this CCF_ABC_SENTAWND
 
     //setcf           c7, [!c4 & c6]
     //setcf           c6, [c7 | c5 | c4]
@@ -378,7 +378,7 @@ tcp_cc_dupack_fast_recovery:
     
 tcp_cc_cubic_rto_event:
     // r3 = min(cwnd, awnd)
-    sll             r3, k.to_s4_snd_wnd, d.snd_wscale
+    sll             r3, k.s4_t1_s2s_snd_wnd, d.snd_wscale
     slt             c1, d.snd_cwnd, r3
     add.c1          r3, r0, d.snd_cwnd
 
@@ -411,7 +411,7 @@ cubic_do_reno_ss:
     // ABC  Appropriate Byte Counting
     // incr (r1) = min(bytes_this_ack, l * smss)
     // TODO : should use l=1, immediately after timeout
-    add             r1, r0, k.to_s4_bytes_acked
+    add             r1, r0, k.s4_t1_s2s_bytes_acked
     slt             c1, r2, r1
     add.c1          r1, r0, r2
     tblwr           d.abc_bytes_acked, 0
@@ -419,8 +419,9 @@ cubic_do_reno_ss:
 tcp_cc_new_reno_slow_start_incr_cwnd:
     // cwnd (r1) = min(cwnd + incr, max_win)
     add             r1, d.snd_cwnd, r1
-    slt             c1, d.max_win, r1
-    add.c1          r1, r0, d.max_win
+    sll             r2, TCP_MAX_WIN, d.snd_wscale
+    slt             c1, r2, r1
+    add.c1          r1, r0, r2
     j               tcp_rx_cc_stage_end
     tblwr           d.snd_cwnd, r1
 

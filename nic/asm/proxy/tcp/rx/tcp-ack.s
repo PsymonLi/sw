@@ -15,11 +15,11 @@
 #include "tcp-constants.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s2_t0_tcp_rx_k.h"
+#include "INGRESS_s3_t0_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t0_tcp_rx_k_ k;
-struct s2_t0_tcp_rx_tcp_ack_d d;
+struct s3_t0_tcp_rx_k_ k;
+struct s3_t0_tcp_rx_tcp_ack_d d;
 
 %%
     .align
@@ -39,8 +39,8 @@ tcp_ack_start:
      *      ack_seq == snd_una &&
      *      not in recovery
      */
-    smeqb           c1, k.to_s2_flag, FLAG_DATA, FLAG_DATA
-    // and             r1, k.to_s2_flag, FLAG_DATA
+    smeqb           c1, k.to_s3_flag, FLAG_DATA, FLAG_DATA
+    // and             r1, k.to_s3_flag, FLAG_DATA
     // seq             c1, r1, FLAG_DATA
     seq             c3, d.snd_una, k.s1_s2s_ack_seq
     seq             c4, d.cc_flags, 0
@@ -57,7 +57,7 @@ tcp_ack_start:
      *      ack_seq <= snd_nxt &&
      *      ack_seq > snd_una
      */
-    smeqb           c5, k.to_s2_flag, FLAG_SLOWPATH, FLAG_SLOWPATH
+    smeqb           c5, k.to_s3_flag, FLAG_SLOWPATH, FLAG_SLOWPATH
     scwlt           c2, k.s1_s2s_snd_nxt, k.s1_s2s_ack_seq
     /* 
      * Note: tcp_ack_slow assumes c2 will hve indication of ACK for sent data
@@ -82,8 +82,8 @@ pure_acks_rcvd_stats_update_end:
 
 proc_tcp_ack_fast: 
     phvwri          p.common_phv_process_ack_flag, 1
-    phvwrpair       p.to_s4_cc_ack_signal, TCP_CC_ACK_SIGNAL, \
-                        p.to_s4_cc_flags, d.cc_flags
+    phvwrpair       p.s4_t1_s2s_cc_ack_signal, TCP_CC_ACK_SIGNAL, \
+                        p.s4_t1_s2s_cc_flags, d.cc_flags
 tcp_update_wl_fast:
     tblwr           d.snd_wl1, k.s1_s2s_ack_seq
 tcp_snd_una_update_fast:
@@ -91,7 +91,7 @@ tcp_snd_una_update_fast:
 bytes_acked_stats_update_start:
     CAPRI_STATS_INC(bytes_acked, r1[31:0], d.bytes_acked, p.to_s7_bytes_acked)
 bytes_acked_stats_update_end:
-    phvwr           p.to_s4_bytes_acked, r1[31:0]
+    phvwr           p.s4_t1_s2s_bytes_acked, r1[31:0]
     tblwr           d.snd_una, k.s1_s2s_ack_seq
 
     /*
@@ -106,10 +106,10 @@ bytes_acked_stats_update_end:
 tcp_ack_done:
     tblwr           d.num_dup_acks, 0
     tblwr           d.limited_transmit, 0
-    tblwr.f         d.snd_wnd, k.to_s2_window
+    tblwr.f         d.snd_wnd, k.to_s3_window
 tcp_ack_skip:
-    phvwr           p.to_s4_snd_wnd, k.to_s2_window
-    phvwrpair       p.rx2tx_extra_snd_wnd, k.to_s2_window, \
+    phvwr           p.s4_t1_s2s_snd_wnd, k.to_s3_window
+    phvwrpair       p.rx2tx_extra_snd_wnd, k.to_s3_window, \
                         p.rx2tx_extra_snd_una, d.snd_una
     phvwr           p.rx2tx_extra_limited_transmit, d.limited_transmit
     CAPRI_NEXT_TABLE_READ_OFFSET_e(0, TABLE_LOCK_EN,

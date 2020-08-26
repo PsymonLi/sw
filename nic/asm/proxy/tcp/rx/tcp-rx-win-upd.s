@@ -9,11 +9,11 @@
 #include "tcp_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s1_t0_tcp_rx_k.h"
+#include "INGRESS_s2_t0_tcp_rx_k.h"
 
 struct phv_ p;
-struct s1_t0_tcp_rx_k_ k;
-struct s1_t0_tcp_rx_d d;
+struct s2_t0_tcp_rx_k_ k;
+struct s2_t0_tcp_rx_d d;
 
 %%
     .param          tcp_ack_win_upd_start
@@ -25,14 +25,16 @@ struct s1_t0_tcp_rx_d d;
 #define c_dont_send_ack c_launch_ooq
 
 tcp_rx_win_upd_process_start:
-
-    // Read rnmdr unconditionally here. Need more accurate calculation of
-    // the window when we send out window updates.
+#if 0
     CAPRI_NEXT_TABLE_READ_i(3, TABLE_LOCK_DIS, tcp_rx_read_rnmdr_fc,
                  ASIC_SEM_RNMDPR_BIG_ALLOC_RAW_ADDR, TABLE_SIZE_64_BITS)
+#else
+    phvwr           p.to_s5_rnmdr_size, 8000
+#endif
     seq             c1, k.common_phv_ooq_tx2rx_win_upd, 1
     phvwr.c1        p.rx2tx_extra_pending_dup_ack_send, 1
     phvwr.c1        p.rx2tx_extra_dup_rcv_nxt, d.u.tcp_rx_d.rcv_nxt
+    phvwr           p.rx2tx_extra_rcv_tsval, d.u.tcp_rx_d.ts_recent 
     seq             c1, d.u.tcp_rx_d.ooq_not_empty, 1
     seq             c2, k.common_phv_ooq_tx2rx_last_ooo_pkt, 1
 

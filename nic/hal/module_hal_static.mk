@@ -95,6 +95,7 @@ MODULE_ARLIBS	= \
 	pd_iris \
 	pd_met \
 	pd_wring \
+	tcpcb_pd \
 	pdcommon \
 	penipc \
 	penipc_ev \

@@ -154,6 +154,7 @@ namespace hal  {
 #define BRQ_MPP2_BASE           "hbm_brq_mpp2_base"
 #define BRQ_MPP3_BASE           "hbm_brq_mpp3_base"
 #define TCP_RX_STATS_TABLE_BASE "hbm_tcp_rx_stats_table_base"
+#define RX_RNMDR_GC_TABLE_BASE  "hbm_rx_rnmdr_gc_table_base"
 #define RNMDR_GC_TABLE_BASE     "hbm_rnmdr_gc_table_base"
 #define TNMDR_GC_TABLE_BASE     "hbm_tnmdr_gc_table_base"
 #define RNMDPR_SMALL_TABLE_BASE "hbm_rnmdpr_small_table_base"

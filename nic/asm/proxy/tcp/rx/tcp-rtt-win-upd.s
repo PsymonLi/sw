@@ -8,17 +8,19 @@
 #include "tcp-table.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s3_t0_tcp_rx_k.h"
+#include "INGRESS_s4_t0_tcp_rx_k.h"
     
 struct phv_ p;
-struct s3_t0_tcp_rx_k_ k;
-struct s3_t0_tcp_rx_tcp_rtt_d d;
+struct s4_t0_tcp_rx_k_ k;
+struct s4_t0_tcp_rx_tcp_rtt_d d;
 
     
 %%
-    .param          tcp_rx_cc_win_upd_stage_start
+    .param          tcp_rx_fc_stage_start
     .align
 tcp_rx_rtt_win_upd_start:
-    CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(0, tcp_rx_cc_win_upd_stage_start)
-    nop.e
+    CAPRI_NEXT_TABLE_READ_OFFSET_e(0, TABLE_LOCK_EN,
+                        tcp_rx_fc_stage_start,
+                        k.common_phv_qstate_addr,
+                        TCP_TCB_FC_OFFSET, TABLE_SIZE_512_BITS)
     nop

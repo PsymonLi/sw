@@ -12,12 +12,11 @@
 #include "INGRESS_s2_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t3_tcp_rx_read_rnmdr_fc_d d;
-
+struct s3_t3_tcp_rx_read_rnmdr_fc_d d;
+    
 %%
     .align
 tcp_rx_read_rnmdr_fc:
-    phvwr           p.to_s5_rnmdr_size_valid, 1
     add             r1, d.{rnmdr_cidx}.wx, (1 << ASIC_RNMDPR_BIG_RING_SHIFT)
     sub             r1, r1, d.{rnmdr_pidx}.wx
     and             r1, r1, ((1 << ASIC_RNMDPR_BIG_RING_SHIFT) - 1)

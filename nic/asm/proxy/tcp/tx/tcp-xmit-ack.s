@@ -24,7 +24,7 @@ struct s4_t0_tcp_tx_xmit_d d;
 tcp_xmit_ack_process_start:
     phvwr           p.t0_s2s_snd_nxt, d.snd_nxt
     phvwr           p.tx2rx_snd_nxt, d.snd_nxt
-
+    phvwr           p.tx2rx_fin_sent, d.fin_sent
     CAPRI_NEXT_TABLE_READ_OFFSET(0, TABLE_LOCK_EN,
                         tcp_tso_process_start, k.common_phv_qstate_addr,
                         TCP_TCB_TSO_OFFSET, TABLE_SIZE_512_BITS)

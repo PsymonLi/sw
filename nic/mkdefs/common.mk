@@ -133,7 +133,7 @@ export NIC_P4_NCC_DEPS  := $(shell find ${TOPDIR}/nic/tools/ncc/ -name '*.py') \
                            $(shell find ${TOPDIR}/nic/tools/ncc/ -name '*.h')
 
 export NIC_iris_P4PD_SOLIBS := p4pd_iris p4pd_common_p4plus_txdma \
-    p4pd_common_p4plus_rxdma pd_cpupkt pd_wring
+    p4pd_common_p4plus_rxdma pd_cpupkt pd_wring tcpcb_pd
 export NIC_gft_P4PD_SOLIBS := p4pd_gft p4pd_common_p4plus_txdma \
     p4pd_common_p4plus_rxdma
 export NIC_apollo_P4PD_SOLIBS := p4pd_apollo p4pd_apollo_rxdma p4pd_apollo_txdma

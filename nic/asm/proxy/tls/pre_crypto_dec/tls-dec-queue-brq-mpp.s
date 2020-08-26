@@ -56,7 +56,7 @@ dma_cmd_dec_odesc:
     add         r5, r0, k.to_s6_odesc
     addi        r5, r5, PKT_DESC_AOL_OFFSET
 
-    addi        r4, r0, (NIC_PAGE_HEADROOM - TLS_AES_CCM_HEADER_SIZE)
+    addi        r4, r0, (TLS_NIC_PAGE_HEADROOM - TLS_AES_CCM_HEADER_SIZE)
     add         r1, r0, k.{to_s6_opage}        
     phvwrpair   p.odesc_A0, r1.dx,  \
                 p.odesc_O0, r4.wx

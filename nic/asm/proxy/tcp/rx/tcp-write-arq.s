@@ -11,16 +11,14 @@
 #include "INGRESS_p.h"
 #include "INGRESS_s6_t1_tcp_rx_k.h"
 
-#define TCP_ACTL_MSG_TYPE_PKT   0
-#define TCP_ACTL_MSG_TYPE_SHIFT 56
-
 struct phv_ p;
 struct s6_t1_tcp_rx_k_ k;
 struct s6_t1_tcp_rx_write_arq_d d;
 
 %%
+#ifdef IRIS
     .align
-#ifndef TCP_ACTL_Q
+#ifndef TCP_RXPKT_2_ACTL_Q
     .param          ARQRX_BASE
 #else
     .param          TCP_ACTL_Q_BASE
@@ -92,7 +90,7 @@ dma_cmd_descr:
     
     smeqb       c1, k.common_phv_debug_dol, TCP_DDOL_LEAVE_IN_ARQ, TCP_DDOL_LEAVE_IN_ARQ
 dma_cmd_arq_slot:
-#ifdef TCP_ACTL_Q
+#ifdef TCP_RXPKT_2_ACTL_Q
     addui       r4, r0, hiword(TCP_ACTL_Q_BASE)
     addi        r4, r4, loword(TCP_ACTL_Q_BASE)
     TCP_ACTL_Q_BASE_FOR_ID(r2, r4, k.s6_t1_s2s_cpu_id)
@@ -130,3 +128,4 @@ flow_write_arq_process_done:
     nop.e
     nop
 
+#endif

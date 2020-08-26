@@ -11,11 +11,11 @@
 #include "tls_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s6_t2_tcp_rx_k.h"
+#include "INGRESS_s7_t2_tcp_rx_k.h"
 
 struct phv_ p;
-struct s6_t2_tcp_rx_k_ k;
-struct s6_t2_tcp_rx_write_ooq_d d;
+struct s7_t2_tcp_rx_k_ k;
+struct s7_t2_tcp_rx_write_ooq_d d;
 
 %%
     .param          tcp_rx_stats_stage_start
@@ -31,23 +31,22 @@ dma_cmd_data:
     phvwri      p.p4_rxdma_intr_dma_cmd_ptr, TCP_PHV_RXDMA_COMMANDS_START
 
     /* Set the DMA_WRITE CMD for data */
-    add         r3, k.to_s6_page, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
+    add         r3, d.page_headroom, k.s7_t2_s2s_page
 
-    CAPRI_DMA_CMD_PKT2MEM_SETUP(pkt_dma_dma_cmd, r3, k.t2_s2s_payload_len)
+    CAPRI_DMA_CMD_PKT2MEM_SETUP(pkt_dma_dma_cmd, r3, k.s7_t2_s2s_payload_len)
 
 dma_cmd_descr:
     /* Set the DMA_WRITE CMD for descr */
-    add         r1, k.to_s6_descr, NIC_DESC_ENTRY_0_OFFSET
+    add         r1, k.s7_t2_s2s_descr, NIC_DESC_ENTRY_0_OFFSET
 
-    addi        r3, r0, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
-    phvwr       p.aol_A0, k.{to_s6_page}.dx
-    phvwr       p.aol_O0, r3.wx
-    phvwr       p.aol_L0, k.{to_s6_payload_len}.wx
+    phvwr       p.aol_A0, k.{s7_t2_s2s_page}.dx
+    phvwr       p.aol_O0, d.{page_headroom}.wx
+    phvwr       p.aol_L0, k.{s7_t2_s2s_payload_len}.wx
 
     CAPRI_DMA_CMD_PHV2MEM_SETUP(pkt_descr_dma_dma_cmd, r1, aol_A0, aol_next_pkt)
 
 dma_tcp_hdr:
-    add         r1, k.to_s6_descr, NIC_DESC_ENTRY_OOO_TCP_HDR_OFFSET
+    add         r1, k.s7_t2_s2s_descr, NIC_DESC_ENTRY_OOO_TCP_HDR_OFFSET
     phvwr       p.tcp_app_header_from_ooq_txdma, 1
 
     // HACK, 1+8 bytes following tcp_app_header is ooq_header which contains the
@@ -57,7 +56,7 @@ dma_tcp_hdr:
     // (refer to iris/gen/p4gen/tcp_proxy_rxdma/asm_out/INGRESS_p.h)
     // HACK descriptor spans 1 byte in flit 0 and 7 bytes in flit 1
     add         r2, r0, 1024 - (7*8)
-    phvwrp      r2, 0, 34, k.to_s6_descr
+    phvwrp      r2, 0, 34, k.s7_t2_s2s_descr
 
     // HACK: penultimate byte in flit 0 is feedback type
     // (immediately following p4 to p4plus header)
@@ -67,7 +66,7 @@ dma_tcp_hdr:
                     tcp_app_header_p4plus_app_id,
                     P4PLUS_TCP_PROXY_BASE_HDR_SZ + P4PLUS_TCP_PROXY_OOQ_HDR_SZ)
 dma_cmd_ooq_slot:
-    phvwr       p.ring_entry_descr_addr, k.to_s6_descr
+    phvwr       p.ring_entry_descr_addr, k.s7_t2_s2s_descr
 
     add         r1, k.t2_s2s_ooo_qbase_addr, k.t2_s2s_ooo_tail_index, 3
     CAPRI_DMA_CMD_PHV2MEM_SETUP(ring_slot_dma_cmd, r1, ring_entry_pad, ring_entry_descr_addr)
@@ -78,8 +77,6 @@ dma_cmd_set_eop:
 
 dma_cmd_ooq_next_table:
     CAPRI_CLEAR_TABLE_VALID(2)
-    phvwr       p.s7_s2s_rx_stats_base, d.rx_stats_base
-    CAPRI_NEXT_TABLE0_READ_NO_TABLE_LKUP(tcp_rx_stats_stage_start)
     nop.e
     nop
 

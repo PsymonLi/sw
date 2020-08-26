@@ -42,7 +42,7 @@ dma_cmd_data:
     bbeq        k.common_phv_ooq_tx2rx_pkt, 1, pkts_rcvd_stats_update_start
 
     /* Set the DMA_WRITE CMD for data */
-    add         r3, k.to_s6_page, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
+    add         r3, d.page_headroom, k.to_s6_page
 
     CAPRI_DMA_CMD_PKT2MEM_SETUP(pkt_dma_dma_cmd, r3, k.s1_s2s_payload_len)
 
@@ -50,9 +50,8 @@ dma_cmd_descr:
     /* Set the DMA_WRITE CMD for descr */
     add         r1, k.to_s6_descr, NIC_DESC_ENTRY_0_OFFSET
 
-    addi        r3, r0, (NIC_PAGE_HDR_SIZE + NIC_PAGE_HEADROOM)
     phvwr       p.aol_A0, k.{to_s6_page}.dx
-    phvwr       p.aol_O0, r3.wx
+    phvwr       p.aol_O0, d.{page_headroom}.wx
     phvwr       p.aol_L0, k.{to_s6_payload_len}.wx
 
     CAPRI_DMA_CMD_PHV2MEM_SETUP(pkt_descr_dma_dma_cmd, r1, aol_A0, aol_next_pkt)

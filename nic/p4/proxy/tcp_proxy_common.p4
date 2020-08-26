@@ -2,7 +2,9 @@
 /* tcp_proxy_common.p4
 /*****************************************************************************/
 
-#define TCP_ACTL_Q
+//#if !(defined(APOLLO) || defined(ARTEMIS))
+//#define TCP_RXPKT_2_ACTL_Q
+//#endif
 
 /******************************************************************************
  * Rx2Tx shared state in PHV
@@ -20,7 +22,6 @@
 #define MTU_WIDTH                       8
 #define TCP_OOO_NUM_CELLS               64 // needs to match entry in tcp-constants.h
 
-#ifdef TCP_ACTL_Q
 header_type tcp_actl_q_pi_d_t {
     fields {
         tcp_actl_q_pindex              : 32;
@@ -34,7 +35,6 @@ tcp_actl_q_pindex, tcp_actl_q_full
 #define GENERATE_TCP_ACTL_Q_PI_D(_d_struct)  \
     modify_field(_d_struct.tcp_actl_q_pindex, tcp_actl_q_pindex); \
     modify_field(_d_struct.tcp_actl_q_full, tcp_actl_q_full);
-#endif
 
 #define TXDMA_PARAMS_BASE                                                                             \
 rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
@@ -94,7 +94,6 @@ rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
         read_notify_bytes               : 16                    ;\
         read_notify_bytes_local         : 16                    ;\
         retx_snd_una                    : SEQ_NUMBER_WIDTH      ;\
-        sesq_ci_addr                    : 64                    ;\
         gc_base                         : 64                    ;\
         last_ack                        : 32                    ;\
         partial_pkt_ack_cnt             : 32                    ;\
@@ -103,6 +102,7 @@ rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
         tx_window_update_pi             : 16                    ;\
         consumer_qid                    : 16                    ;\
         tx_rst_sent                     : 1                     ;\
+        sesq_end_marker_flag            : 1                     ;\
 
 #define TCB_XMIT_SHARED_STATE \
         window_full_cnt                 : 32                    ;\
@@ -111,6 +111,8 @@ rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
         initial_window                  : 32                    ;\
         rtt_seq                         : 32                    ;\
         rtt_time                        : 32                    ;\
+        sesq_ci_addr                    : 64                    ;\
+        clean_retx_ci                   : 16                    ;\
         snd_wscale                      : 8                     ;\
         xmit_cursor_addr                : 40                    ;\
         sesq_tx_ci                      : 16                    ;\
@@ -126,6 +128,8 @@ rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
         is_cwnd_limited                 : 8                     ;\
         rto_backoff                     : 8                     ;\
         no_window                       : 1                     ;\
+        persist_s                       : 8                     ;\
+        fin_sent                        : 1                     ;\
 
 #define TCB_TSO_STATE \
         tx_stats_base                   : 64                    ;\
@@ -148,7 +152,6 @@ rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid\
 read_notify_bytes,\
 read_notify_bytes_local,\
 retx_snd_una,\
-sesq_ci_addr,\
 gc_base,\
 last_ack,\
 partial_pkt_ack_cnt,\
@@ -156,14 +159,16 @@ tx_ring_pi,\
 last_snd_wnd,\
 tx_window_update_pi,\
 consumer_qid,\
-tx_rst_sent
+tx_rst_sent, \
+sesq_end_marker_flag
+
 
 #define XMIT_SHARED_PARAMS \
-window_full_cnt, retx_cnt, snd_nxt, initial_window, rtt_seq, rtt_time, snd_wscale,\
+window_full_cnt, retx_cnt, snd_nxt, initial_window, rtt_seq, rtt_time, sesq_ci_addr, clean_retx_ci, snd_wscale,\
 xmit_cursor_addr, sesq_tx_ci,\
 xmit_offset, xmit_len,\
 packets_out, sacked_out, retrans_out, lost_out,\
-smss, is_cwnd_limited, rtt_seq_req, limited_transmit, rto_backoff, no_window
+smss, is_cwnd_limited, rtt_seq_req, limited_transmit, rto_backoff, no_window, persist_s, fin_sent
 
 
 #define TSO_PARAMS \
@@ -176,7 +181,6 @@ tcp_opt_flags
     modify_field(retx_d.read_notify_bytes, read_notify_bytes); \
     modify_field(retx_d.read_notify_bytes_local, read_notify_bytes_local); \
     modify_field(retx_d.retx_snd_una, retx_snd_una); \
-    modify_field(retx_d.sesq_ci_addr, sesq_ci_addr); \
     modify_field(retx_d.gc_base, gc_base); \
     modify_field(retx_d.last_ack, last_ack); \
     modify_field(retx_d.partial_pkt_ack_cnt, partial_pkt_ack_cnt); \
@@ -185,6 +189,7 @@ tcp_opt_flags
     modify_field(retx_d.tx_window_update_pi, tx_window_update_pi); \
     modify_field(retx_d.consumer_qid, consumer_qid); \
     modify_field(retx_d.tx_rst_sent, tx_rst_sent); \
+    modify_field(retx_d.sesq_end_marker_flag, sesq_end_marker_flag); \
 
 #define GENERATE_XMIT_SHARED_D \
     modify_field(xmit_d.window_full_cnt, window_full_cnt); \
@@ -193,6 +198,8 @@ tcp_opt_flags
     modify_field(xmit_d.initial_window, initial_window); \
     modify_field(xmit_d.rtt_seq, rtt_seq); \
     modify_field(xmit_d.rtt_time, rtt_time); \
+    modify_field(xmit_d.sesq_ci_addr, sesq_ci_addr); \
+    modify_field(xmit_d.clean_retx_ci, clean_retx_ci); \
     modify_field(xmit_d.snd_wscale, snd_wscale); \
     modify_field(xmit_d.xmit_cursor_addr, xmit_cursor_addr); \
     modify_field(xmit_d.sesq_tx_ci, sesq_tx_ci); \
@@ -208,6 +215,9 @@ tcp_opt_flags
     modify_field(xmit_d.limited_transmit, limited_transmit); \
     modify_field(xmit_d.rto_backoff, rto_backoff); \
     modify_field(xmit_d.no_window, no_window); \
+    modify_field(xmit_d.persist_s, persist_s); \
+    modify_field(xmit_d.fin_sent, fin_sent); \
+
 
 #define GENERATE_TSO_SHARED_D \
     modify_field(tso_d.tx_stats_base, tx_stats_base); \
@@ -298,6 +308,13 @@ header_type ooo_book_keeping_t {
     modify_field(ooo_book_keeping.q2_pos, q2_pos); \
     modify_field(ooo_book_keeping.q3_pos, q3_pos); \
     modify_field(ooo_book_keeping.tcp_opt_flags, tcp_opt_flags);
+
+header_type read_nmdr_gc_d_t {
+    fields {
+        sw_pi                   : 16;
+        sw_ci                   : 16;
+    }
+}
 
 
 /******************************************************************************

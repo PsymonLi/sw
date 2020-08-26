@@ -70,6 +70,7 @@ tcp_ooq_txdma_win_upd_mem2pkt_dma:
 tcp_ooq_txdma_win_upd_phv2pkt_dma:
     CAPRI_CLEAR_TABLE_VALID(0)
     phvwr           p.tcp_app_hdr_from_ooq_txdma, 1
+    phvwr           p.tcp_app_hdr_table0_valid, 1
     CAPRI_DMA_CMD_PHV2PKT_SETUP2(intrinsic2_dma_cmd, p4_intr_global_tm_iport,
                                 p4_intr_packet_len,
                                 intr_rxdma2_qid, intr_rxdma2_rxdma_rsv)
@@ -78,8 +79,7 @@ tcp_ooq_txdma_win_upd_phv2pkt_dma:
                     (ASICPD_GLOBAL_INTRINSIC_HDR_SZ + ASICPD_RXDMA_INTRINSIC_HDR_SZ + \
                     P4PLUS_TCP_PROXY_BASE_HDR_SZ + 1)
     CAPRI_DMA_CMD_PHV2PKT_SETUP(tcp_app_hdr1_dma_cmd, tcp_app_hdr_p4plus_app_id, tcp_app_hdr_prev_echo_ts)
-
-
+    
     phvwr           p.feedback_type_entry, TCP_TX2RX_FEEDBACK_WIN_UPD
     CAPRI_DMA_CMD_PHV2PKT_SETUP_STOP(feedback_dma_cmd, feedback_type_entry, feedback_type_entry)
     nop.e

@@ -36,7 +36,7 @@ dma_cmd_enc_desc_entry0:
 	addi		r5, r5, PKT_DESC_AOL_OFFSET
 	phvwr		p.dma_cmd_odesc_dma_cmd_addr, r5
 
-	addi		r4, r0, NIC_PAGE_HEADROOM
+	addi		r4, r0, TLS_NIC_PAGE_HEADROOM
     add         r6, r0, k.{to_s5_opage}
 	phvwrpair   p.odesc_A0, r6.dx, \
 	            p.odesc_O0, r4.wx

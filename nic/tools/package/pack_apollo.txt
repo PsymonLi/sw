@@ -117,6 +117,7 @@ nic/build/$ARCH/$PIPELINE/lib/libslhash.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsldirectmap.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdsapi_asic_impl.so              /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkring.so                       /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libtcpcb_pd.so                      /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libdevice.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libconfig.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liblldp.so                          /nic/lib/

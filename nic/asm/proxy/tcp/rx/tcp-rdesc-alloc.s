@@ -7,18 +7,17 @@
 #include "tcp-table.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s3_t1_tcp_rx_k.h"
+#include "INGRESS_s2_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s3_t1_tcp_rx_k_ k;
-struct s3_t1_tcp_rx_rdesc_alloc_d d;
+struct s2_t1_tcp_rx_k_ k;
+struct s2_t1_tcp_rx_rdesc_alloc_d d;
 
 %%
     .align
     .param          TCP_PROXY_STATS
 tcp_rx_rdesc_alloc_start:
     CAPRI_CLEAR_TABLE1_VALID
-
     CAPRI_OPERAND_DEBUG(d.desc)
     add             r2, d.desc, ASIC_NMDPR_PAGE_OFFSET
     blti            r2, ASIC_HBM_BASE, tcp_rx_rdesc_alloc_fatal_error

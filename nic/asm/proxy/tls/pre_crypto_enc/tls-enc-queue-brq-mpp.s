@@ -59,7 +59,7 @@ dma_cmd_enc_desc_entry0:
 
     phvwr       p.odesc_A0, k.{to_s5_opage}.dx
 
-    addi        r4, r0, NIC_PAGE_HEADROOM
+    addi        r4, r0, TLS_NIC_PAGE_HEADROOM
     phvwr       p.odesc_O0, r4.wx
 
     /* odesc_L0 already setup in Stage 2, Table 3 */

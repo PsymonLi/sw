@@ -8,15 +8,14 @@
 #include "tcp-table.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s4_t0_tcp_rx_k.h"
+#include "INGRESS_s5_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s4_t0_tcp_rx_k_ k;
-struct s4_t0_tcp_rx_tcp_cc_d d;
+struct s5_t1_tcp_rx_k_ k;
+struct s5_t1_tcp_rx_tcp_cc_d d;
 
 
 %%
-    .param          tcp_rx_fc_stage_start
     .param          tcp_cc_new_reno
     .param          tcp_cc_cubic
     .param          TCP_PROXY_STATS
@@ -46,13 +45,12 @@ tcp_rx_cc_stage_start:
 tcp_rx_cc_stage_end:
     seq             c1, d.ip_tos_ecn_received, 1
     seq.!c1         c1, k.common_phv_ip_tos_ecn, 3
-    bal.c1          r7, tcp_rx_cc_handle_ip_tos
+    seq             c3, d.ecn_enabled, 1
+    balcf           r7, [c1 & c3], tcp_rx_cc_handle_ip_tos
+    tbland.!c3      d.t_flags, ~(TCPHDR_CWR | TCPHDR_ECE)
     phvwr           p.rx2tx_extra_snd_cwnd, d.snd_cwnd
     phvwr           p.rx2tx_extra_t_flags, d.t_flags
-    CAPRI_NEXT_TABLE_READ_OFFSET_e(0, TABLE_LOCK_EN,
-                        tcp_rx_fc_stage_start,
-                        k.common_phv_qstate_addr,
-                        TCP_TCB_FC_OFFSET, TABLE_SIZE_512_BITS)
+    nop.e
     nop
 
 

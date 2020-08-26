@@ -9,11 +9,11 @@
 #include "tcp_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s2_t2_tcp_rx_k.h"
+#include "INGRESS_s3_t2_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t2_tcp_rx_k_ k;
-struct s2_t2_tcp_rx_ooo_book_keeping_d d;
+struct s3_t2_tcp_rx_k_ k;
+struct s3_t2_tcp_rx_ooo_book_keeping_d d;
 
 #define QUEUE0          0
 #define QUEUE1          1
@@ -42,6 +42,7 @@ struct s2_t2_tcp_rx_ooo_book_keeping_d d;
     .align
     .param          tcp_ooo_processing_launch_dummy1
     .param          tcp_ooq_alloc_idx_start
+    .param          TCP_PROXY_STATS
 tcp_ooo_book_keeping:
     /*
      * Check if we need to queue to the end of an existing ring
@@ -83,8 +84,11 @@ tcp_ooo_book_keeping:
     bcf             [c1], tcp_ooo_book_keeping_begin_use_ooo_queue3
     nop
 
-    tbladd.f        d.ooo_queue_full, 1
-    phvwri.e        p.p4_intr_global_drop, 1
+    CAPRI_CLEAR_TABLE_VALID(2)
+    addui           r3, r0, hiword(TCP_PROXY_STATS)
+    addi            r3, r3, loword(TCP_PROXY_STATS)
+    CAPRI_ATOMIC_STATS_INCR1_NO_CHECK(r3, TCP_PROXY_STATS_OOQ_FULL, 1)
+    tbladd.f.e      d.ooo_queue_full, 1
     phvwri          p.common_phv_ooo_alloc_fail, 1
 
 
@@ -183,7 +187,7 @@ tcp_ooo_book_keeping_launch_dummy:
 
     .align
 tcp_ooo_book_keeping_in_order:
-    phvwr           p.{s3_t2_s2s_ooo_rx2tx_ready_trim0...s3_t2_s2s_ooo_rx2tx_ready_len3}, 0
+    phvwr           p.{s4_t2_s2s_ooo_rx2tx_ready_trim0...s4_t2_s2s_ooo_rx2tx_ready_len3}, 0
     /*
      * r1 = max seq that is in in-order
      * r2 = bitmask of queues that become in-order
@@ -202,57 +206,57 @@ tcp_ooo_book_keeping_in_order_check_queue0:
     sne             c1, d.tail_index0, 0
     scwle.c1        c1, d.start_seq0, r1
     b.!c1           tcp_ooo_book_keeping_in_order_check_queue1
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len0, d.tail_index0
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len0, d.tail_index0
     tblwr           d.tail_index0, 0
     tblwr           d.q0_pos, INVALID_POS
     sub             r3, r1, d.start_seq0
-    phvwr           p.s3_t2_s2s_ooo_rx2tx_ready_trim0, r3
+    phvwr           p.s4_t2_s2s_ooo_rx2tx_ready_trim0, r3
     // Set r1 = max(pkt.end_seq, queue.end_seq)
     scwlt           c1, r1, d.end_seq0
     add.c1          r1, r0, d.end_seq0
-    b               tcp_ooo_book_keeping_in_order_scan_all_queues
+    b               tcp_ooo_end_scan
     or              r2, r2, QUEUE0_MASK
 tcp_ooo_book_keeping_in_order_check_queue1:
     sne             c1, d.tail_index1, 0
     scwle.c1        c1, d.start_seq1, r1
     b.!c1           tcp_ooo_book_keeping_in_order_check_queue2
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len1, d.tail_index1
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len1, d.tail_index1
     tblwr           d.tail_index1, 0
     tblwr           d.q1_pos, INVALID_POS
     sub             r3, r1, d.start_seq1
-    phvwr           p.s3_t2_s2s_ooo_rx2tx_ready_trim1, r3
+    phvwr           p.s4_t2_s2s_ooo_rx2tx_ready_trim1, r3
     // set r1 = max(pkt.end_seq, queue.end_seq)
     scwlt           c1, r1, d.end_seq1
     add.c1          r1, r0, d.end_seq1
-    b               tcp_ooo_book_keeping_in_order_scan_all_queues
+    b               tcp_ooo_end_scan
     or              r2, r2, QUEUE1_MASK
 tcp_ooo_book_keeping_in_order_check_queue2:
     sne             c1, d.tail_index2, 0
     scwle.c1        c1, d.start_seq2, r1
     b.!c1           tcp_ooo_book_keeping_in_order_check_queue3
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len2, d.tail_index2
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len2, d.tail_index2
     tblwr           d.tail_index2, 0
     tblwr           d.q2_pos, INVALID_POS
     sub             r3, r1, d.start_seq2
-    phvwr           p.s3_t2_s2s_ooo_rx2tx_ready_trim2, r3
+    phvwr           p.s4_t2_s2s_ooo_rx2tx_ready_trim2, r3
     // set r1 = max(pkt.end_seq, queue.end_seq)
     scwlt           c1, r1, d.end_seq2
     add.c1          r1, r0, d.end_seq2
-    b               tcp_ooo_book_keeping_in_order_scan_all_queues
+    b               tcp_ooo_end_scan
     or              r2, r2, QUEUE2_MASK
 tcp_ooo_book_keeping_in_order_check_queue3:
     sne             c1, d.tail_index3, 0
     scwle.c1        c1, d.start_seq3, r1
     b.!c1           tcp_ooo_book_keeping_done
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len3, d.tail_index3
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len3, d.tail_index3
     tblwr           d.tail_index3, 0
     tblwr           d.q3_pos, INVALID_POS
     sub             r3, r1, d.start_seq3
-    phvwr           p.s3_t2_s2s_ooo_rx2tx_ready_trim3, r3
+    phvwr           p.s4_t2_s2s_ooo_rx2tx_ready_trim3, r3
     // set r1 = max(pkt.end_seq, queue.end_seq)
     scwlt           c1, r1, d.end_seq3
     add.c1          r1, r0, d.end_seq3
-    b               tcp_ooo_book_keeping_in_order_scan_all_queues
+    b               tcp_ooo_end_scan
     or              r2, r2, QUEUE3_MASK
 
 tcp_ooo_book_keeping_done:
@@ -270,6 +274,21 @@ tcp_ooo_book_keeping_done:
     nop.e
     nop
 
+#if 0
+/*
+ * NOTE : Disabling multi ooq dequeue since it has a couple of bugs
+ * 
+ * 1) In qbase-cb-load (stage 5), care is not taken when DMAing multiple OOQ
+ * addresses to the rx2tx ring, that when the addresses to be DMAed span the ring
+ * wrap around boundary, that it needs to be split into two DMA commands.
+ *
+ * 2) The order in which multiple OOQ addresses are DMAed needs to be sorted
+ * from lowest sequence number to high, so that the packets are played back in
+ * the right order, otherwise there really is no use in storing these packets
+ * in the OOQ, since the playback of the packets will result in them
+ * getting dropped.
+ */
+
 /*
  * We need to make multiple passes through all queues, as dequeuing from one
  * queue can make packets in another queue in-order. So scan all queues until
@@ -281,7 +300,7 @@ scan_queue0:
     sne.c1          c1, d.tail_index0, 0
     scwlt.c1        c1, d.start_seq0, r1
     b.!c1           scan_queue1
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len0, d.tail_index0
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len0, d.tail_index0
     tblwr           d.tail_index0, 0
     or              r2, r2, QUEUE0_MASK
     // set r1 = max seq that is in-order
@@ -294,7 +313,7 @@ scan_queue1:
     sne             c1, d.tail_index1, 0
     scwlt.c1        c1, d.start_seq1, r1
     b.!c1           scan_queue2
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len1, d.tail_index1
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len1, d.tail_index1
     tblwr           d.tail_index1, 0
     or              r2, r2, QUEUE1_MASK
     // set r1 = max seq that is in-order
@@ -307,7 +326,7 @@ scan_queue2:
     sne             c1, d.tail_index2, 0
     scwlt.c1        c1, d.start_seq2, r1
     b.!c1           scan_queue3
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len2, d.tail_index2
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len2, d.tail_index2
     tblwr           d.tail_index2, 0
     or              r2, r2, QUEUE2_MASK
     // set r1 = max seq that is in-order
@@ -320,7 +339,7 @@ scan_queue3:
     sne             c1, d.tail_index3, 0
     scwlt.c1        c1, d.start_seq3, r1
     b.!c1           tcp_ooo_end_scan
-    phvwr.c1        p.s3_t2_s2s_ooo_rx2tx_ready_len3, d.tail_index3
+    phvwr.c1        p.s4_t2_s2s_ooo_rx2tx_ready_len3, d.tail_index3
     tblwr           d.tail_index3, 0
     or              r2, r2, QUEUE3_MASK
     // set r1 = max seq that is in-order
@@ -328,6 +347,7 @@ scan_queue3:
     add.c1          r1, r0, d.end_seq3
     b               tcp_ooo_book_keeping_in_order_scan_all_queues
     nop
+#endif
 
 tcp_ooo_end_scan:
     // check if OOQ has become empty and inform stage 1 via memwr if so

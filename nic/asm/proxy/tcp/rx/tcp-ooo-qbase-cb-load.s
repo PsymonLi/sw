@@ -9,11 +9,11 @@
 #include "tcp_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s5_t2_tcp_rx_k.h"
+#include "INGRESS_s6_t2_tcp_rx_k.h"
 
 struct phv_ p;
-struct s5_t2_tcp_rx_k_ k;
-struct s5_t2_tcp_rx_ooo_qbase_cb_load_d d;
+struct s6_t2_tcp_rx_k_ k;
+struct s6_t2_tcp_rx_ooo_qbase_cb_load_d d;
 
 %%
     .param          tcp_rx_write_ooq_stage_start
@@ -51,6 +51,9 @@ tcp_ooo_qbase_cb_load:
         nop
     .brend
 tcp_ooo_launch_dma:
+    phvwr           p.s7_t2_s2s_page, k.to_s6_page
+    phvwr           p.s7_t2_s2s_descr, k.to_s6_descr
+    phvwr           p.s7_t2_s2s_payload_len, k.to_s6_payload_len
     CAPRI_NEXT_TABLE_READ_OFFSET(2, TABLE_LOCK_DIS,
                 tcp_rx_write_ooq_stage_start, k.common_phv_qstate_addr,
                 TCP_TCB_RX_DMA_OFFSET, TABLE_SIZE_512_BITS)
@@ -65,9 +68,9 @@ tcp_ooo_qbase_cb_load_in_order:
     CAPRI_CLEAR_TABLE_VALID(2)
 
     /*
-     * k.s3_t2_s2s_ooo_rx2t2x_ready_(len and trim) has info on which queues to
-     * dequeue. len != 0 means the queue has to be dequeued and trim is the
-     * amount of bytes we need to trim from the head of the queue.
+     * k.s4_t2_s2s_ooo_rx2t2x_ready_len has info on which queues to
+     * dequeue. len != 0 means the queue has to be dequeued. trim is 
+     * not used - remove at some point
      *
      * r1 = phv offset of rx2tx ooq entry
      * r2 = number of entries
@@ -81,34 +84,34 @@ tcp_ooo_qbase_cb_load_in_order:
      */
     add             r1, r0, offsetof(struct phv_, ooq_rx2tx_queue_entry1_entry)
 
-    sne             c1, k.s3_t2_s2s_ooo_rx2tx_ready_len0, 0
-    add.c1          r3, k.s3_t2_s2s_ooo_rx2tx_ready_trim0, d.ooo_qbase_addr0, 30
+    sne             c1, k.s4_t2_s2s_ooo_rx2tx_ready_len0, 0
+    sll.c1          r3, d.ooo_qbase_addr0, 30
     tblwr.c1        d.ooo_qbase_addr0, 0
-    or.c1           r3, r3, k.s3_t2_s2s_ooo_rx2tx_ready_len0, 14
+    or.c1           r3, r3, k.s4_t2_s2s_ooo_rx2tx_ready_len0, 14
     phvwrp.c1       r1, 0, 64, r3
     sub.c1          r1, r1, 64
     add.c1          r2, r2, 1
 
-    sne             c1, k.s3_t2_s2s_ooo_rx2tx_ready_len1, 0
-    add.c1          r3, k.s3_t2_s2s_ooo_rx2tx_ready_trim1, d.ooo_qbase_addr1, 30
+    sne             c1, k.s4_t2_s2s_ooo_rx2tx_ready_len1, 0
+    sll.c1          r3, d.ooo_qbase_addr1, 30
     tblwr.c1        d.ooo_qbase_addr1, 0
-    or.c1           r3, r3, k.s3_t2_s2s_ooo_rx2tx_ready_len1, 14
+    or.c1           r3, r3, k.s4_t2_s2s_ooo_rx2tx_ready_len1, 14
     phvwrp.c1       r1, 0, 64, r3
     sub.c1          r1, r1, 64
     add.c1          r2, r2, 1
 
-    sne             c1, k.s3_t2_s2s_ooo_rx2tx_ready_len2, 0
-    add.c1          r3, k.s3_t2_s2s_ooo_rx2tx_ready_trim2, d.ooo_qbase_addr2, 30
+    sne             c1, k.s4_t2_s2s_ooo_rx2tx_ready_len2, 0
+    sll.c1          r3, d.ooo_qbase_addr2, 30
     tblwr.c1        d.ooo_qbase_addr2, 0
-    or.c1           r3, r3, k.s3_t2_s2s_ooo_rx2tx_ready_len2, 14
+    or.c1           r3, r3, k.s4_t2_s2s_ooo_rx2tx_ready_len2, 14
     phvwrp.c1       r1, 0, 64, r3
     sub.c1          r1, r1, 64
     add.c1          r2, r2, 1
 
-    sne             c1, k.s3_t2_s2s_ooo_rx2tx_ready_len3, 0
-    add.c1          r3, k.s3_t2_s2s_ooo_rx2tx_ready_trim3, d.ooo_qbase_addr3, 30
+    sne             c1, k.s4_t2_s2s_ooo_rx2tx_ready_len3, 0
+    sll.c1          r3, d.ooo_qbase_addr3, 30
     tblwr.c1        d.ooo_qbase_addr3, 0
-    or.c1           r3, r3, k.s3_t2_s2s_ooo_rx2tx_ready_len3, 14
+    or.c1           r3, r3, k.s4_t2_s2s_ooo_rx2tx_ready_len3, 14
     phvwrp.c1       r1, 0, 64, r3
     sub.c1          r1, r1, 64
     add.c1          r2, r2, 1

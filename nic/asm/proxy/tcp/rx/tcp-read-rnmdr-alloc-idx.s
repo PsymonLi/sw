@@ -10,11 +10,11 @@
 #include "tcp_common.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s2_t1_tcp_rx_k.h"
+#include "INGRESS_s1_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t1_tcp_rx_k_ k;
-struct s2_t1_tcp_rx_read_rnmdr_d d;
+struct s1_t1_tcp_rx_k_ k;
+struct s1_t1_tcp_rx_read_rnmdr_d d;
     
 %%
     .param          tcp_rx_rdesc_alloc_start
@@ -38,6 +38,7 @@ table_read_RNMDR_DESC:
                         tcp_rx_rdesc_alloc_start,
                         r3, RNMDPR_BIG_TABLE_ENTRY_SIZE_SHFT,
                         TABLE_SIZE_64_BITS)
+    phvwri          p.to_s2_descr_prealloc, 1
     nop.e
     nop
 

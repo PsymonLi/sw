@@ -35,7 +35,6 @@ struct s4_t1_tcp_tx_sack_rx_d d;
 #define c_ts_opt c5
 
 tcp_tx_sack_rx:
-    // TODO : handle tsopt also present
     smeqb           c_ts_opt, d.tcp_opt_flags, TCP_OPT_FLAG_TIMESTAMPS, \
                         TCP_OPT_FLAG_TIMESTAMPS
     add.c_ts_opt    r_phv_ptr, offsetof(struct phv_, tcp_sack_opt_start_seq1), 0
@@ -45,6 +44,8 @@ tcp_tx_sack_rx:
 
 add_sack_option:
     bal             r7, add_another_sack_option
+    nop
+
     sne             c1, r4, 0
     b.c1            add_sack_option
     nop
@@ -53,9 +54,14 @@ add_sack_option:
     b.c1            add_sack_option_end
     nop
 
-    // TODO : handle tsopt present vs not
     phvwr.c_ts_opt  p.tcp_sack_opt_kind, TCPOPT_SACK
     phvwr.!c_ts_opt p.tcp_ts_opt_kind, TCPOPT_SACK
+
+    // if ts_opt is present, max sack_opts is 3
+    slt             c1, 3, r_num_sack_opts
+    setcf           c2, [c1 & c_ts_opt]
+    add.c2          r_num_sack_opts, r0, 3
+
     add             r5, 2, r_num_sack_opts, 3
     phvwr.c_ts_opt  p.tcp_sack_opt_len, r5
     phvwr.!c_ts_opt p.tcp_ts_opt_len, r5

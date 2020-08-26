@@ -450,7 +450,7 @@ func showTCPStats(resp *halproto.TcpCbGetResponse, yamlOut bool) {
 		fmt.Printf("%-30s : %-6d\n", "partial_pkt_ack_cnt", stats.PartialPktAckCnt)
 		fmt.Printf("%-30s : %-6d\n", "rto_deadline", stats.RtoDeadline)
 		fmt.Printf("%-30s : %-6d\n", "ato_deadline", stats.AtoDeadline)
-		fmt.Printf("%-30s : %-6d\n", "idle_timeout_deadline", stats.IdleDeadline)
+		fmt.Printf("%-30s : %-6d\n", "Keepalive_timeout_deadline", stats.KeepaDeadline)
 		fmt.Printf("%-30s : %-6d\n", "window_full_cnt", stats.WindowFullCnt)
 		fmt.Printf("%-30s : %-6d\n", "retx_cnt", stats.RetxCnt)
 		fmt.Printf("%-30s : %-6d\n", "window_update_pi", stats.WindowUpdatePi)

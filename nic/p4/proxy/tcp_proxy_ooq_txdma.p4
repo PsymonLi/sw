@@ -59,6 +59,7 @@
 
 #define tx_table_s1_t0_action1 load_rx2tx_slot
 #define tx_table_s1_t0_action2 process_next_descr_addr
+#define tx_table_s1_t0_action3 write_actl_q
 #define tx_table_s1_t1_action free_ooq
 
 #define tx_table_s2_t0_action set_current_ooq
@@ -78,14 +79,24 @@ header_type ooq_tcp_txdma_qstate_d_t {
         CAPRI_QSTATE_HEADER_COMMON
         CAPRI_QSTATE_HEADER_RING(0)
         CAPRI_QSTATE_HEADER_RING(1)
-        ooq_work_in_progress        : 8;
+        CAPRI_QSTATE_HEADER_RING(2)
+        CAPRI_QSTATE_HEADER_RING(3)
+        CAPRI_QSTATE_HEADER_RING(4)
         ooo_rx2tx_qbase             : 64;
         ooo_rx2tx_free_pi_addr      : 64;
-        curr_ooo_qbase              : 64;
         ooo_rx2tx_producer_ci_addr  : 64;
         curr_ooq_num_entries        : 16;
         curr_ooq_trim               : 16;
         curr_index                  : 16;
+        curr_ooo_qbase              : 34;
+        ooq_work_in_progress        : 1;
+        close_reason                : 3;
+        cleanup_cond_done           : 2;
+        cleanup_cond_bmap           : 2; /*
+                                          * Offseto this field MUST not change
+                                          * TCP_TCB_CLEANUP_BMAPS_BYTE_OFFSET
+                                          * TCP_TCB_CLEANUP_BMAP_BIT_SHIFT
+                                          */
     }
 }
 
@@ -117,6 +128,7 @@ header_type common_global_phv_t {
 header_type to_stage_1_phv_t {
     fields {
         qbase_addr              : HBM_FULL_ADDRESS_WIDTH;
+        close_reason            : 3;
     }
 }
 
@@ -170,6 +182,8 @@ metadata ooq_free_pi_t ooq_free_pi_d;
 metadata pkt_descr_aol_t read_descr_d;
 @pragma scratch_metadata
 metadata ooq_tcp_txdma_load_rnmdr_addr_t ooq_tcp_txdma_load_rnmdr_addr;
+@pragma scratch_metadata
+metadata tcp_actl_q_pi_d_t actl_q_pi_d;
 
 /******************************************************************************
  * Scratch for k-vector generation
@@ -218,6 +232,9 @@ metadata p4_to_p4plus_tcp_proxy_base_header_t tcp_app_hdr;
 @pragma dont_trim
 metadata ring_entry_t ooq_slot;
 @pragma dont_trim
+@pragma pa_header_union ingress ooq_slot 
+metadata ring_entry_64_t actl_q_descr; // PHV scratch for DMA to ACTL Ring 
+@pragma dont_trim
 metadata semaphore_ci_t ooq_free_pi;
 
 header_type tx2rx_feedback_type_t {
@@ -231,6 +248,10 @@ metadata tx2rx_feedback_type_t feedback_type;
 @pragma pa_align 128
 @pragma dont_trim
 metadata dma_cmd_phv2pkt_t intrinsic;       // dma cmd 1
+@pragma pa_align 128
+@pragma dont_trim
+@pragma pa_header_union ingress intrinsic
+metadata dma_cmd_phv2mem_t actl_q_entry; // dma cmd 1
 @pragma dont_trim
 metadata dma_cmd_phv2mem_t ooq_ring_entry;  // dma cmd 2
 @pragma dont_trim
@@ -255,10 +276,9 @@ metadata dma_cmd_phv2pkt_t feedback;        // dma cmd 7
  *****************************************************************************/
 
 #define STAGE0_PARAMS \
-    rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid, pi_0, ci_0, pi_1, ci_1, \
-    ooq_work_in_progress, ooo_rx2tx_qbase, ooo_rx2tx_free_pi_addr, \
-    curr_ooo_qbase, ooo_rx2tx_producer_ci_addr, curr_ooq_num_entries, \
-    curr_ooq_trim, curr_index
+    rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid, pi_0, ci_0, pi_1, ci_1, pi_2, ci_2, pi_3, ci_3, pi_4, ci_4, \
+    ooo_rx2tx_qbase, ooo_rx2tx_free_pi_addr, ooo_rx2tx_producer_ci_addr, curr_ooq_num_entries, \
+    curr_ooq_trim, curr_index, curr_ooo_qbase, ooq_work_in_progress, close_reason, cleanup_cond_done, cleanup_cond_bmap
 
 #define GENERATE_STAGE0_D \
     modify_field(ooq_tcp_txdma_qstate_d.rsvd, rsvd); \
@@ -274,15 +294,25 @@ metadata dma_cmd_phv2pkt_t feedback;        // dma cmd 7
     modify_field(ooq_tcp_txdma_qstate_d.ci_0, ci_0); \
     modify_field(ooq_tcp_txdma_qstate_d.pi_1, pi_1); \
     modify_field(ooq_tcp_txdma_qstate_d.ci_1, ci_1); \
+    modify_field(ooq_tcp_txdma_qstate_d.pi_2, pi_2); \
+    modify_field(ooq_tcp_txdma_qstate_d.ci_2, ci_2); \
+    modify_field(ooq_tcp_txdma_qstate_d.pi_3, pi_3); \
+    modify_field(ooq_tcp_txdma_qstate_d.ci_3, ci_3); \
+    modify_field(ooq_tcp_txdma_qstate_d.pi_4, pi_4); \
+    modify_field(ooq_tcp_txdma_qstate_d.ci_4, ci_4); \
  \
-    modify_field(ooq_tcp_txdma_qstate_d.ooq_work_in_progress, ooq_work_in_progress); \
     modify_field(ooq_tcp_txdma_qstate_d.ooo_rx2tx_qbase, ooo_rx2tx_qbase); \
     modify_field(ooq_tcp_txdma_qstate_d.ooo_rx2tx_free_pi_addr, ooo_rx2tx_free_pi_addr); \
-    modify_field(ooq_tcp_txdma_qstate_d.curr_ooo_qbase, curr_ooo_qbase); \
     modify_field(ooq_tcp_txdma_qstate_d.ooo_rx2tx_producer_ci_addr, ooo_rx2tx_producer_ci_addr); \
     modify_field(ooq_tcp_txdma_qstate_d.curr_ooq_num_entries, curr_ooq_num_entries); \
     modify_field(ooq_tcp_txdma_qstate_d.curr_ooq_trim, curr_ooq_trim); \
     modify_field(ooq_tcp_txdma_qstate_d.curr_index, curr_index); \
+    modify_field(ooq_tcp_txdma_qstate_d.curr_ooo_qbase, curr_ooo_qbase); \
+    modify_field(ooq_tcp_txdma_qstate_d.ooq_work_in_progress, ooq_work_in_progress); \
+    modify_field(ooq_tcp_txdma_qstate_d.close_reason, close_reason); \
+    modify_field(ooq_tcp_txdma_qstate_d.cleanup_cond_done, cleanup_cond_done); \
+    modify_field(ooq_tcp_txdma_qstate_d.cleanup_cond_bmap, cleanup_cond_bmap); \
+
 
 // Stage-0 Table-0
 action load_stage0(STAGE0_PARAMS)
@@ -304,6 +334,17 @@ action process_next_descr_addr(descr_addr)
 {
     GENERATE_GLOBAL_K
     modify_field(ooq_tcp_txdma_load_rnmdr_addr.descr_addr, descr_addr);
+}
+
+// Stage-1 Table-0
+action write_actl_q(TCP_ACTL_Q_PI_PARAMS)
+{
+    // Write qid to K-vector scratch area
+    GENERATE_GLOBAL_K
+    modify_field(to_s1_scratch.close_reason, to_s1.close_reason);
+
+    // Write D-vector scratch area
+    GENERATE_TCP_ACTL_Q_PI_D(actl_q_pi_d)
 }
 
 // Stage-1 Table-1

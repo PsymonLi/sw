@@ -150,7 +150,7 @@ tls_dec_aesgcm_equeue_barco:
 
     phvwr           p.odesc_A0, K(to_s7_opage).dx
 
-    addi            r2, r0, (NIC_PAGE_HEADROOM - NTLS_AAD_SIZE)
+    addi            r2, r0, (TLS_NIC_PAGE_HEADROOM - NTLS_AAD_SIZE)
     phvwr           p.odesc_O0, r2.wx
 
     /* Output length = AAD Length + (TLS Record Length - IV Length - AuthTag Length) */

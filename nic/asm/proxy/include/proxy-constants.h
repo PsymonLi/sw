@@ -6,7 +6,8 @@
 #define CACHE_LINE_SIZE                     64
 #define NIC_PAGE_SIZE                       (128 * CACHE_LINE_SIZE)
 #define NIC_PAGE_SIZE_SHFT                  13
-#define NIC_PAGE_HEADROOM                   (17 * CACHE_LINE_SIZE)
+#define NIC_PAGE_HEADROOM                   0
+#define TLS_NIC_PAGE_HEADROOM               128
 #define NIC_CPU_HDR_SIZE                    328
 #define NIC_CPU_HDR_SIZE_BYTES              (NIC_CPU_HDR_SIZE/8)
 

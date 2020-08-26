@@ -1,5 +1,5 @@
 /*
- *	Read semaphore to index into GC TCP NMDR ring
+ *  Read semaphore to index into GC TCP NMDR ring
  */
 
 #include "tcp-constants.h"
@@ -62,7 +62,6 @@ free_rnmdr:
      */
     addui           r1, r0, hiword(RNMDR_GC_TABLE_BASE)
     addi            r1, r1, loword(RNMDR_GC_TABLE_BASE)
-    add             r1, r1, RNMDR_GC_PRODUCER_TCP, RNMDR_GC_PER_PRODUCER_SHIFT
     add             r1, r1, r2, RNMDR_TABLE_ENTRY_SIZE_SHFT
 
     // r4 = distance of gc_pi from end of ring
@@ -76,7 +75,7 @@ dma_free_rnmdr_one_dma_command:
     CAPRI_DMA_CMD_PHV2MEM_SETUP_WITH_LEN(ringentry_dma_dma_cmd, r1, ring_entry1_descr_addr, r6)
 
 dma_free_rnmdr_doorbell:
-    mincr	    r2, ASIC_HBM_GC_PER_PRODUCER_RING_SHIFT, k.t1_s2s_num_pkts_freed
+    mincr           r2, ASIC_HBM_GC_PER_PRODUCER_RING_SHIFT, k.t1_s2s_num_pkts_freed
     CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI(doorbell_dma_dma_cmd, LIF_GC,
                     ASIC_HBM_GC_RNMDR_QTYPE,
                     ASIC_RNMDR_GC_TCP_RING_PRODUCER, 0,
@@ -107,7 +106,6 @@ dma_free_rnmdr_two_dma_commands:
      */
     addui           r1, r0, hiword(RNMDR_GC_TABLE_BASE)
     addi            r1, r1, loword(RNMDR_GC_TABLE_BASE)
-    add             r1, r1, RNMDR_GC_PRODUCER_TCP, RNMDR_GC_PER_PRODUCER_SHIFT
 
     /*
      * Setup DMA command 2
@@ -126,7 +124,6 @@ free_tnmdr:
      */
     addui           r1, r0, hiword(TNMDR_GC_TABLE_BASE)
     addi            r1, r1, loword(TNMDR_GC_TABLE_BASE)
-    add             r1, r1, TNMDR_GC_PRODUCER_TCP, TNMDR_GC_PER_PRODUCER_SHIFT
     add             r1, r1, r2, TNMDR_TABLE_ENTRY_SIZE_SHFT
 
     // r4 = distance of gc_pi from end of ring
@@ -140,7 +137,7 @@ dma_free_tnmdr_one_dma_command:
     CAPRI_DMA_CMD_PHV2MEM_SETUP_WITH_LEN(ringentry_dma_dma_cmd, r1, ring_entry1_descr_addr, r6)
 
 dma_free_tnmdr_doorbell:
-    mincr	    r2, ASIC_HBM_GC_PER_PRODUCER_RING_SHIFT, k.t1_s2s_num_pkts_freed
+    mincr           r2, ASIC_HBM_GC_PER_PRODUCER_RING_SHIFT, k.t1_s2s_num_pkts_freed
     CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI(doorbell_dma_dma_cmd, LIF_GC,
                     ASIC_HBM_GC_TNMDR_QTYPE,
                     ASIC_TNMDR_GC_TCP_RING_PRODUCER, 0,
@@ -171,7 +168,6 @@ dma_free_tnmdr_two_dma_commands:
      */
     addui           r1, r0, hiword(TNMDR_GC_TABLE_BASE)
     addi            r1, r1, loword(TNMDR_GC_TABLE_BASE)
-    add             r1, r1, TNMDR_GC_PRODUCER_TCP, TNMDR_GC_PER_PRODUCER_SHIFT
 
     /*
      * Setup DMA command 2

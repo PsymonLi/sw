@@ -8,11 +8,11 @@
 #include "tcp-table.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s4_t0_tcp_rx_k.h"
+#include "INGRESS_s5_t1_tcp_rx_k.h"
 
 struct phv_ p;
-struct s4_t0_tcp_rx_k_ k;
-struct s4_t0_tcp_rx_tcp_cc_new_reno_d d;
+struct s5_t1_tcp_rx_k_ k;
+struct s5_t1_tcp_rx_tcp_cc_new_reno_d d;
 
 
 %%
@@ -22,15 +22,15 @@ tcp_cc_new_reno:
     /*
      * RTO event occurred in Tx pipeline. Handle that first
      */
-    seq             c1, k.s1_s2s_cc_rto_signal, 1
+    seq             c1, k.to_s5_cc_rto_signal, 1
     bal.c1          r7, tcp_cc_new_reno_rto_event
     nop
 
     /*
      * Regular ack received when not in recovery
      */
-    seq             c1, k.to_s4_cc_flags, 0
-    seq             c2, k.to_s4_cc_ack_signal, TCP_CC_ACK_SIGNAL
+    seq             c1, k.s4_t1_s2s_cc_flags, 0
+    seq             c2, k.s4_t1_s2s_cc_ack_signal, TCP_CC_ACK_SIGNAL
     seq             c3, d.cc_flags, 0
     bcf             [c1 & c2 & c3], tcp_cc_new_reno_ack_recvd
     nop
@@ -44,21 +44,21 @@ tcp_cc_new_reno:
      * Entering recovery due to fast retransmit
      */
     smeqb           c4, d.cc_flags, TCP_CCF_FAST_RECOVERY, TCP_CCF_FAST_RECOVERY
-    seq             c6, k.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
+    seq             c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
     bcf             [c6 & !c4], tcp_cc_enter_fast_recovery
 
     /*
      * dup_ack/partial_ack in fast retransmit
      */
-    seq             c6, k.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
-    seq.!c6         c6, k.to_s4_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL
+    seq             c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL
+    seq.!c6         c6, k.s4_t1_s2s_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL
     bcf             [c6 & c4], tcp_cc_dupack_fast_recovery
     nop
 
     /*
      * Enter cong recovery
      */
-    bbeq            k.to_s4_cc_ack_signal[TCP_CC_ECE_SIGNAL_BIT], 1, tcp_cc_enter_cong_recovery
+    bbeq            k.s4_t1_s2s_cc_ack_signal[TCP_CC_ECE_SIGNAL_BIT], 1, tcp_cc_enter_cong_recovery
     nop
 
     j               tcp_rx_cc_stage_end
@@ -85,7 +85,7 @@ tcp_cc_new_reno_slow_start:
     // ABC  Appropriate Byte Counting
     // incr (r1) = min(bytes_this_ack, l * smss)
     // TODO : should use l=1, immediately after timeout
-    add             r1, r0, k.to_s4_bytes_acked
+    add             r1, r0, k.s4_t1_s2s_bytes_acked
     slt             c1, d.smss_times_abc_l, r1
     add.c1          r1, r0, d.smss_times_abc_l
     tblwr           d.abc_bytes_acked, 0
@@ -93,8 +93,9 @@ tcp_cc_new_reno_slow_start:
 tcp_cc_new_reno_slow_start_incr_cwnd:
     // cwnd (r1) = min(cwnd + incr, max_win)
     add             r1, d.snd_cwnd, r1
-    slt             c1, d.max_win, r1
-    add.c1          r1, r0, d.max_win
+    sll             r2, TCP_MAX_WIN, d.snd_wscale
+    slt             c1, r2, r1
+    add.c1          r1, r0, r2
     j               tcp_rx_cc_stage_end
     tblwr           d.snd_cwnd, r1
 
@@ -106,7 +107,7 @@ tcp_cc_new_reno_cong_avoid:
     b.c1            tcp_cc_new_reno_cong_avoid_skip_abc
 tcp_cc_new_reno_cong_abc:
     // r1 = min(bytes_this_ack, l * mss)
-    add             r1, r0, k.to_s4_bytes_acked
+    add             r1, r0, k.s4_t1_s2s_bytes_acked
     slt             c1, d.smss_times_abc_l, r1
     add.c1          r1, r0, d.smss_times_abc_l
     tbladd          d.abc_bytes_acked, r1
@@ -128,8 +129,9 @@ tcp_cc_new_reno_cong_avoid_skip_abc:
 tcp_cc_new_reno_cong_avoid_incr_cwnd:
     // cwnd (r1) = min(cwnd + incr, max_win)
     add             r1, r1, d.snd_cwnd
-    slt             c1, d.max_win, r1
-    add.c1          r1, r0, d.max_win
+    sll             r2, TCP_MAX_WIN, d.snd_wscale
+    slt             c1, r2, r1
+    add.c1          r1, r0, r2
     j               tcp_rx_cc_stage_end
     tblwr           d.snd_cwnd, r1
 
@@ -149,7 +151,7 @@ tcp_cc_enter_fast_recovery:
     mul             r2, d.smss, TCP_FASTRETRANS_THRESH
     add             r1, r1, r2
     tblwr           d.snd_cwnd, r1
-    tblor           d.t_flags, TCPHDR_CWR
+    //tblor           d.t_flags, TCPHDR_CWR
 tcp_cc_enter_fast_recovery_done:
     j               tcp_rx_cc_stage_end
     tblor           d.cc_flags, TCP_CCF_FAST_RECOVERY
@@ -167,7 +169,7 @@ tcp_cc_enter_cong_recovery:
     add.c1          r1, r0, r2
     tblwr           d.snd_ssthresh, r1
     tblwr           d.snd_cwnd, r1
-    tblor           d.t_flags, TCPHDR_CWR
+    //tblor           d.t_flags, TCPHDR_CWR
 tcp_cc_enter_cong_recovery_done:
     j               tcp_rx_cc_stage_end
     tblor           d.cc_flags, TCP_CCF_CONG_RECOVERY
@@ -177,7 +179,7 @@ tcp_cc_enter_cong_recovery_done:
  */
 tcp_cc_exit_fast_recovery:
     tblwr           d.snd_cwnd, d.snd_ssthresh
-    tbland          d.t_flags, ~TCPHDR_CWR
+    //tbland          d.t_flags, ~TCPHDR_CWR
     j               tcp_rx_cc_stage_end
     tblwr           d.cc_flags, 0
 
@@ -191,7 +193,7 @@ tcp_cc_dupack_fast_recovery:
 
 tcp_cc_new_reno_rto_event:
     // r3 = min(cwnd, awnd)
-    sll             r3, k.to_s4_snd_wnd, d.snd_wscale
+    sll             r3, k.s4_t1_s2s_snd_wnd, d.snd_wscale
     slt             c1, d.snd_cwnd, r3
     add.c1          r3, r0, d.snd_cwnd
 
@@ -205,6 +207,7 @@ tcp_cc_new_reno_rto_event:
     // snd_cwnd = 1 MSS
     tblwr           d.snd_cwnd, d.smss
 
+    //tbland          d.t_flags, ~TCPHDR_CWR
     jr              r7
     // exit recovery
     tblwr           d.cc_flags, 0

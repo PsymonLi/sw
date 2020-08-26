@@ -67,6 +67,9 @@ dma_cmd_ring_tcp_tx_doorbell:
     nop
     b.c2        rx2tx_clean_retx_ring
     nop
+    sne         c3, k.to_s6_payload_len, 0
+    bcf         [!c1 & !c2 & !c3], tx_no_dma 
+    nop
 rx2tx_send_ack_ring:
     tbladd.f    d.rx2tx_send_ack_pi, 1
     CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI_FENCE(tx_doorbell_dma_cmd, LIF_TCP, 0, k.common_phv_fid,
@@ -109,3 +112,8 @@ tx_doorbell_set_eop:
 tcp_write_serq2_done:
     nop.e
     nop
+/* in the fast retransmit case, no data is expected, therefore we should be able to drop the packet */
+tx_no_dma:
+   phvwri p.p4_intr_global_drop, 1
+   nop.e
+   nop

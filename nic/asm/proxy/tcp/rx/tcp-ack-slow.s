@@ -9,11 +9,11 @@
 #include "tcp-constants.h"
 #include "ingress.h"
 #include "INGRESS_p.h"
-#include "INGRESS_s2_t0_tcp_rx_k.h"
+#include "INGRESS_s3_t0_tcp_rx_k.h"
 
 struct phv_ p;
-struct s2_t0_tcp_rx_k_ k;
-struct s2_t0_tcp_rx_tcp_ack_d d;
+struct s3_t0_tcp_rx_k_ k;
+struct s3_t0_tcp_rx_tcp_ack_d d;
 
 %%
     .align
@@ -32,7 +32,7 @@ tcp_ack_slow:
     /*
      * if RTO event occurred in Tx pipeline. Handle that first
      */
-    seq             c1, k.s1_s2s_cc_rto_signal, 1
+    seq             c1, k.to_s3_cc_rto_signal, 1
     bal.c1          r7, tcp_ack_rto_event
     nop
 
@@ -47,7 +47,7 @@ tcp_ack_slow:
 
     /*
      * Placeholder comment: TODO
-     * if (no data && ack_seq == snd_wl1 && to_s2_window > d.snd_wnd && no data)
+     * if (no data && ack_seq == snd_wl1 && to_s3_window > d.snd_wnd && no data)
      * {
      *  Pure window update
      *  CAPRI_ATOMIC_STATS_INCR1_NO_CHECK(r2, TCP_PROXY_STATS_RCVD_PURE_WIN_UPD, 1)
@@ -59,8 +59,9 @@ tcp_ack_slow:
      */
 check_dup_ack:
     sne             c_snd_una_advanced, k.s1_s2s_ack_seq, d.snd_una
-    smneb           c2, k.to_s2_flag, FLAG_DATA, FLAG_DATA
-    seq             c5, d.snd_wnd, k.to_s2_window
+    smneb           c2, k.to_s3_flag, FLAG_DATA, FLAG_DATA
+    seq             c5, d.snd_wnd, k.to_s3_window
+    sne.!c5         c5, k.s1_s2s_sack_blks, 0
     /*
      * RFC 5681: consider it as a dup_ack only if window
      * has not changed
@@ -71,37 +72,27 @@ check_dup_ack:
     bcf             [c_est & c5 & !c_snd_una_advanced], dup_ack
     nop
 
-    phvwr           p.to_s4_cc_ack_signal, TCP_CC_ACK_SIGNAL
+    // This fixes a bug where a window update is not being reflected on the tx
+    // side. If tx is stalled due to zero window, we never come out of the
+    // situation causing a deadlock. Setting common_phv_pending_txdma causes
+    // rx2tx dma to occur and the snd_wnd to get updated in txdma.
+    phvwrmi.!c5     p.common_phv_pending_txdma, TCP_PENDING_TXDMA_SND_UNA_UPDATE, \
+                        TCP_PENDING_TXDMA_SND_UNA_UPDATE
+
+    phvwr           p.s4_t1_s2s_cc_ack_signal, TCP_CC_ACK_SIGNAL
 
     /*
      * Check for ECE bit
      */
-    smeqb           c1, k.to_s2_flag, FLAG_ECE, FLAG_ECE
-    bal.c1          r7, tcp_ack_ece
-    nop
+//    smeqb           c1, k.to_s3_flag, FLAG_ECE, FLAG_ECE
+//    bal.c1          r7, tcp_ack_ece
+//    nop
 
     bcf             [c_est], tcp_ack_established_slow
 
 tcp_ack_not_established:
     sne             c2, k.s1_s2s_snd_nxt, k.s1_s2s_ack_seq
     b.c2            tcp_ack_slow_launch_next_stage
-    /*
-     *                    (recv ack)
-     * State (LAST_ACK)   ----------> TCP_CLOSE
-     * State (FIN_WAIT_1) ----------> FIN_WAIT_2
-     * State (CLOSING) ----------> TIME_WAIT
-     */
-    seq             c1, d.state, TCP_LAST_ACK
-    tblwr.c1        d.state, TCP_CLOSE
-    // TODO : Inform ARM that the connection is closed
-
-    seq             c1, d.state, TCP_FIN_WAIT1
-    tblwr.c1        d.state, TCP_FIN_WAIT2
-
-    // TODO : either inform ARM or start time wait timer
-    seq             c1, d.state, TCP_CLOSING
-    tblwr.c1        d.state, TCP_TIME_WAIT
-
 tcp_ack_established_slow:
     /* If the ack is older than previous acks
      * then we can probably ignore it.
@@ -121,21 +112,8 @@ tcp_ack_established_slow:
     bcf             [c1], invalid_ack
     nop
 
-    /* ts_recent update must be made after we are sure that the packet
-     * is in window.
-     *
-     *  if (flag & FLAG_UPDATE_TS_RECENT)
-     *          tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
-     *
-     */
-    smeqb           c2, k.to_s2_flag, FLAG_UPDATE_TS_RECENT, FLAG_UPDATE_TS_RECENT
-    b.!c2           tcp_replace_ts_recent_end
-tcp_replace_ts_recent:
-    // TODO : implement this
-    //sne             c1, r7, r0
-    add             r7, r0, r0
-tcp_replace_ts_recent_end:
     b.!c_snd_una_advanced tcp_snd_una_update_end
+    nop
 tcp_update_window_bypass:
 tcp_snd_una_update_slow:
     /* tcp_snd_una_update */
@@ -148,7 +126,7 @@ bytes_acked_stats_update_end:
     tblwr           d.snd_una, k.s1_s2s_ack_seq
     tblwr           d.limited_transmit, 0
 
-    phvwr           p.to_s4_bytes_acked, r3[31:0]
+    phvwr           p.s4_t1_s2s_bytes_acked, r3[31:0]
     /*
      * If we are in recovery, check if we can come out of it
      */
@@ -165,9 +143,9 @@ bytes_acked_stats_update_end:
     setcf           c3, [c1 & !c2]
     phvwrmi.c3      p.common_phv_pending_txdma, TCP_PENDING_TXDMA_FAST_RETRANS, \
                         TCP_PENDING_TXDMA_FAST_RETRANS
-    phvwrpair.c3    p.to_s4_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL, \
-                        p.to_s4_cc_flags, d.cc_flags
-    phvwr.!c3       p.to_s4_cc_flags, d.cc_flags
+    phvwrpair.c3    p.s4_t1_s2s_cc_ack_signal, TCP_CC_PARTIAL_ACK_SIGNAL, \
+                        p.s4_t1_s2s_cc_flags, d.cc_flags
+    phvwr.!c3       p.s4_t1_s2s_cc_flags, d.cc_flags
 
 tcp_snd_una_update_end:
     /*
@@ -178,8 +156,8 @@ tcp_snd_una_update_end:
 
 tcp_in_ack_event_end:
 tcp_dup_ack_done:
-    tblwr           d.snd_wnd, k.to_s2_window
-    phvwr           p.to_s4_snd_wnd, k.to_s2_window
+    tblwr           d.snd_wnd, k.to_s3_window
+    phvwr           p.s4_t1_s2s_snd_wnd, k.to_s3_window
     /*
      * Launch next stage
      */
@@ -189,7 +167,7 @@ old_ack:
 invalid_ack:
 no_queue:
 tcp_ack_slow_launch_next_stage:
-    phvwrpair       p.rx2tx_extra_snd_wnd, k.to_s2_window, \
+    phvwrpair       p.rx2tx_extra_snd_wnd, k.to_s3_window, \
                         p.rx2tx_extra_snd_una, d.snd_una
     phvwr           p.rx2tx_extra_limited_transmit, d.limited_transmit
     CAPRI_NEXT_TABLE_READ_OFFSET(0, TABLE_LOCK_EN,
@@ -217,8 +195,8 @@ tcp_dup_ack_eq_thresh:
     tblwr           d.limited_transmit, 0
     tblor           d.cc_flags, TCP_CCF_FAST_RECOVERY
     tblwr           d.snd_recover, k.s1_s2s_snd_nxt
-    phvwrpair       p.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL, \
-                        p.to_s4_cc_flags, d.cc_flags
+    phvwrpair       p.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL, \
+                        p.s4_t1_s2s_cc_flags, d.cc_flags
     b               tcp_dup_ack_done
     /*
      * tell txdma we have work to do
@@ -227,8 +205,8 @@ tcp_dup_ack_eq_thresh:
                         TCP_PENDING_TXDMA_FAST_RETRANS
 tcp_dup_ack_gt_thresh:
     b               tcp_dup_ack_done
-    phvwrpair       p.to_s4_cc_ack_signal, TCP_CC_DUPACK_SIGNAL, \
-                        p.to_s4_cc_flags, d.cc_flags
+    phvwrpair       p.s4_t1_s2s_cc_ack_signal, TCP_CC_DUPACK_SIGNAL, \
+                        p.s4_t1_s2s_cc_flags, d.cc_flags
 
 tcp_dup_ack_limited_transmit:
     tblwr           d.limited_transmit, d.num_dup_acks
@@ -261,5 +239,5 @@ tcp_ack_ece:
     tblor           d.cc_flags, TCP_CCF_CONG_RECOVERY
     tblwr           d.snd_recover, k.s1_s2s_snd_nxt
     jr              r7
-    phvwr           p.to_s4_cc_ack_signal, TCP_CC_ECE_SIGNAL
+    phvwr           p.s4_t1_s2s_cc_ack_signal, TCP_CC_ECE_SIGNAL
 

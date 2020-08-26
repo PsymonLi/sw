@@ -18,7 +18,7 @@ namespace pd {
 
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
 
-#define P4PLUS_SYMBOLS_MAX 92
+#define P4PLUS_SYMBOLS_MAX 93
 
 uint32_t
 common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type)
@@ -202,6 +202,12 @@ common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type
         symbols[i].val = offset;
         i++;
     }
+
+    symbols[i].name = RX_RNMDR_GC_TABLE_BASE;
+    symbols[i].val = asicpd_get_mem_addr(ASIC_HBM_REG_NMDR_RX_GC) +
+        ASIC_RNMDR_GC_TCP_RX_RING_PRODUCER * ASIC_HBM_GC_PER_PRODUCER_RING_SIZE *
+        ASIC_HBM_NMDR_ENTRY_SIZE;
+    i++;
 
     symbols[i].name = RNMDR_GC_TABLE_BASE;
     symbols[i].val = asicpd_get_mem_addr(ASIC_HBM_REG_NMDR_RX_GC);

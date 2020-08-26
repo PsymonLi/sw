@@ -98,11 +98,14 @@
     modify_field(common_global_scratch.pending_dup_ack_send, common_phv.pending_dup_ack_send); \
     modify_field(common_global_scratch.pending_ack_send, common_phv.pending_ack_send); \
     modify_field(common_global_scratch.pending_rto, common_phv.pending_rto); \
+    modify_field(common_global_scratch.pending_tw_fw2_to, common_phv.pending_tw_fw2_to); \
+    modify_field(common_global_scratch.pending_per_to, common_phv.pending_per_to); \
     modify_field(common_global_scratch.pending_fast_retx, common_phv.pending_fast_retx); \
     modify_field(common_global_scratch.partial_retx_cleanup, common_phv.partial_retx_cleanup); \
     modify_field(common_global_scratch.debug_dol_dont_send_ack, common_phv.debug_dol_dont_send_ack);\
     modify_field(common_global_scratch.launch_sack_rx, common_phv.launch_sack_rx);\
     modify_field(common_global_scratch.pending_asesq, common_phv.pending_asesq); \
+    modify_field(common_global_scratch.pending_keepa, common_phv.pending_keepa); \
     modify_field(common_global_scratch.debug_dol_dont_tx, common_phv.debug_dol_dont_tx); \
     modify_field(common_global_scratch.debug_dol_free_rnmdr, common_phv.debug_dol_free_rnmdr);\
     modify_field(common_global_scratch.debug_dol_dont_start_retx_timer, common_phv.debug_dol_dont_start_retx_timer);\
@@ -135,8 +138,11 @@ header_type rx2tx_d_t {
 
         // **Need to match offsets in tcp-table.h**
         sesq_tx_ci : 16;        // offset 40 (TCP_TCB_RX2TX_TX_CI_OFFSET)
-
-        sesq_retx_ci : 16;      // offset 42 (TCP_TCB_RX2TX_RETX_CI_OFFSET)
+        sesq_end_marker_flag: 1; /*
+                                  * This field MUST be next to sesq_retx_ci on the upper edge
+                                  * offset 42 (TCP_TCB_RX2TX_RETX_CI_OFFSET)
+                                  */
+        sesq_retx_ci : 15;
         asesq_retx_ci: 16;      // offset 44
         clean_retx_pending : 8; // offset 46 (TCP_TCB_RX2TX_RETX_PENDING_OFFSET)
 
@@ -146,14 +152,18 @@ header_type rx2tx_d_t {
         ato_deadline : 16;      // offset 48 (TCP_TCB_RX2TX_ATO_OFFSET)
 
         // retransmission timeout decremented on every timer tick
-        rto_deadline : 16;      // offset 50 (TCP_TCB_RX2TX_RTO_OFFSET)
+        rto_deadline : 16;          // offset 50 (TCP_TCB_RX2TX_RTO_OFFSET)
 
-        idle_deadline : 16;     // offset 52 (TCP_TCB_RX2TX_IDLE_TO_OFFSET)
+        keepa_deadline : 16;         // offset 52 (TCP_TCB_RX2TX_KEEPA_TO_OFFSET)
+        
+        per_tw_fw2_to: 8;           // offset 54 (TCP_TCB_RX2TX_TTYPERTO_TO_OFFSET) 
 
         debug_dol_tx : 16;
 
-        sesq_base : HBM_ADDRESS_WIDTH;
+        sesq_base_msb : 8;
+        sesq_base : 32;
 
+        keepa_count             : 8;
         perpetual_timer_started : 1;
     }
 }
@@ -223,13 +233,6 @@ header_type tcp_retx_d_t {
     }
 }
 
-header_type read_nmdr_gc_d_t {
-    fields {
-        sw_pi                   : 16;
-        sw_ci                   : 16;
-    }
-}
-
 // d for stage 4
 header_type tcp_xmit_d_t {
     fields {
@@ -261,12 +264,14 @@ header_type common_global_phv_t {
         pending_dup_ack_send    : 1;
         pending_ack_send        : 1;
         pending_rto             : 1;
-        pending_idle            : 1;
         pending_fast_retx       : 1;
+        pending_tw_fw2_to       : 1;
+        pending_per_to          : 1;
         partial_retx_cleanup    : 1;
         debug_dol_dont_send_ack : 1;
         launch_sack_rx          : 1;
         pending_asesq           : 1;
+        pending_keepa           : 1;
         debug_dol_dont_tx       : 1;
         debug_dol_free_rnmdr    : 1;
         debug_dol_dont_start_retx_timer : 1;
@@ -305,6 +310,8 @@ header_type to_stage_4_phv_t {
         quick                   : 4;
         pingpong                : 1;
         window_open             : 1;
+        sesq_ci_update          : 1;
+        clean_retx_ci           : 16;
     }
 }
 
@@ -312,10 +319,12 @@ header_type to_stage_5_phv_t {
     fields {
         ts_offset               : 32;
         ts_time                 : 32;
+        ts_ecr                  : 32;
         rcv_wnd                 : 16;
         sack_opt_len            : 8;
         pending_tso_data        : 1;
-        pending_pad             : 7;
+        int_rst_rsn             : 3; // Indicate internal rst (reason as well)
+        pending_pad             : 4;
     }
 }
 
@@ -480,10 +489,6 @@ metadata txdma_phv_pad1_t phv_pad1;
 @pragma dont_trim
 metadata tcp_header_t tcp_header;               // 20 bytes
 @pragma dont_trim
-metadata tcp_header_pad_t tcp_nop_opt1;          // 1 byte
-@pragma dont_trim
-metadata tcp_header_pad_t tcp_nop_opt2;          // 1 byte
-@pragma dont_trim
 metadata tcp_header_ts_option_t tcp_ts_opt;     // 10 bytes
 @pragma dont_trim
 metadata tcp_header_sack_option_t tcp_sack_opt; // variable
@@ -546,9 +551,9 @@ metadata dma_cmd_phv2mem_t tx2rx_dma;        // dma cmd 8
 #define RX2TX_PARAMS                                                                                  \
 rsvd, cosA, cosB, cos_sel, eval_last, host, total, pid, pi_0,ci_0, pi_1, ci_1,\
 pi_2, ci_2, pi_3, ci_3, pi_4, ci_4, pi_5, ci_5, pi_6, ci_6,\
-pi_7, ci_7, sesq_tx_ci, sesq_retx_ci, asesq_retx_ci, clean_retx_pending,\
-debug_dol_tblsetaddr, ato_deadline, rto_deadline, idle_deadline, debug_dol_tx,\
-sesq_base, perpetual_timer_started
+pi_7, ci_7, sesq_tx_ci, sesq_end_marker_flag, sesq_retx_ci, asesq_retx_ci, clean_retx_pending,\
+debug_dol_tblsetaddr, ato_deadline, rto_deadline, keepa_deadline, per_tw_fw2_to, debug_dol_tx,\
+sesq_base_msb, sesq_base, perpetual_timer_started, keepa_count
 
 #define GENERATE_RX2TX_D                                                                               \
     modify_field(rx2tx_d.rsvd, rsvd);                                                                  \
@@ -576,16 +581,20 @@ sesq_base, perpetual_timer_started
     modify_field(rx2tx_d.pi_7, pi_7);                                                                  \
     modify_field(rx2tx_d.ci_7, ci_7);                                                                  \
     modify_field(rx2tx_d.sesq_tx_ci, sesq_tx_ci);                                                      \
+    modify_field(rx2tx_d.sesq_end_marker_flag, sesq_end_marker_flag);                                  \
     modify_field(rx2tx_d.sesq_retx_ci, sesq_retx_ci);                                                  \
     modify_field(rx2tx_d.asesq_retx_ci, asesq_retx_ci);                                                \
     modify_field(rx2tx_d.clean_retx_pending, clean_retx_pending);                                      \
     modify_field(rx2tx_d.debug_dol_tblsetaddr, debug_dol_tblsetaddr);                                  \
     modify_field(rx2tx_d.ato_deadline, ato_deadline);                                                  \
     modify_field(rx2tx_d.rto_deadline, rto_deadline);                                                  \
-    modify_field(rx2tx_d.idle_deadline, idle_deadline);                                                \
+    modify_field(rx2tx_d.keepa_deadline, keepa_deadline);                                                \
+    modify_field(rx2tx_d.per_tw_fw2_to, per_tw_fw2_to);                                                \
     modify_field(rx2tx_d.debug_dol_tx, debug_dol_tx);                                                  \
+    modify_field(rx2tx_d.sesq_base_msb, sesq_base_msb);                                                \
     modify_field(rx2tx_d.sesq_base, sesq_base);                                                        \
     modify_field(rx2tx_d.perpetual_timer_started, perpetual_timer_started);                            \
+    modify_field(rx2tx_d.keepa_count, keepa_count);                                                    \
 
 #define GENERATE_T0_S2S                                                                 \
     modify_field(t0_s2s_scratch.snd_wnd, t0_s2s.snd_wnd);                               \
@@ -868,9 +877,11 @@ action tso(TSO_PARAMS) {
     // from to_stage 5
     modify_field(to_s5_scratch.ts_offset, to_s5.ts_offset);
     modify_field(to_s5_scratch.ts_time, to_s5.ts_time);
+    modify_field(to_s5_scratch.ts_ecr, to_s5.ts_ecr);
     modify_field(to_s5_scratch.rcv_wnd, to_s5.rcv_wnd);
     modify_field(to_s5_scratch.sack_opt_len, to_s5.sack_opt_len);
     modify_field(to_s5_scratch.pending_tso_data, to_s5.pending_tso_data);
+    modify_field(to_s5_scratch.int_rst_rsn, to_s5.int_rst_rsn);
     modify_field(to_s5_scratch.pending_pad, to_s5.pending_pad);
 
     // from stage to stage

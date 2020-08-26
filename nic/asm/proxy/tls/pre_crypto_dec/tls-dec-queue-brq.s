@@ -37,7 +37,7 @@ dma_cmd_dec_odesc:
 	addi		r5, r5, PKT_DESC_AOL_OFFSET
 
 
-	addi		r4, r0, (NIC_PAGE_HEADROOM - NTLS_AAD_SIZE)
+	addi		r4, r0, (TLS_NIC_PAGE_HEADROOM - NTLS_AAD_SIZE)
     add         r6, r0, k.{to_s6_opage}
 	phvwrpair   p.odesc_A0, r6.dx, \
 	            p.odesc_O0, r4.wx

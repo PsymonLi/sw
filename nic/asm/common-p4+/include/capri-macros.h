@@ -247,6 +247,7 @@
 #define LIF_GC                         (SERVICE_LIF_START + 7)
 #define LIF_P4PT                       (SERVICE_LIF_START + 8)
 #define LIF_CPU_BYPASS                 (SERVICE_LIF_START + 9)
+#define LIF_ARM_SOCKET_APP             (SERVICE_LIF_START + 10)
 
 #define SERQ_QID                       0
 #define SESQ_QID                       1
@@ -466,6 +467,7 @@
 
 #define TCP_PROXY_STATS                 tcp_proxy_stats
 
+#define RX_RNMDR_GC_TABLE_BASE          hbm_rx_rnmdr_gc_table_base
 #define RNMDR_GC_TABLE_BASE             hbm_rnmdr_gc_table_base
 #define TNMDR_GC_TABLE_BASE             hbm_tnmdr_gc_table_base
 
