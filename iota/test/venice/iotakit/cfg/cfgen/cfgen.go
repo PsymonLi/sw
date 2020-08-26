@@ -333,6 +333,7 @@ func (cfgen *Cfgen) genSubnets() []*network.Network {
 	configs := []*network.Network{}
 
 	netCtx := newIterContext()
+	vxlanID := 0
 	for ii := 0; ii < cfgen.TenantConfigParams.NumOfTenants; ii++ {
 		tenant := cfgen.ConfigItems.Tenants[ii]
 		ipams := []*network.IPAMPolicy{}
@@ -354,12 +355,13 @@ func (cfgen *Cfgen) genSubnets() []*network.Network {
 				subnet.ObjectMeta.Tenant = tenant.Name
 				//subnet.Spec.IPAMPolicy = ipams[ll%numOfipams].Name
 				configs = append(configs, subnet)
-				subnet.Spec.VxlanVNI = 8000100 + subnet.Spec.VxlanVNI
+				subnet.Spec.VxlanVNI = (uint32)(8000100 + vxlanID)
 				subnet.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value = 1000 + subnet.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
 				subnet.Spec.RouteImportExport.ExportRTs[0].AssignedValue = 1000 + subnet.Spec.RouteImportExport.ExportRTs[0].AssignedValue
 				subnet.Spec.RouteImportExport.ImportRTs[0].AdminValue.Value = subnet.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
 				subnet.Spec.RouteImportExport.ImportRTs[0].AssignedValue = subnet.Spec.RouteImportExport.ExportRTs[0].AssignedValue
 				ll++
+				vxlanID++
 			}
 		}
 	}
@@ -486,7 +488,7 @@ func (cfgen *Cfgen) genSGPolicies() []*security.NetworkSecurityPolicy {
 				tRule.ToIPAddresses = append(tRule.ToIPAddresses, toW.Spec.Interfaces[0].IpAddresses[0])
 				cfgen.WPairs = append(cfgen.WPairs, &WPair{From: fromW, To: toW})
 			}
-			for ll := 0; ll < cfgen.NetworkSecurityPolicyParams.NumAppsPerRules; ll++ {
+			for ll := 0; ll < cfgen.NetworkSecurityPolicyParams.NumAppsPerRules-1; ll++ {
 				port := strconv.Itoa(10000 + ll)
 				tRule.ProtoPorts = append(tRule.ProtoPorts,
 					security.ProtoPort{Protocol: "tcp", Ports: port})

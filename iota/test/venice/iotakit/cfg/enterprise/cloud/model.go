@@ -153,9 +153,9 @@ func (cl *CloudCfg) configPushComplete() (bool, error) {
 		return true, nil
 	}
 	rClient := cl.Client
+	cfgObjects := cl.GetCfgObjects()
 
-	err := rClient.PullConfigPushStatus([]string{"NetworkInterface",
-		"NetworkSecurityPolicy", "Network"}, &rawData)
+	err := rClient.PullConfigPushStatus([]string{"NetworkSecurityPolicy", "Network"}, &rawData)
 	if err != nil {
 		log.Infof("Config  Failed %v", err)
 		return false, err
@@ -165,6 +165,17 @@ func (cl *CloudCfg) configPushComplete() (bool, error) {
 	if err != nil {
 		log.Infof("Config unmarshalling Failed, ignoring as format may not be supported %v", err)
 		return true, nil
+	}
+	if len(cfgObjects.Networks) != len(configPushStatus.KindObjects.Network) {
+		log.Infof("Not all networks are pushed yet, expected %v, actual %v ", len(cfgObjects.Networks), len(configPushStatus.KindObjects.Network))
+		return false, nil
+
+	}
+
+	if len(cfgObjects.SgPolicies) != len(configPushStatus.KindObjects.NetworkSecurityPolicy) {
+		log.Infof("Not all policies are pushed yet, expected %v, actual %v ", len(cfgObjects.Networks), len(configPushStatus.KindObjects.Network))
+		return false, nil
+
 	}
 
 	for _, ep := range configPushStatus.KindObjects.Network {

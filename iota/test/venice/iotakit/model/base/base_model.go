@@ -716,6 +716,7 @@ func (sm *SysModel) AssociateHosts() error {
 							}
 							//Add BM type to support upgrade
 							dsc.Labels = make(map[string]string)
+							//Retry since api-server takes some time to accept config
 							for i := 0; i < 3; i++ {
 								dsc.Labels["type"] = "sim"
 								if err = sm.UpdateSmartNIC(dsc); err == nil {

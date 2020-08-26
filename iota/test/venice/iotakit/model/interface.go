@@ -303,8 +303,8 @@ func InitSuite(topoName, paramsFile string, scale, scaleData bool) (*testbed.Tes
 
 	// setup test params
 	if scale {
-		gomega.SetDefaultEventuallyTimeout(time.Minute * 30)
-		gomega.SetDefaultEventuallyPollingInterval(time.Second * 30)
+		gomega.SetDefaultEventuallyTimeout(time.Minute * 60)
+		gomega.SetDefaultEventuallyPollingInterval(time.Second * 45)
 	} else {
 		gomega.SetDefaultEventuallyTimeout(time.Minute * 10)
 		gomega.SetDefaultEventuallyPollingInterval(time.Second * 10)

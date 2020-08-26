@@ -268,10 +268,6 @@ func (sm *SysModel) VerifyPolicyStatus(spc *objects.NetworkSecurityPolicyCollect
 		return nil
 	}
 
-	if len(sm.NaplesNodes) == 0 {
-		return nil
-	}
-
 	for _, pol := range spc.Policies {
 		pstat, err := sm.GetNetworkSecurityPolicy(&pol.VenicePolicy.ObjectMeta)
 		if err != nil {
@@ -284,9 +280,10 @@ func (sm *SysModel) VerifyPolicyStatus(spc *objects.NetworkSecurityPolicyCollect
 			log.Warnf("Propagation generation id did not match: Meta: %+v, PropagationStatus: %+v", pstat.ObjectMeta, pstat.Status.PropagationStatus)
 			return fmt.Errorf("Propagation generation id did not match")
 		}
-		totalNaples := int32(len(sm.NaplesNodes)) + int32(len(sm.FakeNaples))
+		tenantNaples, err := sm.Naples().SelectByTenant(pol.VenicePolicy.Tenant)
+		totalNaples := int32(len(tenantNaples.Nodes)) + int32(len(tenantNaples.FakeNodes))
 		if (pstat.Status.PropagationStatus.Updated != totalNaples) || (pstat.Status.PropagationStatus.Pending != 0) {
-			log.Warnf("Propagation status incorrect: Expected updates: %+v, PropagationStatus: %+v", totalNaples, pstat.Status.PropagationStatus)
+			log.Warnf("Propagation status incorrect for policy %#v: Expected updates: %+v, PropagationStatus: %+v", pol.VenicePolicy, totalNaples, pstat.Status.PropagationStatus)
 			return fmt.Errorf("Propagation status was incorrect")
 		}
 	}
