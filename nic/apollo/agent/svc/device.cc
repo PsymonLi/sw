@@ -354,7 +354,7 @@ pds_svc_device_get (const pds::DeviceGetRequest *proto_req,
     }
     proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Device object not found");
+        PDS_TRACE_ERR("Device object not found, err %u", ret);
         return ret;
     }
     pds_device_api_spec_to_proto(
@@ -363,7 +363,7 @@ pds_svc_device_get (const pds::DeviceGetRequest *proto_req,
             proto_rsp->mutable_response()->mutable_status(), &info.status);
     pds_device_api_stats_to_proto(
             proto_rsp->mutable_response()->mutable_stats(), &info.stats);
-    return ret;
+    return SDK_RET_OK;
 }
 
 Status

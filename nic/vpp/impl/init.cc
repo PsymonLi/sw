@@ -35,6 +35,7 @@ initialize_pds (void)
 #else
     std::string cfg_file = "hal.json";
 #endif
+    char *ipsec = getenv("IPSEC");
 
     // do soft init
     sdk::asic::asic_set_init_type(sdk::asic::asic_init_type_t::ASIC_INIT_TYPE_SOFT);
@@ -45,6 +46,11 @@ initialize_pds (void)
     init_params.cfg_file  = cfg_file;
     init_params.memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
     init_params.device_profile = PDS_DEVICE_PROFILE_DEFAULT;
+    if (!ipsec) {
+        init_params.memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
+    } else {
+        init_params.memory_profile = PDS_MEMORY_PROFILE_IPSEC;
+    }
     ret = pds_init(&init_params);
     SDK_ASSERT(ret == SDK_RET_OK);
 
