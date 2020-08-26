@@ -3264,14 +3264,6 @@ elba_tm_disable_hbm_for_all_ports()
 
 //::     #endif
 //:: #endfor
-
-    // TODO: Disable repl at P4 ports until the MC setup issues are resolved
-    pbc_csr.port_6.cfg_oq.read();
-    pbc_csr.port_7.cfg_oq.read();
-    pbc_csr.port_6.cfg_oq.replication_enable(0);
-    pbc_csr.port_7.cfg_oq.replication_enable(0);
-    pbc_csr.port_6.cfg_oq.write();
-    pbc_csr.port_7.cfg_oq.write();
 }
 
 sdk_ret_t
