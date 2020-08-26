@@ -82,6 +82,8 @@ func measurementCmdHandler(cmd *cobra.Command, args []string) {
 		if cq.HasContinuousQuerySuffix(m) {
 			rp := cq.RetentionPolicyMap[strings.Split(m, "_")[1]].Name
 			m = `"default"."` + rp + `"."` + m + `"`
+		} else {
+			m = `"` + m + `"`
 		}
 
 		resp, err := cmd2.QueryPoints(addr, fmt.Sprintf("SELECT * FROM %s ORDER BY time DESC LIMIT %d", m, maxPointsInQueryResponse))
