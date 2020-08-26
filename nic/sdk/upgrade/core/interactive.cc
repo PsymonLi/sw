@@ -191,14 +191,11 @@ upg_interactive_stage_exec (upg_stage_t stage)
     }
 
     if (fsm_states.is_discovery()) {
-        dump(fsm_states);
         send_discovery_event (dom, id);
     } else if (fsm_states.is_serial_event_sequence() &&
                fsm_states.has_next_svc()) {
-        dump(fsm_states);
         send_ipc_to_next_service();
     } else if (fsm_states.is_parallel_event_sequence()) {
-        dump(fsm_states);
         dispatch_event(dom, id);
     } else {
         SDK_ASSERT(0);

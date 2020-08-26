@@ -16,6 +16,8 @@ source $MY_DIR/../../../tools/setup_env_sim.sh $PIPELINE
 function terminate() {
     pid=`pgrep -f "$1"`
     if [ -n "$pid" ];then
+        process=`ps -p $pid -o comm=`
+        pstack $pid > $PDSPKG_TOPDIR/${process}_bt.log 2>&1
         kill -TERM $pid
     fi
 }
@@ -35,7 +37,14 @@ if [[ $SET_DOM = "1" ]];then
     export OPERD_SUFFIX="_${HITLESS_DOM}"
 fi
 
+function upgrade_log_dump () {
+    if [ ! -z "$OPERD_SUFFIX" ];then
+        operdctl dump upgradelog > $PDSPKG_TOPDIR/upgrademgr.log
+    fi
+}
+
 function trap_finish () {
+    upgrade_log_dump
     terminate "vpp -c ${PDSPKG_TOPDIR}"
     terminate "$BUILD_DIR/bin/pciemgrd"
     terminate "$BUILD_DIR/bin/operd"

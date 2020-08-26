@@ -935,8 +935,8 @@ policer:
     rate:   400000
     burst:  400000
 
-hostinterface:
-    txpolicer: true
+# hostinterface:         # disabling policer for upgrade related tests
+#    txpolicer: true
 
 # ECMP:
 # Object types and order of creation of objects for different kinds of ECMP.
