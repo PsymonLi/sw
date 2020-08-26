@@ -271,6 +271,7 @@ TEST_F(fte_test, execute_pipeline_wildcard) {
     results.clear();
 }
 
+#if 0
 //test feature state
 TEST_F(fte_test, ctx_state) {
     auto fn1 = [](ctx_t& ctx) {
@@ -323,3 +324,4 @@ TEST_F(fte_test, ctx_state) {
     execute_pipeline(ctx);
     HAL_FREE(hal::HAL_MEM_ALLOC_FTE, st);
 }
+#endif

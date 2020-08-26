@@ -100,7 +100,7 @@ size_t feature_state_size(uint16_t *num_features)
 {
     *num_features = g_num_features_;
 
-    return (*num_features) * sizeof(feature_state_t) + g_feature_state_size_;
+    return ((*num_features) * (sizeof(feature_state_t) + g_feature_state_size_));
 }
 
 //------------------------------------------------------------------------------
@@ -125,16 +125,35 @@ void feature_state_init(feature_state_t *feature_state, uint16_t num_features)
         feature_state[id].session_state = NULL;
         feature_state[id].ctx_state = NULL;
         feature_state[id].completion_handler = nullptr;
+        feature_state[id].state_init_fn = NULL;
 
         feature = g_feature_list_[id];
         feature_state[id].name = feature->name.c_str();
+        feature_state[id].state_size = feature->state_size;
         if (feature && feature->registered && feature->state_size > 0) {
             feature_state[id].ctx_state = (void *)(ctx_state_start + feature->state_offset);
             if (feature->state_init_fn) {
+                feature_state[id].state_init_fn = feature->state_init_fn;
                 feature->state_init_fn(feature_state[id].ctx_state);
             } else {
                 bzero(feature_state[id].ctx_state, feature->state_size);
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// Init feature state
+//------------------------------------------------------------------------------
+void feature_state_flowmiss_init(feature_state_t *feature_state, uint16_t num_features)
+{
+    for (uint16_t id = 0; id < num_features; id++) {
+        feature_state[id].session_state = NULL;
+        feature_state[id].completion_handler = nullptr;
+        if (feature_state[id].state_init_fn) {
+            feature_state[id].state_init_fn(feature_state[id].ctx_state);
+        } else if (feature_state[id].ctx_state) {
+            bzero(feature_state[id].ctx_state, feature_state[id].state_size);
         }
     }
 }

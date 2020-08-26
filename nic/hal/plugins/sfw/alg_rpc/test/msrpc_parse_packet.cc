@@ -252,8 +252,22 @@ uint8_t MSRPC_EPM_RSP2[] = {0x08, 0x00, 0x27, 0x96, 0xcb, 0x7c, 0x52, 0x54,
 #define MSRPC_EPM_RSP2_PAYLOAD_OFFSET 54
 #define FEATURE_RPC "pensando.io/sfw:alg_rpc"
 
+void *
+msrpc_test_get_flow_key_func (void *entry)
+{
+    SDK_ASSERT(entry != NULL);
+    return (void *)&(((fte_flow_key_t *)entry)->flow_key);
+}
+
+uint32_t
+msrpc_test_flow_key_size ()
+{
+    return sizeof(hal::flow_key_t);
+}
+
 class msrpc_parse_test : public ::testing::Test {
 protected:
+    sdk::lib::ht *ht_;
     msrpc_parse_test() {
         add_feature(FEATURE_RPC);
     }
@@ -280,6 +294,8 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
     hal::flow_key_t  key;
     app_session_t    app_sess;
 
+    ht_ = sdk::lib::ht::factory(32,
+                           msrpc_test_get_flow_key_func, msrpc_test_flow_key_size());
     key.proto = (types::IPProtocol)IP_PROTO_TCP;
     memset(&alg_state, 0, sizeof(l4_alg_status_t));
     memset(&rpc_info, 0, sizeof(rpc_info_t));
@@ -290,7 +306,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
     alg_state.app_session = &app_sess;
     rpc_info.pkt_type = PDU_NONE;
     rxhdr.payload_offset = MSRPC_BIND_REQ1_PAYLOAD_OFFSET;
-    ctx1.init(&rxhdr, MSRPC_BIND_REQ1, MSRPC_BIND_REQ1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx1.init(&rxhdr, MSRPC_BIND_REQ1, MSRPC_BIND_REQ1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx1.set_key(key);
     ctx1.set_feature_name(FEATURE_RPC, 0);
     ctx1.register_feature_session_state(&alg_state.fte_feature_state);
@@ -303,7 +319,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_BIND_RSP1_PAYLOAD_OFFSET;
-    ctx2.init(&rxhdr, MSRPC_BIND_RSP1, MSRPC_BIND_RSP1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx2.init(&rxhdr, MSRPC_BIND_RSP1, MSRPC_BIND_RSP1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx2.set_key(key);
     ctx2.set_feature_name(FEATURE_RPC, 0);
     ctx2.register_feature_session_state(&alg_state.fte_feature_state);
@@ -315,7 +331,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_REQ1_PAYLOAD_OFFSET;
-    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx3.set_key(key);
     ctx3.set_feature_name(FEATURE_RPC, 0);
     ctx3.register_feature_session_state(&alg_state.fte_feature_state);
@@ -327,7 +343,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_RSP1_PAYLOAD_OFFSET;
-    ctx4.init(&rxhdr, MSRPC_EPM_RSP1, MSRPC_EPM_RSP1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx4.init(&rxhdr, MSRPC_EPM_RSP1, MSRPC_EPM_RSP1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx4.set_key(key);
     ctx4.set_feature_name(FEATURE_RPC, 0);
     ctx4.register_feature_session_state(&alg_state.fte_feature_state);
@@ -336,6 +352,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp1) {
                                 (MSRPC_EPM_RSP1_SZ-MSRPC_EPM_RSP1_PAYLOAD_OFFSET));
     ASSERT_EQ(ret, (MSRPC_EPM_RSP1_SZ-MSRPC_EPM_RSP1_PAYLOAD_OFFSET));
     ASSERT_EQ(rpc_info.pkt_type, PDU_NONE);
+    sdk::lib::ht::destroy(ht_);
 }
 
 TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
@@ -350,6 +367,8 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
     hal::flow_key_t  key;
     app_session_t    app_sess;
 
+    ht_ = sdk::lib::ht::factory(32,
+                           msrpc_test_get_flow_key_func, msrpc_test_flow_key_size());
     key.proto = (types::IPProtocol)IP_PROTO_TCP;
     memset(&alg_state, 0, sizeof(l4_alg_status_t));
     memset(&rpc_info, 0, sizeof(rpc_info_t));
@@ -361,7 +380,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
     alg_state.isCtrl = TRUE;
     rpc_info.pkt_type = PDU_NONE;
     rxhdr.payload_offset = MSRPC_BIND_REQ2_PAYLOAD_OFFSET;
-    ctx1.init(&rxhdr, MSRPC_BIND_REQ2, MSRPC_BIND_REQ2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx1.init(&rxhdr, MSRPC_BIND_REQ2, MSRPC_BIND_REQ2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx1.set_key(key);
     ctx1.set_feature_name(FEATURE_RPC, 0);
     ctx1.register_feature_session_state(&alg_state.fte_feature_state);
@@ -374,7 +393,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_BIND_RSP2_PAYLOAD_OFFSET;
-    ctx2.init(&rxhdr, MSRPC_BIND_RSP2, MSRPC_BIND_RSP2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx2.init(&rxhdr, MSRPC_BIND_RSP2, MSRPC_BIND_RSP2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx2.set_key(key);
     ctx2.set_feature_name(FEATURE_RPC, 0);
     ctx2.register_feature_session_state(&alg_state.fte_feature_state);
@@ -386,7 +405,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_REQ2_PAYLOAD_OFFSET;
-    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx3.set_key(key);
     ctx3.set_feature_name(FEATURE_RPC, 0);
     ctx3.register_feature_session_state(&alg_state.fte_feature_state);
@@ -398,7 +417,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_RSP2_PAYLOAD_OFFSET;
-    ctx4.init(&rxhdr, MSRPC_EPM_RSP2, MSRPC_EPM_RSP2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx4.init(&rxhdr, MSRPC_EPM_RSP2, MSRPC_EPM_RSP2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx4.set_key(key);
     ctx4.set_feature_name(FEATURE_RPC, 0);
     ctx4.register_feature_session_state(&alg_state.fte_feature_state);
@@ -407,6 +426,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp2) {
                                  (MSRPC_EPM_RSP2_SZ-MSRPC_EPM_RSP2_PAYLOAD_OFFSET));
     ASSERT_EQ(ret, (MSRPC_EPM_RSP2_SZ-MSRPC_EPM_RSP2_PAYLOAD_OFFSET));
     ASSERT_EQ(rpc_info.pkt_type, PDU_NONE);
+    sdk::lib::ht::destroy(ht_);
 }
 
 TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
@@ -421,6 +441,8 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
     hal::flow_key_t  key;
     app_session_t    app_sess;
 
+    ht_ = sdk::lib::ht::factory(32,
+                           msrpc_test_get_flow_key_func, msrpc_test_flow_key_size());
     key.proto = (types::IPProtocol)IP_PROTO_TCP;
     memset(&alg_state, 0, sizeof(l4_alg_status_t));
     memset(&rpc_info, 0, sizeof(rpc_info_t));
@@ -432,7 +454,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
     alg_state.isCtrl = TRUE;
     rpc_info.pkt_type = PDU_NONE;
     rxhdr.payload_offset = MSRPC_BIND_REQ2_PAYLOAD_OFFSET;
-    ctx1.init(&rxhdr, MSRPC_BIND_REQ2, MSRPC_BIND_REQ2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx1.init(&rxhdr, MSRPC_BIND_REQ2, MSRPC_BIND_REQ2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx1.set_key(key);
     ctx1.set_feature_name(FEATURE_RPC, 0);
     ctx1.register_feature_session_state(&alg_state.fte_feature_state);
@@ -445,7 +467,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_BIND_RSP2_PAYLOAD_OFFSET;
-    ctx2.init(&rxhdr, MSRPC_BIND_RSP2, MSRPC_BIND_RSP2_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx2.init(&rxhdr, MSRPC_BIND_RSP2, MSRPC_BIND_RSP2_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx2.set_key(key);
     ctx2.set_feature_name(FEATURE_RPC, 0);
     ctx2.register_feature_session_state(&alg_state.fte_feature_state);
@@ -457,7 +479,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_REQ1_PAYLOAD_OFFSET;
-    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx3.init(&rxhdr, MSRPC_EPM_REQ1, MSRPC_EPM_REQ1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx3.set_key(key);
     ctx3.set_feature_name(FEATURE_RPC, 0);
     ctx3.register_feature_session_state(&alg_state.fte_feature_state);
@@ -469,7 +491,7 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
 
     memset(&rxhdr, 0, sizeof(cpu_rxhdr_t));
     rxhdr.payload_offset = MSRPC_EPM_RSP1_PAYLOAD_OFFSET;
-    ctx4.init(&rxhdr, MSRPC_EPM_RSP1, MSRPC_EPM_RSP1_SZ, true, iflow, rflow, feature_state, num_features);
+    ctx4.init(&rxhdr, MSRPC_EPM_RSP1, MSRPC_EPM_RSP1_SZ, true, iflow, rflow, feature_state, num_features, ht_);
     ctx4.set_key(key);
     ctx4.set_feature_name(FEATURE_RPC, 0);
     ctx4.register_feature_session_state(&alg_state.fte_feature_state);
@@ -478,4 +500,5 @@ TEST_F(msrpc_parse_test, msrpc_parse_bind_req_rsp3) {
                                  (MSRPC_EPM_RSP1_SZ-MSRPC_EPM_RSP1_PAYLOAD_OFFSET));
     ASSERT_EQ(ret, (MSRPC_EPM_RSP1_SZ-MSRPC_EPM_RSP1_PAYLOAD_OFFSET));
     ASSERT_EQ(rpc_info.pkt_type, PDU_NONE);
+    sdk::lib::ht::destroy(ht_);
 }

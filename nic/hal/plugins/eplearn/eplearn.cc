@@ -67,14 +67,8 @@ static bool is_host_originated_packet(fte::ctx_t &ctx) {
 static hal_ret_t
 do_learning_ep_lif_update(fte::ctx_t &ctx) {
     const fte::cpu_rxhdr_t* cpu_hdr = ctx.cpu_rxhdr();
-    hal::pd::pd_get_object_from_flow_lkupid_args_t args;
-    hal::pd::pd_func_args_t          pd_func_args = {0};
-    hal::hal_obj_id_t obj_id;
-    void *obj;
     hal_ret_t ret = HAL_RET_OK;
-    hal::l2seg_t *l2seg;
-    ether_header_t * ethhdr;
-    ep_t *sep = nullptr;
+    ep_t *sep = ctx.sep();
     if_t *sif;
     lif_t *lif;
     if_t *new_hal_if;
@@ -89,20 +83,6 @@ do_learning_ep_lif_update(fte::ctx_t &ctx) {
 
     HAL_TRACE_VERBOSE("Doing EP lif update if necessary");
 
-    args.flow_lkupid = cpu_hdr->lkp_vrf;
-    args.obj_id = &obj_id;
-    args.pi_obj = &obj;
-    args.uplink_if = NULL;
-    pd_func_args.pd_get_object_from_flow_lkupid = &args;
-    ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_GET_OBJ_FROM_FLOW_LKPID, &pd_func_args);
-    if (ret != HAL_RET_OK && obj_id != hal::HAL_OBJ_ID_L2SEG) {
-        HAL_TRACE_ERR("fte: Invalid obj id: {}, ret:{}", obj_id, ret);
-        return ret;
-    }
-    l2seg = (hal::l2seg_t *)obj;
-
-    ethhdr = GET_L2_HEADER(ctx.pkt(), cpu_hdr);
-    sep = hal::find_ep_by_l2_key(l2seg->seg_id, ethhdr->smac);
     if (sep == nullptr) {
         HAL_TRACE_ERR("Source endpoint not found.");
         return HAL_RET_EP_NOT_FOUND;

@@ -1494,7 +1494,8 @@ pd_flow_get (pd_func_args_t *pd_func_args)
 
     info_table = (sldirectmap *)g_hal_state_pd->dm_table(P4TBL_ID_FLOW_INFO);
     SDK_ASSERT(info_table != NULL);
-
+  
+    args->flow_state->create_ts = 0;
     bzero(&params, sizeof(sdk_table_api_params_t));
     params.handle.pindex(pd_flow.assoc_hw_id);
     params.actiondata = &f;
@@ -1511,7 +1512,7 @@ pd_flow_get (pd_func_args_t *pd_func_args)
                 sizeof(f.action_u.flow_info_flow_info.start_timestamp));
         }
         // P4 has timestamp in ms
-        args->flow_state->create_ts <<= 24;
+        args->flow_state->create_ts *= TIME_NSECS_PER_MSEC;
     }
 
     return ret;

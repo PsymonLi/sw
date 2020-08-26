@@ -115,6 +115,7 @@ net_conntrack_configured(fte::ctx_t &ctx)
     return false;
 }
 
+#if 0
 /*
  * API to process TCP FIN/RST on IFlow/RFlow
  *
@@ -176,6 +177,7 @@ done:
     session_set_tcp_state(ctx.session(), role, state);
 }
 
+
 /*
  * API to start the connection setup timer.
  *
@@ -231,6 +233,8 @@ process_tcp_syn(fte::ctx_t& ctx)
     return true;
 }
 
+#endif
+
 fte::pipeline_action_t
 conntrack_exec(fte::ctx_t& ctx)
 {
@@ -243,17 +247,6 @@ conntrack_exec(fte::ctx_t& ctx)
     }
 
     if (ctx.role() == hal::FLOW_ROLE_INITIATOR) {
-        if (ctx.tcp_close() && ctx.existing_session()) {
-            process_tcp_close(ctx);
-            return fte::PIPELINE_CONTINUE;
-        }
-
-        if (ctx.flow_miss() && !ctx.drop()) {
-            if (!process_tcp_syn(ctx)) {
-                return fte::PIPELINE_CONTINUE;
-            }
-        }
-
         if (ctx.protobuf_request()) {
             net_conntrack_extract_session_state_from_spec(&flowupd.flow_state,
                                             ctx.sess_spec()->initiator_flow().flow_data());

@@ -30,6 +30,7 @@ uint32_t fte_base_test::nh_id_ = 0;
 uint32_t fte_base_test::pool_id_ = 0;
 uint64_t fte_base_test::flowmon_rule_id_ = 0;
 uint32_t fte_base_test::lif_id_ = 0;
+sdk::lib::ht *fte_base_test::ht_ = NULL;
 fte::ctx_t fte_base_test::ctx_ = {};
 bool  fte_base_test::ipc_logging_disable_ = false;
 std::vector<dev_handle_t> fte_base_test::handles;
@@ -41,6 +42,19 @@ static slab* v4_test_rule_slab_ =
 static fte_base_test::v4_rule_t *v4_test_rule_alloc() {
     fte_base_test::v4_rule_t *rule = (fte_base_test::v4_rule_t*)v4_test_rule_slab_->alloc();
     return rule;
+}
+
+void *
+fte_test_get_flow_key_func (void *entry)
+{
+    SDK_ASSERT(entry != NULL);
+    return (void *)&(((fte::fte_flow_key_t *)entry)->flow_key);
+}
+
+uint32_t
+fte_test_flow_key_size ()
+{
+    return sizeof(hal::flow_key_t);
 }
 
 hal_handle_t fte_base_test::add_vrf()
@@ -432,6 +446,9 @@ hal_ret_t fte_base_test::inject_pkt(fte::cpu_rxhdr_t *cpu_rxhdr,
         uint16_t num_features;
         size_t fstate_size = fte::feature_state_size(&num_features);
         fte::feature_state_t *feature_state = (fte::feature_state_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE, fstate_size);
+        SDK_ASSERT(feature_state != NULL);
+
+        feature_state_init(feature_state, num_features);
 
         for (int i=0; i<fte::ctx_t::MAX_STAGES; i++) {
             iflow[i]  =  {};
@@ -441,12 +458,16 @@ hal_ret_t fte_base_test::inject_pkt(fte::cpu_rxhdr_t *cpu_rxhdr,
         time_profile_begin(sdk::utils::time_profile::FTE_CTXT_INIT);
         for (uint32_t i=0; i<fn_ctx->pkts.size(); i++) {
             hal::hal_cfg_db_open(hal::CFG_OP_READ);
+            ht_ = sdk::lib::ht::factory(32,
+                           fte_test_get_flow_key_func, fte_test_flow_key_size());
+
             fn_ctx->ret = ctx->init(fn_ctx->cpu_rxhdr, pkt, fn_ctx->pkt_len, fn_ctx->copied_pkt,
-                                    iflow, rflow, feature_state, num_features);
+                                    iflow, rflow, feature_state, num_features, ht_);
             if (fn_ctx->ret == HAL_RET_OK) {
                 fn_ctx->ret = ctx->process();
             }
             SDK_ASSERT(fn_ctx->ret == HAL_RET_OK);
+            sdk::lib::ht::destroy(ht_);
             hal::hal_cfg_db_close();
         }
         time_profile_end(sdk::utils::time_profile::FTE_CTXT_INIT);

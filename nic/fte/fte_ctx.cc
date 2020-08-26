@@ -14,6 +14,7 @@
 #include "nic/asm/cpu-p4plus/include/cpu-defines.h"
 #include "nic/hal/plugins/app_redir/app_redir_ctx.hpp"
 #include "nic/include/pkt_hdrs.hpp"
+#include "lib/utils///time_profile.hpp"
 
 using namespace hal::app_redir;
 
@@ -130,7 +131,6 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
 
     // Build the key and lookup flow
     ret = extract_flow_key();
-
     if (ret != HAL_RET_OK) {
         return ret;
     }
@@ -157,7 +157,6 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
 
     // Lookup old session
     ret = lookup_session();
-
     if (ret == HAL_RET_OK) {
         if (sync_session_request() && (!session()->syncing_session)) {
             return HAL_RET_ENTRY_EXISTS;
@@ -170,6 +169,10 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
         if (flow_miss()) {
             // Create new session
             ret = create_session();
+            if (ret == HAL_RET_ENTRY_EXISTS) {
+                incr_fte_retransmit_packets();
+                return ret;
+            }
 
             // TBD if session limits needs to be applied for
             // transparent policy-enforced, then we need to
@@ -208,7 +211,7 @@ ctx_t::init(const lifqid_t &lifq, feature_state_t feature_state[], uint16_t num_
     num_features_ = num_features;
     feature_state_ = feature_state;
     if (num_features) {
-        feature_state_init(feature_state_, num_features_);
+        feature_state_flowmiss_init(feature_state_, num_features_);
     }
 
     return HAL_RET_OK;
@@ -235,7 +238,7 @@ ctx_t::process_tcp_queues(void *tcp_ctx)
 hal_ret_t
 ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pkt,
             flow_t iflow[], flow_t rflow[],
-            feature_state_t feature_state[], uint16_t num_features)
+            feature_state_t feature_state[], uint16_t num_features, ht *fte_batch_ht)
 {
     hal_ret_t ret;
 
@@ -271,6 +274,7 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
     copied_pkt_ = copied_pkt;
     enq_or_free_rx_pkt_ = false;
 
+#if 0
      if (fte_span()) {
          // TODO: Print packet and exit
          struct packet *packet = packet_new(pkt_len);
@@ -300,12 +304,14 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
          packet_free(packet);
          return HAL_RET_FTE_SPAN;
      }
+#endif
+
+    fte_batch_ht_ = fte_batch_ht;
 
     if ((cpu_rxhdr->lif == HAL_LIF_CPU) || app_redir_pkt_rx_raw(*this) ||
         (tcp_close())) {
         ret = init_flows(iflow, rflow);
         if (ret != HAL_RET_OK) {
-            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init flows, err={}", ret);
             return ret;
         }
     }

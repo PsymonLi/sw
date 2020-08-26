@@ -24,6 +24,10 @@ session_create_in_fte (SessionSpec *spec, SessionResponse *rsp)
         ret = HAL_RET_OOM;
         goto end;
     }
+    feature_state_init(feature_state, num_features);
+
+    bzero(iflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+    bzero(rflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
 
     // Process pkt with db open
     fte::impl::cfg_db_open();
@@ -80,13 +84,14 @@ sync_session_in_fte (fte_session_args_t *sess_args)
     }
 
     for (auto i = 0; i < sync_sess_cnt; i++) {
-        memset(feature_state, 0, fstate_size);
-
         spec   = sess_args->sync_msg.sessions(i).spec();
         status = sess_args->sync_msg.sessions(i).status();
         stats  = sess_args->sync_msg.sessions(i).stats();
 
-        //hal::proto_msg_dump(spec);
+        feature_state_init(feature_state, num_features);
+
+        bzero(iflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+        bzero(rflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
 
         // Process pkt with db open
         fte::impl::cfg_db_open();
@@ -176,7 +181,7 @@ session_delete_in_fte (hal_handle_t session_handle, bool force_delete)
     }
     session->deleting = 1;
 
-    HAL_TRACE_DEBUG("fte:: Received session Delete for session id {} force_delete: {}",
+    HAL_TRACE_VERBOSE("fte:: Received session Delete for session id {} force_delete: {}",
                     session->hal_handle, force_delete);
 
     HAL_TRACE_VERBOSE("num features: {} feature state size: {}", num_features, fstate_size);
@@ -186,6 +191,10 @@ session_delete_in_fte (hal_handle_t session_handle, bool force_delete)
         ret = HAL_RET_OOM;
         goto end;
     }
+    feature_state_init(feature_state, num_features);
+
+    bzero(iflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+    bzero(rflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
 
     // Process pkt with db open
     fte::impl::cfg_db_open();
@@ -259,16 +268,21 @@ session_update_in_fte (hal_handle_t session_handle, uint64_t featureid_bitmap)
         return HAL_RET_OK;
     }
 
-    HAL_TRACE_DEBUG("fte:: Received session update for session id {}",
+    HAL_TRACE_VERBOSE("fte:: Received session update for session id {}",
                     session->hal_handle);
 
-    HAL_TRACE_VERBOSE("feature_bitmap: {} num features: {} feature state size: {}", featureid_bitmap, num_features, fstate_size);
+    HAL_TRACE_VERBOSE("feature_bitmap: {} num features: {} feature state size: {}", 
+                      featureid_bitmap, num_features, fstate_size);
 
     feature_state = (feature_state_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE, fstate_size);
     if (!feature_state) {
         ret = HAL_RET_OOM;
         goto end;
     }
+    feature_state_init(feature_state, num_features);
+    
+    bzero(iflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+    bzero(rflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
 
     // Process pkt with db open
     fte::impl::cfg_db_open();
@@ -385,6 +399,7 @@ session_get (hal::session_t *session, SessionGetResponse *response)
         ret = HAL_RET_OOM;
         goto end;
     }
+    feature_state_init(feature_state, num_features);
 
     //Init context
     ret = ctx.init(session, iflow, rflow, feature_state, num_features);
@@ -473,7 +488,7 @@ fte_inject_pkt (cpu_rxhdr_t *cpu_rxhdr,
         for (uint32_t i=0; i<fn_ctx->pkts.size(); i++) {
             hal::hal_cfg_db_open(hal::CFG_OP_READ);
             fn_ctx->ret = ctx->init(fn_ctx->cpu_rxhdr, pkt, fn_ctx->pkt_len, fn_ctx->copied_pkt,
-                                    iflow, rflow, feature_state, num_features);
+                                    iflow, rflow, feature_state, num_features, NULL);
             if (fn_ctx->ret == HAL_RET_OK) {
                 fn_ctx->ret = ctx->process();
             }
@@ -590,13 +605,21 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
         ret = HAL_RET_OOM;
         goto end;
     }
+    feature_state_init(feature_state, num_features);
+
+    bzero(iflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+    bzero(rflow, sizeof(flow_t)*ctx_t::MAX_STAGES);
+
+    // Process pkt with db open
+    fte::impl::cfg_db_open();
 
     //Init context
     ret = ctx.init(session, iflow, rflow, feature_state, num_features);
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("fte: failed to init context, ret={}", ret);
-        goto end;
+        goto closedb_end;
     }
+
     ctx.set_pipeline_event(FTE_SESSION_UPDATE);
     // Set the logger instance
     if (!ctx.ipc_logging_disable()) {
@@ -620,7 +643,7 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
     // traffic could be still active to the old host.
     if (reset_sync_session_only) {
         session->syncing_session   = false;
-        goto end;
+        goto closedb_end;
     }
 
     session->sep_handle        = ctx.sep_handle();
@@ -652,6 +675,11 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
     ctx.flow_log()->alg = (nwsec::ALGName)ctx.session()->alg; 
     ctx.add_flow_logging(ctx.key(), session->hal_handle, ctx.flow_log(), 
                          (hal::flow_direction_t)session->iflow->config.dir);
+
+closedb_end:
+    // close the config db
+    fte::impl::cfg_db_close();
+
 
 end:
     if (feature_state) {

@@ -209,8 +209,6 @@ lb_tss_i_tcp_state_transition:
   nop
 
 lb_tss_i_reset:
-  phvwr        p.capri_intrinsic_tm_replicate_en, 1
-  phvwr        p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_RST_COPY
   tblwr        d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_RESET
   b            lb_tss_i_exit
   tblwr        d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_RESET
@@ -285,16 +283,12 @@ lb_tss_i_syn_rcvd_1:
   smeqb        c1, k.tcp_flags, TCP_FLAG_FIN, TCP_FLAG_FIN
   sne          c2, d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_FIN_RCVD
   setcf        c3, [c1 & c2]
-  tblwr.c3     d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_FIN_RCVD
-  phvwr.c3     p.capri_intrinsic_tm_replicate_en, 1
   b.c3         lb_tss_i_tcp_session_update
-  phvwr.c3     p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY
+  tblwr.c3     d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_FIN_RCVD
   setcf        c3, [c1 & !c2]
   tblwr.c3     d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
-  tblwr.c3     d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
-  phvwr.c3     p.capri_intrinsic_tm_replicate_en, 1
   b.c3         lb_tss_i_tcp_session_update
-  phvwr.c3     p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY
+  tblwr.c3     d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
   b            lb_tss_i_exit
   nop
 
@@ -501,8 +495,6 @@ lb_tss_r_tcp_state_transition:
   nop
 
 lb_tss_r_reset:
-  phvwr        p.capri_intrinsic_tm_replicate_en, 1
-  phvwr        p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_RST_COPY
   tblwr        d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_RESET
   b            lb_tss_r_exit
   tblwr        d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_RESET
@@ -663,16 +655,12 @@ lb_tss_r_init_3:
   smeqb        c1, k.tcp_flags, TCP_FLAG_FIN, TCP_FLAG_FIN
   sne          c2, d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_FIN_RCVD
   setcf        c3, [c1 & c2]
-  tblwr.c3     d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_FIN_RCVD
-  phvwr.c3     p.capri_intrinsic_tm_replicate_en, 1
   b.c3         lb_tss_r_tcp_session_update
-  phvwr.c3     p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY
+  tblwr.c3     d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_FIN_RCVD
   setcf        c3, [c1 & !c2]
   tblwr.c3     d.u.tcp_session_state_info_d.rflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
-  tblwr.c3     d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
-  phvwr.c3     p.capri_intrinsic_tm_replicate_en, 1
   b.c3         lb_tss_r_tcp_session_update
-  phvwr.c3     p.capri_intrinsic_tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY
+  tblwr.c3     d.u.tcp_session_state_info_d.iflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD
   b            lb_tss_r_exit
   nop
 

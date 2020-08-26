@@ -19,7 +19,8 @@
 using fwlog::FWEvent;
 using vmotion_msg::VmotionSync;
 
-#define MAX_FEATURES 255
+#define MAX_FEATURES          255
+#define FTE_CTX_BATCH_SZ      32
 
 namespace fte {
 
@@ -263,6 +264,11 @@ std::ostream& operator<<(std::ostream& os, const header_pop_info_t& val);
 typedef hal::flow_state_t flow_state_t;
 typedef session::FlowAction flow_action_t;
 
+typedef struct fte_flow_key_ {
+    hal::flow_key_t     flow_key;
+    sdk::lib::ht_ctxt_t flow_ht_ctxt;
+} __PACK__ fte_flow_key_t;
+
 typedef struct fwding_info_s {
     uint64_t lport:11;
     uint64_t qid_en:1;
@@ -400,6 +406,7 @@ typedef struct feature_session_state_s {
 class ctx_t;
 
 typedef void (*completion_handler_t) (ctx_t &ctx, bool fail);
+typedef void (*feature_state_init_t)(void *state); // Init calback for feature specific state
 
 //------------------------------------------------------------------------------
 // Feature specific state
@@ -410,11 +417,14 @@ struct feature_state_t {
     void                         *ctx_state;
     feature_session_state_t      *session_state;
     completion_handler_t          completion_handler;
+    feature_state_init_t          state_init_fn;
+    size_t                        state_size;
 };
 
 uint16_t feature_id (const std::string &name);
 size_t feature_state_size (uint16_t *num_features);
 void feature_state_init (feature_state_t *feature_state, uint16_t num_features);
+void feature_state_flowmiss_init (feature_state_t *feature_state, uint16_t num_features);
 uint16_t get_num_features (void);
 const std::string& feature_id_to_name (uint16_t feature_id);
 
@@ -540,7 +550,7 @@ public:
 
     hal_ret_t init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pkt,
                    flow_t iflow[], flow_t rflow[],
-                   feature_state_t feature_state[], uint16_t num_features);
+                   feature_state_t feature_state[], uint16_t num_features, ht *fte_batch_ht);
     hal_ret_t init(SessionSpec *spec, SessionResponse *rsp, flow_t iflow[], flow_t rflow[],
                    feature_state_t feature_state[], uint16_t num_features);
     hal_ret_t init(SessionSpec* spec, SessionStatus* status, SessionStats* stats,
@@ -782,6 +792,7 @@ public:
     uint16_t get_feature_id(void) { return feature_id_; }
     void set_ipc_logger(ipc_logger *log) { logger_ = log; }
     ipc_logger *get_ipc_logger(void) { return logger_; }
+    ht *fte_batch_ht(void) { return fte_batch_ht_; }
 
     // protected methods accessed by gtest
 protected:
@@ -868,6 +879,8 @@ private:
     hal::nwsec_profile_t *nwsec_prof_;
     hal::flow_direction_t direction_;
     hal::flow_direction_t rdirection_;
+    sdk::lib::ht          *fte_batch_ht_;
+    bool                  reeval_session_limit_;
 
     void init_ctxt_from_session(hal::session_t *session);
     hal_ret_t init_flows(flow_t iflow[], flow_t rflow[]);

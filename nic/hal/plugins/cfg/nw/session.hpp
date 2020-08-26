@@ -485,6 +485,7 @@ typedef struct session_args_s {
     SessionStats       *stats;                            // session stats
     SessionResponse    *rsp;                              // session response
     uint32_t           flow_hash;                         // flow hash
+    nwsec_profile_t    *nwsec_prof;                       // Nw security profile pointer
 } __PACK__ session_args_t;
 
 //------------------------------------------------------------------------------
@@ -507,6 +508,8 @@ struct session_s {
     uint32_t            sync_sent:1;              // Session Sync has been sent to New host (in old host).
     uint32_t            is_in_half_open_state:1;  // TCP Session is in Half-open state
     uint64_t            sfw_rule_id;              // sfw rule id
+    uint64_t            fin_rcvd_ts;              // Time when FIN was received
+    uint64_t            close_rcvd_ts;            // Time when flow moved to close state
 
     flow_t              *iflow;                   // initiator flow
     flow_t              *rflow;                   // responder flow, if any

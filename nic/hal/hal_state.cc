@@ -870,7 +870,7 @@ hal_ret_t
 hal_cfg_db::db_close(void)
 {
     if (t_cfg_db_ctxt.cfg_db_open_) {
-        t_cfg_db_ctxt.cfg_db_open_ = FALSE;
+        t_cfg_db_ctxt.cfg_db_open_ = false;
         t_cfg_db_ctxt.cfg_op_ = CFG_OP_NONE;
         g_hal_state->cfg_db()->runlock();
     }

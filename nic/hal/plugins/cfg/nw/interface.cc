@@ -5000,7 +5000,7 @@ get_lif_handle_for_enic_if (const InterfaceSpec& spec, if_t *hal_if)
     lif_t               *lif = NULL;
     hal_ret_t           ret = HAL_RET_OK;
 
-    // fetch the lif associated with this interface
+    // fetch the lif associated with this interface 
     auto lif_kh = spec.if_enic_info().lif_key_or_handle();
     if (lif_kh.key_or_handle_case() == LifKeyHandle::kLifId) {
         lif_id = lif_kh.lif_id();

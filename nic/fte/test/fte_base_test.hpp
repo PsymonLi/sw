@@ -303,6 +303,7 @@ private:
     static bool ipc_logging_disable_;
     static std::map<hal_handle_t, ep_info_t> eps;
     static std::vector<dev_handle_t> handles;
+    static sdk::lib::ht *ht_;
 };
 
 #define CHECK_COLLECT_ACTION(dep, sep, dst_port, src_port, msg) {                   \

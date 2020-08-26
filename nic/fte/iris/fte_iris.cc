@@ -348,6 +348,7 @@ ctx_t::create_session()
     hal::flow_key_t l2_info = {0};
     ether_header_t *ethhdr = NULL;
     mac_addr_t      smac, dmac;
+    sdk_ret_t       sdk_ret;
 
     bzero(&l2_info, sizeof(hal::flow_key_t));
 
@@ -436,6 +437,19 @@ ctx_t::create_session()
     }
 
     role_ = hal::FLOW_ROLE_INITIATOR;
+
+    if (!protobuf_request()) {
+
+       sdk_ret = fte_batch_ht()->insert(iflow_[0]->flow_key(), iflow_[0]->flow_key_ht_ctxt());
+       if (sdk_ret == SDK_RET_ENTRY_EXISTS) {
+           return HAL_RET_ENTRY_EXISTS;
+       }
+
+       sdk_ret = fte_batch_ht()->insert(rflow_[0]->flow_key(), rflow_[0]->flow_key_ht_ctxt());
+       if (sdk_ret == SDK_RET_ENTRY_EXISTS) {
+           return HAL_RET_ENTRY_EXISTS;
+       }
+    }
 
     return HAL_RET_OK;
 }
@@ -592,6 +606,11 @@ ctx_t::update_flow_table()
     if (!(flow_miss() ||
         (app_redir_pipeline() && app_ctx && app_ctx->appid_completed()))) {
         return HAL_RET_OK;
+    }
+
+    if (reeval_session_limit_ == true && 
+        apply_session_limit() == HAL_RET_FLOW_LIMT_REACHED) {
+        return HAL_RET_FLOW_LIMT_REACHED;
     }
 
     for (uint8_t stage = 0; valid_iflow_ && !hal_cleanup() && stage <= istage_; stage++) {
@@ -795,9 +814,10 @@ ctx_t::update_flow_table()
     session_args.stats       = sess_stats_;
     session_args.rsp         = sess_resp_;
     session_args.valid_rflow = valid_rflow_;
+    session_args.nwsec_prof  = nwsec_prof_;
+    session_args.session_state = &session_state;
 
     if (hal_cleanup() == true) {
-        session_args.session_state = &session_state;
         // Cleanup session if hal_cleanup is set
         if (session_) {
             update_type = "delete";
@@ -1280,35 +1300,55 @@ ctx_t::apply_session_limit(void)
                 // if not a SYN packet then skip half-open session limit validation
                 return HAL_RET_OK;
             }
-            if ((nwsec_prof_->tcp_half_open_session_limit) &&
-                    (hal::g_session_stats[id].tcp_half_open_sessions >=
-                     nwsec_prof_->tcp_half_open_session_limit)) {
-                ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].tcp_session_drop_count++;
+            if (nwsec_prof_->tcp_half_open_session_limit) {
+               if (hal::g_session_stats[id].tcp_half_open_sessions >=
+                     nwsec_prof_->tcp_half_open_session_limit) {
+                    ret = HAL_RET_FLOW_LIMT_REACHED;
+                    hal::g_session_stats[id].tcp_session_drop_count++;
+               } else if (reeval_session_limit_ == false &&
+                         (hal::g_session_stats[id].tcp_half_open_sessions + FTE_CTX_BATCH_SZ) >=
+                          nwsec_prof_->tcp_half_open_session_limit) {
+                    reeval_session_limit_ = true;
+               }
             }
         } else if (key_.proto == types::IPPROTO_UDP) {
-            if ((nwsec_prof_->udp_active_session_limit) &&
-                    (hal::g_session_stats[id].udp_sessions >=
-                     nwsec_prof_->udp_active_session_limit)) {
-                ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].udp_session_drop_count++;
+            if (nwsec_prof_->udp_active_session_limit) {
+                if (hal::g_session_stats[id].udp_sessions >=
+                     nwsec_prof_->udp_active_session_limit) {
+                    ret = HAL_RET_FLOW_LIMT_REACHED;
+                    hal::g_session_stats[id].udp_session_drop_count++;
+                } else if (reeval_session_limit_ == false &&
+                     (hal::g_session_stats[id].udp_sessions + FTE_CTX_BATCH_SZ) >=
+                     nwsec_prof_->udp_active_session_limit) {
+                     reeval_session_limit_ = true;
+                }
             }
         } else if (key_.proto == types::IPPROTO_ICMP) {
-            if ((nwsec_prof_->icmp_active_session_limit) &&
-                    (hal::g_session_stats[id].icmp_sessions >=
-                     nwsec_prof_->icmp_active_session_limit)) {
-                ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].icmp_session_drop_count++;
+            if (nwsec_prof_->icmp_active_session_limit) {
+                if (hal::g_session_stats[id].icmp_sessions >=
+                     nwsec_prof_->icmp_active_session_limit) {
+                    ret = HAL_RET_FLOW_LIMT_REACHED;
+                    hal::g_session_stats[id].icmp_session_drop_count++;
+                } else if (reeval_session_limit_ == false &&
+                     (hal::g_session_stats[id].icmp_sessions + FTE_CTX_BATCH_SZ) >=
+                     nwsec_prof_->icmp_active_session_limit) {
+                     reeval_session_limit_ = true;
+                }
             }
         }
         break;
     case hal::FLOW_TYPE_L2: //intentional fall-through
     default:
-        if ((nwsec_prof_->other_active_session_limit) &&
-                (hal::g_session_stats[id].other_active_sessions >=
-                 nwsec_prof_->other_active_session_limit)) {
-            ret = HAL_RET_FLOW_LIMT_REACHED;
-            hal::g_session_stats[id].other_session_drop_count++;
+        if (nwsec_prof_->other_active_session_limit) {
+            if (hal::g_session_stats[id].other_active_sessions >=
+                 nwsec_prof_->other_active_session_limit) {
+                ret = HAL_RET_FLOW_LIMT_REACHED;
+                hal::g_session_stats[id].other_session_drop_count++;
+            } else if (reeval_session_limit_ == false &&
+                       (hal::g_session_stats[id].other_active_sessions + FTE_CTX_BATCH_SZ) >=
+                        nwsec_prof_->other_active_session_limit) {
+                reeval_session_limit_ = true;
+            }
         }
         break;
     }

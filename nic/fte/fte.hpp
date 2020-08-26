@@ -22,7 +22,6 @@ DEFINE_ENUM(pipeline_action_t, FTE_PIPELINE_ACTION_ENTRIES)
 #undef FTE_PIPELINE_ACTION_ENTRIES
 
 typedef std::function<pipeline_action_t(ctx_t &ctx)> exec_handler_t;
-typedef void (*feature_state_init_t)(void *state); // Init calback for feature specific state
 typedef pipeline_action_t (*session_delete_handler_t)(ctx_t &ctx); // Session delete callback
 typedef pipeline_action_t (*session_get_handler_t)(ctx_t &ctx); // Session get callback
 typedef pipeline_action_t (*session_update_handler_t)(ctx_t &ctx); // Session update callback

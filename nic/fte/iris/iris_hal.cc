@@ -7,6 +7,8 @@
 
 #ifdef SIM
 #include "nic/hal/plugins/proxy/proxy_plugin.hpp"
+#else
+#include "nic/hal/pd/cpupkt_api.hpp"
 #endif
 
 namespace fte {
@@ -84,7 +86,11 @@ hal_ret_t cpupkt_poll_receive_new (hal::pd::cpupkt_ctxt_t *ctx,
     args.pkt_batch = pkt_batch;
     pd_func_args.pd_cpupkt_poll_receive_new = &args;
 
+#ifdef SIM
     return hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_POLL_RECV_NEW, &pd_func_args);
+#else
+    return hal::pd::pd_cpupkt_poll_receive_new(&pd_func_args);
+#endif
 }
 
 hal_ret_t cpupkt_send(hal::pd::cpupkt_ctxt_t *ctx,
@@ -108,7 +114,11 @@ hal_ret_t cpupkt_send(hal::pd::cpupkt_ctxt_t *ctx,
     args.ring_number = CPU_SCHED_RING_ASQ;
 
     pd_func_args.pd_cpupkt_send = &args;
+#ifdef SIM
     return hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_SEND, &pd_func_args);
+#else
+    return hal::pd::pd_cpupkt_send(&pd_func_args);
+#endif
 }
 
 //------------------------------------------------------------------------------

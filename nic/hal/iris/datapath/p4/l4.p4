@@ -586,9 +586,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
                scratch_metadata.rflow_tcp_state != FLOW_STATE_FIN_RCVD) {
 
                modify_field (scratch_metadata.iflow_tcp_state, FLOW_STATE_FIN_RCVD);
-               // Redirect to ARM CPU for FTE to start aging this flow.
-               modify_field(capri_intrinsic.tm_replicate_en, TRUE);
-               modify_field(capri_intrinsic.tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY);
 
                // goto INITIATOR_TCP_SESSION_UPDATE
            }
@@ -597,9 +594,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
 
                modify_field (scratch_metadata.iflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD);
                modify_field (scratch_metadata.rflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD);
-               // Redirect to ARM CPU for FTE to start aging this flow.
-               modify_field(capri_intrinsic.tm_replicate_en, TRUE);
-               modify_field(capri_intrinsic.tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY);
                // goto INITIATOR_TCP_SESSION_UPDATE
            }
        }
@@ -1039,9 +1033,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
                scratch_metadata.iflow_tcp_state != FLOW_STATE_FIN_RCVD) {
 
                modify_field (scratch_metadata.rflow_tcp_state, FLOW_STATE_FIN_RCVD);
-               // Redirect to ARM CPU for FTE to start aging this flow.
-               modify_field(capri_intrinsic.tm_replicate_en, TRUE);
-               modify_field(capri_intrinsic.tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY);
                // goto RESPONDER_TCP_SESSION_UPDATE
            }
            if (tcp.flags & TCP_FLAG_FIN == TCP_FLAG_FIN and
@@ -1049,9 +1040,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
 
                modify_field (scratch_metadata.rflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD);
                modify_field (scratch_metadata.iflow_tcp_state, FLOW_STATE_BIDIR_FIN_RCVD);
-               // Redirect to ARM CPU for FTE to start aging this flow.
-               modify_field(capri_intrinsic.tm_replicate_en, TRUE);
-               modify_field(capri_intrinsic.tm_replicate_ptr, P4_NW_MCAST_INDEX_FIN_COPY);
                // goto RESPONDER_TCP_SESSION_UPDATE
            }
        }

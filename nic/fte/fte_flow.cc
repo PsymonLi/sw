@@ -293,13 +293,13 @@ hal_ret_t flow_t::build_rewrite_config(hal::flow_cfg_t &config,
 
     // If only l4 port is changed, use the IP from flow key
     if (!rewrite.valid_flds.sip && rewrite.valid_flds.sport) {
-        config.nat_sip.af = (key_.flow_type == hal::FLOW_TYPE_V4) ? IP_AF_IPV4 : IP_AF_IPV6;
-        config.nat_sip.addr = key_.sip;
+        config.nat_sip.af = (key_.flow_key.flow_type == hal::FLOW_TYPE_V4) ? IP_AF_IPV4 : IP_AF_IPV6;
+        config.nat_sip.addr = key_.flow_key.sip;
     }
 
     if (!rewrite.valid_flds.dip && rewrite.valid_flds.dport) {
-        config.nat_dip.af = (key_.flow_type == hal::FLOW_TYPE_V4) ? IP_AF_IPV4 : IP_AF_IPV6;
-        config.nat_dip.addr = key_.dip;
+        config.nat_dip.af = (key_.flow_key.flow_type == hal::FLOW_TYPE_V4) ? IP_AF_IPV4 : IP_AF_IPV6;
+        config.nat_dip.addr = key_.flow_key.dip;
     }
 
     snat = (rewrite.valid_flds.sip || rewrite.valid_flds.sport);
@@ -454,18 +454,18 @@ hal_ret_t flow_t::get_rewrite_config(const hal::flow_cfg_t &config,
 
     // sport
     if (config.nat_sport) {
-        if  (key_.proto == IP_PROTO_TCP) {
+        if  (key_.flow_key.proto == IP_PROTO_TCP) {
             HEADER_SET_FLD(*rewrite, tcp, sport, config.nat_sport);
-        } else  if  (key_.proto == IP_PROTO_UDP) {
+        } else  if  (key_.flow_key.proto == IP_PROTO_UDP) {
             HEADER_SET_FLD(*rewrite, udp, sport, config.nat_sport);
         }
     }
 
     // dport
     if (config.nat_dport) {
-        if  (key_.proto == IP_PROTO_TCP) {
+        if  (key_.flow_key.proto == IP_PROTO_TCP) {
             HEADER_SET_FLD(*rewrite, tcp, dport, config.nat_dport);
-        } else  if  (key_.proto == IP_PROTO_UDP) {
+        } else  if  (key_.flow_key.proto == IP_PROTO_UDP) {
             HEADER_SET_FLD(*rewrite, udp, dport, config.nat_dport);
         }
     }
@@ -477,7 +477,7 @@ hal_ret_t flow_t::to_config(hal::flow_cfg_t &config, hal::flow_pgm_attrs_t &attr
 {
     hal_ret_t ret;
 
-    config.key = key_;
+    config.key = key_.flow_key;
     config.dir = direction_; 
     memcpy(config.l2_info.smac, l2_info_.smac, sizeof(config.l2_info.smac));
     memcpy(config.l2_info.dmac, l2_info_.dmac, sizeof(config.l2_info.dmac));
@@ -633,7 +633,7 @@ void flow_t::from_config(const hal::flow_cfg_t &flow_cfg,
 {
     header_update_t *entry;
 
-    key_ = flow_cfg.key;
+    key_.flow_key = flow_cfg.key;
     valid_.key = 1;
 
     direction_ = (hal::flow_direction_t)flow_cfg.dir;

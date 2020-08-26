@@ -733,18 +733,7 @@ TEST_F(rpc_test, sunrpc_session_reset)
     CHECK_DENY_UDP(server_eph, client_eph, 54890, 49153, "c:49153 -> s:54890");
     CHECK_DENY_TCP(server_eph, client_eph, 32776, 59374, "c:59374 -> s:32776");
 
-    // TCP RST
-    tcp = Tins::TCP(SUNRPC_PORT, 5005);
-    tcp.flags(Tins::TCP::ACK);
-    tcp.flags(Tins::TCP::RST);
-    tcp.add_option(Tins::TCP::option(Tins::TCP::SACK_OK));
-    tcp.add_option(Tins::TCP::option(Tins::TCP::NOP));
-    tcp.mss(1200);
-    tcp.seq(2);
-    ret = inject_ipv4_pkt(fte::TCP_CLOSE_LIFQ, server_eph, client_eph, tcp);
-    EXPECT_EQ(ret, HAL_RET_OK);
-    EXPECT_EQ(ctx_.session(), session);
-
+    session->iflow->state = session::FLOW_TCP_STATE_RESET;
     ret = session_delete(session);
     ASSERT_EQ(ret, HAL_RET_OK);
 

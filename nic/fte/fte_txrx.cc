@@ -26,6 +26,7 @@
 #define FTE_EXPORT_STATS_SIZE     7
 #define FTE_LIFQ_METRICS_OFFSET   32
 #define FTE_MAX_SOFTQ_BATCH_SZ    128
+
 namespace hal {
 extern hal::session_stats_t  *g_session_stats;
 extern hal_state *g_hal_state;
@@ -41,6 +42,20 @@ void disable_fte()
 {
     fte_disabled_ = true;
 }
+
+void *
+fte_get_flow_key_func (void *entry)
+{
+    SDK_ASSERT(entry != NULL);
+    return (void *)&(((fte_flow_key_t *)entry)->flow_key);
+}
+
+uint32_t
+fte_flow_key_size ()
+{
+    return sizeof(hal::flow_key_t);
+}
+
 
 //------------------------------------------------------------------------------
 // FTE Instance
@@ -76,18 +91,19 @@ private:
     void                   *tcp_ctx_;
     mpscq_t                *softq_;
 
-    ctx_t                  *ctx_;
-    feature_state_t        *feature_state_;
+    ctx_t                  **ctx_;
+    feature_state_t        **feature_state_;
     size_t                  feature_state_size_;
     uint16_t                num_features_;
-    flow_t                 *iflow_;
-    flow_t                 *rflow_;
+    flow_t                 **iflow_;
+    flow_t                 **rflow_;
     ipc_logger             *logger_;
     fte_stats_t             stats_;
     bool                    bypass_fte_;
     timespec_t              t_old_ts_, t_cur_ts_;
     uint64_t                time_diff;
     bool                    quiesce_;
+    ht                      *fte_batch_flows_ht_; 
 
     void process_arq();
     void process_arq_new();
@@ -338,6 +354,12 @@ inst_t::inst_t(uint8_t fte_id) :
     if (!hal::g_hal_state->is_base_net()) {
         set_quiesce(false);
     }
+
+    ctx_ = (ctx_t **)HAL_CALLOC(hal::HAL_MEM_ALLOC_FTE, sizeof(ctx_t*)*FTE_CTX_BATCH_SZ);
+    for (uint8_t idx=0; idx<FTE_CTX_BATCH_SZ; idx++) ctx_[idx] = NULL;
+    feature_state_ = (feature_state_t **)HAL_CALLOC(hal::HAL_MEM_ALLOC_FTE, sizeof(feature_state_t*)*FTE_CTX_BATCH_SZ);
+    iflow_ = (flow_t **)HAL_CALLOC(hal::HAL_MEM_ALLOC_FTE, sizeof(flow_t*)*FTE_CTX_BATCH_SZ);
+    rflow_ = (flow_t **)HAL_CALLOC(hal::HAL_MEM_ALLOC_FTE, sizeof(flow_t*)*FTE_CTX_BATCH_SZ);
 }
 
 //------------------------------------------------------------------------------
@@ -349,32 +371,38 @@ void inst_t::ctx_mem_init()
     size_t fstate_size = feature_state_size(&num_features);
 
     // Check if we need to realloc due to new feature registration
-    if (ctx_ && (fstate_size != feature_state_size_ ||
+    for (uint8_t idx=0; idx<FTE_CTX_BATCH_SZ; idx++) {
+        if (ctx_[idx] && (fstate_size != feature_state_size_ ||
                  num_features != num_features_)) {
-        HAL_FREE(hal::HAL_MEM_ALLOC_FTE, ctx_);
-        ctx_ = NULL;
+            HAL_FREE(hal::HAL_MEM_ALLOC_FTE, ctx_);
+            ctx_[idx] = NULL;
+        }
     }
 
-    if (!ctx_) {
-        // Alloc memory for context, feature_state, iflows, rflows in one
-        // contiguous area
-        uint8_t *buff = (uint8_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE,
-                                   sizeof(ctx_t) + fstate_size +
-                                   2*ctx_t::MAX_STAGES*sizeof(flow_t));
-        ctx_ = (ctx_t *)buff;
-        buff += sizeof(ctx_t);
+    // Alloc memory for context, feature_state, iflows, rflows in one
+    // contiguous area
+    uint8_t *buff = (uint8_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE,
+                                ((sizeof(ctx_t) + fstate_size +
+                                2*ctx_t::MAX_STAGES*sizeof(flow_t)) * FTE_CTX_BATCH_SZ));
+    for (uint8_t idx=0; idx<FTE_CTX_BATCH_SZ; idx++) {
+         ctx_[idx] = (ctx_t *)buff;
+         buff += sizeof(ctx_t);
 
-        iflow_ = (flow_t *)buff;
-        buff += ctx_t::MAX_STAGES*sizeof(flow_t);
+         iflow_[idx] = (flow_t *)buff;
+         buff += ctx_t::MAX_STAGES*sizeof(flow_t);
 
-        rflow_ = (flow_t *)buff;
-        buff += ctx_t::MAX_STAGES*sizeof(flow_t);
+         rflow_[idx] = (flow_t *)buff;
+         buff += ctx_t::MAX_STAGES*sizeof(flow_t);
+          
+         feature_state_[idx] = (feature_state_t*)buff;
+         buff += fstate_size;
 
-        feature_state_ = (feature_state_t*)buff;
-        buff += fstate_size;
-        feature_state_size_ = fstate_size;
-        num_features_ = num_features;
+         feature_state_init(feature_state_[idx], num_features);
+         HAL_TRACE_DEBUG("Feature state: {:p}", (void *)feature_state_[idx]);
     }
+
+    feature_state_size_ = fstate_size;
+    num_features_ = num_features;
 }
 
 //------------------------------------------------------------------------------
@@ -420,7 +448,7 @@ void inst_t::start(sdk::lib::thread *curr_thread)
 
 #ifdef SIM
         fte::impl::process_pending_queues();
-        ctx_->process_tcp_queues(tcp_ctx_);
+        ctx_[0]->process_tcp_queues(tcp_ctx_);
 #endif
         curr_thread->punch_heartbeat();
 
@@ -782,117 +810,6 @@ static void free_flow_miss_pkt(uint8_t * pkt)
     hal::free_to_slab(hal::HAL_SLAB_CPU_PKT, (pkt-sizeof(cpu_rxhdr_t)));
 }
 
-//------------------------------------------------------------------------------
-// Process a pkt from arq
-//------------------------------------------------------------------------------
-void inst_t::process_arq()
-{
-    hal_ret_t ret;
-    cpu_rxhdr_t *cpu_rxhdr;
-    uint8_t *pkt = NULL;
-    size_t pkt_len;
-    bool   copied_pkt = true;
-    auto app_ctx = hal::app_redir::app_redir_ctx(*ctx_, false);
-
-    // read the packet
-    ret = fte::impl::cpupkt_poll_receive(arm_ctx_, &cpu_rxhdr, &pkt, &pkt_len, &copied_pkt);
-    if (ret == HAL_RET_RETRY) {
-        return;
-    }
-
-    if (ret != HAL_RET_OK) {
-        hal::g_hal_state->incr_fte_debug_stats(fte_id(), sys::CPU_PACKET_RX_FAILURE);
-        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: arm rx failed, ret={}", ret);
-        return;
-    }
-
-    /*
-     * In 'bypass_fte' mode, we just want to go thru the CPU PMD Rx and Tx paths. This
-     * mode is used for PMD PPS measurements/testing. So we'll just enqueue the packet
-     * to tx-q and send it out.
-     */
-    if (bypass_fte_) {
-
-        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "CPU-PMD: Bypassing FTE processing!! pkt={:p}\n", pkt);
-
-        update_rx_stats(cpu_rxhdr, pkt_len);
-        if (pkt) {
-
-            ctx_->set_pkt(cpu_rxhdr, pkt, pkt_len);
-            hal::pd::cpu_to_p4plus_header_t cpu_header = {0};
-
-            // Update Rx Counters
-            //update_rx_stats(cpu_rxhdr, pkt_len);
-
-            /*
-             * If the 'copied_pkt' is not set, then this is not a packet buffer
-             * that we've allocated from slab, so no need to free it.
-             */
-            ctx_->queue_txpkt(pkt, pkt_len, &cpu_header, NULL, HAL_LIF_CPU,
-                              CPU_ASQ_QTYPE, CPU_ASQ_QID, CPU_SCHED_RING_ASQ,
-                              types::WRING_TYPE_ASQ, copied_pkt ? free_flow_miss_pkt : NULL);
-
-            // write the packet
-            ret = ctx_->send_queued_pkts(arm_ctx_);
-            if (ret != HAL_RET_OK) {
-                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
-            }
-
-	    // The 'send_queued_pkts()' already updates tx stats.
-            //update_tx_stats(pkt_len);
-        }
-        return;
-    }
-
-    // Process pkt with db open
-    fte::impl::cfg_db_open();
-
-    do {
-
-        // Update Rx Counters
-        update_rx_stats(cpu_rxhdr, pkt_len);
-
-        // Init ctx_t
-        ret = ctx_->init(cpu_rxhdr, pkt, pkt_len, copied_pkt, iflow_, rflow_, feature_state_, num_features_);
-        if (ret != HAL_RET_OK) {
-            if (ret == HAL_RET_FTE_SPAN) {
-                HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: done processing span packet");
-                continue;
-            } else if (ret == HAL_RET_RETRANSMISSION) {
-                HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: retransmission packet");
-                goto send;
-            } else {
-                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init context, ret={}", ret);
-                break;
-            }
-        }
-
-        // process the packet and update flow table
-        if (app_ctx) {
-            app_ctx->set_arm_ctx(arm_ctx_);
-        }
-        ret = ctx_->process();
-        if (ret != HAL_RET_OK) {
-            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to process, ret={}", ret);
-
-            /*
-             * We'll set the drop in this error case, so the cpupkt resources
-             * can be reclaimed in 'send_queued_pkts' below.
-             */
-	        ctx_->set_drop();
-        }
-
-send:
-        // write the packets
-        ret = ctx_->send_queued_pkts(arm_ctx_);
-        if (ret != HAL_RET_OK) {
-            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
-        }
-    } while(false);
-
-    fte::impl::cfg_db_close();
-}
-
 thread_local hal::pd::cpupkt_pkt_batch_t cpupkt_batch;
 
 //------------------------------------------------------------------------------
@@ -905,7 +822,8 @@ void inst_t::process_arq_new ()
     cpu_rxhdr_t               *cpu_rxhdr;
     uint8_t                   *pkt = NULL;
     size_t                    pkt_len;
-    bool                      copied_pkt, drop_pkt;
+    bool                      copied_pkt, drop_pkt[FTE_CTX_BATCH_SZ];
+    uint8_t                   fte_batch = 0, max_batch = 0;
 
     // reset the batch packet count
     cpupkt_batch.pktcount = 0;
@@ -941,20 +859,20 @@ void inst_t::process_arq_new ()
 
             if (pkt) {
 
-                ctx_->set_pkt(cpu_rxhdr, pkt, pkt_len);
+                ctx_[fte_batch]->set_pkt(cpu_rxhdr, pkt, pkt_len);
                 hal::pd::cpu_to_p4plus_header_t cpu_header = {0};
 
                 // Update Rx Counters
                 //update_rx_stats(cpu_rxhdr, pkt_len);
 
-                ctx_->queue_txpkt(pkt, pkt_len, &cpu_header, NULL, HAL_LIF_CPU,
+                ctx_[fte_batch]->queue_txpkt(pkt, pkt_len, &cpu_header, NULL, HAL_LIF_CPU,
                                   CPU_ASQ_QTYPE, CPU_ASQ_QID, CPU_SCHED_RING_ASQ,
                                   types::WRING_TYPE_ASQ, copied_pkt ? free_flow_miss_pkt : NULL);
             }
         }
 
         // write the packet
-        ret = ctx_->send_queued_pkts_new(arm_ctx_);
+        ret = ctx_[fte_batch]->send_queued_pkts_new(arm_ctx_);
         if (ret != HAL_RET_OK) {
             HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
         }
@@ -969,28 +887,38 @@ void inst_t::process_arq_new ()
 
     HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Received {} packets", cpupkt_batch.pktcount);
 
-    for (npkt = 0; npkt < cpupkt_batch.pktcount; npkt++) {
+    npkt = 0;
+    fte_batch = 0;
+    while (npkt < cpupkt_batch.pktcount) {
+
+        fte_batch_flows_ht_ = sdk::lib::ht::factory(FTE_CTX_BATCH_SZ,
+                           fte_get_flow_key_func, fte_flow_key_size());
+        SDK_ASSERT(fte_batch_flows_ht_ != NULL);
 
         // Process pkt with db open
         fte::impl::cfg_db_open();
 
-        pkt = cpupkt_batch.pkts[npkt].pkt;
-        pkt_len = cpupkt_batch.pkts[npkt].pkt_len;
-        cpu_rxhdr = cpupkt_batch.pkts[npkt].cpu_rxhdr;
-        copied_pkt = cpupkt_batch.pkts[npkt].copied_pkt;
-        drop_pkt = false;
-
         HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "npkt {} pkt_len {}, pkt {:p}", npkt, pkt_len, pkt);
+        fte_batch = 0;
+
         do {
 
-            // Update Rx Counters
-            update_rx_stats(cpu_rxhdr, pkt_len);
+            drop_pkt[fte_batch] = false;
 
-            // Init ctx_t
-            ret = ctx_->init(cpu_rxhdr, pkt, pkt_len, copied_pkt, iflow_, rflow_, feature_state_, num_features_);
+            // Update Rx Counters
+            update_rx_stats(cpupkt_batch.pkts[npkt].cpu_rxhdr,
+                            cpupkt_batch.pkts[npkt].pkt_len);
+
+            bzero(iflow_[fte_batch], sizeof(flow_t)*ctx_t::MAX_STAGES);
+            bzero(rflow_[fte_batch], sizeof(flow_t)*ctx_t::MAX_STAGES);
+
+             // Init ctx_t
+            ret = ctx_[fte_batch]->init(cpupkt_batch.pkts[npkt].cpu_rxhdr, cpupkt_batch.pkts[npkt].pkt,
+                   cpupkt_batch.pkts[npkt].pkt_len, cpupkt_batch.pkts[npkt].copied_pkt, iflow_[fte_batch],
+                   rflow_[fte_batch], feature_state_[fte_batch], num_features_, fte_batch_flows_ht_);
             if (ret != HAL_RET_OK) {
-                if (ret == HAL_RET_FTE_SPAN) {
-                    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: done processing span packet");
+                if (ret == HAL_RET_ENTRY_EXISTS) {
+                    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: retransmit detected");
                 } else {
                     HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init context, ret={}", ret);
                 }
@@ -998,33 +926,38 @@ void inst_t::process_arq_new ()
                 /*
                  * Set drop bit so any packet-resources can be freed by the CPU-PMD.
                  */
-                drop_pkt = true;
-                ctx_->set_drop();
+                drop_pkt[fte_batch] = true;
+                ctx_[fte_batch]->set_drop();
             }
 
             if (is_quiesced()) {
                 HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "FTE in Quiesce mode -- dropping packet");
-                drop_pkt = true;
-                ctx_->set_drop();
+                drop_pkt[fte_batch] = true;
+                ctx_[fte_batch]->set_drop();
             }
 
-            if ((drop_pkt == false) && hal::g_session_stats &&
+            if ((drop_pkt[fte_batch] == false) && hal::g_session_stats &&
                 unlikely(hal::g_session_stats[id_].total_active_sessions >= 
                          hal::g_hal_state->get_max_sessions())) {
-                drop_pkt = true;
+                drop_pkt[fte_batch] = true;
                 hal::g_session_stats[id_].dsc_session_limit_drop_count++;
                 stats_.fte_hbm_stats->qstats.max_session_drop_pkts++;
-                ctx_->set_drop();
+                ctx_[fte_batch]->set_drop();
             }
+            fte_batch = fte_batch + 1;
 
-            if (!drop_pkt) {
+        } while (fte_batch < FTE_CTX_BATCH_SZ && ++npkt < cpupkt_batch.pktcount);
 
+        max_batch = fte_batch;
+        fte_batch = 0;
+        do {
+            if (!drop_pkt[fte_batch]) {
                 // process the packet and update flow table
-                auto app_ctx = hal::app_redir::app_redir_ctx(*ctx_, false);
+                auto app_ctx = hal::app_redir::app_redir_ctx(*ctx_[fte_batch], false);
                 if (app_ctx) {
                     app_ctx->set_arm_ctx(arm_ctx_);
                 }
-                ret = ctx_->process();
+                ret = ctx_[fte_batch]->process();
                 if (ret != HAL_RET_OK) {
                     HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failied to process, ret={}", ret);
 
@@ -1032,18 +965,27 @@ void inst_t::process_arq_new ()
                      * We'll set the drop in this error case, so the cpupkt resources
                      * can be reclaimed in 'send_queued_pkts' below.
                      */
-                    ctx_->set_drop();
+                    ctx_[fte_batch]->set_drop();
                 }
             }
+            fte_batch = fte_batch + 1;
+       } while (fte_batch < max_batch);
+
+       fte_batch = 0;
+       do {
 
             // write the packets
-            ret = ctx_->send_queued_pkts(arm_ctx_);
+            ret = ctx_[fte_batch]->send_queued_pkts(arm_ctx_);
             if (ret != HAL_RET_OK) {
                 HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
             }
-        } while(false);
+            fte_batch = fte_batch + 1;
+       } while(fte_batch < max_batch);
 
-        fte::impl::cfg_db_close();
+       fte::impl::cfg_db_close();
+       npkt = npkt + 1;
+
+       sdk::lib::ht::destroy(fte_batch_flows_ht_); 
     }
     HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Done processing {} packets", cpupkt_batch.pktcount);
 

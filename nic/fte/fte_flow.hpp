@@ -16,18 +16,26 @@ public:
     hal_ret_t header_rewrite(const header_rewrite_info_t &header_rewrite);
 
     void init(ctx_t *ctx) {
-        bzero(this, sizeof(*this));
         num_header_updates_ = 0;
         ctx_ = ctx;
     }
 
+    fte_flow_key_t* flow_key() {
+        return (&key_);
+    }
+   
+    sdk::lib::ht_ctxt_t* flow_key_ht_ctxt() {
+        return (&(key_.flow_ht_ctxt));
+    }
+
     hal_ret_t set_key(const hal::flow_key_t &key) {
-        key_ = key;
+        key_.flow_key = key;
+        key_.flow_ht_ctxt.reset();
         valid_.key = true;
         return HAL_RET_OK;
     }
     const hal::flow_key_t& key() const {
-        return key_;
+        return key_.flow_key;
     };
     bool valid_key() const {
         return valid_.key;
@@ -320,7 +328,7 @@ private:
         uint16_t direction:1;
      } valid_;
 
-    hal::flow_key_t           key_;                 // flow's key
+    fte_flow_key_t            key_;                 // flow's key
     hal::flow_pgm_attrs_t     attrs_;               // Restored flow attrs
     hal::flow_key_t           l2_info_;             // flow's l2 info
 
