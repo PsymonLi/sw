@@ -266,7 +266,7 @@ func TestMethodKvWrite(t *testing.T) {
 	rollbackFn := func(ctx context.Context, i interface{}, kvstore kvstore.Interface, key string, dryrun bool) {
 		rbCalled++
 	}
-	resAllocFn := func(ctx context.Context, i interface{}, kvstore kvstore.Interface, key string, dryrun bool) (apisrv.ResourceRollbackFn, error) {
+	resAllocFn := func(ctx context.Context, i interface{}, kvstore kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool) (apisrv.ResourceRollbackFn, error) {
 		allocCalled++
 		return rollbackFn, nil
 	}

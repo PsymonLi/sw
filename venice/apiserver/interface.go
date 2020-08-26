@@ -245,7 +245,7 @@ type GetReferencesFunc func(i interface{}) (map[string]apiintf.ReferenceObj, err
 type ResourceRollbackFn func(ctx context.Context, i interface{}, kvstore kvstore.Interface, key string, dryrun bool)
 
 // ResourceAllocFunc is the resource allocation callback
-type ResourceAllocFunc func(ctx context.Context, i interface{}, kvstore kvstore.Interface, key string, dryrun bool) (ResourceRollbackFn, error)
+type ResourceAllocFunc func(ctx context.Context, i interface{}, kvstore kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool) (ResourceRollbackFn, error)
 
 // ServerStreamHandler is a handler for custom server side streaming functions
 type ServerStreamHandler func(opts interface{}, stream grpc.ServerStream) error

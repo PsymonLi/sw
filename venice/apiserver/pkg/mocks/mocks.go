@@ -305,7 +305,7 @@ func (m *FakeMethod) MakeURIFunc(i interface{}) (string, error) {
 }
 
 // ResourceAllocFunc  is a mock method for testing
-func (m *FakeMethod) ResourceAllocFunc(ctx context.Context, i interface{}, kvstore kvstore.Interface, key string, dryrun bool) (apisrv.ResourceRollbackFn, error) {
+func (m *FakeMethod) ResourceAllocFunc(ctx context.Context, i interface{}, kvstore kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, apidryrun bool) (apisrv.ResourceRollbackFn, error) {
 	return m.ResourceRollbackFunc, nil
 
 }

@@ -699,7 +699,7 @@ func (m *MethodHdlr) HandleInvocation(ctx context.Context, i interface{}) (retRe
 			}
 		}()
 		for _, f := range m.resourceAllocFn {
-			rollbackFn, err := f(ctx, i, kv, key, dryRun)
+			rollbackFn, err := f(ctx, i, kv, txn, key, oper, dryRun)
 			if err != nil {
 				return nil, errPreOpChecksFailed.makeError(i, []string{err.Error()}, "")
 			}

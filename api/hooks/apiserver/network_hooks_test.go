@@ -1304,14 +1304,15 @@ func TestVNIDResorceMap(t *testing.T) {
 		},
 	}
 
-	fn, err := nh.networkVNIReserve(ctx, netw, kvs, "/test", false)
+	txn := &mocks.FakeTxn{}
+	fn, err := nh.networkVNIReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	AssertOk(t, err, "VNI reserve should have passed")
 	Assert(t, len(nh.vnidMap) == 5, "expecting 5 VNIDS to be restored, got %v", len(nh.vnidMap))
 
 	fn(ctx, netw, kvs, "/test", false)
 	Assert(t, len(nh.vnidMap) == 4, "expecting 5 VNIDS to be restored, got %v", len(nh.vnidMap))
 
-	fn, err = nh.vrouterVNIReserve(ctx, vrouter, kvs, "/test", false)
+	fn, err = nh.vrouterVNIReserve(ctx, vrouter, kvs, txn, "/test", apiintf.UpdateOper, false)
 	AssertOk(t, err, "VNI reserve should have passed")
 	Assert(t, len(nh.vnidMap) == 5, "expecting 5 VNIDS to be restored, got %v", len(nh.vnidMap))
 
@@ -1319,11 +1320,11 @@ func TestVNIDResorceMap(t *testing.T) {
 	Assert(t, len(nh.vnidMap) == 4, "expecting 5 VNIDS to be restored, got %v", len(nh.vnidMap))
 
 	netw.Spec.VxlanVNI = 10001
-	fn, err = nh.networkVNIReserve(ctx, netw, kvs, "/test", false)
+	fn, err = nh.networkVNIReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	Assert(t, err != nil, "VNI reserve should have failed")
 
 	vrouter.Spec.VxLanVNI = 10001
-	fn, err = nh.vrouterVNIReserve(ctx, vrouter, kvs, "/test", false)
+	fn, err = nh.vrouterVNIReserve(ctx, vrouter, kvs, txn, "/test", apiintf.UpdateOper, false)
 	Assert(t, err != nil, "VNI reserve should have failed")
 
 	// should fail because key cannot change
@@ -1340,7 +1341,7 @@ func TestVNIDResorceMap(t *testing.T) {
 	netw.Spec.IPv4Subnet = "10.1.1.0/24"
 	netw.Spec.VirtualRouter = "vrf1"
 
-	_, err = nh.networkSubnetReserve(ctx, netw, kvs, "/test", false)
+	_, err = nh.networkSubnetReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	AssertOk(t, err, "expecting to succeed")
 	Assert(t, len(nh.netwMap) == 1, "expecting size of map to be 1")
 	Assert(t, len(nh.netwMap["tenant1/vrf1"]) == 1, "expecting size of network map to be 1")
@@ -1349,7 +1350,7 @@ func TestVNIDResorceMap(t *testing.T) {
 	netw.Spec.VirtualRouter = "vrf1"
 	netw.Name = "net2"
 
-	_, err = nh.networkSubnetReserve(ctx, netw, kvs, "/test", false)
+	_, err = nh.networkSubnetReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	AssertOk(t, err, "expecting to succeed")
 	Assert(t, len(nh.netwMap) == 1, "expecting size of map to be 1")
 	Assert(t, len(nh.netwMap["tenant1/vrf1"]) == 2, "expecting size of network map to be 2 got %d", len(nh.netwMap["tenant1/vrf1"]))
@@ -1358,7 +1359,7 @@ func TestVNIDResorceMap(t *testing.T) {
 	netw.Spec.VirtualRouter = "vrf1"
 	netw.Name = "net3"
 
-	_, err = nh.networkSubnetReserve(ctx, netw, kvs, "/test", false)
+	_, err = nh.networkSubnetReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	Assert(t, err != nil, "expecting to fail")
 	Assert(t, len(nh.netwMap) == 1, "expecting size of map to be 1")
 	Assert(t, len(nh.netwMap["tenant1/vrf1"]) == 2, "expecting size of network map to be 2")
@@ -1367,7 +1368,7 @@ func TestVNIDResorceMap(t *testing.T) {
 	netw.Spec.VirtualRouter = "vrf2"
 	netw.Name = "net1"
 
-	_, err = nh.networkSubnetReserve(ctx, netw, kvs, "/test", false)
+	_, err = nh.networkSubnetReserve(ctx, netw, kvs, txn, "/test", apiintf.UpdateOper, false)
 	AssertOk(t, err, "expecting to succeed")
 	Assert(t, len(nh.netwMap) == 2, "expecting size of map to be 2")
 	Assert(t, len(nh.netwMap["tenant1/vrf1"]) == 2, "expecting size of network map to be 2")

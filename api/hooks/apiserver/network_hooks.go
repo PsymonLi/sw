@@ -736,7 +736,7 @@ func (h *networkHooks) updateAuthStatus(ctx context.Context, kvs kvstore.Interfa
 	return resp, nil
 }
 
-func (h *networkHooks) networkVNIReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, key string, dryrun bool) (apiserver.ResourceRollbackFn, error) {
+func (h *networkHooks) networkVNIReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool) (apiserver.ResourceRollbackFn, error) {
 	n, ok := i.(network.Network)
 	if !ok {
 		log.Errorf("networkVNIReserve; invalid kind")
@@ -765,7 +765,7 @@ func (h *networkHooks) networkVNIReserve(ctx context.Context, i interface{}, kvs
 	return nil, nil
 }
 
-func (h *networkHooks) networkSubnetReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, key string, dryrun bool) (apiserver.ResourceRollbackFn, error) {
+func (h *networkHooks) networkSubnetReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool) (apiserver.ResourceRollbackFn, error) {
 	n, ok := i.(network.Network)
 	if !ok {
 		log.Errorf("networkSubnetReserve; invalid kind")
@@ -807,7 +807,7 @@ func (h *networkHooks) networkSubnetReserve(ctx context.Context, i interface{}, 
 	}, nil
 }
 
-func (h *networkHooks) vrouterVNIReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, key string, dryrun bool) (apiserver.ResourceRollbackFn, error) {
+func (h *networkHooks) vrouterVNIReserve(ctx context.Context, i interface{}, kvs kvstore.Interface, kvtxn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool) (apiserver.ResourceRollbackFn, error) {
 	n, ok := i.(network.VirtualRouter)
 	if !ok {
 		log.Errorf("vrouterVNIReserve; invalid kind")
