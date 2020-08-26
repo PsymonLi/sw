@@ -16,6 +16,7 @@ testcases:
             sleep             : 300
             naples_upgr_pkg   : "naples_fw_issu.tar"
             iperf             : True
+            background_ping   : True
     
     -   name: UPGRADE_HITLESS_SCALE
         testcase    : testcases.upgrade.hitless
@@ -24,8 +25,9 @@ testcases:
         args                   :
             sleep              : 300
             naples_upgr_pkg    : "naples_fw_issu.tar"
+            background_ping    : True
             iperf              : True
-            Trex               : True
+            trex               : True
             security_profile   :
                 conntrack      : True
                 tcpidletimeout : 90

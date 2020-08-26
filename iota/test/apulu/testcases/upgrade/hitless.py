@@ -13,8 +13,10 @@ import iota.test.apulu.utils.misc as misc_utils
 import iota.test.apulu.utils.pdsutils as pds_utils
 from iota.test.apulu.testcases.upgrade.status import *
 import iota.test.apulu.testcases.networking.trex_traffic_scale as traffic_gen
+import iota.test.apulu.testcases.networking.utils as utils
 
 SKIP_CONNECTIVITY_FAILURE = False
+MIN_WORKLOAD_PAIR = 3
 
 def check_max_pktloss_limit(tc, pkt_loss_duration):
     if pkt_loss_duration != 0:
@@ -30,9 +32,9 @@ def check_max_pktloss_limit(tc, pkt_loss_duration):
     return api.types.status.SUCCESS
 
 def ping_traffic_stop_and_verify(tc):
-    if not tc.background:
+    if not tc.background_ping:
         return api.types.status.SUCCESS
-    
+
     if ping.TestTerminateBackgroundPing(tc, tc.pktsize,\
                                         pktlossverif=tc.pktlossverif) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Ping background command termination.")
@@ -68,19 +70,69 @@ def check_pds_agent_debug_data(tc):
     return api.types.status.SUCCESS
 
 def ChooseWorkLoads(tc):
+    def __find_unique_workload_pairs(workload_pairs):
+        workloads = set()
+        unique_workload_pairs = []
+        for w1, w2 in workload_pairs:
+            if w1 not in workloads and w2 not in workloads:
+                unique_workload_pairs.append((w1, w2))
+                workloads.add(w1)
+                workloads.add(w2)
+        return unique_workload_pairs
+
+    def __expand_pairs(pairs_name):
+        for pair_name in pairs_name:
+            pairs = getattr(tc, pair_name, None)
+            tmp = []
+            if not pairs:
+                continue
+            for w1, w2 in pairs:
+                tmp.append([w2, w1])
+            pairs += tmp
+
     tc.workload_pairs = config_api.GetPingableWorkloadPairs(
             wl_pair_type = config_api.WORKLOAD_PAIR_TYPE_REMOTE_ONLY)
-    if len(tc.workload_pairs) == 0:
-        api.Logger.error("Skipping Testcase due to no workload pairs.")
+    workload_pairs = __find_unique_workload_pairs(tc.workload_pairs)
+    if len(workload_pairs) < MIN_WORKLOAD_PAIR:
+        api.Logger.error(f"Skipping Testcase due to no workload pairs less than {MIN_WORKLOAD_PAIR}")
         tc.skip = True
         return api.types.status.FAILURE
+
+    workloads_per_app = int(len(workload_pairs) / MIN_WORKLOAD_PAIR)
+    ipref_start = workloads_per_app
+    trex_start = workloads_per_app * 2
+
+    if tc.background_ping and tc.iperf and tc.trex:
+        tc.background_ping_pairs = workload_pairs[:ipref_start]
+        tc.iperf_pairs = workload_pairs[ipref_start : trex_start]
+        tc.trex_pairs = workload_pairs[trex_start:]
+    elif tc.background_ping and tc.iperf and not tc.trex:
+        tc.background_ping_pairs = workload_pairs[:ipref_start]
+        tc.iperf_pairs = workload_pairs[ipref_start:]
+    elif tc.background_ping and not tc.iperf and tc.trex:
+        tc.background_ping_pairs = workload_pairs[:ipref_start]
+        tc.trex_pairs = workload_pairs[ipref_start:]
+    elif tc.background_ping and not tc.iperf and not tc.trex:
+        tc.background_ping_pairs = workload_pairs
+    elif not tc.background_ping and tc.iperf and tc.trex:
+        tc.iperf_pairs = workload_pairs[:trex_start]
+        tc.trex_pairs = workload_pairs[trex_start:]
+    elif not tc.background_ping and tc.iperf and not tc.trex:
+        tc.iperf_pairs = workload_pairs
+    elif not tc.background_ping and not tc.iperf and tc.trex:
+        tc.trex_pairs = workload_pairs
+
+    __expand_pairs(["background_ping_pairs", "iperf_pairs", "trex_pairs"])
+
     return api.types.status.SUCCESS
 
 def VerifyConnectivity(tc):
     if api.IsDryrun():
-        return api.types.status.SUCCESS
+       return api.types.status.SUCCESS
     # ensure connectivity with foreground ping before test
-    if ping.TestPing(tc, 'user_input', "ipv4", pktsize=128, interval=0.001, \
+    tc.workload_pairs = config_api.GetPingableWorkloadPairs(
+            wl_pair_type = config_api.WORKLOAD_PAIR_TYPE_REMOTE_ONLY)
+    if ping.TestPing(tc, "user_input", "ipv4", pktsize=128, interval=0.001, \
             count=5) != api.types.status.SUCCESS:
         api.Logger.info("Connectivity Verification Failed")
         return api.types.status.FAILURE
@@ -91,25 +143,39 @@ def PacketTestSetup(tc):
     tc.bg_cmd_resp = None
     tc.pktsize = 128
     tc.duration = tc.sleep
-    tc.background = True
     tc.pktlossverif = False
     tc.interval = 0.001 #1msec
     tc.count = int(tc.duration / tc.interval)
 
     # start background ping before start of test
-    if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
-            count=tc.count, pktlossverif=tc.pktlossverif, \
-            background=tc.background, hping3=True) != api.types.status.SUCCESS:
-        api.Logger.error("Failed in triggering background Ping during Setup")
-        tc.skip = True
-        return api.types.status.FAILURE
+    if tc.background_ping:
+        tc.workload_pairs = tc.background_ping_pairs
+        if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
+                count=tc.count, pktlossverif=tc.pktlossverif, \
+                background=tc.background_ping, hping3=True) != api.types.status.SUCCESS:
+            api.Logger.error("Failed in triggering background Ping during Setup")
+            tc.skip = True
+            return api.types.status.FAILURE
 
     if tc.iperf:
-        out = traffic.iperfWorkloads(tc.workload_pairs, time=tc.duration, \
+        out = traffic.iperfWorkloads(tc.iperf_pairs, time=tc.duration, \
                                     proto="udp", bandwidth="100M", \
                                     num_of_streams=32, sleep_time=30, \
                                     packet_size=64, background=True)
         tc.cmd_desc, tc.server_resp, tc.client_resp = out[0], out[1], out[2]
+
+    # Start Trex
+    if tc.trex:
+        tc.trex_peers = traffic_gen.find_workload_peers(tc.trex_pairs)
+        max_active_flow = tc.iterators.max_active_flow
+        cps = tc.iterators.cps
+        duration = getattr(tc.iterators, "duration", None)
+        if traffic_gen.start_trex_traffic(tc.trex_peers, duration,
+                                          max_active_flow,
+                                          cps) != api.types.status.SUCCESS:
+            api.Logger.error("Failed to start Trex traffic")
+            tc.skip = True
+            return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def Setup(tc):
@@ -121,6 +187,8 @@ def Setup(tc):
     tc.pkg_name = getattr(tc.args, "naples_upgr_pkg", "naples_fw.tar")
     tc.node_selection = tc.iterators.selection
     tc.iperf = getattr(tc.args, "iperf", False)
+    tc.trex = getattr(tc.args, "trex", False)
+    tc.background_ping = getattr(tc.args, "background_ping", True)
     tc.failure_stage = getattr(tc.args, "failure_stage", None)
     tc.failure_reason = getattr(tc.args, "failure_reason", None)
 
@@ -190,12 +258,12 @@ def Setup(tc):
         api.Logger.error("Failed in Packet Test setup.")
         return result
 
-    # Start  Trex
-    if traffic_gen.start_trex_traffic(tc) != api.types.status.SUCCESS:
-        api.Logger.error("Failed to start Trex traffic")
+    # Update security profile
+    if utils.UpdateSecurityProfileTimeouts(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed to update the security profile")
         tc.skip = True
-        return api.types.status.FAILURE
-
+        result = api.types.status.FAILURE
+        
     api.Logger.info(f"Upgrade: Setup returned {result}")
     return result
 
@@ -299,7 +367,8 @@ def Verify(tc):
         return result
 
     # Stop Trex traffic
-    traffic_gen.stop_trex_traffic(tc)
+    if tc.trex:
+        traffic_gen.stop_trex_traffic(tc.trex_peers)
 
     # Check upgrade status
     if tc.failure_stage != None:
@@ -373,6 +442,7 @@ def Verify(tc):
 
 def Teardown(tc):
     result = api.types.status.SUCCESS
+    utils.RollbackSecurityProfileTimeouts(tc)
     req = api.Trigger_CreateExecuteCommandsRequest()
     for node in tc.nodes:
         api.Trigger_AddNaplesCommand(req, node, "rm -rf /data/upgrade_to_same_firmware_allowed")

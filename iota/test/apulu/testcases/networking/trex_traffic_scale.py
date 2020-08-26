@@ -3,8 +3,6 @@ import os
 import traceback
 import iota.harness.api as api
 import iota.harness.infra.glopts as glopts
-import iota.test.apulu.testcases.networking.utils as utils
-import iota.test.apulu.config.api as config_api
 from iota.test.iris.utils.trex_wrapper import TRexIotaWrapper
 
 
@@ -23,19 +21,19 @@ def __print_peers(peers):
     return out
 
 
-def __get_role(tc):
+def __get_role(workload_peers):
     '''
     Gets client or server role for input workload
     '''
     role = ['client', 'server']
     naples_nodes = api.GetWorkloadNodeHostnames()
 
-    for w in tc.workloadPeers.keys():
+    for w in workload_peers.keys():
         idx = naples_nodes.index(w.node_name)
         w.role = role[idx % 2]
 
 
-def __get_tunables(tc):
+def __get_tunables(workload_peers, max_active_flow, cps):
     def get_client_server_pair(w, peers):
         out = []
         if w.role == "server":
@@ -46,47 +44,37 @@ def __get_tunables(tc):
                 out.append("%s,%s" % (p.ip_address, w.ip_address))
         return ":".join(out)
 
-    for w, peers in tc.workloadPeers.items():
+    for w, peers in workload_peers.items():
         w.tunables = {}
         w.tunables['client_server_pair'] = get_client_server_pair(w, peers)
-        w.tunables['cps'] = int(
-            (tc.iterators.cps) / (len(tc.workloadPeers) / 2))
+        w.tunables['cps'] = int((cps) / (len(workload_peers) / 2))
         w.tunables['max_active_flow'] = int(
-            (tc.iterators.max_active_flow) / (len(tc.workloadPeers) / 2))
+            (max_active_flow) / (len(workload_peers) / 2))
 
 
-def __get_profile_path(tc):
+def __get_profile_path():
     profile_path = 'iota/test/apulu/testcases/networking/trex_profile/http_udp_high_active_flow_apulu.py'
-    tc.profile_path = os.path.join(glopts.GlobalOptions.topdir, profile_path)
+    return os.path.join(glopts.GlobalOptions.topdir, profile_path)
 
 
-def __get_trex_settings(tc):
-    __get_profile_path(tc)
-    __get_tunables(tc)
+def find_workload_peers(workload_pairs):
+    workload_peers = {}
 
-
-def __find_workload_peers(tc):
-    tc.workloadPeers = {}
-    
-    for w1, w2 in config_api.GetPingableWorkloadPairs(
-            wl_pair_type=config_api.WORKLOAD_PAIR_TYPE_REMOTE_ONLY):
-        if w1 not in tc.workloadPeers and w2 not in tc.workloadPeers:
-            peers = tc.workloadPeers.get(w1, [])
+    for w1, w2 in workload_pairs:
+        if w1 not in workload_peers and w2 not in workload_peers:
+            peers = workload_peers.get(w1, [])
             peers.append(w2)
-            tc.workloadPeers[w1] = peers
+            workload_peers[w1] = peers
 
-            peers = tc.workloadPeers.get(w2, [])
+            peers = workload_peers.get(w2, [])
             peers.append(w1)
-            tc.workloadPeers[w2] = peers
+            workload_peers[w2] = peers
 
-    __get_role(tc)
-
-    return api.types.status.SUCCESS if len(
-        tc.workloadPeers) else api.types.status.FAILURE
+    return workload_peers
 
 
-def __stop_trex(tc):
-    for w in tc.workloadPeers.keys():
+def __stop_trex(workload_peers):
+    for w in workload_peers.keys():
         if not w.trexHandle:
             continue
         try:
@@ -102,31 +90,32 @@ def __stop_trex(tc):
     return api.types.status.SUCCESS
 
 
-def __start_trex(tc):
+def __start_trex(workload_peers,
+                 duration=None,
+                 cps=1,
+                 latency_pps=10,
+                 nc=True):
     if api.GlobalOptions.dryrun:
         return api.types.status.SUCCESS
 
-    latency_pps = getattr(tc.args, "latency_pps", 10)
-    duration = getattr(tc.iterators, "duration", None)
-    duration = int(duration) if duration else None
     api.Logger.info("Starting traffic for duration %s sec @cps %s" %
-                    (duration, tc.iterators.cps))
+                    (duration, cps))
     try:
-        for w in tc.workloadPeers.keys():
+        for w in workload_peers:
             w.trexHandle.start(duration=duration,
                                latency_pps=latency_pps,
-                               nc=True)
+                               nc=nc)
     except Exception as e:
         traceback.print_exc()
         api.Logger.error("Failed to start traffic on %s : %s" %
                          (w.workload_name, e))
-        __stop_trex(tc)
+        __stop_trex(workload_peers)
         return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 
-def __connect_trex(tc):
-    for w, peers in tc.workloadPeers.items():
+def __connect_trex(worload_peers, profile_path):
+    for w, peers in worload_peers.items():
         api.Logger.info("%s <--> %s" %
                         (__print_workload_info(w), __print_peers(peers)))
         try:
@@ -145,7 +134,7 @@ def __connect_trex(tc):
             if not api.GlobalOptions.dryrun:
                 w.trexHandle.connect()
                 w.trexHandle.reset()
-                w.trexHandle.load_profile(tc.profile_path, w.tunables)
+                w.trexHandle.load_profile(profile_path, w.tunables)
                 w.trexHandle.clear_stats()
         except Exception as e:
             traceback.print_exc()
@@ -155,40 +144,27 @@ def __connect_trex(tc):
     return api.types.status.SUCCESS
 
 
-def start_trex_traffic(tc):
+def start_trex_traffic(workload_peers,
+                       duration=None,
+                       max_active_flow=10000,
+                       cps=1000):
     '''
     Start the trex application on workload and pump the traffic
     '''
-    if not getattr(tc.args, "Trex", False):
-        return api.types.status.SUCCESS
+    __get_role(workload_peers)
+    __get_tunables(workload_peers, max_active_flow, cps)
 
-    if utils.UpdateSecurityProfileTimeouts(tc) != api.types.status.SUCCESS:
-        api.Logger.error("Failed to update the security profile")
-        return api.types.status.FAILURE
-
-    if not hasattr(tc, "workloadPeers") and  \
-        __find_workload_peers(tc) != api.types.status.SUCCESS:
-        return api.types.status.FAILURE
-
-    __get_trex_settings(tc)
-
-    if __connect_trex(tc) != api.types.status.SUCCESS:
+    if __connect_trex(workload_peers,
+                      __get_profile_path()) != api.types.status.SUCCESS:
         api.Logger.error("Failed to connect trex")
         return api.types.status.FAILURE
 
-    if __start_trex(tc) != api.types.status.SUCCESS:
+    if __start_trex(workload_peers, duration, cps) != api.types.status.SUCCESS:
         api.Logger.error("Failed to connect trex")
         return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
 
 
-def stop_trex_traffic(tc):
-    if not getattr(tc.args, "Trex", False):
-        return api.types.status.SUCCESS
-
-    if hasattr(tc,
-               "selected_sec_profile_objs") and tc.selected_sec_profile_objs:
-        for obj in tc.selected_sec_profile_objs:
-            obj.RollbackUpdate()
-    return __stop_trex(tc)
+def stop_trex_traffic(workload_peers):
+    return __stop_trex(workload_peers)

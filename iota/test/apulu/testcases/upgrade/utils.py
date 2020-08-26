@@ -149,11 +149,11 @@ def VerifyUpgLog(nodes, log_dir):
             if not records:
                 api.Logger.error(f"Failed to dissect the upgrade logs from {node}")
                 return api.types.status.FAILURE
+            
+            __display_upg_state_transition(node, records)
 
             if __find_err_in_upg_log(node, records) != api.types.status.SUCCESS:
                 return api.types.status.FAILURE
-
-            __display_upg_state_transition(node, records)
 
     return api.types.status.SUCCESS
 

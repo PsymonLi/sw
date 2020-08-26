@@ -37,3 +37,13 @@ def UpdateSecurityProfileTimeouts(tc):
         res, resp = pdsctl.ExecutePdsctlShowCommand(node, "security-profile",
                                      None, yaml=False, print_op=True)
     return ret
+
+def RollbackSecurityProfileTimeouts(tc):
+    if hasattr(tc,
+               "selected_sec_profile_objs") and tc.selected_sec_profile_objs:
+        for obj in tc.selected_sec_profile_objs:
+            if not obj.RollbackUpdate():
+                return api.types.status.FAILURE
+
+    return api.types.status.SUCCESS
+     
