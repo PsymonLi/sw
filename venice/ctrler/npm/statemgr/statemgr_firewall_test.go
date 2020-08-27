@@ -775,7 +775,7 @@ func TestNetworkSecurityPolicyPropogation(t *testing.T) {
 		}
 		prop := &sgp.NetworkSecurityPolicy.Status.PropagationStatus
 		log.Infof("Got propagation status: %#v", prop)
-		if prop.Updated != 0 || prop.Pending != 1 || prop.GenerationID != "1" || prop.MinVersion != "" {
+		if prop.Updated != 0 || prop.Pending == 1 || prop.GenerationID != "1" || prop.MinVersion != "" {
 			return true, nil
 		}
 

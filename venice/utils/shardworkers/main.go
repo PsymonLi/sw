@@ -22,6 +22,10 @@ const (
 	idle
 )
 
+var (
+	workerQueueDepth = 1024
+)
+
 // number of times to retry the operation
 const maxRetryCount = 40
 
@@ -151,9 +155,6 @@ func NewWorkerPool(name string, numOfWorkers uint32) *WorkerPool {
 
 //Start start all the workers.
 func (wp *WorkerPool) Start() error {
-	//Each workers max queue depth is 1k
-	workerQueueDepth := 1024
-
 	for i := 0; i < int(wp.numberOfWorkers); i++ {
 		wp.workers = append(wp.workers, &worker{id: i, pool: wp.name,
 			queue: make(chan workCtx, workerQueueDepth), workMaster: wp})
@@ -167,6 +168,11 @@ func (wp *WorkerPool) Start() error {
 	wp.state = running
 
 	return nil
+}
+
+//SetWorkerQueueDepth sets depth
+func (wp *WorkerPool) SetWorkerQueueDepth(depth int) {
+	workerQueueDepth = depth
 }
 
 //Running are worker pool running

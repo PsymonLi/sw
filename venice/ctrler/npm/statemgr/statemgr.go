@@ -3,6 +3,7 @@
 package statemgr
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ import (
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
 	"github.com/pensando/sw/venice/utils/runtime"
+	"github.com/pensando/sw/venice/utils/shardworkers"
 )
 
 var singletonStatemgr Statemgr
@@ -33,6 +35,12 @@ var numberofWorkersPerKind = 8
 
 // maxUpdateChannelSize is the size of the update pending channel
 const maxUpdateChannelSize = 65536
+
+//each worker queue depth depending on max number of object updates in flight
+const periodicUpdaterWorkers = 4
+
+//each worker queue depth depending on max number of object updates in flight
+const workerQueueDepth = 65536
 
 // updatable is an interface all updatable objects have to implement
 type updatable interface {
@@ -83,8 +91,8 @@ type Topics struct {
 // Statemgr is the object state manager
 type Statemgr struct {
 	sync.Mutex
-	mbus                  *nimbus.MbusServer                  // nimbus server
-	periodicUpdaterQueue  chan updatable                      // queue for periodically writing items back to apiserver
+	mbus                  *nimbus.MbusServer // nimbus server
+	periodicUpdater       *shardworkers.WorkerPool
 	dscObjUpdateQueue     chan dscUpdateObj                   // queue for sending updates after DSC update
 	propogationTopoUpdate chan *memdb.PropagationStTopoUpdate // queue for updates from memdb for propagation status on a topo change
 	garbageCollector      *GarbageCollector                   // nw object garbage collector
@@ -406,7 +414,7 @@ func (sm *Statemgr) StopGarbageCollection() {
 func (sm *Statemgr) Stop() error {
 	log.Infof("Statemanager stop called")
 	sm.ctrler.Stop()
-	close(sm.periodicUpdaterQueue)
+	sm.periodicUpdater.Stop()
 	sm.StopGarbageCollection()
 	return nil
 }
@@ -608,10 +616,6 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		o(sm)
 	}
 
-	// newPeriodicUpdater creates a new go subroutines
-	// Given that objects returned by `NewStatemgr` should live for the duration
-	// of the process, we don't have to worry about leaked go subroutines
-	sm.periodicUpdaterQueue = newPeriodicUpdater()
 	sm.dscObjUpdateQueue = newdscOpdateObjNotifier()
 
 	sm.newPropagationTopoUpdater()
@@ -631,6 +635,11 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		logger.Info("svc", name, " complete registration")
 		svc.CompleteRegistration()
 	}
+
+	// newPeriodicUpdater creates a new go subroutines
+	// Given that objects returned by `NewStatemgr` should live for the duration
+	// of the process, we don't have to worry about leaked go subroutines
+	sm.periodicUpdater = newPeriodicUpdater()
 
 	sm.EnableSelectivePushForKind("Profile")
 
@@ -815,35 +824,23 @@ func periodicKey(obj updatable) string {
 	return obj.GetKind() + "/" + obj.GetKey()
 }
 
-func runPeriodicUpdater(queue chan updatable) {
-	ticker := time.NewTicker(1 * time.Second)
-	pending := make(map[string]updatable)
-	shouldExit := false
-	for {
-		select {
-		case obj, ok := <-queue:
-			if ok == false {
-				shouldExit = true
-				continue
-			}
-			pending[periodicKey(obj)] = obj
-		case _ = <-ticker.C:
-			failedUpdate := []updatable{}
-			for _, obj := range pending {
-				if err := obj.Write(); err != nil {
-					failedUpdate = append(failedUpdate, obj)
-				}
-			}
-			pending = make(map[string]updatable)
-			for _, obj := range failedUpdate {
-				pending[periodicKey(obj)] = obj
-			}
-			if shouldExit == true {
-				log.Warnf("Exiting periodic updater")
-				return
-			}
-		}
+type periodicCtx struct {
+	obj updatable
+}
+
+func (ptx *periodicCtx) GetKey() string {
+	return ptx.obj.GetKey()
+}
+
+func (ptx *periodicCtx) WorkFunc(context context.Context) error {
+
+	if err := ptx.obj.Write(); err != nil && !strings.Contains(err.Error(), "FailedPrecondition") {
+		//requeue
+		sm := MustGetStatemgr()
+		sm.PeriodicUpdaterPush(ptx.obj)
 	}
+
+	return nil
 }
 
 // runDscObjectNotification process
@@ -881,10 +878,11 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 }
 
 // NewPeriodicUpdater creates a new periodic updater
-func newPeriodicUpdater() chan updatable {
-	updateChan := make(chan updatable, maxUpdateChannelSize)
-	go runPeriodicUpdater(updateChan)
-	return updateChan
+func newPeriodicUpdater() *shardworkers.WorkerPool {
+	workerPool := shardworkers.NewWorkerPool("periodic-updater", periodicUpdaterWorkers)
+	workerPool.SetWorkerQueueDepth(workerQueueDepth)
+	workerPool.Start()
+	return workerPool
 }
 
 // newdscOpdateObjUpdater creates a processes dsc update asynchronusly.
@@ -896,7 +894,7 @@ func newdscOpdateObjNotifier() chan dscUpdateObj {
 
 // PeriodicUpdaterPush enqueues an object to the periodic updater
 func (sm *Statemgr) PeriodicUpdaterPush(obj updatable) {
-	sm.periodicUpdaterQueue <- obj
+	sm.periodicUpdater.RunJob(&periodicCtx{obj: obj})
 }
 
 // agentObjectMeta converts venice object meta to agent object meta

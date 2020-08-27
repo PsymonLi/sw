@@ -165,6 +165,8 @@ var _ = Describe("Vc hub workload tests", func() {
 
 			moverErr := make(chan error, len(hostWorkloads)/2)
 			moveWorkloads := func(src *objects.HostWorkloadCollection, dst *objects.HostWorkloadCollection) {
+				defer GinkgoRecover()
+				defer func() { moverErr <- nil }()
 				srcWorkloads := src.Workloads()
 				dstWorkloads := dst.Workloads()
 				log.Infof("Moving %v -> %v", srcWorkloads.String(), dst.Host().Hosts[0].Name())
@@ -187,8 +189,6 @@ var _ = Describe("Vc hub workload tests", func() {
 				Eventually(func() error {
 					return ts.model.VerifyWorkloadMigrationStatus(dstWorkloads)
 				}).Should(Succeed())
-
-				moverErr <- nil
 
 			}
 
@@ -263,6 +263,8 @@ var _ = Describe("Vc hub workload tests", func() {
 			log.Infof("Starting forward move for workloads.")
 			moverErr := make(chan error, len(hostWorkloadCollection))
 			moveWorkloads := func(wc *objects.WorkloadCollection, dst *objects.HostCollection) {
+				defer GinkgoRecover()
+				defer func() { moverErr <- nil }()
 				log.Infof("Moving %v -> %v from %v", wc.String(), dst.Hosts[0].Name(), wc.Workloads[0].Host().Name())
 				err = ts.model.MoveWorkloads(common.MoveWorkloadsSpec{
 					DstHostCollection:  dst,
@@ -273,7 +275,6 @@ var _ = Describe("Vc hub workload tests", func() {
 				Eventually(func() error {
 					return ts.model.VerifyWorkloadMigrationStatus(wc)
 				}).Should(Succeed())
-				moverErr <- nil
 			}
 
 			for host, wc := range hostWorkloadCollection {
@@ -373,6 +374,8 @@ var _ = Describe("Vc hub workload tests", func() {
 			log.Infof("Starting forward move with abort")
 			moverErr := make(chan error, len(hostWorkloadCollection))
 			moveAbortWorkloads := func(wc *objects.WorkloadCollection, dst *objects.HostCollection) {
+				defer GinkgoRecover()
+				defer func() { moverErr <- nil }()
 				log.Infof("Abort Moving %v -> %v from %v", wc.String(), dst.Hosts[0].Name(), wc.Workloads[0].Host().Name())
 
 				err = ts.model.MoveWorkloads(common.MoveWorkloadsSpec{
@@ -386,10 +389,11 @@ var _ = Describe("Vc hub workload tests", func() {
 				Eventually(func() error {
 					return ts.model.VerifyWorkloadMigrationAbortStatus(wc)
 				}).Should(Succeed())
-				moverErr <- nil
 			}
 
 			moveWorkloads := func(wc *objects.WorkloadCollection, dst *objects.HostCollection) {
+				defer GinkgoRecover()
+				defer func() { moverErr <- nil }()
 				log.Infof("Moving %v -> %v from %v", wc.String(), dst.Hosts[0].Name(), wc.Workloads[0].Host().Name())
 				err = ts.model.MoveWorkloads(common.MoveWorkloadsSpec{
 					DstHostCollection:  dst,
@@ -399,7 +403,6 @@ var _ = Describe("Vc hub workload tests", func() {
 				Eventually(func() error {
 					return ts.model.VerifyWorkloadMigrationStatus(wc)
 				}).Should(Succeed())
-				moverErr <- nil
 			}
 
 			for host, wc := range hostWorkloadCollection {

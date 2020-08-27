@@ -205,12 +205,21 @@ func (eps *EndpointState) Write() error {
 
 	eps.Endpoint.Status.MirrorSessions = eps.mirrorSessions
 	ws, err := smgrEndpoint.sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
-	if err == nil && !sliceEqual(ws.Workload.Status.MirrorSessions, eps.mirrorSessions) {
-		ws.Workload.Workload.Status.MirrorSessions = eps.mirrorSessions
-		err = ws.Workload.Write()
-		if err != nil {
-			log.Errorf("Failed to write workload (mirror-update) for EP [%v]. Err : %v", eps.Endpoint.Name, err)
+	if err == nil {
+		ws.Workload.Lock()
+		if !sliceEqual(ws.Workload.Status.MirrorSessions, eps.mirrorSessions) {
+			ws.Workload.Workload.Status.MirrorSessions = eps.mirrorSessions
+			err = ws.Workload.Write()
+			if err != nil {
+				log.Errorf("Failed to write workload (mirror-update) for EP [%v]. Err : %v", eps.Endpoint.Name, err)
+			}
+			log.Infof("Updating workload %v with mirror sessions %v", ws.Workload.Name, eps.mirrorSessions)
+		} else {
+			log.Infof("No update for workload %v with mirror sessions %v", ws.Workload.Name, eps.mirrorSessions)
 		}
+		ws.Workload.Unlock()
+	} else {
+		log.Errorf("No workload found for endpoint %v : %v", eps.Endpoint.Name, err)
 	}
 
 	return eps.Endpoint.Write()
