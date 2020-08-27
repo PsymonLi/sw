@@ -9,6 +9,7 @@ import (
 
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
@@ -280,8 +281,15 @@ func (sm *SysModel) VerifyPolicyStatus(spc *objects.NetworkSecurityPolicyCollect
 			log.Warnf("Propagation generation id did not match: Meta: %+v, PropagationStatus: %+v", pstat.ObjectMeta, pstat.Status.PropagationStatus)
 			return fmt.Errorf("Propagation generation id did not match")
 		}
-		tenantNaples, err := sm.Naples().SelectByTenant(pol.VenicePolicy.Tenant)
-		totalNaples := int32(len(tenantNaples.Nodes)) + int32(len(tenantNaples.FakeNodes))
+		totalNaples := int32(len(sm.NaplesNodes)) + int32(len(sm.FakeNaples))
+		if pol.VenicePolicy.Tenant != globals.DefaultTenant {
+			tenantNaples, err := sm.Naples().SelectByTenant(pol.VenicePolicy.Tenant)
+			if err == nil {
+				totalNaples = int32(len(tenantNaples.Nodes)) + int32(len(tenantNaples.FakeNodes))
+			} else {
+				return fmt.Errorf("Error finding tenant naples %v", tenantNaples)
+			}
+		}
 		if (pstat.Status.PropagationStatus.Updated != totalNaples) || (pstat.Status.PropagationStatus.Pending != 0) {
 			log.Warnf("Propagation status incorrect for policy %#v: Expected updates: %+v, PropagationStatus: %+v", pol.VenicePolicy, totalNaples, pstat.Status.PropagationStatus)
 			return fmt.Errorf("Propagation status was incorrect")

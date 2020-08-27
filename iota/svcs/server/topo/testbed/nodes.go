@@ -696,11 +696,6 @@ func (n *TestNode) ReloadNode(name string, restoreState bool, restartMethod stri
 			return err
 		}
 
-		if ip, err = n.GetNodeIP(); err != nil {
-			log.Errorf("TOPO SVC | Failed to get Node-IP")
-			return fmt.Errorf("TOPO SVC | Failed to get Node IP")
-		}
-
 		if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
 			if err = n.initEsxNode(); err != nil {
 				log.Errorf("TOPO SVC | ReloadNode | Init ESX node failed :  %v", err.Error())
@@ -709,6 +704,11 @@ func (n *TestNode) ReloadNode(name string, restoreState bool, restartMethod stri
 			sshCfg = InitSSHConfig(constants.EsxDataVMUsername, constants.EsxDataVMPassword)
 		} else {
 			sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
+		}
+
+		if ip, err = n.GetNodeIP(); err != nil {
+			log.Errorf("TOPO SVC | Failed to get Node-IP")
+			return fmt.Errorf("TOPO SVC | Failed to get Node IP")
 		}
 
 		addr := fmt.Sprintf("%s:%d", ip, constants.SSHPort)
