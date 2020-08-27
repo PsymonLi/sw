@@ -214,6 +214,11 @@ func TestExporter(t *testing.T) {
 	alert3.Status.Severity = eventattrs.Severity_CRITICAL.String()
 	alerts := []*monitoring.Alert{alert, alert2, alert3}
 
+	// Verify expected monitoring APIs are called.
+	mapi.EXPECT().MonitoringV1().Return(mMonitoring).Times(6)
+	mAlertDest.EXPECT().Get(gomock.Any(), gomock.Any()).Return(alertDestBSDSyslog, nil).Times(3)
+	mAlertDest.EXPECT().Update(gomock.Any(), gomock.Any()).Times(3)
+
 	// Inject alerts.
 	for _, a := range alerts {
 		go func(a *monitoring.Alert) {
@@ -232,11 +237,6 @@ func TestExporter(t *testing.T) {
 			}
 		}
 	}()
-
-	// Verify expected monitoring APIs are called.
-	mapi.EXPECT().MonitoringV1().Return(mMonitoring).Times(6)
-	mAlertDest.EXPECT().Get(gomock.Any(), gomock.Any()).Return(alertDestBSDSyslog, nil).Times(3)
-	mAlertDest.EXPECT().Update(gomock.Any(), gomock.Any()).Times(3)
 
 	time.Sleep(1 * time.Second)
 
