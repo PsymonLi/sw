@@ -42,21 +42,21 @@ message DHCPProxySpec {
   // IP address of the (local) DHCP server, this IP address will be
   // used to respond to the DHCP requests from the workloads and is used as
   // the DHCP server identifier
-  types.IPAddress ServerIP     = 1 [(gogoproto.moretags) = "meta:mandatory"];
+  types.IPAddress          ServerIP     = 1 [(gogoproto.moretags) = "meta:mandatory"];
   // MTU to be supplied by the DHCP server to its clients, if non-zero
-  uint32          MTU          = 2;
+  uint32                   MTU          = 2;
   // IP address of the subnet's gateway sent in DHCP offer
-  types.IPAddress GatewayIP    = 3;
-  // IP address of the DNS server sent in DHCP offer
-  types.IPAddress DNSServerIP  = 4;
-  // IP address of the NTP server sent in DHCP offer
-  types.IPAddress NTPServerIP  = 5;
+  types.IPAddress          GatewayIP    = 3;
+  // IP addresses of the DNS servers sent in DHCP offer
+  repeated types.IPAddress DNSServerIP  = 4;
+  // IP addresses of the NTP servers sent in DHCP offer
+  repeated types.IPAddress NTPServerIP  = 5;
   // client's Fully Qualified Domain Name (FQDN)
-  string          DomainName   = 6;
+  string                   DomainName   = 6;
   // bootfile name for the client to use
-  string          BootFileName = 7;
+  string                   BootFileName = 7;
   // DHCP lease timoeout in seconds
-  uint32          LeaseTimeout = 8 [(gogoproto.moretags) = "default=3600"];
+  uint32                   LeaseTimeout = 8 [(gogoproto.moretags) = "default=3600"];
 }
 
 // operational status of a DHCP proxy/suppression policy, if any

@@ -121,27 +121,33 @@ vpc:
       dhcppolicy:
         - id               : 10
           serverip         : '2.1.0.1'
-          ntpserver        : '2.1.0.5'
+          ntpserver        :
+            - '2.1.0.5'
           routers          : '2.1.0.1'
-          dnsserver        : '2.1.0.1'
+          dnsserver        :
+            - '2.1.0.1'
           domainname       : "pensando.io"
           filename         : "test"
           interfacemtu     : 9000
           lease_timeout    : 3600
         - id               : 11
           serverip         : '3.1.0.1'
-          ntpserver        : '3.1.0.5'
+          ntpserver        :
+            - '3.1.0.5'
           routers          : '3.1.0.1'
-          dnsserver        : '3.1.0.1'
+          dnsserver        :
+            - '3.1.0.1'
           domainname       : "pensando.io"
           filename         : "test"
           interfacemtu     : 9000
           lease_timeout    : 3600
         - id               : 12
           serverip         : '9.0.0.1'
-          ntpserver        : '9.0.0.5'
+          ntpserver        :
+            - '9.0.0.5'
           routers          : '9.0.0.1'
-          dnsserver        : '9.0.0.1'
+          dnsserver        :
+            - '9.0.0.1'
           domainname       : "pensando.io"
           filename         : "test"
           interfacemtu     : 9000

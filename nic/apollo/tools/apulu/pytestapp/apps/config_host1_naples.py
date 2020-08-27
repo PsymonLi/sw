@@ -49,7 +49,6 @@ os.environ['AGENT_GRPC_IP'] = naplesip
 os.environ['AGENT_GRPC_PORT'] = naplesport
 
 use_device_macs=True
-
 # Init GRPC
 api.Init("node1", naplesip, naplesport)
 if args.remote:
@@ -164,6 +163,8 @@ ipv4_subnet1='2.1.0.0/24'
 # The host_if_idx is an encoding for PF
 subnet1_fabric_encap=202
 subnet1_v4_router_ip=ipaddress.IPv4Address('2.1.0.1')
+subnet1_v4_dns_server2=ipaddress.IPv4Address('2.1.0.2')
+subnet1_v4_dns_server3=ipaddress.IPv4Address('2.1.0.3')
 subnet1_virt_router_mac='00:55:01:00:00:01'
 subnet1_gw_ip_addr=ipaddress.IPv4Address('2.1.0.1')
 
@@ -310,9 +311,9 @@ vcn0=interface.InterfaceObject( 100, interface_pb2.IF_TYPE_CONTROL, interface_pb
 tunnel1 = tunnel.TunnelObject( tunnel_id,vpc1_id, tunnel_local_ip, tunnel_remote_ip, None, tunnel_pb2.TUNNEL_TYPE_NONE, types_pb2.ENCAP_TYPE_VXLAN, tunnel_vnid)
 
 # Create DHCP Policy
-dhcp_policy1 = dhcp.DhcpPolicyObject(1, server_ip=subnet1_v4_router_ip, mtu=9000, gateway_ip=subnet1_v4_router_ip, dns_server=subnet1_v4_router_ip, ntp_server=subnet1_v4_router_ip, domain_name="test.com", lease_timeout=3600)
-dhcp_policy2 = dhcp.DhcpPolicyObject(2, server_ip=subnet2_v4_router_ip, mtu=9000, gateway_ip=subnet2_v4_router_ip, dns_server=subnet2_v4_router_ip, ntp_server=subnet2_v4_router_ip, domain_name="test.com", lease_timeout=3600)
-dhcp_policy3 = dhcp.DhcpPolicyObject(3, server_ip=subnet3_v4_router_ip, gateway_ip=subnet3_v4_router_ip, dns_server=subnet3_v4_router_ip, ntp_server=subnet3_v4_router_ip, domain_name="test.com", lease_timeout=3600)
+dhcp_policy1 = dhcp.DhcpPolicyObject(1, server_ip=subnet1_v4_router_ip, mtu=9000, gateway_ip=subnet1_v4_router_ip, dns_server=[subnet1_v4_router_ip, subnet1_v4_dns_server2, subnet1_v4_dns_server3], ntp_server=[subnet1_v4_router_ip], domain_name="test.com", lease_timeout=3600)
+dhcp_policy2 = dhcp.DhcpPolicyObject(2, server_ip=subnet2_v4_router_ip, mtu=9000, gateway_ip=subnet2_v4_router_ip, dns_server=[subnet2_v4_router_ip], ntp_server=[subnet2_v4_router_ip], domain_name="test.com", lease_timeout=3600)
+dhcp_policy3 = dhcp.DhcpPolicyObject(3, server_ip=subnet3_v4_router_ip, gateway_ip=subnet3_v4_router_ip, dns_server=[subnet3_v4_router_ip], ntp_server=[subnet3_v4_router_ip], domain_name="test.com", lease_timeout=3600)
 dhcp_policy99 = dhcp.DhcpPolicyObject(99, server_ip=vcn_v4_router_ip, boot_filename="https://11.1.2.103/kickstart/install_http_rhel77.ipxe", lease_timeout=3600)
 
 # Create NAT Port Block

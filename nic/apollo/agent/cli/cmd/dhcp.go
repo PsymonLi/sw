@@ -228,12 +228,37 @@ func printDHCPProxy(dhcp *pds.DHCPPolicy) bool {
 	switch spec.GetRelayOrProxy().(type) {
 	case *pds.DHCPPolicySpec_ProxySpec:
 		proxySpec := spec.GetProxySpec()
+		numDNSServers := len(proxySpec.DNSServerIP)
+		numNTPServers := len(proxySpec.NTPServerIP)
 		outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetGatewayIP()))
-		outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetDNSServerIP()))
-		outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetNTPServerIP()))
+		if numDNSServers > 0 {
+			outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetDNSServerIP()[0]))
+		} else {
+			outStr += fmt.Sprintf("%-20s", "")
+		}
+		if numNTPServers > 0 {
+			outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetNTPServerIP()[0]))
+		} else {
+			outStr += fmt.Sprintf("%-20s", "")
+		}
 		outStr += fmt.Sprintf("%-10d", proxySpec.GetLeaseTimeout())
 		outStr += fmt.Sprintf("%-10d", (proxySpec.GetMTU()))
 		outStr += fmt.Sprintf("%-130s", proxySpec.GetDomainName())
+
+		for i := 1; (i < numDNSServers || i < numNTPServers); i++ {
+			outStr += fmt.Sprintf("\n%-60s", "")
+			if i < numDNSServers {
+				outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetDNSServerIP()[i]))
+			} else {
+				outStr += fmt.Sprintf("%-20s", "")
+			}
+			if i < numNTPServers {
+				outStr += fmt.Sprintf("%-20s", utils.IPAddrToStr(proxySpec.GetNTPServerIP()[i]))
+			} else {
+				outStr += fmt.Sprintf("%-20s", "")
+			}
+		}
+
 	default:
 		return false
 	}

@@ -197,23 +197,54 @@ nat_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
     return;
 }
 
+static char *
+dns_server (pds_cfg_msg_t *msg, int index)
+{
+    static char notconfigured[] = "-";
+
+    if (index < msg->dhcp_policy.spec.proxy_spec.num_dns_server_ip) {
+        return ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.dns_server_ip[index]));
+    } else {
+        return notconfigured;
+    }
+}
+
+static char *
+ntp_server (pds_cfg_msg_t *msg, int index)
+{
+    static char notconfigured[] = "-";
+
+    if (index < msg->dhcp_policy.spec.proxy_spec.num_ntp_server_ip) {
+        return ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.ntp_server_ip[index]));
+    } else {
+        return notconfigured;
+    }
+}
+
 static void
 dhcp_proxy_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
 {
     if (msg->dhcp_policy.spec.type != PDS_DHCP_POLICY_TYPE_PROXY) {
         return;
     }
-    snprintf((char *)buf, 274, "%-40s%-20s%-10d%-20s%-20s%-20s%-14d%-130s\n",
+    snprintf((char *)buf, 356,
+             "%-40s%-20s%-10d%-20s%-20s%-20s%-14d%-130s\n",
              msg->dhcp_policy.spec.key.str(),
              ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.server_ip)),
              msg->dhcp_policy.spec.proxy_spec.mtu,
              ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.gateway_ip)),
-             ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.dns_server_ip)),
-             ipaddr2str(&(msg->dhcp_policy.spec.proxy_spec.ntp_server_ip)),
+             dns_server(msg, 0),
+             ntp_server(msg, 0),
              msg->dhcp_policy.spec.proxy_spec.lease_timeout,
              msg->dhcp_policy.spec.proxy_spec.domain_name);
-
     buf_entry_dump(buf);
+
+    for (int i = 1; i < msg->dhcp_policy.spec.proxy_spec.num_dns_server_ip ||
+         i < msg->dhcp_policy.spec.proxy_spec.num_ntp_server_ip; i++) {
+        snprintf((char *)buf, 356, "%-90s%-20s%-20s\n", "", dns_server(msg, i),
+                 ntp_server(msg, i));
+        buf_entry_dump(buf);
+    }
 
     return;
 }

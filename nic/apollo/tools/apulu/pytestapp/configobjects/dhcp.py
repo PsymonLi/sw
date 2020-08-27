@@ -5,6 +5,7 @@ import re
 import dhcp_pb2 as dhcp_pb2
 import types_pb2 as types_pb2
 import api
+import ipaddress
 
 class DhcpPolicyObject():
     def __init__(self, id, server_ip=None, mtu=None, gateway_ip=None, dns_server=None, ntp_server=None, domain_name=None, lease_timeout=None, boot_filename=None):
@@ -19,6 +20,8 @@ class DhcpPolicyObject():
         self.domain_name = domain_name
         self.lease_timeout = lease_timeout
         self.boot_filename = boot_filename
+        self.dns_server = dns_server if dns_server is not None else []
+        self.ntp_server = ntp_server if ntp_server is not None else []
 
         return
 
@@ -34,12 +37,14 @@ class DhcpPolicyObject():
         if self.gateway_ip:
             spec.ProxySpec.GatewayIP.Af = types_pb2.IP_AF_INET
             spec.ProxySpec.GatewayIP.V4Addr = int(self.gateway_ip)
-        if self.dns_server:
-            spec.ProxySpec.DNSServerIP.Af = types_pb2.IP_AF_INET
-            spec.ProxySpec.DNSServerIP.V4Addr = int(self.dns_server)
-        if self.ntp_server:
-            spec.ProxySpec.NTPServerIP.Af = types_pb2.IP_AF_INET
-            spec.ProxySpec.NTPServerIP.V4Addr = int(self.ntp_server)
+        for dns_server in self.dns_server:
+            dns_obj = spec.ProxySpec.DNSServerIP.add()
+            dns_obj.Af = types_pb2.IP_AF_INET
+            dns_obj.V4Addr = int(dns_server)
+        for ntp_server in self.ntp_server:
+            ntp_obj = spec.ProxySpec.NTPServerIP.add()
+            ntp_obj.Af = types_pb2.IP_AF_INET
+            ntp_obj.V4Addr = int(ntp_server)
         if self.domain_name:
             spec.ProxySpec.DomainName = self.domain_name
         if self.lease_timeout:

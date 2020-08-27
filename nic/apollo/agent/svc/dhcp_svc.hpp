@@ -36,10 +36,29 @@ pds_dhcp_proxy_proto_to_api_spec (pds_dhcp_proxy_spec_t *api_spec,
     api_spec->mtu = proto_spec.mtu();
     ipaddr_proto_spec_to_api_spec(&api_spec->gateway_ip,
                                   proto_spec.gatewayip());
-    ipaddr_proto_spec_to_api_spec(&api_spec->dns_server_ip,
-                                  proto_spec.dnsserverip());
-    ipaddr_proto_spec_to_api_spec(&api_spec->ntp_server_ip,
-                                  proto_spec.ntpserverip());
+
+    if (proto_spec.dnsserverip_size() > PDS_MAX_DNS_SERVERS) {
+        PDS_TRACE_ERR("No. of DNS servers can't exceed {}", PDS_MAX_DNS_SERVERS);
+        return SDK_RET_INVALID_ARG;
+    }
+
+    if (proto_spec.ntpserverip_size() > PDS_MAX_NTP_SERVERS) {
+        PDS_TRACE_ERR("No. of NTP servers can't exceed {}", PDS_MAX_NTP_SERVERS);
+        return SDK_RET_INVALID_ARG;
+    }
+
+    api_spec->num_dns_server_ip = proto_spec.dnsserverip_size();
+    for (uint8_t i = 0; i < api_spec->num_dns_server_ip; i++) {
+        ipaddr_proto_spec_to_api_spec(&api_spec->dns_server_ip[i],
+                                      proto_spec.dnsserverip(i));
+    }
+
+    api_spec->num_ntp_server_ip = proto_spec.ntpserverip_size();
+    for (int i = 0; i < api_spec->num_ntp_server_ip; i++) {
+        ipaddr_proto_spec_to_api_spec(&api_spec->ntp_server_ip[i],
+                                      proto_spec.ntpserverip(i));
+    }
+
     if (proto_spec.domainname().empty()) {
         api_spec->domain_name[0] = '\0';
     } else {
@@ -99,10 +118,15 @@ pds_dhcp_proxy_api_spec_to_proto (pds::DHCPProxySpec *proto_spec,
     proto_spec->set_mtu(api_spec->mtu);
     ipaddr_api_spec_to_proto_spec(proto_spec->mutable_gatewayip(),
                                   &api_spec->gateway_ip);
-    ipaddr_api_spec_to_proto_spec(proto_spec->mutable_dnsserverip(),
-                                  &api_spec->dns_server_ip);
-    ipaddr_api_spec_to_proto_spec(proto_spec->mutable_ntpserverip(),
-                                  &api_spec->ntp_server_ip);
+    for (uint8_t i = 0; i < api_spec->num_dns_server_ip; i++) {
+        types::IPAddress *ipaddr = proto_spec->add_dnsserverip();
+        ipaddr_api_spec_to_proto_spec(ipaddr, &api_spec->dns_server_ip[i]);
+    }
+
+    for (uint8_t i = 0; i < api_spec->num_ntp_server_ip; i++) {
+        types::IPAddress *ipaddr = proto_spec->add_ntpserverip();
+        ipaddr_api_spec_to_proto_spec(ipaddr, &api_spec->ntp_server_ip[i]);
+    }
     proto_spec->set_domainname(api_spec->domain_name);
     proto_spec->set_leasetimeout(api_spec->lease_timeout);
     return SDK_RET_OK;

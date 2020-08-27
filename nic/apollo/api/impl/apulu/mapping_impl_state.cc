@@ -906,25 +906,43 @@ do_insert_dhcp_binding (dhcpctl_handle *dhcp_connection,
         }
 
         // DNS server
-        if (policy->dns_server_ip().addr.v4_addr) {
-            ip = policy->dns_server_ip().addr.v4_addr;
-            bytes = (unsigned char *)&ip;
+        if (policy->num_dns_server_ip() > 0) {
             buf_len = statements_len - index;
             index += snprintf((char *)(statements->value + index), buf_len,
-                              "option domain-name-servers=%x:%x:%x:%x; ",
-                              (uint32_t)bytes[3], (uint32_t)bytes[2],
-                              (uint32_t)bytes[1], (uint32_t)bytes[0]);
+                              "option domain-name-servers=");
+
+            for (uint8_t i = 0; i < policy->num_dns_server_ip(); i++) {
+                ip = policy->dns_server_ip(i)->addr.v4_addr;
+                bytes = (unsigned char *)&ip;
+                buf_len = statements_len - index;
+                index += snprintf((char *)(statements->value + index), buf_len,
+                                  "%x:%x:%x:%x:",
+                                  (uint32_t)bytes[3], (uint32_t)bytes[2],
+                                  (uint32_t)bytes[1], (uint32_t)bytes[0]);
+            }
+            index--;
+            buf_len = statements_len - index;
+            index += snprintf((char *)(statements->value + index), buf_len, "; ");
         }
 
-        // NTP server
-        if (policy->ntp_server_ip().addr.v4_addr) {
-            ip = policy->ntp_server_ip().addr.v4_addr;
-            bytes = (unsigned char *)&ip;
+        // NTP server 
+        if (policy->num_ntp_server_ip() > 0) {
             buf_len = statements_len - index;
             index += snprintf((char *)(statements->value + index), buf_len,
-                              "option ntp-servers=%x:%x:%x:%x; ",
-                              (uint32_t)bytes[3], (uint32_t)bytes[2],
-                              (uint32_t)bytes[1], (uint32_t)bytes[0]);
+                              "option ntp-servers=");
+
+            for (uint8_t i = 0; i < policy->num_ntp_server_ip(); i++) {
+                ip = policy->ntp_server_ip(i)->addr.v4_addr;
+                bytes = (unsigned char *)&ip;
+                buf_len = statements_len - index;
+                index += snprintf((char *)(statements->value + index), buf_len,
+                                  "%x:%x:%x:%x:",
+                                  (uint32_t)bytes[3], (uint32_t)bytes[2],
+                                  (uint32_t)bytes[1], (uint32_t)bytes[0]);
+            }
+            index--;
+            buf_len = statements_len - index;
+            index += snprintf((char *)(statements->value + index), buf_len, "; ");
         }
 
         // domain name

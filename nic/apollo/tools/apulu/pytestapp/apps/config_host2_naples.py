@@ -162,6 +162,8 @@ ipv4_subnet1='2.1.0.0/24'
 # The host_if_idx is an encoding for PF1
 subnet1_fabric_encap=202
 subnet1_v4_router_ip=ipaddress.IPv4Address('2.1.0.1')
+subnet1_v4_dns_server2=ipaddress.IPv4Address('2.1.0.2')
+subnet1_v4_ntp_server2=ipaddress.IPv4Address('2.1.0.2')
 subnet1_virt_router_mac='00:55:01:00:00:01'
 
 # VNIC and mapping (local and remote) table objects
@@ -320,10 +322,10 @@ vcn0=interface.InterfaceObject( 100, interface_pb2.IF_TYPE_CONTROL, interface_pb
 tunnel1 = tunnel.TunnelObject( tunnel_id,vpc1_id, tunnel_local_ip, tunnel_remote_ip, None, tunnel_pb2.TUNNEL_TYPE_NONE, types_pb2.ENCAP_TYPE_VXLAN, tunnel_vnid)
 
 # Create DHCP Policy
-dhcp_policy1 = dhcp.DhcpPolicyObject(1, server_ip=subnet1_v4_router_ip, mtu=9000, gateway_ip=subnet1_v4_router_ip, dns_server=subnet1_v4_router_ip, ntp_server=subnet1_v4_router_ip, domain_name="test.com", lease_timeout=3600)
-dhcp_policy3 = dhcp.DhcpPolicyObject(3, server_ip=subnet3_v4_router_ip, gateway_ip=subnet3_v4_router_ip, dns_server=subnet3_v4_router_ip, ntp_server=subnet3_v4_router_ip, domain_name="test.com", lease_timeout=3600)
-dhcp_policy4 = dhcp.DhcpPolicyObject(4, server_ip=subnet4_v4_router_ip, mtu=9000, gateway_ip=subnet4_v4_router_ip, dns_server=subnet4_v4_router_ip, ntp_server=subnet4_v4_router_ip, domain_name="test.com", lease_timeout=3600)
-dhcp_policy5 = dhcp.DhcpPolicyObject(5, server_ip=subnet5_v4_router_ip, mtu=9000, gateway_ip=subnet5_v4_router_ip, dns_server=subnet5_v4_router_ip, ntp_server=subnet5_v4_router_ip, domain_name="test.com", lease_timeout=3600)
+dhcp_policy1 = dhcp.DhcpPolicyObject(1, server_ip=subnet1_v4_router_ip, mtu=9000, gateway_ip=subnet1_v4_router_ip, dns_server=[subnet1_v4_router_ip, subnet1_v4_dns_server2], ntp_server=[subnet1_v4_router_ip, subnet1_v4_ntp_server2], domain_name="test.com", lease_timeout=3600)
+dhcp_policy3 = dhcp.DhcpPolicyObject(3, server_ip=subnet3_v4_router_ip, gateway_ip=subnet3_v4_router_ip, dns_server=[subnet3_v4_router_ip], ntp_server=[subnet3_v4_router_ip], domain_name="test.com", lease_timeout=3600)
+dhcp_policy4 = dhcp.DhcpPolicyObject(4, server_ip=subnet4_v4_router_ip, mtu=9000, gateway_ip=subnet4_v4_router_ip, dns_server=[subnet4_v4_router_ip], ntp_server=[subnet4_v4_router_ip], domain_name="test.com", lease_timeout=3600)
+dhcp_policy5 = dhcp.DhcpPolicyObject(5, server_ip=subnet5_v4_router_ip, mtu=9000, gateway_ip=subnet5_v4_router_ip, dns_server=[subnet5_v4_router_ip], ntp_server=[subnet5_v4_router_ip], domain_name="test.com", lease_timeout=3600)
 
 route1=route.RouteObject(1, route_table1_id, types_pb2.IP_AF_INET, route_prefix1, "tunnel", tunnel_id)
 route_table1=route.RouteTableObject(route_table1_id, types_pb2.IP_AF_INET, [route1])

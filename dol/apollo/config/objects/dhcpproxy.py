@@ -20,10 +20,10 @@ class DhcpProxyObject(base.ConfigObjectBase):
             self.Id = next(ResmgrClient[node].DhcpIdAllocator)
         self.GID("Dhcp%d"%self.Id)
         self.UUID = utils.PdsUuid(self.Id, self.ObjType)
-        self.ntpserver = ipaddress.IPv4Address(dhcpspec.ntpserver)
+        self.ntpserver = [ipaddress.IPv4Address(ntpserver) for ntpserver in dhcpspec.ntpserver]
         self.serverip = ipaddress.IPv4Address(dhcpspec.serverip)
         self.routers = ipaddress.IPv4Address(dhcpspec.routers)
-        self.dnsserver = ipaddress.IPv4Address(dhcpspec.dnsserver)
+        self.dnsserver = [ipaddress.IPv4Address(dnsserver) for dnsserver in dhcpspec.dnsserver] 
         self.domainname = getattr(dhcpspec, 'domainname', None)
         self.filename = getattr(dhcpspec, 'filename', None)
         self.leasetimeout = getattr(dhcpspec, 'leasetimeout', 3600)
@@ -45,10 +45,10 @@ class DhcpProxyObject(base.ConfigObjectBase):
         return
 
     def UpdateAttributes(self, spec):
-        self.ntpserver = self.ntpserver + 1
+        self.ntpserver = [ntpserver + 1 for ntpserver in self.ntpserver]
         self.serverip = self.serverip + 1
         self.routers = self.routers + 1
-        self.dnsserver = self.dnsserver + 1
+        self.dnsserver = [dnsserver + 1 for dnsserver in self.dnsserver]
         self.domainname = 'test.com'
         self.filename = 'filename'
         self.leasetimeout = 2400
@@ -63,9 +63,13 @@ class DhcpProxyObject(base.ConfigObjectBase):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         utils.GetRpcIPAddr(self.serverip, spec.ProxySpec.ServerIP)
-        utils.GetRpcIPAddr(self.ntpserver, spec.ProxySpec.NTPServerIP)
+        for ntp_server in self.ntpserver:
+            ntp_objb = spec.ProxySpec.NTPServerIP.add()
+            utils.GetRpcIPAddr(ipaddress.IPv4Address(ntp_server), ntp_objb)
         utils.GetRpcIPAddr(self.routers, spec.ProxySpec.GatewayIP)
-        utils.GetRpcIPAddr(self.dnsserver, spec.ProxySpec.DNSServerIP)
+        for dns_server in self.dnsserver:
+            dns_obj = spec.ProxySpec.DNSServerIP.add()
+            utils.GetRpcIPAddr(ipaddress.IPv4Address(dns_server), dns_obj)
         if self.domainname:
             spec.ProxySpec.DomainName = self.domainname
         if self.filename:
@@ -80,12 +84,14 @@ class DhcpProxyObject(base.ConfigObjectBase):
         ProxySpec = spec.ProxySpec
         if not utils.ValidateRpcIPAddr(self.serverip, ProxySpec.ServerIP):
             return False
-        if not utils.ValidateRpcIPAddr(self.ntpserver, ProxySpec.NTPServerIP):
-            return False
+        for index, ntpserver in enumerate(self.ntpserver):
+            if not utils.ValidateRpcIPAddr(ipaddress.IPv4Address(ntpserver), ProxySpec.NTPServerIP[index]):
+                return False
         if not utils.ValidateRpcIPAddr(self.routers, ProxySpec.GatewayIP):
             return False
-        if not utils.ValidateRpcIPAddr(self.dnsserver, ProxySpec.DNSServerIP):
-            return False
+        for index, dnsserver in enumerate(self.dnsserver):
+            if not utils.ValidateRpcIPAddr(ipaddress.IPv4Address(dnsserver), ProxySpec.DNSServerIP[index]):
+                return False
         if ProxySpec.MTU != self.interfacemtu:
             return False
         return True

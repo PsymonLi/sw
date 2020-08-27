@@ -31,7 +31,7 @@ def verify_dhcp_ips():
     for workload, cmd in zip(workloads.keys(), resp.commands):
         if workload.ip_address not in cmd.stdout:
             api.Logger.error(
-                "DHCP didn't fetch expected address, expected: %s", workload.ip_address
+                "DHCP didn't fetch expected address, expected: %s" % (workload.ip_address)
             )
             api.PrintCommandResults(cmd)
             return api.types.status.FAILURE
@@ -85,10 +85,12 @@ def verify_dhclient_lease():
             lease = list(dhclient_info.values())[0]
             prefix = ".".join(str(dhcp_policy.serverip).split(".")[:3])
             if prefix in lease["fixed-address"]:
-                assert str(dhcp_policy.ntpserver) in lease["ntp-servers"]
+                for ntpserver in dhcp_policy.ntpserver:
+                    assert str(ntpserver) in lease["ntp-servers"]
                 assert str(dhcp_policy.interfacemtu) in lease["interface-mtu"]
                 assert str(dhcp_policy.domainname) in lease["domain-name"]
-                assert str(dhcp_policy.dnsserver) in lease["domain-name-servers"]
+                for dnsserver in dhcp_policy.dnsserver:
+                    assert str(dnsserver) in lease["domain-name-servers"]
                 assert "255.255.255.0" in lease["subnet-mask"]
                 match = True
                 break
@@ -123,7 +125,8 @@ def acquire_dhcp_ips(workload_pairs):
         cmd = "ifconfig " + workload.interface
         api.Trigger_AddCommand(req, workload.node_name, workload.workload_name, cmd)
         cmd = "dhclient " + workload.interface
-        api.Trigger_AddCommand(req, workload.node_name, workload.workload_name, cmd)
+        api.Trigger_AddCommand(req, workload.node_name, workload.workload_name, cmd,
+                               timeout=60)
 
     resp = api.Trigger(req)
 

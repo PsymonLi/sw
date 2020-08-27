@@ -196,13 +196,21 @@ public:
     /// \return    gateway IP
     const ip_addr_t gateway_ip(void) const { return gateway_ip_; }
 
-    /// \brief     return DNS server IP of the DHCP policy object
-    /// \return    DNS server IP
-    const ip_addr_t dns_server_ip(void) const { return dns_server_ip_; }
+    /// \brief     return the number of DNS server IPs in the DHCP policy object
+    /// \return    number of DNS server IPs in the DHCP policy object
+    uint8_t num_dns_server_ip(void) const { return num_dns_server_ip_; }
 
-    /// \brief     return NTP server IP of the DHCP policy object
-    /// \return    NTP server IP
-    const ip_addr_t ntp_server_ip(void) const { return ntp_server_ip_; }
+    /// \brief     return ptr to the DNS server IP of the DHCP policy object with index n
+    /// \return    DNS server IP of the DHCP policy object with index n
+    const ip_addr_t *dns_server_ip(uint32_t n) const { return &dns_server_ip_[n]; }
+
+    /// \brief     return the number of NTP server IPs in the DHCP policy object
+    /// \return    number of NTP server IPs in the DHCP policy object
+    uint8_t num_ntp_server_ip(void) const { return num_ntp_server_ip_; }
+
+    /// \brief     return ptr to the NTP server IP of the DHCP policy object with index n
+    /// \return    NTP server IP of the DHCP policy object with index n
+    const ip_addr_t *ntp_server_ip(uint32_t n) const { return &ntp_server_ip_[n]; }
 
     /// \brief     return ptr to the domain name of the DHCP policy object
     /// \return    ptr to domain name
@@ -250,10 +258,14 @@ private:
             uint32_t mtu_;
             /// gateway IP
             ip_addr_t gateway_ip_;
-            /// DNS server IP
-            ip_addr_t dns_server_ip_;
-            /// NTP server IP
-            ip_addr_t ntp_server_ip_;
+            /// number of DNS server IPs
+            uint8_t num_dns_server_ip_;
+            /// DNS server IPs
+            ip_addr_t dns_server_ip_[PDS_MAX_DNS_SERVERS];
+            /// number of NTP server IPs
+            uint8_t num_ntp_server_ip_;
+            /// NTP server IPs
+            ip_addr_t ntp_server_ip_[PDS_MAX_NTP_SERVERS];
             /// domain_name
             char domain_name_[PDS_MAX_DOMAIN_NAME_LEN + 1];
             /// boot_filename

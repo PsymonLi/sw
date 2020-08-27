@@ -31,8 +31,8 @@ dhcp_policy::dhcp_policy() {
     server_ip_ = {0};
     mtu_ = 0;
     gateway_ip_ = {0};
-    dns_server_ip_ = {0};
-    ntp_server_ip_ = {0};
+    num_dns_server_ip_ = 0;
+    num_ntp_server_ip_ = 0;
     memset(domain_name_, '\0', sizeof(domain_name_));
     memset(boot_filename_, '\0', sizeof(boot_filename_));
     lease_timeout_ = 0;
@@ -152,8 +152,16 @@ dhcp_policy::init_config(api_ctxt_t *api_ctxt) {
         server_ip_ = dhcp_proxy_spec->server_ip;
         mtu_ = dhcp_proxy_spec->mtu;
         gateway_ip_ = dhcp_proxy_spec->gateway_ip;
-        dns_server_ip_ = dhcp_proxy_spec->dns_server_ip;
-        ntp_server_ip_ = dhcp_proxy_spec->ntp_server_ip;
+
+        num_dns_server_ip_ = dhcp_proxy_spec->num_dns_server_ip;
+        for (uint8_t i = 0; i < num_dns_server_ip_; i++) {
+            dns_server_ip_[i] = dhcp_proxy_spec->dns_server_ip[i];
+        }
+        num_ntp_server_ip_ = dhcp_proxy_spec->num_ntp_server_ip;
+        for (uint8_t i = 0; i < num_ntp_server_ip_; i++) {
+            ntp_server_ip_[i] = dhcp_proxy_spec->ntp_server_ip[i];
+        }
+
         memcpy(domain_name_, dhcp_proxy_spec->domain_name, sizeof(domain_name_));
         memcpy(boot_filename_, dhcp_proxy_spec->boot_filename, sizeof(boot_filename_));
         lease_timeout_ = dhcp_proxy_spec->lease_timeout;
@@ -273,8 +281,15 @@ dhcp_policy::fill_spec_(pds_dhcp_policy_spec_t *spec) {
     dhcp_proxy_spec->server_ip = server_ip_;
     dhcp_proxy_spec->mtu = mtu_;
     dhcp_proxy_spec->gateway_ip = gateway_ip_;
-    dhcp_proxy_spec->dns_server_ip = dns_server_ip_;
-    dhcp_proxy_spec->ntp_server_ip = ntp_server_ip_;
+
+    dhcp_proxy_spec->num_dns_server_ip = num_dns_server_ip_;
+    for (int i = 0; i < num_dns_server_ip_; i++) {
+        dhcp_proxy_spec->dns_server_ip[i] = dns_server_ip_[i];
+    }
+    dhcp_proxy_spec->num_ntp_server_ip = num_ntp_server_ip_;
+    for (int i = 0; i < num_ntp_server_ip_; i++) {
+        dhcp_proxy_spec->ntp_server_ip[i] = ntp_server_ip_[i];
+    }
     memcpy(dhcp_proxy_spec->domain_name, domain_name_, sizeof(domain_name_));
     memcpy(dhcp_proxy_spec->boot_filename, boot_filename_, sizeof(boot_filename_));
     dhcp_proxy_spec->lease_timeout = lease_timeout_;

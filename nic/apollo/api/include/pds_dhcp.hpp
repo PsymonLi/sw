@@ -23,6 +23,8 @@
 #define PDS_MAX_DHCP_RELAY          16
 #define PDS_MAX_DHCP_POLICY         128
 #define PDS_MAX_BOOT_FILENAME_LEN   128
+#define PDS_MAX_DNS_SERVERS         3
+#define PDS_MAX_NTP_SERVERS         3
 
 /// \brief DHCP relay spec
 typedef struct pds_dhcp_relay_spec_s {
@@ -44,8 +46,10 @@ typedef struct pds_dhcp_proxy_spec_s {
     ip_addr_t        server_ip;                                     ///< server ip
     uint32_t         mtu;                                           ///< MTU specified to clients
     ip_addr_t        gateway_ip;                                    ///< gateway ip
-    ip_addr_t        dns_server_ip;                                 ///< DNS server ip
-    ip_addr_t        ntp_server_ip;                                 ///< NTP server ip
+    uint8_t          num_dns_server_ip;                             ///< number of DNS server IPs
+    ip_addr_t        dns_server_ip[PDS_MAX_DNS_SERVERS];            ///< DNS server IPs
+    uint8_t          num_ntp_server_ip;                             ///< number of NTP server IPs
+    ip_addr_t        ntp_server_ip[PDS_MAX_NTP_SERVERS];            ///< NTP server IPs
     char             domain_name[PDS_MAX_DOMAIN_NAME_LEN + 1];      ///< domain name
     char             boot_filename[PDS_MAX_BOOT_FILENAME_LEN + 1];  ///< initial/pxe boot file name
     uint32_t         lease_timeout;                                 ///< DHCP lease timeout
