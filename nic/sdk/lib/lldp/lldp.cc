@@ -322,11 +322,14 @@ cmd_exec (const char* cmd) {
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
 
     if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+        SDK_TRACE_ERR("popen failed...skip lldp query");
+        goto end;
     }
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
     }
+
+end:
     return result;
 }
 
@@ -443,7 +446,9 @@ if_lldp_stats_get (std::string if_name, if_lldp_stats_t *lldp_stats)
              if_name.c_str());
     output = cmd_exec(cmd);
     
-    lldp_stats_parse_json(lldp_stats, output);
+    if (!output.empty()) {
+        lldp_stats_parse_json(lldp_stats, output);
+    }
 
     return SDK_RET_OK;
 }
