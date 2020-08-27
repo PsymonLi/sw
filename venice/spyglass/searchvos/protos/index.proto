@@ -86,3 +86,31 @@ message RawLogsShard {
     map<string, uint32> vpcid = 6 [(gogoproto.nullable) = false];
     map<uint32, VpcIndex> vpcIndex = 7 [(gogoproto.nullable) = false];
 }
+
+// CsvIndexShard represents a sharded index for CSV files
+message CsvIndexShard {
+    int64 startts  = 1;
+    int64 endts  = 2;
+    uint32 fileID = 3;
+    map<string, uint32> vpcid = 6 [(gogoproto.nullable) = false];
+    map<uint32, CsvVpcIndex> vpcIndex = 7 [(gogoproto.nullable) = false];
+}
+
+// FileIDSlice represents a slice of csv file ids
+message FileIDSlice {
+    repeated uint32 fileids = 1;
+}
+
+// DestMapCSVPtr contains mappine from destip to to file ids
+message DestMapCSVPtr {
+    map<uint32, FileIDSlice> fileids = 1 [(gogoproto.nullable) = false];
+}
+
+// CsvVpcIndex represents per VPC Index for CSV files
+message CsvVpcIndex  {
+    map<string, uint32> ipid = 1;
+    map<uint32, string> fileIndex = 2 ;
+    map<string, uint32> fileReverseIndex = 3;
+    map<uint32, FileIDSlice> destidxs = 4 [(gogoproto.nullable) = false]; 	
+	map<uint32, DestMapCSVPtr> srcdestidxs = 5 [(gogoproto.nullable) = false];
+}

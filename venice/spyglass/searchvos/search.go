@@ -329,20 +329,23 @@ mainSearchLoop:
 	for {
 		filesOut := make(chan fileInfo, 1000)
 		if ipSrc != 0 && ipDest != 0 {
-			_, err := s.getFilesForIPs(ctx, qc, tenantName, srcShID, bucket, sip, dip, st, en, filesOut, ascending)
+			_, err := s.getFilesForIPs(ctx,
+				qc, tenantName, vpcName, srcShID, bucket, sip, dip, st, en, filesOut, ascending)
 			if err != nil {
 				return err
 			}
 		} else {
 			if ipSrc != 0 {
-				_, err := s.getFilesForIPs(ctx, qc, tenantName, srcShID, bucket, sip, "", st, en, filesOut, ascending)
+				_, err := s.getFilesForIPs(ctx,
+					qc, tenantName, vpcName, srcShID, bucket, sip, "", st, en, filesOut, ascending)
 				if err != nil {
 					return err
 				}
 			}
 
 			if ipDest != 0 {
-				_, err := s.getFilesForIPs(ctx, qc, tenantName, destShID, bucket, "", dip, st, en, filesOut, ascending)
+				_, err := s.getFilesForIPs(ctx,
+					qc, tenantName, vpcName, destShID, bucket, "", dip, st, en, filesOut, ascending)
 				if err != nil {
 					return err
 				}
@@ -645,7 +648,7 @@ func (s *SearchFwLogsOverVos) queryRawLogs(ctx context.Context,
 }
 
 func (s *SearchFwLogsOverVos) getFilesForIPs(ctx context.Context,
-	qc *queryCache, tenantName string, shID byte, bucket, ipSrc,
+	qc *queryCache, tenantName, vpcName string, shID byte, bucket, ipSrc,
 	ipDest string, startTs, endTs time.Time,
 	out chan<- fileInfo, ascending bool) ([]string, error) {
 	// If the start and endts are within the last 1 hour then also search the files
@@ -662,7 +665,7 @@ func (s *SearchFwLogsOverVos) getFilesForIPs(ctx context.Context,
 				clockHour := time.Date(y, m, d, h, 0, 0, 0, time.UTC)
 				shIndex, ok := clockHourIndex[clockHour]
 				if ok {
-					files := s.getFileNames(qc, shIndex, ipSrc, ipDest)
+					files := s.getFileNames(qc, shIndex, vpcName, ipSrc, ipDest)
 					for _, f := range files {
 						out <- f
 					}
@@ -722,11 +725,15 @@ func (s *SearchFwLogsOverVos) getFilesForIPs(ctx context.Context,
 					s.logger.Errorf("id %s, error in getting object %s %+v", qc.id, obj, err)
 					return
 				}
-				index = newShardIndex()
-				index.decode(data)
+				index = newCsvIndexShard()
+				err = index.Unmarshal(data)
+				if err != nil {
+					s.logger.Errorf("id %s, error in unmarshling object %s %+v", qc.id, obj, err)
+					return
+				}
 				s.scache.indexCache.addShardIndex(obj, index)
 			}
-			files := s.getFileNames(qc, index, ipSrc, ipDest)
+			files := s.getFileNames(qc, index, vpcName, ipSrc, ipDest)
 
 			// TODO:: Verify the file time again, its possible that the same data file was indexed twice.
 			// If spyglass crashes, it will fetch data from vos based on lastProcessedKeys. Its possible that
@@ -791,10 +798,13 @@ func (s *SearchFwLogsOverVos) LoadFwlogsIndexShard(ctx context.Context,
 				s.logger.Errorf("error in getting object %s", obj)
 				return
 			}
-			indexLen := s.decoder(data)
+			err = s.decoder(data)
+			if err != nil {
+				s.logger.Errorf("error in decoding object %s, err %s", obj, err.Error())
+				return
+			}
 			atomic.AddInt32(&totalFilesLoaded, 1)
 			atomic.AddInt32(&totalBytesLoaded, int32(len(data)))
-			atomic.AddInt32(&totalIpsLoaded, int32(indexLen))
 		}(i, obj)
 
 	}
@@ -843,20 +853,24 @@ func getObject(ctx context.Context, bucketName, objectName string, client objsto
 	return data, nil
 }
 
-func (s *SearchFwLogsOverVos) decoder(data []byte) int {
-	index := newShardIndex()
-	index.decode(data)
-	return len(index.Index)
+func (s *SearchFwLogsOverVos) decoder(data []byte) error {
+	index := newCsvIndexShard()
+	err := index.Unmarshal(data)
+	if err != nil {
+		return fmt.Errorf("error in unmarshling CsvIndexShard, err %s", err.Error())
+	}
+	return nil
 }
 
-func (s *SearchFwLogsOverVos) getFileNames(qc *queryCache, index *shardIndex, srcIP, destIP string) []fileInfo {
+func (s *SearchFwLogsOverVos) getFileNames(qc *queryCache,
+	index *protos.CsvIndexShard, vpcName string, srcIP, destIP string) []fileInfo {
 	var files []fileInfo
 	if srcIP != "" && destIP != "" {
-		files = index.getFileNames(qc, srcIP, destIP, source, s.logger)
+		files = getCsvFileNames(qc, index, vpcName, srcIP, destIP, s.logger)
 	} else if srcIP != "" {
-		files = index.getFileNames(qc, srcIP, "", source, s.logger)
+		files = getCsvFileNames(qc, index, vpcName, srcIP, "", s.logger)
 	} else if destIP != "" {
-		files = index.getFileNames(qc, "", destIP, destination, s.logger)
+		files = getCsvFileNames(qc, index, vpcName, "", destIP, s.logger)
 	}
 	return files
 }

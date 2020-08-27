@@ -50,14 +50,14 @@ func (rc *indexCache) getFlowPtrMap(key string) *protos.FlowPtrMap {
 	return v.(*protos.FlowPtrMap)
 }
 
-func (rc *indexCache) addShardIndex(key string, value *shardIndex) {
+func (rc *indexCache) addShardIndex(key string, value *protos.CsvIndexShard) {
 	rc.cache.Add(key, value)
 }
 
-func (rc *indexCache) getShardIndex(key string) *shardIndex {
+func (rc *indexCache) getShardIndex(key string) *protos.CsvIndexShard {
 	v, ok := rc.cache.Get(key)
 	if !ok {
 		return nil
 	}
-	return v.(*shardIndex)
+	return v.(*protos.CsvIndexShard)
 }

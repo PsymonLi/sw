@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/csv"
-	"encoding/gob"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -123,23 +122,23 @@ type rawLogs struct {
 	index map[byte]map[time.Time]*rawLogsShardIndex
 }
 
-// rawLogsShardIndex represents a sharded index used for sharding and indexing CSV logs stored in Minio
-type shardIndex struct {
-	startTs          time.Time
-	endTs            time.Time
-	fileID           uint16
-	Index            map[string]map[direction][]uint16 // IP : [ [Dir] : []Key ]
-	FileIndex        map[uint16]string
-	fileReverseIndex map[string]uint16
-	FlowIndex        map[string]map[string][]uint16 // SrcIP : [ [DestIp] : []Key ]
-}
+// // rawLogsShardIndex represents a sharded index used for sharding and indexing CSV logs stored in Minio
+// type shardIndex struct {
+// 	startTs          time.Time
+// 	endTs            time.Time
+// 	fileID           uint16
+// 	Index            map[string]map[direction][]uint16 // IP : [ [Dir] : []Key ]
+// 	FileIndex        map[uint16]string
+// 	fileReverseIndex map[string]uint16
+// 	FlowIndex        map[string]map[string][]uint16 // SrcIP : [ [DestIp] : []Key ]
+// }
 
 // metaIndex represents the collection of all the sharded CSV logs indices
 type metaIndex struct {
 	// byte == shard ID
 	// time.Time == The clock hour corresponding to the index
 	// shardIndex == index corresponding to the shard ID
-	index map[byte]map[time.Time]*shardIndex
+	index map[byte]map[time.Time]*protos.CsvIndexShard
 }
 
 // MetaIndexer is used for indexing the flow logs
@@ -209,12 +208,14 @@ func NewMetaIndexer(ctx context.Context,
 	return mi
 }
 
-func newShardIndex() *shardIndex {
-	return &shardIndex{
-		Index:            map[string]map[direction][]uint16{},
-		FileIndex:        map[uint16]string{},
-		fileReverseIndex: map[string]uint16{},
-		FlowIndex:        map[string]map[string][]uint16{}}
+func newCsvIndexShard() *protos.CsvIndexShard {
+	return &protos.CsvIndexShard{
+		Startts:  0,
+		Endts:    0,
+		FileID:   0,
+		Vpcid:    map[string]uint32{},
+		VpcIndex: map[uint32]protos.CsvVpcIndex{},
+	}
 }
 
 func newRawLogsShardIndex() *rawLogsShardIndex {
@@ -242,6 +243,16 @@ func newVpcIndex() protos.VpcIndex {
 		DestidxsTemp: map[uint32]protos.FlowPtrMap{},
 		Destidxs:     map[uint32]protos.FilePtr{},
 		Srcdestidxs:  map[uint32]protos.DestMapFlowPtr{},
+	}
+}
+
+func newCsvVpcIndex() protos.CsvVpcIndex {
+	return protos.CsvVpcIndex{
+		Ipid:             map[string]uint32{},
+		FileIndex:        map[uint32]string{},
+		FileReverseIndex: map[string]uint32{},
+		Destidxs:         map[uint32]protos.FileIDSlice{},
+		Srcdestidxs:      map[uint32]protos.DestMapCSVPtr{},
 	}
 }
 
@@ -335,7 +346,7 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 
 			tnIndex, ok := mi.index[logs.Tenant]
 			if !ok {
-				tnIndex = &metaIndex{index: map[byte]map[time.Time]*shardIndex{}}
+				tnIndex = &metaIndex{index: map[byte]map[time.Time]*protos.CsvIndexShard{}}
 				mi.index[logs.Tenant] = tnIndex
 			}
 
@@ -380,19 +391,13 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 						shard := GetShard(srcIpint)
 						destShard := GetShard(destIpint)
 
-						// Dont put srcIp in the Index map. FlowIndex can be used for searching
-						// flows by srcIp.
-						// first update the src shard with srcIP and destShard with destIP
-						// updatedShards[shard] = struct{}{}
-						// mi.updateShardWithIPHelper(tnIndex, clockHour, shard, srcIpint, logs, source)
-
 						updatedShards[destShard] = struct{}{}
-						mi.updateShardWithIPHelper(tnIndex, clockHour, destShard, log[3], logs, destination)
+						mi.updateShardWithIPHelper(tnIndex, clockHour, destShard, vpcName, log[3], logs, destination)
 
 						// Now update srcShard with {srcIp, destIP} flow.
 						// Flow keys are indexed in the src shard
 						updatedShards[shard] = struct{}{}
-						mi.updateFlowKey(tnIndex, clockHour, shard, log[2], log[3], logs)
+						mi.updateFlowKey(tnIndex, clockHour, shard, vpcName, log[2], log[3], logs)
 
 						if atomic.LoadInt32(&mi.shardRawLogs) == EnableShardRawLogs {
 							flowRec, err := parseRawLogs(logs.Tenant, key, logs.DscID, log, mi.logger)
@@ -441,20 +446,13 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 						shard := GetShard(srcIpint)
 						destShard := GetShard(destIpint)
 
-						// fmt.Println("srcShard, destShard", shard, destShard, srcIpint, destIpint)
-						// Dont put srcIp in the Index map. FlowIndex can be used for searching
-						// flows by srcIp.
-						// first update the src shard with srcIP and destShard with destIP
-						// updatedShards[shard] = struct{}{}
-						// mi.updateShardWithIPHelper(tnIndex, shard, srcIpint, logs, source)
-
 						updatedShards[destShard] = struct{}{}
-						mi.updateShardWithIPHelper(tnIndex, clockHour, destShard, logs.Logs[i][3], logs, destination)
+						mi.updateShardWithIPHelper(tnIndex, clockHour, destShard, vpcName, logs.Logs[i][3], logs, destination)
 
 						// Now update srcShard with {srcIp, destIP} flow.
 						// Flow keys are indexed in the src shard
 						updatedShards[shard] = struct{}{}
-						mi.updateFlowKey(tnIndex, clockHour, shard, logs.Logs[i][2], logs.Logs[i][3], logs)
+						mi.updateFlowKey(tnIndex, clockHour, shard, vpcName, logs.Logs[i][2], logs.Logs[i][3], logs)
 
 						if atomic.LoadInt32(&mi.shardRawLogs) == EnableShardRawLogs {
 							flowRec, err := parseRawLogs(logs.Tenant, key, logs.DscID, logs.Logs[i], mi.logger)
@@ -494,19 +492,19 @@ func (mi *MetaIndexer) indexMeta(client objstore.Client, logsChannel chan MetaLo
 				mi.lastProcessedKeys[tokens[0]] = logs.Key
 			}
 
+			startTsUnix := startTs.Unix()
+			endTsUnix := endTs.Unix()
 			for sh := range updatedShards {
-				if tnIndex.index[sh][clockHour].startTs.IsZero() || tnIndex.index[sh][clockHour].startTs.After(startTs) {
-					tnIndex.index[sh][clockHour].startTs = startTs
+				if tnIndex.index[sh][clockHour].Startts == 0 || tnIndex.index[sh][clockHour].Startts > startTsUnix {
+					tnIndex.index[sh][clockHour].Startts = startTsUnix
 				}
 
-				if tnIndex.index[sh][clockHour].endTs.IsZero() || tnIndex.index[sh][clockHour].endTs.Before(endTs) {
-					tnIndex.index[sh][clockHour].endTs = endTs
+				if tnIndex.index[sh][clockHour].Endts == 0 || tnIndex.index[sh][clockHour].Endts < endTsUnix {
+					tnIndex.index[sh][clockHour].Endts = endTsUnix
 				}
 			}
 
 			for sh := range updatedRawLogsShards {
-				startTsUnix := startTs.Unix()
-				endTsUnix := endTs.Unix()
 				if tnRLogs.index[sh][clockHour].index.Startts == 0 || tnRLogs.index[sh][clockHour].index.Startts > startTsUnix {
 					tnRLogs.index[sh][clockHour].index.Startts = startTsUnix
 				}
@@ -558,64 +556,124 @@ func (mi *MetaIndexer) persistIndexHelper(client objstore.Client) {
 }
 
 func (mi *MetaIndexer) updateFlowKey(tnIndex *metaIndex,
-	clockHour time.Time, shard byte, srcIpint, destIpint string, logs MetaLogs) {
+	clockHour time.Time, shard byte, vpcName, srcIP, destIP string, logs MetaLogs) {
 	clockHourMap, ok := tnIndex.index[shard]
 	if !ok {
-		tnIndex.index[shard] = map[time.Time]*shardIndex{}
+		tnIndex.index[shard] = map[time.Time]*protos.CsvIndexShard{}
 		clockHourMap = tnIndex.index[shard]
 	}
 
 	shIndex, ok := clockHourMap[clockHour]
 	if !ok {
-		clockHourMap[clockHour] = newShardIndex()
+		clockHourMap[clockHour] = newCsvIndexShard()
 		shIndex = clockHourMap[clockHour]
 	}
 
-	srcIPMap, ok := shIndex.FlowIndex[srcIpint]
+	// Set perVpc index
+	vpcID, ok := shIndex.Vpcid[vpcName]
 	if !ok {
-		srcIPMap = map[string][]uint16{}
-		shIndex.FlowIndex[srcIpint] = srcIPMap
+		shIndex.FileID++
+		vpcID = shIndex.FileID
+		shIndex.Vpcid[vpcName] = vpcID
 	}
 
-	fileID, ok := shIndex.fileReverseIndex[logs.Key]
+	vpcIndex, ok := shIndex.VpcIndex[vpcID]
 	if !ok {
-		shIndex.fileID++
-		fileID = shIndex.fileID
-		shIndex.fileReverseIndex[logs.Key] = fileID
-		shIndex.FileIndex[fileID] = logs.Key
+		vpcIndex = newCsvVpcIndex()
 	}
-	srcIPMap[destIpint] = append(srcIPMap[destIpint], fileID)
+
+	// Get IPID
+	srcIPID, ok := vpcIndex.Ipid[srcIP]
+	if !ok {
+		shIndex.FileID++
+		srcIPID = shIndex.FileID
+		vpcIndex.Ipid[srcIP] = srcIPID
+	}
+
+	destIPID, ok := vpcIndex.Ipid[destIP]
+	if !ok {
+		shIndex.FileID++
+		destIPID = shIndex.FileID
+		vpcIndex.Ipid[destIP] = destIPID
+	}
+
+	destIPMap, ok := vpcIndex.Srcdestidxs[srcIPID]
+	if !ok {
+		destIPMap = protos.DestMapCSVPtr{Fileids: map[uint32]protos.FileIDSlice{}}
+		vpcIndex.Srcdestidxs[srcIPID] = destIPMap
+	}
+
+	fileids, ok := destIPMap.Fileids[destIPID]
+	if !ok {
+		fileids = protos.FileIDSlice{Fileids: []uint32{}}
+		destIPMap.Fileids[destIPID] = fileids
+	}
+
+	fileID, ok := vpcIndex.FileReverseIndex[logs.Key]
+	if !ok {
+		shIndex.FileID++
+		fileID = shIndex.FileID
+		vpcIndex.FileReverseIndex[logs.Key] = fileID
+		vpcIndex.FileIndex[fileID] = logs.Key
+	}
+	fileids.Fileids = append(fileids.Fileids, fileID)
+	destIPMap.Fileids[destIPID] = fileids
+	vpcIndex.Srcdestidxs[srcIPID] = destIPMap
+	shIndex.VpcIndex[vpcID] = vpcIndex
 }
 
 func (mi *MetaIndexer) updateShardWithIPHelper(tnIndex *metaIndex,
-	clockHour time.Time, shard byte, ipint string, logs MetaLogs, dir direction) {
+	clockHour time.Time, shard byte, vpcName, ip string, logs MetaLogs, dir direction) {
 	clockHourMap, ok := tnIndex.index[shard]
 	if !ok {
-		tnIndex.index[shard] = map[time.Time]*shardIndex{}
+		tnIndex.index[shard] = map[time.Time]*protos.CsvIndexShard{}
 		clockHourMap = tnIndex.index[shard]
 	}
 
 	shIndex, ok := clockHourMap[clockHour]
 	if !ok {
-		clockHourMap[clockHour] = newShardIndex()
+		clockHourMap[clockHour] = newCsvIndexShard()
 		shIndex = clockHourMap[clockHour]
 	}
 
-	dirMap, ok := shIndex.Index[ipint]
+	// Set perVpc index
+	vpcID, ok := shIndex.Vpcid[vpcName]
 	if !ok {
-		dirMap = map[direction][]uint16{}
-		shIndex.Index[ipint] = dirMap
+		shIndex.FileID++
+		vpcID = shIndex.FileID
+		shIndex.Vpcid[vpcName] = vpcID
 	}
 
-	fileID, ok := shIndex.fileReverseIndex[logs.Key]
+	vpcIndex, ok := shIndex.VpcIndex[vpcID]
 	if !ok {
-		shIndex.fileID++
-		fileID = shIndex.fileID
-		shIndex.fileReverseIndex[logs.Key] = fileID
-		shIndex.FileIndex[fileID] = logs.Key
+		vpcIndex = newCsvVpcIndex()
 	}
 
-	dirMap[dir] = append(dirMap[dir], fileID)
+	// Get IPID
+	ipID, ok := vpcIndex.Ipid[ip]
+	if !ok {
+		shIndex.FileID++
+		ipID = shIndex.FileID
+		vpcIndex.Ipid[ip] = ipID
+	}
+
+	fileids, ok := vpcIndex.Destidxs[ipID]
+	if !ok {
+		fileids = protos.FileIDSlice{Fileids: []uint32{}}
+		vpcIndex.Destidxs[ipID] = fileids
+	}
+
+	fileID, ok := vpcIndex.FileReverseIndex[logs.Key]
+	if !ok {
+		shIndex.FileID++
+		fileID = shIndex.FileID
+		vpcIndex.FileReverseIndex[logs.Key] = fileID
+		vpcIndex.FileIndex[fileID] = logs.Key
+	}
+
+	fileids.Fileids = append(fileids.Fileids, fileID)
+	vpcIndex.Destidxs[ipID] = fileids
+	shIndex.VpcIndex[vpcID] = vpcIndex
 }
 
 func (mi *MetaIndexer) updateShardWithRawLogsFlowKeyHelper(tnRLogs *rawLogs,
@@ -889,16 +947,16 @@ func (mi *MetaIndexer) persistIndex(client objstore.Client,
 			if len(tnIndex.index) > 0 {
 				for shID, hourIndex := range tnIndex.index {
 					for clockHour, shIndex := range hourIndex {
-						indexCount := len(shIndex.Index)
-						flowCount := len(shIndex.FlowIndex)
-						data, err := shIndex.encode()
+						// indexCount := len(shIndex.Index)
+						// flowCount := len(shIndex.FlowIndex)
+						data, err := shIndex.Marshal()
 						if err != nil {
 							mi.logger.Errorf("error in encoding shard index, tenant %s, shID %s, clockHour %+v, err %s",
 								tnName, shID, clockHour, err.Error())
 							continue
 						}
-						fStartTs := shIndex.startTs.Format(timeFormatWithColon)
-						fEndTs := shIndex.endTs.Format(timeFormatWithColon)
+						fStartTs := time.Unix(shIndex.Startts, 0).Format(timeFormatWithColon)
+						fEndTs := time.Unix(shIndex.Endts, 0).Format(timeFormatWithColon)
 						jitter := time.Now().UTC().Format(timeFormatWithColon)
 						fileName := fmt.Sprintf("processedIndices/%d/%s/", shID, clockHour.Format(time.RFC3339)) + fStartTs + "_" + fEndTs + "_" + jitter
 						dataInBytes := data
@@ -927,10 +985,10 @@ func (mi *MetaIndexer) persistIndex(client objstore.Client,
 
 						// mi.recoveryChannel <- objectToDeleteForRecovery{bucket: bucketName, object: fileName}
 
-						mi.logger.Debugf("persisted index %d, %d, %s, %s", indexCount, flowCount, bucketName, fileName)
-						metric.addMetaIndexShardCount(int(shID), int64(indexCount))
-						metric.addMetaFlowIndexShardCount(int(shID), int64(flowCount))
-						metric.addMetaIndexShardFileCount(int(shID), 1)
+						mi.logger.Debugf("persisted index %s, %s", bucketName, fileName)
+						// metric.addMetaIndexShardCount(int(shID), int64(indexCount))
+						// metric.addMetaFlowIndexShardCount(int(shID), int64(flowCount))
+						// metric.addMetaIndexShardFileCount(int(shID), 1)
 
 						if mi.testChannel != nil {
 							mi.testChannel <- fileName
@@ -1000,21 +1058,21 @@ func (mi *MetaIndexer) persistRawLogsFlowPtrMap(ctx context.Context, shID byte, 
 	tnRLogs.previousOffset = offset
 }
 
-func (shi *shardIndex) encode() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	encoder := gob.NewEncoder(buf)
-	err := encoder.Encode(shi)
-	if err != nil {
-		return nil, fmt.Errorf("error in gob encoding err %s", err.Error())
-	}
-	return buf.Bytes(), nil
-}
+// func (shi *shardIndex) encode() ([]byte, error) {
+// 	buf := new(bytes.Buffer)
+// 	encoder := gob.NewEncoder(buf)
+// 	err := encoder.Encode(shi)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error in gob encoding err %s", err.Error())
+// 	}
+// 	return buf.Bytes(), nil
+// }
 
-func (shi *shardIndex) decode(data []byte) error {
-	rd := bytes.NewReader(data)
-	decoder := gob.NewDecoder(rd)
-	return decoder.Decode(shi)
-}
+// func (shi *shardIndex) decode(data []byte) error {
+// 	rd := bytes.NewReader(data)
+// 	decoder := gob.NewDecoder(rd)
+// 	return decoder.Decode(shi)
+// }
 
 func decodeRawLogsProtobuf(rd io.Reader, rls *protos.RawLogsShard) error {
 	data, err := ioutil.ReadAll(rd)
@@ -1028,13 +1086,34 @@ func decodeRawLogsProtobuf(rd io.Reader, rls *protos.RawLogsShard) error {
 	return nil
 }
 
-func (shi *shardIndex) getFileNames(qc *queryCache, srcIP, destIP string, dir direction, logger log.Logger) []fileInfo {
+func getCsvFileNames(qc *queryCache,
+	shi *protos.CsvIndexShard, vpcName, srcIP, destIP string, logger log.Logger) []fileInfo {
 	result := []fileInfo{}
+	vpcID, ok := shi.Vpcid[vpcName]
+	if !ok {
+		return result
+	}
+
+	vpcIndex, ok := shi.VpcIndex[vpcID]
+	if !ok {
+		return result
+	}
+
 	if srcIP != "" && destIP != "" {
-		destIPMap, ok := shi.FlowIndex[srcIP]
+		srcIPID, ok := vpcIndex.Ipid[srcIP]
+		if !ok {
+			return result
+		}
+
+		destIPID, ok := vpcIndex.Ipid[destIP]
+		if !ok {
+			return result
+		}
+
+		destIPMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if ok {
-			for _, key := range destIPMap[destIP] {
-				fi, err := newFileInfo(shi.FileIndex[key])
+			for _, key := range destIPMap.Fileids[destIPID].Fileids {
+				fi, err := newFileInfo(vpcIndex.FileIndex[key])
 				if err != nil {
 					logger.Errorf(err.Error())
 					continue
@@ -1045,11 +1124,16 @@ func (shi *shardIndex) getFileNames(qc *queryCache, srcIP, destIP string, dir di
 			logger.Debugf("id %s, entry not found for src ip %s", qc.id, srcIP)
 		}
 	} else if srcIP != "" {
-		destIPMap, ok := shi.FlowIndex[srcIP]
+		srcIPID, ok := vpcIndex.Ipid[srcIP]
+		if !ok {
+			return result
+		}
+
+		destIPMap, ok := vpcIndex.Srcdestidxs[srcIPID]
 		if ok {
-			for _, v := range destIPMap {
-				for _, key := range v {
-					fi, err := newFileInfo(shi.FileIndex[key])
+			for _, v := range destIPMap.Fileids {
+				for _, key := range v.Fileids {
+					fi, err := newFileInfo(vpcIndex.FileIndex[key])
 					if err != nil {
 						logger.Errorf(err.Error())
 						continue
@@ -1061,10 +1145,15 @@ func (shi *shardIndex) getFileNames(qc *queryCache, srcIP, destIP string, dir di
 			logger.Debugf("id %s, entry not found for src ip %s", qc.id, srcIP)
 		}
 	} else {
-		v, ok := shi.Index[destIP]
+		destIPID, ok := vpcIndex.Ipid[destIP]
+		if !ok {
+			return result
+		}
+
+		v, ok := vpcIndex.Destidxs[destIPID]
 		if ok {
-			for _, f := range v[dir] {
-				fi, err := newFileInfo(shi.FileIndex[f])
+			for _, f := range v.Fileids {
+				fi, err := newFileInfo(vpcIndex.FileIndex[f])
 				if err != nil {
 					logger.Errorf(err.Error())
 					continue

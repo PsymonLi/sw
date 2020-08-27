@@ -615,6 +615,38 @@ func testMetaIndexDebugRESTHandle(t *testing.T, flowsToUseForSearchTest [][]stri
 			Assert(t, len(flows) == 0, "flows got returned for non existing port %s", sport)
 		}
 	})
+
+	t.Run("TestSearchNonExistingVpc", func(t *testing.T) {
+		// Search for flows
+		for _, flow := range flowsToUseForSearchTest {
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
+			bucket := "default.indexmeta"
+			dataBucket := "default.indexmeta"
+
+			src := flow[2]
+			dest := flow[3]
+			sport := "100"
+			dport := "100"
+			proto := "TCP"
+			returnFiles := "true"
+			returnFlows := "true"
+			vpcName := "dummy"
+			uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&src=" + src + "&dest=" + dest +
+				"&sport=" + sport + "&dport=" + dport + "&proto=" + proto + "&returnFiles=" + returnFiles + "&returnFlows=" + returnFlows +
+				"&sort=descending" + "&purge=5s" + "&vpc=" + vpcName)
+			if startTs != "" && endTs != "" {
+				uri += "&startts=" + startTs + "&endts=" + endTs
+			}
+			result := getHelper(t, uri)
+			flowsInterface, ok := result["flows"]
+			Assert(t, ok, "flows key is not present in the returned data")
+			flows, ok := flowsInterface.([]interface{})
+			Assert(t, ok, "flows expected type is []interface{}")
+			Assert(t, len(flows) == 0, "flows returned for non existing vpc %s", vpcName)
+		}
+	})
 }
 
 func testSearchRawLogs(t *testing.T, logger log.Logger, flowsToUseForSearchTest [][]string) {
@@ -986,6 +1018,38 @@ func testSearchRawLogs(t *testing.T, logger log.Logger, flowsToUseForSearchTest 
 		for _, flow := range flowsToUseForSearchTest {
 			helper(flow, "2006-01-02T15:00:00Z", "2006-01-02T15:00:30Z")
 			helper(flow, "2006-01-02T15:00:30Z", "2006-01-02T15:00:45Z")
+		}
+	})
+
+	t.Run("TestSearchNonExistingVpc", func(t *testing.T) {
+		// Search for flows
+		for _, flow := range flowsToUseForSearchTest {
+			startTs := "2006-01-02T15:00:00Z"
+			endTs := "2006-01-02T15:05:00Z"
+			bucket := "default.rawlogs"
+			dataBucket := "default.rawlogs"
+
+			src := flow[2]
+			dest := flow[3]
+			sport := "100"
+			dport := "100"
+			proto := "TCP"
+			vpcName := "dummy"
+			returnFiles := "true"
+			returnFlows := "true"
+			uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.SpyglassRESTPort) + "/debug/fwlogs/query" +
+				"?" + "&bucket=" + bucket + "&dataBucket=" + dataBucket + "&src=" + src + "&dest=" + dest +
+				"&sport=" + sport + "&dport=" + dport + "&proto=" + proto + "&returnFiles=" + returnFiles + "&returnFlows=" + returnFlows +
+				"&sort=descending" + "&purge=5s" + "&vpc=" + vpcName)
+			if startTs != "" && endTs != "" {
+				uri += "&startts=" + startTs + "&endts=" + endTs
+			}
+			result := getHelper(t, uri)
+			flowsInterface, ok := result["flows"]
+			Assert(t, ok, "flows key is not present in the returned data")
+			flows, ok := flowsInterface.([]interface{})
+			Assert(t, ok, "flows expected type is []interface{}")
+			Assert(t, len(flows) == 0, "flows returned for non existing vpc %s", vpcName)
 		}
 	})
 }
