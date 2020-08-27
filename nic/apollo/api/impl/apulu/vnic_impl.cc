@@ -944,6 +944,8 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     } else {
          vnic_data.ing_vnic_info.tx_policer_id = PDS_IMPL_RSVD_POLICER_HW_ID;
     }
+    sdk::lib::memrev(vnic_data.ing_vnic_info.public_mac,
+                     spec->public_mac_addr, ETH_ADDR_LEN);
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
                                        NULL, NULL, &vnic_data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -959,6 +961,10 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
             ((policer_impl *)(rx_policer->impl()))->hw_id();
     } else {
         rx_vnic_data.egr_vnic_info.rx_policer_id = PDS_IMPL_RSVD_POLICER_HW_ID;
+    }
+    if (is_mac_set(spec->public_mac_addr)) {
+        sdk::lib::memrev(rx_vnic_data.egr_vnic_info.private_mac, spec->mac_addr,
+                         ETH_ADDR_LEN);
     }
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_RX_VNIC, hw_id_,
                                        NULL, NULL, &rx_vnic_data);
