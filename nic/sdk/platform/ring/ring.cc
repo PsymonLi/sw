@@ -11,6 +11,7 @@
 using sdk::asic::asic_mem_read;
 using sdk::asic::asic_mem_write;
 using sdk::asic::asic_reg_write;
+using sdk::asic::asic_reg_read;
 
 namespace sdk {
 namespace platform {
@@ -23,7 +24,7 @@ static inline bool is_cpu_zero_copy_enabled()
 
 
 sdk_ret_t
-ring::init(ring_meta_t *meta, mpartition *mpartition) {
+ring::init(ring_meta_t *meta, mpartition *mpartition, bool init_slots, bool map) {
     uint32_t reg_size;
     uint32_t required_size;
 
@@ -41,6 +42,10 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
 
     SDK_ASSERT(meta_.max_rings);
 
+    SDK_TRACE_DEBUG("ring init, ring types %u slot size %u "
+                    "max rings %u num slots %u", meta_.ring_types_in_region,
+                    meta_.slot_size_in_bytes, meta_.max_rings, meta_.num_slots);
+
     base_addr_ = mpartition_->start_addr(meta_.hbm_reg_name.c_str());
     SDK_ASSERT(base_addr_ != INVALID_MEM_ADDRESS);
     if (meta_.obj_size) {
@@ -53,12 +58,12 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
         meta_.ring_types_in_region * meta_.max_rings;
     SDK_ASSERT(reg_size >= required_size);
 
-    if (meta_.init_slots) {
+    if (init_slots) {
         SDK_ASSERT(obj_base_addr_ && meta_.obj_size);
         SDK_TRACE_DEBUG("Initializing ring %s", meta_.hbm_reg_name.c_str());
         for (uint32_t i = 0; i < meta_.num_slots; i++) {
-            uint64_t slot_addr = base_addr_ + i * meta_.slot_size_in_bytes;
-            uint64_t obj_addr = obj_base_addr_ + i * meta_.obj_size;
+            mem_addr_t slot_addr = base_addr_ + i * meta_.slot_size_in_bytes;
+            mem_addr_t obj_addr = obj_base_addr_ + i * meta_.obj_size;
             obj_addr = htonll(obj_addr);
             asic_mem_write(slot_addr, (uint8_t *)&obj_addr, meta_.slot_size_in_bytes);
         }
@@ -80,12 +85,12 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
     }
 
     sem_addr_ = 0;
-    if (meta_.alloc_semaphore_addr &&
-            ASIC_SEM_RAW_IS_PI_CI(meta_.alloc_semaphore_addr)) {
+    if (meta_.alloc_semaphore_addr && init_slots &&
+        ASIC_SEM_RAW_IS_PI_CI(meta_.alloc_semaphore_addr)) {
         uint32_t val32;
 
         // Set CI = ring size
-        SDK_TRACE_VERBOSE("Setting ring semaphore ci to %d", meta_.num_slots);
+        SDK_TRACE_VERBOSE("Setting ring semaphore ci to %u", meta_.num_slots);
         val32 = meta_.num_slots;
         asic_reg_write(meta_.alloc_semaphore_addr +
                 ASIC_SEM_INC_NOT_FULL_CI_OFFSET, &val32);
@@ -94,34 +99,40 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
         val32 = 0;
         asic_reg_write(meta_.alloc_semaphore_addr, &val32);
 
-        sem_addr_ = meta_.alloc_semaphore_addr;
     }
+    sem_addr_ = meta_.alloc_semaphore_addr;
 
     ring_size_shift_ = log2(meta_.num_slots);
     slot_addr_ = base_addr_;
     slot_size_ = meta_.slot_size_in_bytes ;
 
-    if  (is_cpu_zero_copy_enabled()) {
-        virt_base_addr_= (uint64_t)sdk::lib::pal_mem_map(base_addr_,
-                                           meta_.num_slots *
-                                           meta_.slot_size_in_bytes);
+    SDK_TRACE_DEBUG("ring init base_addr 0x%lx, ring size shift %u"
+                    " slot addr 0x%lx, slot size %u",
+                    base_addr_, ring_size_shift_, slot_addr_, slot_size_);
+
+    if  (is_cpu_zero_copy_enabled() && map) {
+        virt_base_addr_ = (mem_addr_t)sdk::lib::pal_mem_map(base_addr_,
+                                                            meta_.num_slots *
+                                                            meta_.slot_size_in_bytes);
 
          // If the object ring is present, lets memory-map the object memory
          // region too.
          if (meta_.obj_size) {
-             virt_obj_base_addr_ = (uint64_t)sdk::lib::pal_mem_map(
+             virt_obj_base_addr_ = (mem_addr_t)sdk::lib::pal_mem_map(
                      obj_base_addr_, meta_.num_slots * meta_.obj_size);
             if (!virt_obj_base_addr_) {
-                SDK_TRACE_ERR("Failed to mmap the OBJ Ring %s",
+                SDK_TRACE_ERR("Failed to mmap the obj ring %s",
                    meta_.hbm_reg_name.c_str());
                 return SDK_RET_NO_RESOURCE;
             } else {
-                SDK_TRACE_ERR("mmap the OBJ Ring 0x%lx phy  @ virt 0x%lx",
-                   obj_base_addr_, virt_obj_base_addr_);
+                SDK_TRACE_ERR("mmap the obj ring %s phys addr 0x%lx "
+                              "virt addr 0x%lx", meta_.hbm_reg_name.c_str(),
+                              obj_base_addr_, virt_obj_base_addr_);
             }
         }
 
         virt_slot_addr_ = virt_base_addr_;
+        SDK_TRACE_DEBUG("ring init virt addr 0x%lx", virt_base_addr_);
     }
 
     return SDK_RET_OK;
@@ -152,8 +163,8 @@ inline void ring::move_to_next_elem()
 #endif
     }
 
-    SDK_TRACE_DEBUG("updated pc_index queue, index %u, virt-slot-addr 0x%lx, addr 0x%lx, valid_bit 0x%lx",
-                    prod_cons_idx_, (uint64_t)virt_slot_addr_,
+    SDK_TRACE_DEBUG("updated pc_index queue, index %u virt-slot-addr 0x%lx addr 0x%lx, valid_bit %lu",
+                    prod_cons_idx_, (mem_addr_t)virt_slot_addr_,
                     slot_addr_, valid_bit_val_);
     return;
 }
@@ -171,9 +182,9 @@ sdk_ret_t ring::poll(ring_msg_batch_t *msg_batch)
             msg_data = *(uint64_t *)virt_slot_addr_;
         } else {
             if ((ret = sdk::asic::asic_mem_read(slot_addr_,
-                  (uint8_t *)&msg_data,
-                  sizeof(uint64_t), true)) != SDK_RET_OK) {
-                SDK_TRACE_ERR("Failed to read the slot msg from the hw");
+                (uint8_t *)&msg_data, sizeof(uint64_t), true)) != SDK_RET_OK) {
+                SDK_TRACE_ERR("Failed to read the slot addr 0x%lx from the hw",
+                              slot_addr_);
                 // TODO: Is this harmless ? Can we get away without returning failure
                 // Returning failure here will cause data loss
                 return ret;
@@ -187,7 +198,6 @@ sdk_ret_t ring::poll(ring_msg_batch_t *msg_batch)
 
         // Mask off valid bit
         msg_data &= ~RING_MSG_VALID_BIT_MASK;
-        SDK_TRACE_DEBUG("msg_data %lu", msg_data);
 
         /*
          * ASSUMPTION: Each elem in ring is just one dword.
@@ -210,21 +220,33 @@ sdk_ret_t ring::poll(ring_msg_batch_t *msg_batch)
      * reduce CSR-write overheads.
      */
     if (msg_cnt && !(sem_write_batch++ % RING_SEM_CI_BATCH_SIZE) && sem_addr_) {
-        SDK_TRACE_DEBUG("updating CI, addr 0x%lx, ci %u",
-		    sem_addr_,
-			prod_cons_idx_);
-	    if ((ret = sdk::asic::asic_reg_write(sem_addr_, &prod_cons_idx_, 1,
-		      ASIC_WRITE_MODE_WRITE_THRU)) != SDK_RET_OK) {
-	        SDK_TRACE_ERR("Failed to program CI semaphore");
-	        return ret;
-	    }
+        if ((ret = sdk::asic::asic_reg_write(
+            sem_addr_ + ASIC_SEM_INC_NOT_FULL_CI_OFFSET, &prod_cons_idx_, 1,
+            ASIC_WRITE_MODE_WRITE_THRU)) != SDK_RET_OK) {
+            SDK_TRACE_ERR("Failed to program CI semaphore at addr 0x%lx",
+                          sem_addr_ + ASIC_SEM_INC_NOT_FULL_CI_OFFSET);
+            return ret;
+        }
     }
-
-    SDK_TRACE_DEBUG("Process batch, total-msgs %lu", msg_cnt);
 
     batch->msg_cnt = msg_cnt;
 
     return SDK_RET_OK;
+}
+
+uint32_t
+ring::queue_avail(void) {
+    if (meta_.alloc_semaphore_addr &&
+        ASIC_SEM_RAW_IS_PI_CI(meta_.alloc_semaphore_addr)) {
+        uint32_t pi, ci;
+
+        asic_reg_read(meta_.alloc_semaphore_addr, &pi);
+        asic_reg_read(meta_.alloc_semaphore_addr +
+                      ASIC_SEM_INC_NOT_FULL_CI_OFFSET, &ci);
+
+        return ci - pi;
+    }
+    return -1;
 }
 
 } // namespace platform

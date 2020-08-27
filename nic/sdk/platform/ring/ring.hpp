@@ -21,7 +21,7 @@ namespace platform {
 #define is_ring_type_send(meta) 0 // Only CPU consume/rx ring type supported currently
 
 #define MAX_DWORD_RING_MSG  1
-#define RING_MSG_MAX_BATCH_SIZE 64
+#define RING_MSG_MAX_BATCH_SIZE 1024
 #define MAX_DWORD_RING_MSG_BATCH    (MAX_DWORD_RING_MSG * RING_MSG_MAX_BATCH_SIZE)
 typedef struct ring_msg_batch_s {
     uint64_t dword[MAX_DWORD_RING_MSG_BATCH];
@@ -36,7 +36,7 @@ typedef struct ring_meta_s {
     uint32_t    num_slots;
     uint32_t    slot_size_in_bytes;
     uint32_t    obj_size;
-    uint64_t    alloc_semaphore_addr;
+    mem_addr_t  alloc_semaphore_addr;
     bool        init_slots;
     uint32_t    ring_types_in_region;
     uint32_t    ring_type_offset;
@@ -52,40 +52,51 @@ class ring {
 public:
     ring() {};
     ~ring() {};
-    sdk_ret_t init(ring_meta_t *meta, mpartition *mpartition);
-    uint64_t get_base_addr(uint32_t qid) {
+    sdk_ret_t init(ring_meta_t *meta, mpartition *mpartition, bool init_slots,
+                   bool map=true);
+    mem_addr_t get_base_addr(uint32_t qid) {
         SDK_ASSERT(!meta_.is_global);
         return base_addr_ + meta_.ring_type_offset +
             (qid * meta_.num_slots * meta_.slot_size_in_bytes *
              meta_.ring_types_in_region);
     }
-    uint64_t get_base_addr(void) {
+    mem_addr_t get_base_addr(void) {
         SDK_ASSERT(meta_.is_global);
         return base_addr_;
     }
+    const mem_addr_t get_virt_base_addr(void) {
+        return virt_base_addr_;
+    }
+
+    const mem_addr_t get_sema_addr(void) {
+        return sem_addr_;
+    }
+
     static ring_meta_t *find_ring(std::string name, int num_rings,
             ring_meta_t *ring_meta) {
         for (int i = 0; i < num_rings; i++) {
             if (name.compare(ring_meta[i].ring_name) == 0) {
-                return ring_meta;
+                return &ring_meta[i];
             }
         }
         return NULL;
     }
     // Poll the ring and return batch of msgs
     sdk_ret_t poll(ring_msg_batch_t *msg_batch);
+    const std::string ring_name(void) { return meta_.ring_name; }
+    uint32_t queue_avail(void);
 
 private:
     ring_meta_t     meta_;
     mpartition      *mpartition_;
-    uint64_t        base_addr_;
-    uint64_t        obj_base_addr_;
-    uint64_t        virt_base_addr_;
-    uint64_t        virt_obj_base_addr_;
-    uint64_t        slot_addr_;
-    uint64_t        virt_slot_addr_; //mmap'ed virtual address of the ring slot
+    mem_addr_t      base_addr_;
+    mem_addr_t      obj_base_addr_;
+    mem_addr_t      virt_base_addr_;
+    mem_addr_t      virt_obj_base_addr_;
+    mem_addr_t      slot_addr_;
+    mem_addr_t      virt_slot_addr_; //mmap'ed virtual address of the ring slot
     uint64_t        valid_bit_val_;
-    uint64_t        sem_addr_;
+    mem_addr_t      sem_addr_;
     uint32_t        prod_cons_idx_; // Consumer index in case of RXQ
     uint16_t        slot_size_; //bytes
     uint16_t        ring_size_shift_;

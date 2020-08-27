@@ -807,7 +807,8 @@ elba_cfg_init (asic_cfg_t *cfg, asic_cfg_t& elba_cfg)
     }
     for (int i = 0; i < cfg->num_rings; i++) {
         sdk::platform::ring ring;
-        ring.init(&cfg->ring_meta[i], cfg->mempartition);
+        ring.init(&cfg->ring_meta[i], cfg->mempartition,
+                  cfg->ring_meta[i].init_slots);
     }
 
     elba_cfg.completion_func = cfg->completion_func;

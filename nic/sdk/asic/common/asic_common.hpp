@@ -524,6 +524,16 @@ namespace asic {
 #define CORECLK_FREQ_ASIC_10         833333333  /*  833.333MHz (precise) */
 #define CORECLK_FREQ_ASIC_11         750250000  /*  750.250MHz (precise) */
 
+// ring names
+#define RING_NAME_RNMDR                 "RNMDR"
+#define RING_NAME_TNMDR                 "TNMDR"
+#define RING_NAME_SERQ                  "SERQ"
+#define RING_NAME_SESQ                  "SESQ"
+#define RING_NAME_TCP_OOO_RX2TX         "TCP_OOO_RX2TX"
+#define RING_NAME_TCP_OOO_QUEUE         "TCP_OOO_QUEUE"
+#define RING_NAME_GC_RNMDR              "GC_RNMDPR"
+#define RING_NAME_GC_TNMDR              "GC_TNMDPR"
+#define RING_NAME_ACTL_Q                "TCP_ACTL_Q"
 
 #ifdef __cplusplus
 }    // namespace asic
