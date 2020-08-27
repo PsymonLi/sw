@@ -104,6 +104,10 @@ span.searchwidget-select-panel-template-item-options-item:hover {
 
 .searchwidget .ui-autocomplete-token-icon-icon-btn {
   color: #383838;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .searchwidget .ui-autocomplete-multiple-container.ui-widget.ui-inputtext.ui-state-default.ui-state-focus {
@@ -122,5 +126,6 @@ span.searchwidget-select-panel-template-item-options-item:hover {
 
 .searchwidget .ui-autocomplete-multiple-container {
   background: transparent;
+  border: none;
   padding-right: 0px;
 }

@@ -101,12 +101,7 @@ $table-headerheight: 55px;
       th,
       td {
         width: 100%;
-        font-family: Roboto;
-        font-weight: normal;
-        font-stretch: condensed;
-        font-style: normal;
-        line-height: normal;
-        letter-spacing: normal;
+        @include primary-font();
         color: #353532 !important;
         border-left: 1px solid transparent !important;
         border-right: 1px solid transparent !important;

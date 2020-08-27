@@ -1,3 +1,5 @@
+@import 'src/import-mixins';
+
 .naplesdetail-interface-charts-container .naplesdetail-interface-table-container .naplesdetail-interface-table {
 
   .naplesdetail-interface-table-collapseicon {
@@ -30,71 +32,69 @@
       overflow: auto;
     }
 
-    tr {
-      background-color: transparent !important;
-      border-collapse: collapse;
-      height: 28px;
-      display: table;
-      width: 100%;
-      table-layout: fixed;
-    }
+    .ui-table-thead,
+    .ui-table-tbody {
+      tr {
+        background-color: transparent !important;
+        border-collapse: collapse;
+        height: 28px;
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
 
-    tr.selected {
-      background-color: rgb(238, 231, 224) !important;
-    }
+      tr.selected {
+        background-color: rgb(238, 231, 224) !important;
+      }
 
-    th,
-    td {
-      width: 100%;
-      font-family: Roboto;
-      font-weight: normal;
-      font-stretch: condensed;
-      font-style: normal;
-      line-height: normal;
-      letter-spacing: normal;
-      color: #353532;
-      border-left: 1px solid transparent;
-      border-right: 1px solid transparent;
-      border-top: 1px solid transparent;
-    }
+      th,
+      td {
+        @include secondary-font();
+        width: 100%;
+        color: #353532;
+        border-left: 1px solid transparent;
+        border-right: 1px solid transparent;
+        border-top: 1px solid transparent;
+      }
 
-    tr.naplesdetail-interface-row-notopborder th {
-      border-top: 0px solid transparent;
-    }
+      tr.naplesdetail-interface-row-notopborder th {
+        border-top: 0px solid transparent;
+      }
 
-    th.naplesdetail-interface-cell-noborder,
-    td.naplesdetail-interface-cell-noborder {
-      border-bottom: 1px solid transparent;
-    }
+      th.naplesdetail-interface-cell-noborder,
+      td.naplesdetail-interface-cell-noborder {
+        border-bottom: 1px solid transparent;
+      }
 
-    th {
-      background-color: #e7e7e3;
-      font-size: 12px;
-      border-right: 1px solid #fff;
-      border-top: 1px solid #D5D5D5;
-      vertical-align: middle;
-    }
+      th {
+        background-color: #e7e7e3;
+        font-size: 12px;
+        border-right: 1px solid #fff;
+        border-top: 1px solid #D5D5D5;
+        vertical-align: middle;
+      }
 
-    th.naplesdetail-interface-col-textmiddle {
-      text-align: center;
-    }
+      th.naplesdetail-interface-col-textmiddle {
+        text-align: center;
+      }
 
-    th:last-of-type {
-      border-right: 0px solid transparent;
-    }
+      th:last-of-type {
+        border-right: 0px solid transparent;
+      }
 
-    td.naplesdetail-interface-col-fixwidth,
-    th.naplesdetail-interface-col-fixwidth {
-      width: 70px !important;
-    }
+      td.naplesdetail-interface-col-fixwidth,
+      th.naplesdetail-interface-col-fixwidth {
+        width: 70px !important;
+      }
 
-    td.naplesdetail-interface-col-bytes,
-    th.naplesdetail-interface-col-bytes {
-      width: 70% !important;
-    }
+      td.naplesdetail-interface-col-bytes,
+      th.naplesdetail-interface-col-bytes {
+        width: 70% !important;
+      }
 
-    td {
-      font-size: 12px;
+      td {
+        font-size: 12px;
+      }
     }
   }
 }

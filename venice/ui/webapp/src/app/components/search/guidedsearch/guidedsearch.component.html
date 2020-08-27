@@ -63,13 +63,13 @@
   <div fxLayout="row" fxLayoutAlign="start" class="guidesearch-row"
        *ngIf="selectedKinds && selectedKinds.length == 1">
     <div fxLayout="column" class="guidesearch-row-fieldtag">
-      <div class="guidesearch-section-title guidesearch-field-title">
-        <span class="guidesearch-title-label-left">Has:</span><span
-              class="guidesearch-title-label-right">Field</span>
+      <div fxLayoutAlign="start center" class="guidesearch-section-title guidesearch-field-title">
+        <span class="guidesearch-title-label-left">Has:</span>
+        <span class="guidesearch-title-label-right">Field</span>
         <i class="guidesearch-set-selectfield fa " tabindex="0"
            (click)="setShowSelectField($event)"
            (keydown)="($event.which ==13)? setShowSelectField($event) : ''"
-           [ngClass]="{'fa-plus':!isToSelectField,'fa-remove':isToSelectField}" fxFlex="26px"
+           [ngClass]="{'fa-plus':!isToSelectField,'fa-remove':isToSelectField}"
            title="{{isToSelectField? 'Clear Field Search' : 'Open Field Search'}}"></i>
       </div>
       <div class="guidesearch-field-selected-fields-content-div" *ngIf="isToSelectField">
@@ -83,13 +83,13 @@
   </div>
   <div fxLayout="row" fxLayoutAlign="start" class="guidesearch-row">
     <div fxLayout="column" class="guidesearch-row-fieldtag">
-      <div class="guidesearch-section-title guidesearch-label-title">
-        <span class="guidesearch-title-label-left">Tag:</span><span
-              class="guidesearch-title-label-right">Label</span>
+      <div fxLayoutAlign="start center" class="guidesearch-section-title guidesearch-label-title">
+        <span class="guidesearch-title-label-left">Tag:</span>
+        <span class="guidesearch-title-label-right">Label</span>
         <i class="guidesearch-set-selectlabel fa " tabindex="0"
            (click)="setShowSelectLabel($event)"
            (keydown)="($event.which ==13)? setShowSelectLabel($event) : ''"
-           [ngClass]="{'fa-plus':!isToSelectLabel,'fa-remove':isToSelectLabel}" fxFlex="26px"
+           [ngClass]="{'fa-plus':!isToSelectLabel,'fa-remove':isToSelectLabel}"
            title="{{isToSelectLabel? 'Clear Label Search' : 'Open Label Search'}}"></i>
       </div>
       <div class="guidesearch-label-selected-label-content-div" *ngIf="isToSelectLabel">

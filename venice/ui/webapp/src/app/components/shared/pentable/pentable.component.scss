@@ -67,6 +67,14 @@ app-pentable,
     }
   }
 
+  &:focus {
+
+    &>td,
+    &+tr>td {
+      box-shadow: none;
+    }
+  }
+
   &:last-child {
     border-bottom: none;
   }
@@ -79,6 +87,10 @@ app-pentable,
     position: absolute;
     right: 0;
     top: 5px;
+
+    .mat-icon-button:focus {
+      outline: none;
+    }
   }
 
   td.pentable-td-rowexpand {
@@ -91,10 +103,19 @@ app-pentable,
   width: 50px;
 
   .ui-chkbox {
+    height: 1.125em;
     margin-right: 0;
+    width: 1.125em;
 
     .ui-chkbox-box {
+      border-radius: 2px;
       box-shadow: none;
+      height: 1.125em;
+      width: 1.125em;
+
+      .ui-chkbox-icon {
+        font-size: 1em;
+      }
     }
   }
 
@@ -110,6 +131,12 @@ app-pentable,
       .ui-dropdown-trigger {
         right: unset;
         width: 20px;
+
+        .ui-dropdown-trigger-icon {
+          font-size: 1em;
+          margin-left: -.33em;
+          margin-top: -.41em;
+        }
       }
     }
   }
@@ -156,7 +183,6 @@ app-pentable,
   .ui-paginator-element {
     border-color: #e7e7e3;
     border-radius: 0;
-    height: 100%;
 
     &.ui-state-active {
       border: 0;
@@ -173,6 +199,7 @@ app-pentable,
   .ui-dropdown {
     height: 24px;
     margin-left: 0;
+    margin-top: 4px;
 
     .ui-dropdown-label {
       padding-bottom: 1px;
@@ -180,17 +207,9 @@ app-pentable,
     }
   }
 
-  .ui-paginator-element {
-    height: 24px;
-    min-width: 36px;
-    padding-left: 8px;
-    padding-right: 8px;
-    width: unset;
-  }
-
   .ui-paginator-right-content {
     @include primary-font(14px);
-    bottom: 1px;
+    bottom: 6px;
     position: absolute;
     right: 15px;
 

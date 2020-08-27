@@ -6,6 +6,7 @@ $vertical-gutter: 5px;
 .guidesearch {
   font-family: "Fira Sans Condensed";
   color: #676763;
+  cursor: default;
   font-size: 14px;
   padding: 5px;
 }
@@ -13,10 +14,11 @@ $vertical-gutter: 5px;
 .guidesearch-row,
 .guidesearch-selected-list-div {
   border-bottom: 1px solid #eee;
+  cursor: default;
 }
 
 .guidesearch-section-title {
-  cursor: default
+  width: 100%;
 }
 
 
@@ -77,8 +79,12 @@ $vertical-gutter: 5px;
   padding: 5px 0px;
 }
 
-.guidesearch-set-selectfield {
+.guidesearch-set-selectfield,
+.guidesearch-set-selectlabel {
   cursor: pointer;
+  height: 14px;
+  margin-bottom: 2px;
+  width: 11px;
 }
 
 .guidesearch-title-label-left {
@@ -108,6 +114,11 @@ $vertical-gutter: 5px;
 
 .guidesearch .repeater-trash-icon .mat-icon {
   font-size: 24px;
+}
+
+.guidesearch .repeater-selector {
+  margin-top: 10px;
+  min-width: 130px;
 }
 
 .guidesearch .repeater-key .ui-dropdown-filter.ui-inputtext {

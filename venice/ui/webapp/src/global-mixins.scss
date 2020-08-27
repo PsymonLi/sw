@@ -97,6 +97,14 @@
   $matchColor: #6ba0e5;
   $fontColor: currentColor;
 
+  .mat-menu-panel {
+    min-height: 41px
+  }
+
+  .mat-tooltip {
+    background: $mediumGray;
+  }
+
   .ui-chkbox-box.ui-state-active,
   .ui-radiobutton-box.ui-state-active {
     border: 1px solid #86a8d7;
