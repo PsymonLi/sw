@@ -157,9 +157,6 @@ struct ionic_cq_info {
 		struct ionic_admin_comp *admincq;
 		struct ionic_notifyq_event *notifyq;
 	};
-	struct ionic_cq_info *next;
-	unsigned int index;
-	bool last;
 };
 
 struct ionic_queue;
@@ -198,9 +195,6 @@ struct ionic_desc_info {
 		struct ionic_txq_sg_desc *txq_sg_desc;
 		struct ionic_rxq_sg_desc *rxq_sgl_desc;
 	};
-	struct ionic_desc_info *next;
-	unsigned int index;
-	unsigned int left;
 	unsigned int npages;
 	unsigned int bytes;
 	struct ionic_buf_info bufs[IONIC_RX_MAX_SG_ELEMS + 1];

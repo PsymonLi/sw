@@ -366,10 +366,10 @@ static bool ionic_rx_service(struct ionic_cq *cq, struct ionic_cq_info *cq_info)
 	if (q->tail_idx == q->head_idx)
 		return false;
 
-	desc_info = &q->info[q->tail_idx];
-	if (desc_info->index != le16_to_cpu(comp->comp_index))
+	if (q->tail_idx != le16_to_cpu(comp->comp_index))
 		return false;
 
+	desc_info = &q->info[q->tail_idx];
 	q->tail_idx = (q->tail_idx + 1) & (q->num_descs - 1);
 
 	/* clean the related q entry, only one per qc completion */
@@ -746,6 +746,7 @@ static bool ionic_tx_service(struct ionic_cq *cq, struct ionic_cq_info *cq_info)
 	struct ionic_desc_info *desc_info;
 	int bytes = 0;
 	int pkts = 0;
+	u16 index;
 
 	if (!color_match(comp->color, cq->done_color))
 		return false;
@@ -756,6 +757,7 @@ static bool ionic_tx_service(struct ionic_cq *cq, struct ionic_cq_info *cq_info)
 	do {
 		desc_info = &q->info[q->tail_idx];
 		desc_info->bytes = 0;
+		index = q->tail_idx;
 		q->tail_idx = (q->tail_idx + 1) & (q->num_descs - 1);
 		ionic_tx_clean(q, desc_info, cq_info, desc_info->cb_arg);
 		if (desc_info->cb_arg) {
@@ -764,7 +766,7 @@ static bool ionic_tx_service(struct ionic_cq *cq, struct ionic_cq_info *cq_info)
 		}
 		desc_info->cb = NULL;
 		desc_info->cb_arg = NULL;
-	} while (desc_info->index != le16_to_cpu(comp->comp_index));
+	} while (index != le16_to_cpu(comp->comp_index));
 
 #ifdef IONIC_SUPPORTS_BQL
 	if (pkts && bytes)
