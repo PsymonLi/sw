@@ -1,6 +1,8 @@
 #! /bin/bash
 #set -x
 NICDIR="${PWD%/nic/*}/nic"
+NIC_CONF_PATH="$NICDIR/conf"
+PIPELINE="apulu"
 SW_DIR=`dirname $NICDIR`
 SUBNET=Test_Subnet
 SUBNET1=10.1.1.0/24
@@ -59,13 +61,21 @@ for (( j=0; j<argc; j++ )); do
 done
 
 function remove_conf_files () {
-    find ${OPERD_METRICS_PATH} -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
+    find ${OPERD_METRICS_PATH} -name "*.json" -printf "rm -f ${NIC_CONF_PATH}/%P \n" | sh
 }
 
 function setup_metrics_conf_files () {
-    cp ${OPERD_METRICS_PATH}/*.json ${NICDIR}/conf/
+    cp ${OPERD_METRICS_PATH}/*.json ${NIC_CONF_PATH}/
 }
+
+function setup_upgrade_version_files() {
+    sudo rm -f ${NIC_CONF_PATH}/upgrade_cc_*
+    cp ${NIC_CONF_PATH}/$PIPELINE/upgrade_cc_graceful_version.json ${NIC_CONF_PATH}/upgrade_cc_graceful_version.json
+    cp ${NIC_CONF_PATH}/$PIPELINE/upgrade_cc_hitless_version.json ${NIC_CONF_PATH}/upgrade_cc_hitless_version.json
+}
+
 setup_metrics_conf_files
+setup_upgrade_version_files
 
 if [ $DOL_RUN == 1 ]; then
    DUTDIR=$NICDIR
