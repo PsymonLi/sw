@@ -11,7 +11,7 @@ device:
     ipaddress   : '40.40.40.40' # Taken from resmgr
     gateway     : '1.0.0.1' # Taken from resmgr
     macaddress  : macaddr/0000.bbbb.bbb1
-    encap       : vxlan # vxlan or mplsodup
+    encap       : vxlan 
 
 uplink:
     - entry:
@@ -125,7 +125,7 @@ vpc:
           v4prefix         : '2.1.0.0\24'
           hostifidx        : 0xa000004c
           fabricencap:  
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan
             value : 
               vni : 202
           v4routerip       : '2.1.0.0'

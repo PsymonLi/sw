@@ -23,7 +23,7 @@ device:
     ipaddress   : '1.0.0.2' # Taken from resmgr
     gateway     : '1.0.0.1' # Taken from resmgr
     macaddress  : macaddr/0000.aaaa.aaa1
-    encap       : vxlan # vxlan or mplsodup
+    encap       : vxlan 
     tunnel      :
         - count : 1023
           type  : underlay

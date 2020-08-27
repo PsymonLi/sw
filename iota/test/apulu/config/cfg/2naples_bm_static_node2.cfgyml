@@ -12,7 +12,7 @@ device:
     ipaddress      : '40.40.40.40' # Taken from resmgr
     gateway        : '1.0.0.1' # Taken from resmgr
     macaddress     : macaddr/0000.bbbb.bbb1
-    encap          : vxlan # vxlan or mplsodup
+    encap          : vxlan
 
 uplink:
     - entry:
@@ -159,7 +159,7 @@ vpc:
           v4prefix         : '2.1.0.0\24'
           hostifidx        : 0xa0000049
           fabricencap:
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan 
             value : 
               vni : 202
           v4routerip       : '2.1.0.1'
@@ -203,7 +203,7 @@ vpc:
           v4prefixlen      : 24
           v4prefix         : '3.1.0.0\24'
           fabricencap:
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan 
             value : 
               vni : 302
           v4ingrpolicycount: 1
@@ -231,7 +231,7 @@ vpc:
                 - 0xa000004a
                 - 0xa000004b
           fabricencap:
-            type   : vxlan # vxlan or mplsodup
+            type   : vxlan 
             value  : 
               vni  : 902
           v4routerip       : '9.0.0.1'
@@ -311,7 +311,7 @@ vpc:
           v4prefix         : '64.0.0.0\24'
           hostifidx        : 0xa000004c
           fabricencap:
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan 
             value : 
               vni : 60001
           v4routerip       : '64.0.0.1'
@@ -353,7 +353,7 @@ vpc:
           v4prefix         : '10.0.200.0\24'
           hostifidx        : 0xa000004d
           fabricencap:
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan 
             value : 
               vni : 60002
           v4routerip       : '10.0.200.1'
@@ -413,7 +413,7 @@ vpc:
       count            : 1
       type             : control
       fabricencap:
-        type  : vxlan # vxlan or mplsodup
+        type  : vxlan 
         value : 
           vni : 11
       interface:
@@ -430,7 +430,7 @@ vpc:
           v4prefix         : '11.0.0.0\8'
           hostifidx        : 0xa0000046
           fabricencap:
-            type  : vxlan # vxlan or mplsodup
+            type  : vxlan 
             value : 
               vni : 12
           v4routerip       : '11.1.2.1'

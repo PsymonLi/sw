@@ -12,7 +12,7 @@ device:
     ipaddress      : '40.40.40.40' # Taken from resmgr
     gateway        : '1.0.0.1' # Taken from resmgr
     macaddress     : macaddr/0000.bbbb.bbb1
-    encap          : vxlan # vxlan or mplsodup
+    encap          : vxlan 
 
 uplink:
     - entry:
@@ -158,8 +158,10 @@ vpc:
           v6prefixlen      : 64
           v4prefix         : '2.1.0.0\24'
           hostifidx        : 0xa0000049
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 202
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 202
           v4routerip       : '2.1.0.1'
           vroutermac       : macaddr/0055.0100.0001
           dhcppolicy       : 10
@@ -354,8 +356,10 @@ vpc:
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '3.1.0.0\24'
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 302
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 302
           v4ingrpolicycount: 1
           v4egrpolicycount : 1
           v6ingrpolicycount: 1
@@ -380,8 +384,10 @@ vpc:
           hostifidx        :
                 - 0xa000004a
                 - 0xa000004b
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 902
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 902
           v4routerip       : '9.0.0.1'
           vroutermac       : macaddr/0055.0100.0004
           dhcppolicy       : 13
@@ -755,8 +761,10 @@ vpc:
           v6prefixlen      : 64
           v4prefix         : '64.0.0.0\24'
           hostifidx        : 0xa000004c
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 60001
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 60001
           v4routerip       : '64.0.0.1'
           vroutermac       : macaddr/0055.0100.0002
           dhcppolicy       : 11
@@ -795,8 +803,10 @@ vpc:
           v4prefixlen      : 24
           v4prefix         : '10.0.200.0\24'
           hostifidx        : 0xa000004d
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 60002
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 60002
           v4routerip       : '10.0.200.1'
           vroutermac       : macaddr/0055.0100.0003
           dhcppolicy       : 12
@@ -853,8 +863,10 @@ vpc:
       stack            : ipv4 # dual, ipv4 , ipv6
       count            : 1
       type             : control
-      fabricencap      : vxlan # vxlan or mplsodup
-      fabricencapvalue : 11
+      fabricencap      : 
+        type  : vxlan 
+        value : 
+          vni : 11
       interface:
         - iid           : 51
           iftype        : control
@@ -868,8 +880,10 @@ vpc:
           v4prefixlen      : 10
           v4prefix         : '11.0.0.0\8'
           hostifidx        : 0xa0000046
-          fabricencap      : vxlan # vxlan or mplsodup
-          fabricencapvalue : 12
+          fabricencap      : 
+            type  : vxlan 
+            value : 
+              vni : 12
           v4routerip       : '11.1.2.1'
           vroutermac       : macaddr/0066.0100.0001
           v4ingrpolicycount: 1
