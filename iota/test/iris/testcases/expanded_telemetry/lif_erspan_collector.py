@@ -273,7 +273,8 @@ def Trigger(tc):
         #
         # Dump sessions/flows/P4-tables for debug purposes
         #
-        eutils.showSessionAndP4TablesForDebug(tc)
+        eutils.showSessionAndP4TablesForDebug(tc, tc.lif_collector,
+                                              tc.lif_collector_idx)
 
         #
         # Terminate TCPDUMP background process
@@ -287,12 +288,6 @@ def Trigger(tc):
             cmd = api.WINDOWS_POWERSHELL_CMD + " Stop-Process -Name 'tcpdump' -Force"
             api.Trigger_AddCommand(req, tc.naples.node_name, tc.naples.workload_name, cmd, background = False)
             resp = api.Trigger(req)
-
-        #
-        # Gather Collector-IP Resolution Info
-        #
-        eutils.gatherCollectorIpResolutionInfo(tc, tc.lif_collector,
-                                               tc.lif_collector_idx)
 
         # Delete the objects
         eutils.deGenerateLifInterfaceConfig(tc, tc.interface_objects, 

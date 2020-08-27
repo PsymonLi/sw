@@ -320,7 +320,8 @@ def Trigger(tc):
                 #
                 # Dump sessions/flows/P4-tables for debug purposes
                 #
-                eutils.showSessionAndP4TablesForDebug(tc)
+                eutils.showSessionAndP4TablesForDebug(tc, tc.flow_collector,
+                                                      tc.flow_collector_idx)
 
                 #
                 # Terminate TCPDUMP background process

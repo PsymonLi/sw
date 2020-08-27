@@ -1105,7 +1105,7 @@ def triggerTrafficInHostPinModeOrFreeBSD(tc):
 #
 # Dump sessions/flows/P4-tables for debug purposes
 #
-def showSessionAndP4TablesForDebug(tc):
+def showSessionAndP4TablesForDebug(tc, collector, collector_idx):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/nic/bin/halctl show session"
     add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
@@ -1160,6 +1160,23 @@ def showSessionAndP4TablesForDebug(tc):
     resp = api.Trigger(req)
     for cmd in resp.commands:
         api.PrintCommandResults(cmd)
+        #
+        # Check if Collector-IP is resolved
+        #
+        if 'table-id {}'.format(tc.tunnel_rewrite_table_id) in cmd.command:
+            for line in cmd.stdout.split('\n'):
+                if 'ip_da :' in line:
+                    w = 0
+                    for word in line.split():
+                        if w == 2:
+                            ip_address = int(word, 16)
+                            for c in range(0, len(collector)):
+                                idx = collector_idx[c]
+                                if ip_address == int(ipaddress.
+                                   ip_address(tc.collector_ip_address[idx])):
+                                    tc.collector_ip_resolved[idx] = True
+                                    break
+                        w += 1
 
 #
 # Make sure that Mirror-config has been removed
@@ -1307,32 +1324,6 @@ def validate_ip_tuple(tc, sip, dip, sport, dport, tag_etype, vlan_tag,
                 ip_proto, sport, dport, tc.dest_port, tag_etype, vlan_tag))
 
     return result
-
-#
-# Check if Collector-IP is resolved
-#
-def gatherCollectorIpResolutionInfo(tc, collector, collector_idx):
-    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    cmd = "/nic/bin/halctl show table dump --table-id {} | \
-           grep ip_da".format(tc.tunnel_rewrite_table_id)
-    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
-
-    resp = api.Trigger(req)
-    for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
-
-        for line in cmd.stdout.split('\n'):
-            w = 0
-            for word in line.split():
-                if w == 2:
-                    ip_address = int(word, 16)
-                    for c in range(0, len(collector)):
-                        idx = collector_idx[c]
-                        if ip_address == int(ipaddress.
-                           ip_address(tc.collector_ip_address[idx])):
-                            tc.collector_ip_resolved[idx] = True
-                            break
-                w += 1
 
 #
 # Validate ERSPAN packets reception
