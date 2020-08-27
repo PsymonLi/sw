@@ -399,6 +399,7 @@ func (n *TestNode) doPingTest(ip string) bool {
 			}
 		}
 		time.Sleep(30 * time.Second)
+		count += 1
 	}
 	log.Errorf("PingTest Failed: %s", ip)
 	return false
