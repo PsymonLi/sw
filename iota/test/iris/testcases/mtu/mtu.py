@@ -18,6 +18,42 @@ __DEF_MTU = 1500
 
 __OS_TYPE = "linux"
 
+# Get all available native workload interfaces
+def getNativeWorkloadIntfs(tc):
+    tc.host_nodes = api.GetWorkloadNodeHostnames()
+    tmp_native_intf_list = {}
+    tc.native_intf_list = {}
+    tc.mgmt_intf_list = {}
+
+    # Get host interfaces on all nodes
+    for node in tc.host_nodes:
+        tmp_native_intf_list[node] = list(api.GetWorkloadNodeHostInterfaces(node))
+        if api.IsNaplesNode(node):
+            tc.mgmt_intf_list[node] = list(naples_host_utils.GetHostInternalMgmtInterfaces(node))
+
+    for node in tc.mgmt_intf_list:
+        tc.native_intf_list[node] = list(set(tmp_native_intf_list.get(node))-set(tc.mgmt_intf_list.get(node)))
+    return api.types.status.SUCCESS
+
+# configure native workload interfaces before tagged workload intf
+def configureNativeIntfMTU(tc, new_mtu, cfg_peer, local_naples_node=None):
+    result = api.types.status.SUCCESS
+
+    for node in tc.native_intf_list:
+        # if cfg is for peer and node is local, skip
+        if node == local_naples_node and cfg_peer:
+            continue
+        # if cfg is for local and node is not local, skip
+        if not cfg_peer and local_naples_node and node != local_naples_node:
+            continue
+        for inf in tc.native_intf_list.get(node):
+            cmd = host_utils.setInterfaceMTU(node, inf, new_mtu)
+            if cmd.exit_code != 0:
+                api.Logger.error("MTU filter : cfg_peer: {} failed for {} {} {}".format(cfg_peer, node, intf, new_mtu))
+                api.PrintCommandResults(cmd)
+                host_utils.debug_dump_interface_info(node, inf)
+                result = api.types.status.FAILURE
+    return result
 
 def verifyMTUchange(tc):
     result = api.types.status.SUCCESS
@@ -25,24 +61,31 @@ def verifyMTUchange(tc):
     node_name = tc.naples_node
     workloads = api.GetWorkloads()
     for w in workloads:
-        configured_mtu = host_utils.getInterfaceMTU(w.node_name, w.interface)
         if node_name != w.node_name:
-            api.Logger.verbose("MTU filter : verifyMTUchange skipping peer node ", w.node_name, w.interface, configured_mtu, expected_mtu)
             continue
+        if w.interface in tc.mgmt_intf_list[w.node_name]:
+            # skip internal mgmt interfaces
+            continue
+        configured_mtu = host_utils.getInterfaceMTU(w.node_name, w.interface)
         if configured_mtu != expected_mtu:
             api.Logger.error("MTU filter : verifyMTUchange failed for ", w.interface, configured_mtu, expected_mtu)
             host_utils.debug_dump_interface_info(w.node_name, w.interface)
             result = api.types.status.FAILURE
     return result
 
-def changeWorkloadIntfMTU(new_mtu, node_name=None):
+def changeWorkloadIntfMTU(tc, new_mtu, node_name=None):
     result = api.types.status.SUCCESS
+
+    # configure native workload interfaces before tagged workload intf
+    configureNativeIntfMTU(tc, new_mtu, False, local_naples_node=node_name)
     workloads = api.GetWorkloads()
     for w in workloads:
         if node_name is not None:
             if node_name != w.node_name:
-                api.Logger.debug("MTU filter : changeWorkloadIntfMTU skipping peer node ", w.node_name, w.interface, new_mtu)
                 continue
+        if w.interface == w.parent_interface or w.interface in tc.mgmt_intf_list[w.node_name]:
+            # native interfaces are already configured
+            continue
         cmd = host_utils.setInterfaceMTU(w.node_name, w.interface, new_mtu)
         if cmd.exit_code != 0:
             api.Logger.error("MTU filter : changeWorkloadIntfMTU failed for ", w.node_name, w.interface, new_mtu)
@@ -80,15 +123,20 @@ def triggerMTUPings(tc):
     tc.cmd_cookies_3, tc.resp_3 = traffic_utils.pingAllRemoteWloadPairs(mtu=new_mtu+1, do_pmtu_disc=True)
     return
 
-def initPeerNode(naples_node, new_mtu=None):
+def initPeerNode(tc, naples_node, new_mtu=None):
     """ initialize MTU of interfaces on non 'naples_node' to __MAX_MTU """
     if new_mtu is None:
         new_mtu = __MAX_MTU
     result = api.types.status.SUCCESS
+
+    # configure native workload interfaces before tagged workload intf
+    configureNativeIntfMTU(tc, new_mtu, True, local_naples_node=naples_node)
     workloads = api.GetWorkloads()
     for w in workloads:
         if naples_node == w.node_name:
-            api.Logger.debug("MTU filter : initPeerNode skipping naples node ", w.node_name, w.interface, new_mtu)
+            continue
+        if w.interface == w.parent_interface or w.interface in tc.mgmt_intf_list[w.node_name]:
+            # native interfaces are already configured
             continue
         cmd = host_utils.setInterfaceMTU(w.node_name, w.interface, new_mtu)
         if cmd.exit_code != 0:
@@ -141,11 +189,6 @@ def Setup(tc):
     global __MIN_MTU
     global __MAX_MTU
 
-    if not api.RunningOnSameSwitch():
-        tc.skip = True
-        api.Logger.error("MTU filter : Setup -> Multi switch topology not supported yet - So skipping the TC")
-        return api.types.status.IGNORED
-
     tc.naples_node, res = naples_host_utils.GetNaplesNodeName()
     if res is False:
         tc.skip = True
@@ -154,11 +197,15 @@ def Setup(tc):
         api.Logger.error("MTU filter : Setup -> No Naples Topology - So skipping the TC")
         return api.types.status.IGNORED
 
+    if getNativeWorkloadIntfs(tc) != api.types.status.SUCCESS:
+        api.Logger.error("MTU filter : Setup -> Failure in retrieving Native Workload interfaces")
+        return api.types.status.FAILURE
+
     """
       # In Intel cards, post MTU change, need to wait for few sec before pinging
       # instead, set max MTU on peer node
     """
-    result = initPeerNode(tc.naples_node)
+    result = initPeerNode(tc, tc.naples_node)
     nodes = api.GetWorkloadNodeHostnames()
     for node in nodes:
         __OS_TYPE = api.GetNodeOs(node)
@@ -183,7 +230,7 @@ def Trigger(tc):
         return api.types.status.IGNORED
 
     #change workloads MTU
-    result = changeWorkloadIntfMTU(tc.new_mtu, tc.naples_node)
+    result = changeWorkloadIntfMTU(tc, tc.new_mtu, tc.naples_node)
     if result is not api.types.status.SUCCESS:
         api.Logger.error("MTU filter : Trigger failed for changeWorkloadIntfMTU ", result)
         debug_utils.collect_showtech(result)
@@ -232,7 +279,7 @@ def Teardown(tc):
         return api.types.status.IGNORED
 
     #rollback workloads MTU
-    result = changeWorkloadIntfMTU(__DEF_MTU)
+    result = changeWorkloadIntfMTU(tc, __DEF_MTU)
     if result is not api.types.status.SUCCESS:
         api.Logger.error("MTU filter : rollback failed for changeWorkloadIntfMTU ", result)
 

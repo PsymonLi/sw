@@ -227,7 +227,7 @@ def Trigger(tc):
         #first, find the right arp (we rely on -W option)
         tc.req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
 
-        ArpingPrefix = "/usr/local/sbin/"
+        ArpingPrefix = "/usr/sbin/"
 
         api.Trigger_AddHostCommand(tc.req, tc.naples_node, "ls %sarping" % ArpingPrefix)
         resp = api.Trigger(tc.req)

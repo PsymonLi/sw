@@ -55,8 +55,8 @@ def Trigger(tc):
         else:
             if tc.os == 'linux':
                 if cmd.stderr.find("out of range") == -1:
-                    api.Logger.error("ionic did not error when coales value set (%d) > than supported  %d)" \
-                                        % tc.iterators.coales_interval, tc.args.max_coales_interval)
+                    api.Logger.error("ionic did not error when coales value set (%d) > than supported  (%d)" \
+                                     %(tc.iterators.coales_interval, tc.args.max_coales_interval))
                     api.Logger.info(cmd.stderr)
                     return api.types.status.FAILURE
             elif tc.os == 'freebsd':
