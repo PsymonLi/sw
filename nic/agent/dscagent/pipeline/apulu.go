@@ -222,7 +222,7 @@ func (a *ApuluAPI) PipelineInit() error {
 
 	// Replay stored configs. This is a best-effort replay. Not marking errors as fatal since controllers will
 	// eventually get the configs to a cluster-wide consistent state
-	if err := a.ReplayConfigs(); err != nil {
+	if err := a.replayConfigs(); err != nil {
 		log.Error(err)
 	}
 
@@ -951,9 +951,15 @@ func (a *ApuluAPI) HandleNetworkSecurityPolicy(oper types.Operation, nsp netprot
 	return
 }
 
-// HandleProfile unimplemented
+// HandleProfile Only types.Purge is implemented
 func (a *ApuluAPI) HandleProfile(oper types.Operation, profile netproto.Profile) ([]netproto.Profile, error) {
-	return nil, errors.Wrapf(types.ErrNotImplemented, "Profile %s is not implemented by Apulu Pipeline", oper)
+	switch oper {
+	case types.Purge:
+		purgeConfigs(a, true)
+		return nil, nil
+	default:
+		return nil, errors.Wrapf(types.ErrNotImplemented, "Profile %s is not implemented by Apulu Pipeline", oper)
+	}
 }
 
 // ValidateSecurityProfile validates the contents of SecurityProfile objects
@@ -1776,8 +1782,8 @@ func (a *ApuluAPI) HandleEvents(evtsDispatcher events.Dispatcher) {
 	apulu.HandleEvents(evtsDispatcher, a.OperSvcClient)
 }
 
-// ReplayConfigs replays last known configs from boltDB
-func (a *ApuluAPI) ReplayConfigs() error {
+// replayConfigs replays last known configs from boltDB
+func (a *ApuluAPI) replayConfigs() error {
 
 	// Replay RoutingConfig Object
 	rtCfgKind := netproto.RoutingConfig{
@@ -1972,8 +1978,8 @@ func (a *ApuluAPI) ReplayConfigs() error {
 	return nil
 }
 
-// PurgeConfigs unimplemented
-func (a *ApuluAPI) PurgeConfigs(deleteDB bool) error {
+// purgeConfigs unimplemented
+func purgeConfigs(a *ApuluAPI, deleteDB bool) error {
 	// Apps, SGPolicies, Endpoints, Networks, RoutingConfig, Interface, Device
 	rt := netproto.RouteTable{TypeMeta: api.TypeMeta{Kind: "RouteTable"}}
 	rts, _ := a.HandleRouteTable(types.List, rt)

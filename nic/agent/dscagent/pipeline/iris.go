@@ -6,7 +6,6 @@ package pipeline
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -23,6 +22,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/common"
+	commonUtils "github.com/pensando/sw/nic/agent/dscagent/common/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
@@ -198,15 +198,10 @@ func (i *IrisAPI) PipelineInit() error {
 	}
 
 	// Attempt setting up config
-	var obj types.DistributedServiceCardStatus
-	if dat, err := i.InfraAPI.Read(types.VeniceConfigKind, types.VeniceConfigKey); err == nil {
-		if err := json.Unmarshal(dat, &obj); err != nil {
-			log.Error(errors.Wrapf(types.ErrUnmarshal, "Err: %v", err))
-		} else {
-			i.InfraAPI.StoreConfig(obj)
-		}
+	if obj, err := commonUtils.ReadDSCStatusObj(i.InfraAPI); err != nil {
+		log.Error(err)
 	} else {
-		log.Errorf("Could not read venice config key err: %v", err)
+		i.InfraAPI.StoreConfig(obj)
 	}
 
 	// Start the watch for bond0 IP so that ArpClient can be updated
@@ -220,6 +215,7 @@ func (i *IrisAPI) PipelineInit() error {
 	// Replay Profile Object
 	profiles, err := i.InfraAPI.List("Profile")
 	if err == nil {
+		found := false
 		for _, o := range profiles {
 			var profile netproto.Profile
 			err := profile.Unmarshal(o)
@@ -231,7 +227,9 @@ func (i *IrisAPI) PipelineInit() error {
 			i.InfraAPI.Delete(profile.Kind, profile.GetKey())
 
 			creator, ok := profile.ObjectMeta.Labels["CreatedBy"]
-			if ok && creator == "Venice" {
+			if !found && ok && creator == "Venice" {
+				// Replay exactly one profile
+				found = true
 				log.Info("Replaying persisted Profile object")
 				if _, err := i.HandleProfile(types.Create, profile); err != nil {
 					log.Errorf("Failed to recreate Profile: %v. Err: %v", profile.GetKey(), err)
@@ -242,7 +240,7 @@ func (i *IrisAPI) PipelineInit() error {
 
 	// Replay stored configs. This is a best-effort replay. Not marking errors as fatal since controllers will
 	// eventually get the configs to a cluster-wide consistent state
-	if err := i.ReplayConfigs(); err != nil {
+	if err := i.replayConfigs(); err != nil {
 		log.Error(err)
 	}
 
@@ -1705,17 +1703,19 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 		}
 
 		log.Infof("Profile: Found %v profiles", len(dat))
-		for _, o := range dat {
-			err := proto.Unmarshal(o, &existingProfile)
+		switch len(dat) {
+		case 0:
+			isCreate = true
+		case 1:
+			err := proto.Unmarshal(dat[0], &existingProfile)
 			if err != nil {
 				log.Error(errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", existingProfile.GetKey(), err))
-				continue
+				return nil, errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", existingProfile.GetKey(), err)
 			}
 			log.Infof("Profile: %s | Existing profile found, profile move validation will be checked", existingProfile.GetKey())
-			break
-		}
-		if len(dat) == 0 {
-			isCreate = true
+		default:
+			log.Error(errors.Wrapf(types.ErrBadRequest, "Profile: %s | Err: %v", profile.GetKey(), types.ErrInvalidProfileCount))
+			return nil, errors.Wrapf(types.ErrBadRequest, "Profile: %s | Err: %v", profile.GetKey(), types.ErrInvalidProfileCount)
 		}
 	case types.Update:
 		// Get to ensure that the object exists
@@ -1737,22 +1737,44 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 		}
 
 	case types.Delete:
-		dat, err := i.InfraAPI.Read(profile.Kind, profile.GetKey())
+		_, err = i.InfraAPI.Read(profile.Kind, profile.GetKey())
 		if err != nil {
 			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
 			return nil, nil
 		}
-		err = existingProfile.Unmarshal(dat)
-		if err != nil {
-			log.Error(errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", profile.GetKey(), err))
-			return nil, errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", profile.GetKey(), err)
-		}
 		fallthrough
 	case types.Purge:
+		dat, err := i.InfraAPI.List(profile.Kind)
+		if err == nil && len(dat) > 0 {
+			var profile netproto.Profile
+			for _, d := range dat {
+				if err = proto.Unmarshal(d, &profile); err != nil {
+					log.Error(errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", profile.GetKey(), err))
+					continue
+				}
+				// Delete profile
+				iris.HandleProfile(i.InfraAPI, i.SystemClient, types.Delete, profile)
+			}
+		}
+
+		// switch to Transparent Basenet after profile purge
+		profile = netproto.Profile{
+			TypeMeta: api.TypeMeta{Kind: "Profile"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:    "default",
+				Namespace: "default",
+				Name:      "baseProfile",
+			},
+			Spec: netproto.ProfileSpec{
+				FwdMode:    "TRANSPARENT",
+				PolicyMode: "BASENET",
+			},
+		}
+		purgeConfigs(i, oper == types.Purge)
+
 		log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjBegin)
 		defer log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjEnd)
-		// Take a lock to ensure a single HAL API is active at any given point
-		if err := iris.HandleProfile(i.InfraAPI, i.SystemClient, oper, profile); err != nil {
+		if err := iris.HandleProfile(i.InfraAPI, i.SystemClient, types.Create, profile); err != nil {
 			log.Error(err)
 			return nil, err
 		}
@@ -1788,6 +1810,10 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 	// updates on objects after they are purged. Also, take a lock to ensure a single HAL API is active at any given point.
 	// Check profile move only if we already have a valid profile on DSC. In case there are no profile on DSC,
 	// we should create the profile with purging of watchers and objects.
+	if existingProfile.GetKey() != profile.GetKey() {
+		// Delete existingProfile after creating a new profile
+		defer iris.HandleProfile(i.InfraAPI, i.SystemClient, types.Delete, existingProfile)
+	}
 	if !isCreate && utils.IsSafeProfileMove(existingProfile, profile) != true {
 		i.startDynamicWatch(*kinds)
 		purgeConfigs(i, false)
@@ -1826,8 +1852,8 @@ func (i *IrisAPI) HandleRouteTable(oper types.Operation, routetableObj netproto.
 	return nil, types.ErrNotImplemented
 }
 
-// ReplayConfigs replays last known configs from boltDB
-func (i *IrisAPI) ReplayConfigs() error {
+// replayConfigs replays last known configs from boltDB
+func (i *IrisAPI) replayConfigs() error {
 	// TODO: Ideally we would love to have all these objects in a data structure that would provide some sort of relationship modeling.
 	// This would help in replaying all configs and purging an object and all its dependents cleanly. This could come in handy when
 	// changing profiles too (specially moving to more restrictive profiles).
@@ -2054,19 +2080,10 @@ func (i *IrisAPI) ReplayConfigs() error {
 	return nil
 }
 
-// PurgeConfigs deletes all configs on Naples Decommission
-func (i *IrisAPI) PurgeConfigs(deleteDB bool) error {
-	i.Lock()
-	defer i.Unlock()
-
-	err := purgeConfigs(i, deleteDB)
-	return err
-}
-
+// purgeConfigs deletes all configs on Naples Decommission
 func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	// SGPolicies, Apps, Endpoints,  Networks, MirrorSessions, FlowExportPolicies
 	log.Info("Starting Decomission workflow")
-	var oper types.Operation
 
 	// Populuate in memory state
 	v := netproto.Vrf{TypeMeta: api.TypeMeta{Kind: "Vrf"}}
@@ -2080,7 +2097,6 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	m := netproto.MirrorSession{TypeMeta: api.TypeMeta{Kind: "MirrorSession"}}
 	f := netproto.FlowExportPolicy{TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"}}
 	secprof := netproto.SecurityProfile{TypeMeta: api.TypeMeta{Kind: "SecurityProfile"}}
-	p := netproto.Profile{TypeMeta: api.TypeMeta{Kind: "Profile"}}
 
 	vrfs, _ := handleVrf(i, types.List, v)
 	policies, _ := handleNetworkSecurityPolicy(i, types.List, s)
@@ -2093,14 +2109,10 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	mirrorSessions, _ := handleMirrorSession(i, types.List, m)
 	flowExportPolicies, _ := handleFlowExportPolicy(i, types.List, f)
 	sp, _ := handleSecurityProfile(i, types.List, secprof)
-	profiles, _ := handleProfile(i, types.List, p)
 
 	// Clean up the DB
 	if deleteDB {
-		i.InfraAPI.Purge()
-		oper = types.Purge
-	} else {
-		oper = types.Delete
+		i.InfraAPI.InitDB(true)
 	}
 
 	log.Info("Stores purged. Ensured state consistency")
@@ -2205,12 +2217,6 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 		}
 		if deleteDB != true {
 			i.InfraAPI.Delete(flowExportPolicy.Kind, flowExportPolicy.GetKey())
-		}
-	}
-
-	for _, profile := range profiles {
-		if _, err := handleProfile(i, oper, profile); err != nil {
-			log.Errorf("Failed to purge the Profiles. Err: %v", err)
 		}
 	}
 

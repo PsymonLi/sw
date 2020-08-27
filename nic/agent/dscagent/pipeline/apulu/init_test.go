@@ -137,9 +137,8 @@ func (i *badInfraAPI) NotifyVeniceConnection(bool) {
 
 }
 
-// Purge stubbed out
-func (i *badInfraAPI) Purge() {
-
+func (i *badInfraAPI) InitDB(purge bool) error {
+	return errors.New("failed to reinit")
 }
 
 func (i *badInfraAPI) GetConfig() (cfg types.DistributedServiceCardStatus) {

@@ -66,8 +66,8 @@ type InfraAPI interface {
 	// Close closes the DB Write Handlers
 	Close() error
 
-	//Purge cleans up the data stores.
-	Purge()
+	// InitDB reinits the DB (with optional purge)
+	InitDB(purge bool) error
 }
 
 // PipelineAPI defines methods that all pipelines must implement.
@@ -134,12 +134,6 @@ type PipelineAPI interface {
 
 	//HandleProfile handles CRUDs for Profile object
 	HandleProfile(oper Operation, obj netproto.Profile) ([]netproto.Profile, error)
-
-	// ReplayConfigs replays stored configs to avoid dataplane downtime on a reboot
-	ReplayConfigs() error
-
-	// PurgeConfigs deletes all stored config. This is called whenever DSC is decommissioned
-	PurgeConfigs(bool) error
 
 	// GetWatchOptions returns aggregate watch options on per kind. Currently this is used to get only local EPs
 	GetWatchOptions(ctx context.Context, kind string) api.ListWatchOptions

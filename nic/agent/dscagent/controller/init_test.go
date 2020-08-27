@@ -560,14 +560,14 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// Check if the DBs are purged
-	if _, err := os.Stat(primaryDB.Name()); !os.IsNotExist(err) {
-		log.Errorf("Failed to purge primary DB on host mode migration. Err: %v", err)
+	// Check if the old DBs are purged
+	if _, err := os.Stat(primaryDB.Name()); os.IsNotExist(err) {
+		log.Errorf("Failed to purge/recreate primary DB on host mode migration. Err: %v", err)
 		os.Exit(1)
 	}
 
-	if _, err := os.Stat(secondaryDB.Name()); !os.IsNotExist(err) {
-		log.Errorf("Failed to purge secondary DB on host mode migration. Err: %v", err)
+	if _, err := os.Stat(secondaryDB.Name()); os.IsNotExist(err) {
+		log.Errorf("Failed to purge/recreate secondary DB on host mode migration. Err: %v", err)
 		os.Exit(1)
 	}
 

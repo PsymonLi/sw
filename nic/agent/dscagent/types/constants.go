@@ -213,6 +213,12 @@ const (
 	// VeniceConfigKey to load/store venice information in DB
 	VeniceConfigKey = "veniceKey"
 
+	// DSCModeChangePending tracks a mode change operation
+	DSCModeChangePending = "Pending"
+
+	// DSCModeChangeSuccess tracks a mode change operation
+	DSCModeChangeSuccess = "Success"
+
 	//--------------------------- Default ALG Option ---------------------------
 
 	// DefaultDNSMaxMessageLength is set to 8192 by default

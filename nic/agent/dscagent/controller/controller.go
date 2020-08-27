@@ -183,6 +183,7 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 		}
 
 		c.Lock()
+		obj.ModeChangeStatus = types.DSCModeChangeSuccess
 		c.InfraAPI.StoreConfig(obj)
 		dat, _ := json.Marshal(obj)
 		// Store config received from nmd.
@@ -231,17 +232,41 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 
 	} else if strings.Contains(strings.ToLower(obj.DSCMode), "host") {
 		c.Lock()
-		if err := c.Stop(); err != nil {
-			log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
-		}
-		c.Unlock()
-		// stop network mode services on moving to host mode
-		c.stopNetworkModeServices()
-		c.InfraAPI.StoreConfig(obj)
-
-		if err := c.PipelineAPI.PurgeConfigs(true); err != nil {
+		var err error
+		var oldCfg types.DistributedServiceCardStatus
+		found := true
+		if oldCfg, err = utils.ReadDSCStatusObj(c.InfraAPI); err != nil {
+			found = false
 			log.Error(err)
 		}
+		c.InfraAPI.StoreConfig(obj)
+		dat, _ := json.Marshal(obj)
+		// Store config received from nmd (Status Pending).
+		if err = c.InfraAPI.Store(types.VeniceConfigKind, types.VeniceConfigKey, dat); err != nil {
+			log.Error(err)
+		}
+		// Idempotency of host mode transitions. Replay only Nw -> Host mode and pending transitions.
+		if !found || strings.Contains(strings.ToLower(oldCfg.DSCMode), "network") || oldCfg.ModeChangeStatus == types.DSCModeChangePending {
+			if err = c.Stop(); err != nil {
+				log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
+			}
+			// stop network mode services on moving to host mode
+			c.stopNetworkModeServices()
+
+			profile := netproto.Profile{
+				TypeMeta: api.TypeMeta{Kind: "Profile"},
+			}
+			if _, err = c.PipelineAPI.HandleProfile(types.Purge, profile); err != nil {
+				log.Error(err)
+			}
+		}
+		obj.ModeChangeStatus = types.DSCModeChangeSuccess
+		dat, _ = json.Marshal(obj)
+		// Store config received from nmd (Status Success).
+		if err = c.InfraAPI.Store(types.VeniceConfigKind, types.VeniceConfigKey, dat); err != nil {
+			log.Error(err)
+		}
+		c.Unlock()
 	}
 	return nil
 }
@@ -812,6 +837,7 @@ func (c *API) postConfigHandler(r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	o.ModeChangeStatus = types.DSCModeChangePending
 	go func() {
 		if err := c.HandleVeniceCoordinates(o); err != nil {
 			log.Errorf("HTTP Post Handler returned err: %v", err)

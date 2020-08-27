@@ -23,11 +23,6 @@ func HandleProfile(infraAPI types.InfraAPI, client halapi.SystemClient, oper typ
 		fallthrough
 	case types.Update:
 		return updateProfileHandler(infraAPI, client, profile)
-	case types.Purge:
-		// On decomission change profile to transparent/basenet
-		profile.Spec.FwdMode = netproto.ProfileSpec_TRANSPARENT.String()
-		profile.Spec.PolicyMode = netproto.ProfileSpec_BASENET.String()
-		return updateProfileHandler(infraAPI, client, profile)
 	case types.Delete:
 		return deleteProfileHandler(infraAPI, client, profile)
 	default:

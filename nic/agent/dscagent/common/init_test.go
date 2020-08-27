@@ -95,11 +95,6 @@ func (i *badInfraAPI) NotifyVeniceConnection() {
 
 }
 
-// Purge stubbed out
-func (i *badInfraAPI) Purge() {
-
-}
-
 func (i *badInfraAPI) GetConfig() (cfg types.DistributedServiceCardStatus) {
 	return types.DistributedServiceCardStatus{
 		DSCMode:     "",
@@ -120,4 +115,8 @@ func (i *badInfraAPI) IfUpdateChannel() chan types.UpdateIfEvent {
 
 func (i *badInfraAPI) Close() error {
 	return errors.New("failed to close")
+}
+
+func (i *badInfraAPI) InitDB(purge bool) error {
+	return errors.New("failed to reinit")
 }

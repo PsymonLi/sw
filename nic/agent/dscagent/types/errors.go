@@ -40,6 +40,7 @@ const (
 	ErrInvalidIPPrefix                                   = Error("ErrInvalidIPPrefix")
 	ErrInvalidMACAddress                                 = Error("ErrInvalidMACAddress")
 	ErrInvalidInterfaceType                              = Error("ErrInvalidInterfaceType")
+	ErrInvalidProfileCount                               = Error("ErrInvalidProfileCount")
 	ErrMultipleALGInApp                                  = Error("ErrMultipleALGInApp")
 	ErrMissingPolicyAttachmentPoint                      = Error("ErrMissingPolicyAttachmentPoint")
 	ErrPolicyDualAttachment                              = Error("ErrPolicyDualAttachment")

@@ -80,9 +80,9 @@ func (m *mockInfraAPI) Close() error {
 	return nil
 }
 
-// Purge stubbed out
-func (m *mockInfraAPI) Purge() {
-
+// InitDB stubbed out
+func (m *mockInfraAPI) InitDB(purge bool) error {
+	return nil
 }
 
 func TestExpandRoutingConfig(t *testing.T) {
