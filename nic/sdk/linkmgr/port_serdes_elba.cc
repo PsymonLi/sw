@@ -14,6 +14,7 @@
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
 #include "third-party/avago/elba/include/aapl/aapl.h"
+#include "third-party/avago/elba/include/aapl/blackhawk7_v2l8p2_field_access.h"
 #include "third-party/asic/elba/verif/apis/elb_sbus_api.h"
 #include "platform/pal/include/pal.h"
 
@@ -551,6 +552,18 @@ serdes_bh_txrx_init (uint32_t sbus_addr, uint32_t is_rx, uint32_t prbs,
 
     sc->tx_width = serdes_info->width;
     sc->rx_width = serdes_info->width;
+    if ((serdes_info->pam4_mode == 0) && (serdes_info->osr==0) ) {
+        if (serdes_info->width == 80) {
+          serdes_info->pam4_mode = 5;
+          serdes_info->osr  = 0;
+        } else if (serdes_info->width == 40) {
+          serdes_info->pam4_mode = 0;
+          serdes_info->osr  = 0;
+        } else if (serdes_info->width == 20) {
+          serdes_info->pam4_mode = 4;
+          serdes_info->osr  = 3;
+        }
+    }
 
     sc->rx_divider = serdes_info->sbus_divider;
     sc->tx_divider = sc->rx_divider;
@@ -598,7 +611,9 @@ serdes_bh_txrx_init (uint32_t sbus_addr, uint32_t is_rx, uint32_t prbs,
 
     sc->auto_polarity = 1;
     sc->link_train = (link_training == 0) ? 0 : 1;
-    // sc->restart_training = ;
+    if (link_training == 1) {
+        sc->restart_training = 1;
+    }
 
     // Blackhawk Only - Indicates which PLL is used for the RX (0 or 1)
     // 0xf means leave previous selection */
@@ -651,9 +666,27 @@ serdes_bh_txrx_init (uint32_t sbus_addr, uint32_t is_rx, uint32_t prbs,
     }
     if (is_rx) {
         rc = blackhawk_serdes_lane_rx_init(aapl, sbus_addr, sc);
-    } else {
+        //RX Misc Config (16'hD163) bit 4
+        //Set to 1 when operating the RX datapath in 20-bit NRZ interface mode.
+        //aapl is not doing this today 08/13/2020
+        if( (sc->rx_encoding == Avago_serdes_line_encoding_t::AVAGO_SERDES_NRZ) &&
+            (serdes_info->width == 20) &&
+            (int_lpbk == 0)   //ext_lpbk only
+        ) {
+            srds_access_t sa_space, *sa__ = &sa_space;
+            uint32_t set_bit4 = 0x10;
+            if (avago_addr_to_srds_access_struct(aapl, sa__, sbus_addr)<0) {
+                SDK_LINKMGR_TRACE_ERR("Failed to create avago_addr_to_srds_access_struct sbus_addr:0x%x" , sbus_addr);
+                return -1;
+            }
+            if(avago_sa_pmi_sbus_fn(sa__, 1, 0xd163, &set_bit4, 0x10) != 0 ) { //3=>masked-Write , msk=0x10=>write_bit4
+                SDK_LINKMGR_TRACE_ERR("Failed Write : avago_sa_pmi_sbus_fn 0xd163 sbus_addr:0x%x " , sbus_addr);
+                return -1;
+            }
+        }
+      } else {
         rc = blackhawk_serdes_lane_tx_init(aapl, sbus_addr, sc);
-    }
+      }
 
     avago_serdes_init_config_destruct(aapl, sc);
     if (rc != 0) {
@@ -1415,9 +1448,69 @@ serdes_an_rsfec_enable_read_hw (uint32_t sbus_addr)
 
 int serdes_an_core_status_hw (uint32_t sbus_addr)
 {
-    SDK_LINKMGR_TRACE_ERR("serdes_an_core_status_hw to be done by elba mx."
-                          " sbus_addr: 0x%x", sbus_addr);
-    return -1;
+  
+    //o_core_status is the hw-pins out of D6 serdes to the ASIC core.
+    //Page 154 SerDes16_Spec_15.pdf
+    //   bit[0] : LT Failure
+    //   bit[1] : LT Inprogress
+    //   bit[2] : LT Rx trained and ready
+    //   bit[3] : Not related to LT. port.cc expects 0
+    //   bit[4] : LT Signal Detect
+    //   bit[5] : Not related to LT. port.cc expects 1
+  
+    int o_core_status = 0x1;  //link failure
+  
+    int bh_lane = serdes_get_bh_lane (sbus_addr);
+    if (bh_lane == -1) {
+      return avago_serdes_mem_rd(aapl, sbus_addr, AVAGO_LSB_DIRECT, 0x27);
+    } else {
+        srds_access_t sa_space, *sa__ = &sa_space;
+        if (avago_addr_to_srds_access_struct(aapl, sa__, sbus_addr)<0) {
+            SDK_LINKMGR_TRACE_ERR("serdes_an_core_status_hw : addr_to_srds_struct"
+                " failed. sbus_addr: 0x%x", sbus_addr);
+            return o_core_status;
+        }
+    
+        err_code_t srds_err_code = ERR_CODE_NONE;
+        int linktrn_signal_detect = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 
+                                    0xd096,14,15, &srds_err_code);
+        int linktrn_ieee_training_failure = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 
+                                    0x0097,12,15, &srds_err_code);
+        int linktrn_ieee_training_status = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 
+                                    0x0097,13,15, &srds_err_code);
+        int linktrn_ieee_receiver_status = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 
+                                    0x0097,15,15, &srds_err_code);
+    
+        o_core_status = 0x20;
+  
+        //bit[0] : LT Failure
+        o_core_status = o_core_status | 
+                            ((linktrn_ieee_training_failure & 0x1) << 0); 
+  
+        //bit[1] : LT Inprogress
+        o_core_status = o_core_status | 
+                            ((linktrn_ieee_training_status  & 0x1) << 1); 
+  
+        //bit[2] : LT Rx trained and ready
+        o_core_status = o_core_status | 
+                            ((linktrn_ieee_receiver_status  & 0x1) << 2); 
+  
+        //bit[4] : LT Signal Detect
+        o_core_status = o_core_status | 
+                            ((linktrn_signal_detect         & 0x1) << 4); 
+    
+  
+        //SDK_LINKMGR_TRACE_DEBUG("serdes_an_core_status_hw : sbus_addr: %x"
+        //     " training_failure:%0d"
+        //     " training_complete:%0d"
+        //     " training_pass:%0d"
+        //     " training_signal_detect:%0d"
+        //     , sbus_addr, linktrn_ieee_training_failure, linktrn_ieee_training_status, 
+        //     linktrn_ieee_receiver_status,linktrn_signal_detect);
+    
+        return o_core_status;
+    }
+    return o_core_status;
 }
 
 int
@@ -1525,30 +1618,71 @@ serdes_an_hcd_rxterm_cfg_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr,
     }
 
     SDK_LINKMGR_TRACE_DEBUG("serdes_an_hcd_rxterm_cfg_hw : sbus_addr: %x "
-                            " pam4_mode:%0d osr:%0d sbus_divider:%0d width:%0d"
-                            " num_lanes:%0d",
-                            sbus_addr, xx->pam4_mode, xx->osr,
-                            xx->sbus_divider, xx->width, num_lanes);
+        " pam4_mode:%0d osr:%0d sbus_divider:%0d width:%0d num_lanes:%0d", 
+        sbus_addr, xx->pam4_mode, xx->osr, xx->sbus_divider, xx->width, num_lanes);
 
-    // construct AAPL addr_list
-    uint32_t addr, is_rx=0, prbs=0, int_lpbk=0, lnk_training=1, ret=0;
-    for (int i = 0; i < num_lanes; ++i) {
-        addr = sbus_addr_arr[i];
-        SDK_LINKMGR_TRACE_DEBUG("serdes_an_hcd_rxterm_cfg_hw : lane: %0d "
-                                "sbus_addr: %x", i, sbus_addr);
-        int r1 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
-        is_rx = 1;
-        int r2 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
-        if ((r1 != 0 ) || (r2 != 0)) {
-            SDK_LINKMGR_TRACE_ERR(" hcd init : serdes_bh_txrx_init failed "
-                                  "lane_offset:%0d sbus_addr:0x%x an_hcd: %d,"
-                                  " an_hcd_str: %s",
-                                  i, addr, an_hcd, aapl_an_hcd_to_str(an_hcd));
-            ret = -1;
-        }
+    uint32_t lane, s_bus, addr, is_rx=0, prbs=0, int_lpbk=0, lnk_training=1, ret=0;
+    uint32_t AVAGO_ADDR_QUAD_LOW    = ( 1 << 16 ); //AVAGO_ADDR_QUAD_LOW:    lane = 1
+    uint32_t AVAGO_ADDR_QUAD_HIGH   = ( 2 << 16 ); //AVAGO_ADDR_QUAD_HIGH:   lane = 2
+    uint32_t AVAGO_ADDR_PAIR_0      = ( 4 << 16 ); //AVAGO_ADDR_PAIR_0:      lane = 4
+    uint32_t AVAGO_ADDR_PAIR_1      = ( 5 << 16 ); //AVAGO_ADDR_PAIR_1:      lane = 5
+    uint32_t AVAGO_ADDR_PAIR_2      = ( 6 << 16 ); //AVAGO_ADDR_PAIR_2:      lane = 6
+    uint32_t AVAGO_ADDR_PAIR_3      = ( 7 << 16 ); //AVAGO_ADDR_PAIR_3:      lane = 7
+
+    //0: 1: 2: 3: 4: 5: 6: 7: lane = 8 + addr_struct->lane
+    lane  = ( ( sbus_addr_arr[0] & 0xf0000 ) >> 16)  - 8;
+    s_bus =  ( sbus_addr_arr[0] & 0xffff );
+
+    if(lane > 7) {
+        SDK_LINKMGR_TRACE_ERR("serdes_an_hcd_rxterm_cfg_hw : sbus_addr: %x "
+        " lane %0d is incorrect, exiting without serdes initialization",
+        sbus_addr, lane);
+      return -1;
     }
+
+    if(num_lanes==4){
+        if(lane==0) {
+            addr = AVAGO_ADDR_QUAD_LOW   | s_bus;
+        } else if(lane==4) {
+            addr = AVAGO_ADDR_QUAD_HIGH  | s_bus;
+        } else {
+            addr = 0xffffffff;
+        }
+    } else if(num_lanes==2) {
+        if(lane==0) {
+            addr = AVAGO_ADDR_PAIR_0   | s_bus;
+        } else if(lane==2) {
+            addr = AVAGO_ADDR_PAIR_1   | s_bus;
+        } else if(lane==4) {
+            addr = AVAGO_ADDR_PAIR_2   | s_bus;
+        } else if(lane==6) {
+            addr = AVAGO_ADDR_PAIR_3   | s_bus;
+        } else { 
+            addr = 0xffffffff;
+        }
+    } else {
+        addr = sbus_addr_arr[0];
+    }
+
+    if(addr== 0xffffffff) {
+        SDK_LINKMGR_TRACE_ERR("serdes_an_hcd_rxterm_cfg_hw : sbus_addr: %x "
+        " lane %0d  num_lanes %0d s_bus %x incorrect combination,"
+        " exiting without serdes initialization",
+        sbus_addr, lane, num_lanes, s_bus);
+        return -1;
+    }
+    int r1 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
+    is_rx = 1;
+    int r2 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
+    if( (r1 != 0 ) || (r2 != 0) ) {
+        SDK_LINKMGR_TRACE_ERR("serdes_an_hcd_rxterm_cfg_hw : serdes_bh_txrx_init sbus_addr:0x%x an_hcd: %d, an_hcd_str: %s",
+        addr, an_hcd, aapl_an_hcd_to_str(an_hcd));
+        ret = -1;
+    }
+
     return ret;
 }
+
 
 int
 serdes_prbs_start_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
