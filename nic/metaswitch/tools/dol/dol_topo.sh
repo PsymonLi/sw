@@ -33,6 +33,7 @@ DOL_TEST=0
 UNDERLAY=0
 UPG_TEST_A=0
 UPG_FAIL=0
+ORF_TEST=0
 
 CMDARGS=""
 argc=$#
@@ -55,6 +56,9 @@ for (( j=0; j<argc; j++ )); do
         UPG_TEST_A=1
     elif [ ${argv[j]} == '--hiupg-fail' ];then
         UPG_FAIL=1
+    elif [ ${argv[j]} == '--orf' ];then
+        ORF_TEST=1
+        RR=1
     else
         CMDARGS+="${argv[j]} "
     fi
@@ -231,9 +235,13 @@ docker network create -d bridge "$SUBNET"1 --subnet $SUBNET1 --gateway 10.1.1.25
 echo "Create network: "$SUBNET"2 $SUBNET2"
 docker network create -d macvlan --subnet $SUBNET2 --gateway 11.1.1.254 -o parent=${INTF_NAME}.3006 "$SUBNET"2 > /dev/null
 
-for i in {1..3}
-do
-    if [ "$i" = "3" ] && [ $UNDERLAY == 1 ]; then
+if [ "$ORF_TEST" -eq "1" ]; then
+    MAX_NODES=4
+else
+    MAX_NODES=3
+fi
+for ((i=1 ; i<=$MAX_NODES; i++)); do
+    if [ "$i" -ge "3" ] && [ $UNDERLAY == 1 ]; then
         echo "Skip CTR3 in Underlay mode"
         continue
     fi
@@ -245,14 +253,17 @@ do
         docker network connect "$SUBNET"2 "$CONTAINER"$i > /dev/null
         ip2=$(docker exec -it "$CONTAINER"$i ip -o -4 addr list eth1 | awk '{print $4}' | cut -d "/" -f 1)
         echo "and eth1 $ip2"
-    elif [ $RR == 1 ]; then
-        # RR has no Linux route programming - so configure explicit route to TEP IPs
-        docker exec -dit "$CONTAINER"3 ip route add 100.100.1.1/32 via 10.1.1.1
-        docker exec -dit "$CONTAINER"3 ip route add 200.200.2.2/32 via 10.1.1.2
     fi
     docker exec -dit "$CONTAINER"$i cp "$DOL_CFG"$i/fru.json /tmp/fru.json
 done
 echo ""
+if [ $RR -eq 1 ]; then
+   # RR has no Linux route programming - so configure explicit route to TEP IPs
+   docker exec -dit "$CONTAINER"3 ip route add 100.100.1.1/32 via 10.1.1.1
+   docker exec -dit "$CONTAINER"3 ip route add 200.200.2.2/32 via 10.1.1.2
+   docker exec -dit "$CONTAINER"3 ip route add 4.4.4.4/32 via 10.1.1.4
+   docker exec -dit "$CONTAINER"4 ip route add 3.3.3.3/32 via 10.1.1.3
+fi
 
 # Remove interface addresses - controlplane should install this
 docker exec -dit "$CONTAINER"1 ip addr del 10.1.1.1/24 dev eth0
@@ -261,14 +272,13 @@ docker exec -dit "$CONTAINER"2 ip addr del 10.1.1.2/24 dev eth0
 docker exec -dit "$CONTAINER"2 ip addr del 11.1.1.2/24 dev eth1
 
 # First start PDS-Agent on nodes 2 and 3
-for i in {2..3}
-do
+for ((i=2 ; i<=$MAX_NODES; i++)); do
     ret=0
     if [ "$i" = "3" ] && [ $UNDERLAY == 1 ]; then
         echo "Skip CTR3 in Underlay mode"
         continue
     fi
-    if [ "$i" = "3" ] && [ $RR == 1 ]; then
+    if [ "$i" -ge "3" ] && [ $RR == 1 ]; then
         echo "Starting Pegasus in "$CONTAINER"$i"
         docker exec -dit -w "$DOL_CFG"$i -e LD_LIBRARY_PATH=/sw/nic/third-party/metaswitch/output/x86_64/ "$CONTAINER"$i sh -c '/sw/nic/build/x86_64/apulu/capri/bin/pegasus' || ret=$?
     else
@@ -295,8 +305,7 @@ if [ $UNDERLAY == 0 ] && [ $RR == 0 ]; then
 fi
 
 # Configure underlay and overlay on nodes 2 and 3 using gRPC Client App
-for i in {2..3}
-do
+for ((i=2 ; i<=$MAX_NODES; i++)); do
     client-app-cfg $i
 done
 
