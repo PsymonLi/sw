@@ -16,7 +16,6 @@ import iota.protos.pygen.iota_types_pb2 as types_pb2
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 DTS_LOG_TAR_FILE = 'iota_dts_log.tar.gz'
 DTS_OUTPUT_PATH = '../Setup_Dts_1/dts/' # Relative path to DTS output directory
-
 SNIFF_TIMEOUT = 3
 
 
@@ -103,7 +102,7 @@ def Verify(tc):
 
 
     api.Logger.info('DTS shutdown successful!!')
-
+    os.chdir(api.GetTopDir())
     return api.types.status.SUCCESS
 
 def Teardown(tc):
